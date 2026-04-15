@@ -16,6 +16,8 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -25,6 +27,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.tal.hebrewdino.ui.audio.AudioClips
+import com.tal.hebrewdino.ui.audio.SoundPoolPlayer
 import kotlin.math.max
 import kotlin.math.min
 
@@ -37,6 +41,13 @@ fun RewardScreen(
     onBackToMap: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val player = remember { SoundPoolPlayer(context = context) }
+
+    DisposableEffect(Unit) {
+        onDispose { player.release() }
+    }
+
     val balloonCount = remember(levelId, correct, mistakes) {
         val base = 5
         val bonus = max(0, correct - mistakes) / 2
@@ -44,6 +55,10 @@ fun RewardScreen(
     }
     val balloons = remember(levelId) {
         mutableStateListOf(*Array(balloonCount) { true })
+    }
+
+    LaunchedEffect(levelId) {
+        player.play(AudioClips.VoLevelDone)
     }
 
     Column(
