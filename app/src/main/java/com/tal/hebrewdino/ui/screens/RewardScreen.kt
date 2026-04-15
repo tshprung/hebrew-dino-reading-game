@@ -20,11 +20,15 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -124,13 +128,35 @@ private fun Balloon(
     color: Color,
     onPop: () -> Unit,
 ) {
+    var popping by remember { mutableStateOf(false) }
+    var visible by remember { mutableStateOf(true) }
+    val scale = remember { androidx.compose.animation.core.Animatable(1f) }
+
+    LaunchedEffect(popping) {
+        if (!popping) return@LaunchedEffect
+        scale.snapTo(1f)
+        scale.animateTo(
+            targetValue = 1.25f,
+            animationSpec = androidx.compose.animation.core.tween(durationMillis = 110),
+        )
+        scale.animateTo(
+            targetValue = 0.2f,
+            animationSpec = androidx.compose.animation.core.tween(durationMillis = 90),
+        )
+        visible = false
+        onPop()
+    }
+
+    if (!visible) return
+
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Spacer(
             modifier = Modifier
                 .size(72.dp)
                 .clip(CircleShape)
                 .background(color)
-                .clickable(onClick = onPop),
+                .scale(scale.value)
+                .clickable(enabled = !popping, onClick = { popping = true }),
         )
         Spacer(modifier = Modifier.height(6.dp))
         Text(text = "בלון", style = MaterialTheme.typography.bodyMedium)

@@ -28,6 +28,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.Alignment
@@ -116,6 +121,16 @@ fun LevelScreen(
             contentScale = ContentScale.Crop,
         )
 
+        val bob by rememberInfiniteTransition(label = "bob").animateFloat(
+            initialValue = 0f,
+            targetValue = -6f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(durationMillis = 900),
+                repeatMode = RepeatMode.Reverse,
+            ),
+            label = "bobOffset",
+        )
+
         // Dino avatar (idle bob + reacts to success)
         Image(
             painter = painterResource(id = dinoRes),
@@ -124,6 +139,7 @@ fun LevelScreen(
                 .padding(12.dp)
                 .size(96.dp)
                 .align(Alignment.TopStart)
+                .offset(y = bob.dp)
                 .scale(dinoScale.value),
             contentScale = ContentScale.Fit,
         )
