@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -20,6 +21,7 @@ import androidx.compose.ui.unit.dp
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun MapScreen(
+    unlockedLevel: Int,
     onPlayLevel: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -45,8 +47,17 @@ fun MapScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             (1..10).forEach { levelId ->
-                Button(onClick = { onPlayLevel(levelId) }) {
-                    Text(text = "שלב $levelId")
+                val enabled = levelId <= unlockedLevel
+                Button(
+                    onClick = { onPlayLevel(levelId) },
+                    enabled = enabled,
+                    colors = if (enabled) {
+                        ButtonDefaults.buttonColors()
+                    } else {
+                        ButtonDefaults.buttonColors(disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant)
+                    },
+                ) {
+                    Text(text = if (enabled) "שלב $levelId" else "נעול")
                 }
             }
         }
