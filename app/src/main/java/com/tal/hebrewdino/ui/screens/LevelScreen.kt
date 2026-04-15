@@ -34,7 +34,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import com.tal.hebrewdino.R
 import com.tal.hebrewdino.ui.audio.AudioClips
-import com.tal.hebrewdino.ui.audio.SoundPoolPlayer
+import com.tal.hebrewdino.ui.audio.VoicePlayer
 import com.tal.hebrewdino.ui.domain.BeachChapter
 import com.tal.hebrewdino.ui.domain.Question
 import kotlinx.coroutines.delay
@@ -55,10 +55,10 @@ fun LevelScreen(
 
     val scope = rememberCoroutineScope()
     val context = androidx.compose.ui.platform.LocalContext.current
-    val player = remember { SoundPoolPlayer(context = context) }
+    val voice = remember { VoicePlayer(context = context) }
 
     DisposableEffect(Unit) {
-        onDispose { player.release() }
+        onDispose { voice.release() }
     }
 
     val current: Question? = questions.getOrNull(index)
@@ -75,14 +75,13 @@ fun LevelScreen(
         val target = current.targetLetter
         val chooseSpecific = AudioClips.chooseLetterClip(target)
         if (chooseSpecific != null) {
-            player.play(chooseSpecific)
+            voice.playBlocking(chooseSpecific)
         } else {
             // Fallback: "choose letter" + letter name
             val name = AudioClips.letterNameClip(target)
-            player.play(AudioClips.VoChooseLetter)
+            voice.playBlocking(AudioClips.VoChooseLetter)
             if (name != null) {
-                delay(250)
-                player.play(name)
+                voice.playBlocking(name)
             }
         }
     }
@@ -126,14 +125,19 @@ fun LevelScreen(
             options = current.options,
             onPick = { picked ->
                 if (picked == current.targetLetter) {
-                    correct += 1
-                    feedback = "כל הכבוד!"
-                    scope.launch { player.playFirstAvailable(AudioClips.VoGoodJob1, AudioClips.VoGoodJob2) }
-                    index += 1
+                    // Advance ONLY after "good job" finishes (no overlaps).
+                    scope.launch {
+                        correct += 1
+                        feedback = "כל הכבוד!"
+                        voice.playFirstAvailableBlocking(AudioClips.VoGoodJob1, AudioClips.VoGoodJob2)
+                        index += 1
+                    }
                 } else {
-                    mistakes += 1
-                    feedback = "כמעט… בוא ננסה שוב"
-                    scope.launch { player.playFirstAvailable(AudioClips.VoTryAgain2, AudioClips.VoTryAgain1) }
+                    scope.launch {
+                        mistakes += 1
+                        feedback = "כמעט… בוא ננסה שוב"
+                        voice.playFirstAvailableBlocking(AudioClips.VoTryAgain2, AudioClips.VoTryAgain1)
+                    }
                 }
             },
         )

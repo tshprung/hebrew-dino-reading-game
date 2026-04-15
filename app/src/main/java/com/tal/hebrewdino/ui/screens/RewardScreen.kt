@@ -33,7 +33,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.tal.hebrewdino.R
 import com.tal.hebrewdino.ui.audio.AudioClips
-import com.tal.hebrewdino.ui.audio.SoundPoolPlayer
+import com.tal.hebrewdino.ui.audio.VoicePlayer
 import kotlin.math.max
 import kotlin.math.min
 
@@ -47,10 +47,10 @@ fun RewardScreen(
     modifier: Modifier = Modifier,
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
-    val player = remember { SoundPoolPlayer(context = context) }
+    val voice = remember { VoicePlayer(context = context) }
 
     DisposableEffect(Unit) {
-        onDispose { player.release() }
+        onDispose { voice.release() }
     }
 
     val balloonCount = remember(levelId, correct, mistakes) {
@@ -63,7 +63,7 @@ fun RewardScreen(
     }
 
     LaunchedEffect(levelId) {
-        player.play(AudioClips.VoLevelDone)
+        voice.playBlocking(AudioClips.VoLevelDone)
     }
 
     Box(modifier = modifier.fillMaxSize()) {

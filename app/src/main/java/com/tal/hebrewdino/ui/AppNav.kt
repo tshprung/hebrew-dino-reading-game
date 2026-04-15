@@ -11,11 +11,13 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.tal.hebrewdino.ui.data.CharacterPrefs
+import com.tal.hebrewdino.ui.data.DinoCharacter
 import com.tal.hebrewdino.ui.data.ProgressPrefs
 import com.tal.hebrewdino.ui.screens.CharacterSelectScreen
 import com.tal.hebrewdino.ui.screens.LevelScreen
 import com.tal.hebrewdino.ui.screens.MapScreen
 import com.tal.hebrewdino.ui.screens.RewardScreen
+import com.tal.hebrewdino.ui.screens.SettingsScreen
 import kotlinx.coroutines.launch
 
 @Composable
@@ -27,6 +29,7 @@ fun AppNav() {
     val scope = rememberCoroutineScope()
     val character by prefs.characterFlow.collectAsState(initial = null)
     val unlockedLevel by progress.unlockedLevelFlow.collectAsState(initial = 1)
+    val completedLevels by progress.completedLevelsFlow.collectAsState(initial = emptySet())
 
     val startDestination = if (character == null) Routes.CharacterSelect else Routes.Map
 
@@ -47,9 +50,11 @@ fun AppNav() {
         composable(Routes.Map) {
             MapScreen(
                 unlockedLevel = unlockedLevel,
+                completedLevels = completedLevels,
                 onPlayLevel = { levelId ->
                     navController.navigate("${Routes.Level}/$levelId")
                 },
+                onOpenSettings = { navController.navigate(Routes.Settings) },
             )
         }
 
@@ -63,6 +68,7 @@ fun AppNav() {
                 onBack = { navController.popBackStack() },
                 onComplete = { completedLevelId, correctCount, mistakeCount ->
                     scope.launch {
+                        progress.markCompleted(completedLevelId)
                         progress.unlockAtLeast(completedLevelId + 1)
                     }
                     navController.navigate("${Routes.Reward}/$completedLevelId/$correctCount/$mistakeCount")
@@ -92,6 +98,15 @@ fun AppNav() {
                 },
             )
         }
+
+        composable(Routes.Settings) {
+            SettingsScreen(
+                onPick = { picked: DinoCharacter ->
+                    scope.launch { prefs.setCharacter(picked) }
+                },
+                onBack = { navController.popBackStack() },
+            )
+        }
     }
 }
 
@@ -100,5 +115,6 @@ private object Routes {
     const val Map = "map"
     const val Level = "level"
     const val Reward = "reward"
+    const val Settings = "settings"
 }
 

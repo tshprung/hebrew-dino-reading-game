@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
@@ -13,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -28,7 +30,9 @@ import com.tal.hebrewdino.R
 @Composable
 fun MapScreen(
     unlockedLevel: Int,
+    completedLevels: Set<Int>,
     onPlayLevel: (Int) -> Unit,
+    onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Box(modifier = modifier.fillMaxSize()) {
@@ -51,11 +55,17 @@ fun MapScreen(
                 color = Color(0xFF0B2B3D),
             )
             Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "בחר שלב",
-                style = MaterialTheme.typography.titleLarge,
-                color = Color(0xFF0B2B3D),
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = "בחר שלב",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = Color(0xFF0B2B3D),
+                )
+                Spacer(modifier = Modifier.height(0.dp).weight(1f))
+                OutlinedButton(onClick = onOpenSettings) {
+                    Text(text = "הגדרות")
+                }
+            }
             Spacer(modifier = Modifier.height(24.dp))
 
             FlowRow(
@@ -64,16 +74,27 @@ fun MapScreen(
             ) {
                 (1..10).forEach { levelId ->
                     val enabled = levelId <= unlockedLevel
+                    val completed = completedLevels.contains(levelId)
+                    val isOpenButNotDone = enabled && !completed
+
+                    val buttonColors =
+                        when {
+                            !enabled -> ButtonDefaults.buttonColors(disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant)
+                            isOpenButNotDone -> ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.45f))
+                            else -> ButtonDefaults.buttonColors()
+                        }
                     Button(
                         onClick = { onPlayLevel(levelId) },
                         enabled = enabled,
-                        colors = if (enabled) {
-                            ButtonDefaults.buttonColors()
-                        } else {
-                            ButtonDefaults.buttonColors(disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant)
-                        },
+                        colors = buttonColors,
                     ) {
-                        Text(text = if (enabled) "שלב $levelId" else "נעול")
+                        val label =
+                            when {
+                                !enabled -> "נעול"
+                                completed -> "שלב $levelId ✓"
+                                else -> "שלב $levelId"
+                            }
+                        Text(text = label)
                     }
                 }
             }
