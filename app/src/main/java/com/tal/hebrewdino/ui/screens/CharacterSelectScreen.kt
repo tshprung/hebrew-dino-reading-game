@@ -67,14 +67,14 @@ fun CharacterSelectScreen(
             CharacterCard(
                 title = "דינו",
                 subtitle = "בן",
-                imageRes = R.drawable.ic_dino,
+                imageRes = R.drawable.dino_boy,
                 onClick = { onPick(DinoCharacter.Dino) },
             )
             Spacer(modifier = Modifier.width(16.dp))
             CharacterCard(
                 title = "דינה",
                 subtitle = "בת",
-                imageRes = R.drawable.ic_dina,
+                imageRes = R.drawable.dino_girl,
                 onClick = { onPick(DinoCharacter.Dina) },
             )
         }
