@@ -1,0 +1,15 @@
+.idea/
+.gradle/
+build/
+*/build/
+
+# Android Studio
+local.properties
+
+# OS
+Thumbs.db
+
+# Temporary download (not part of repo)
+gradle-8.7/
+gradle-8.7-bin.zip
+
