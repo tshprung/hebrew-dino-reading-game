@@ -1,5 +1,7 @@
 package com.tal.hebrewdino.ui.screens
 
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -15,8 +17,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.tal.hebrewdino.R
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -25,39 +31,50 @@ fun MapScreen(
     onPlayLevel: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Text(
-            text = "פרק 1: החוף",
-            style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Black),
+    Box(modifier = modifier.fillMaxSize()) {
+        Image(
+            painter = painterResource(id = R.drawable.bg_beach),
+            contentDescription = null,
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Crop,
         )
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = "בחר שלב",
-            style = MaterialTheme.typography.titleLarge,
-        )
-        Spacer(modifier = Modifier.height(24.dp))
 
-        FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            (1..10).forEach { levelId ->
-                val enabled = levelId <= unlockedLevel
-                Button(
-                    onClick = { onPlayLevel(levelId) },
-                    enabled = enabled,
-                    colors = if (enabled) {
-                        ButtonDefaults.buttonColors()
-                    } else {
-                        ButtonDefaults.buttonColors(disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant)
-                    },
-                ) {
-                    Text(text = if (enabled) "שלב $levelId" else "נעול")
+            Text(
+                text = "פרק 1: החוף",
+                style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Black),
+                color = Color(0xFF0B2B3D),
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "בחר שלב",
+                style = MaterialTheme.typography.titleLarge,
+                color = Color(0xFF0B2B3D),
+            )
+            Spacer(modifier = Modifier.height(24.dp))
+
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                (1..10).forEach { levelId ->
+                    val enabled = levelId <= unlockedLevel
+                    Button(
+                        onClick = { onPlayLevel(levelId) },
+                        enabled = enabled,
+                        colors = if (enabled) {
+                            ButtonDefaults.buttonColors()
+                        } else {
+                            ButtonDefaults.buttonColors(disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant)
+                        },
+                    ) {
+                        Text(text = if (enabled) "שלב $levelId" else "נעול")
+                    }
                 }
             }
         }

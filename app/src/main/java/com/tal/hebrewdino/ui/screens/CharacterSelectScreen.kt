@@ -1,6 +1,7 @@
 package com.tal.hebrewdino.ui.screens
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -18,9 +19,15 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.Image
+import androidx.compose.ui.res.painterResource
+import com.tal.hebrewdino.R
 import com.tal.hebrewdino.ui.data.DinoCharacter
 
 @Composable
@@ -28,21 +35,31 @@ fun CharacterSelectScreen(
     onPick: (DinoCharacter) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(24.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
+    Box(modifier = modifier.fillMaxSize()) {
+        Image(
+            painter = painterResource(id = R.drawable.bg_beach),
+            contentDescription = null,
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Crop,
+        )
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(24.dp),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
         Text(
             text = "בוחרים דמות",
             style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Black),
+            color = Color(0xFF0B2B3D),
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(
             text = "מי יצא לחפש את הביצה?",
             style = MaterialTheme.typography.titleLarge,
+            color = Color(0xFF0B2B3D),
         )
         Spacer(modifier = Modifier.height(32.dp))
 
@@ -50,14 +67,17 @@ fun CharacterSelectScreen(
             CharacterCard(
                 title = "דינו",
                 subtitle = "בן",
+                imageRes = R.drawable.ic_dino,
                 onClick = { onPick(DinoCharacter.Dino) },
             )
             Spacer(modifier = Modifier.width(16.dp))
             CharacterCard(
                 title = "דינה",
                 subtitle = "בת",
+                imageRes = R.drawable.ic_dina,
                 onClick = { onPick(DinoCharacter.Dina) },
             )
+        }
         }
     }
 }
@@ -66,6 +86,7 @@ fun CharacterSelectScreen(
 private fun CharacterCard(
     title: String,
     subtitle: String,
+    imageRes: Int,
     onClick: () -> Unit,
 ) {
     Card(
@@ -84,6 +105,21 @@ private fun CharacterCard(
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
+            Box(
+                modifier = Modifier
+                    .width(120.dp)
+                    .height(120.dp)
+                    .clip(RoundedCornerShape(28.dp)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Image(
+                    painter = painterResource(id = imageRes),
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Fit,
+                )
+            }
+            Spacer(modifier = Modifier.height(10.dp))
             Text(text = title, fontSize = 44.sp, fontWeight = FontWeight.Black)
             Spacer(modifier = Modifier.height(8.dp))
             Text(text = subtitle, style = MaterialTheme.typography.titleLarge)
