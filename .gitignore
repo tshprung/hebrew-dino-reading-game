@@ -13,3 +13,6 @@ Thumbs.db
 gradle-8.7/
 gradle-8.7-bin.zip
 
+# Temporary asset downloads
+.tmp_assets/
+
