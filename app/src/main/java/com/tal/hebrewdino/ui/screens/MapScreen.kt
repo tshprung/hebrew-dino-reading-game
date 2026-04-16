@@ -18,6 +18,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
@@ -45,6 +47,7 @@ fun MapScreen(
     val totalLevels = 10
     val nextSuggested =
         (1..totalLevels).firstOrNull { !completedLevels.contains(it) } ?: totalLevels
+    val quickPlayLevel = nextSuggested.coerceAtMost(unlockedLevel)
 
     Box(modifier = modifier.fillMaxSize()) {
         Image(
@@ -79,6 +82,22 @@ fun MapScreen(
                 }
             }
             Spacer(modifier = Modifier.height(18.dp))
+
+            Button(
+                onClick = { onPlayLevel(quickPlayLevel) },
+                modifier = Modifier.width(260.dp),
+                colors =
+                    ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFFFFC400).copy(alpha = 0.95f),
+                        contentColor = Color(0xFF0B2B3D),
+                    ),
+            ) {
+                Text(
+                    text = "שחק עכשיו (שלב $quickPlayLevel)",
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black),
+                )
+            }
+            Spacer(modifier = Modifier.height(16.dp))
 
             // Stepping-stones path (kid-friendly): alternating left/right stones.
             Column(
