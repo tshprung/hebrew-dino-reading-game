@@ -51,8 +51,8 @@ import com.tal.hebrewdino.ui.audio.SoundPoolPlayer
 import com.tal.hebrewdino.ui.audio.VoicePlayer
 import com.tal.hebrewdino.ui.data.CharacterPrefs
 import com.tal.hebrewdino.ui.data.DinoCharacter
-import com.tal.hebrewdino.ui.domain.BeachChapter
-import com.tal.hebrewdino.ui.domain.Question
+import com.tal.hebrewdino.ui.domain.AnswerResult
+import com.tal.hebrewdino.ui.domain.LevelSession
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -66,10 +66,17 @@ fun LevelScreen(
     onComplete: (levelId: Int, correctCount: Int, mistakeCount: Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val questions = remember(levelId) { BeachChapter.generateQuestions(levelId) }
-    var index by remember(levelId) { mutableStateOf(0) }
-    var correct by remember(levelId) { mutableStateOf(0) }
-    var mistakes by remember(levelId) { mutableStateOf(0) }
+    // Keep the same feel as before: question count scales with level id.
+    val questionCount =
+        remember(levelId) {
+            when (levelId) {
+                1, 2 -> 6
+                3, 4 -> 8
+                5, 6, 7 -> 10
+                else -> 12
+            }
+        }
+    val session = remember(levelId) { LevelSession(questionCount = questionCount) }
     var feedback by remember(levelId) { mutableStateOf<String?>(null) }
     fun rtl(text: String): String = "\u200F$text"
 
@@ -95,20 +102,20 @@ fun LevelScreen(
         }
     }
 
-    val current: Question? = questions.getOrNull(index)
-    val totalQuestions = questions.size
-    val questionNumber = index + 1
+    val current = session.currentQuestion
+    val totalQuestions = session.totalQuestions
+    val questionNumber = session.questionNumber
 
     if (current == null) {
-        onComplete(levelId, correct, mistakes)
+        onComplete(levelId, session.correctCount, session.mistakeCount)
         return
     }
 
-    LaunchedEffect(levelId, index) {
+    LaunchedEffect(levelId, session.currentIndex) {
         feedback = null
         // Let UI settle a bit before speaking.
         delay(120)
-        val target = current.targetLetter
+        val target = current.correctAnswer
         val chooseSpecific = AudioClips.chooseLetterClip(target)
         if (chooseSpecific != null) {
             voice.playBlocking(chooseSpecific)
@@ -185,7 +192,7 @@ fun LevelScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
         Text(
-            text = current.prompt,
+            text = "בחר את האות: ${current.correctAnswer}",
             style = MaterialTheme.typography.titleLarge,
             textAlign = TextAlign.Center,
         )
@@ -204,28 +211,30 @@ fun LevelScreen(
             enabled = !inputLocked,
             shakePx = optionsShake.value,
             onPick = { picked ->
-                if (picked == current.targetLetter) {
+                when (session.submitAnswer(picked)) {
+                    AnswerResult.Correct -> {
                     // Advance ONLY after "good job" finishes (no overlaps).
                     scope.launch {
                         inputLocked = true
-                        correct += 1
                         feedback = rtl("כל הכבוד!")
                         playSuccessAnimation(scope, dinoScale, showConfetti)
                         sfx.playFirstAvailable(AudioClips.SfxCorrect, volume = 0.7f)
                         voice.playFirstAvailableBlocking(AudioClips.VoGoodJob1, AudioClips.VoGoodJob2)
-                        index += 1
+                        session.nextQuestion()
                         inputLocked = false
                     }
-                } else {
+                    }
+                    AnswerResult.Wrong -> {
                     scope.launch {
                         inputLocked = true
-                        mistakes += 1
                         feedback = "כמעט… בוא ננסה שוב"
                         playMistakeAnimation(scope, optionsShake)
                         sfx.playFirstAvailable(AudioClips.SfxWrong, volume = 0.7f)
                         voice.playFirstAvailableBlocking(AudioClips.VoTryAgain2, AudioClips.VoTryAgain1)
                         inputLocked = false
                     }
+                    }
+                    AnswerResult.Finished -> {}
                 }
             },
         )

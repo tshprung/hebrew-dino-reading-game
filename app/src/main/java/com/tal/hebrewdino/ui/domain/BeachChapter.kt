@@ -8,7 +8,7 @@ data class LevelConfig(
     val questionCount: Int,
 )
 
-data class Question(
+data class BeachQuestion(
     val prompt: String,
     val targetLetter: String,
     val options: List<String>,
@@ -34,7 +34,7 @@ object BeachChapter {
         return LevelConfig(levelId = levelId, lettersPool = pool, questionCount = questionCount)
     }
 
-    fun generateQuestions(levelId: Int): List<Question> {
+    fun generateQuestions(levelId: Int): List<BeachQuestion> {
         val config = configForLevel(levelId)
         val rnd = Random(levelId * 9973)
 
@@ -52,7 +52,7 @@ object BeachChapter {
                 addAll(others.take(optionCount - 1))
             }.shuffled(rnd)
 
-            Question(
+            BeachQuestion(
                 prompt = "בחר את האות: $target",
                 targetLetter = target,
                 options = options,
