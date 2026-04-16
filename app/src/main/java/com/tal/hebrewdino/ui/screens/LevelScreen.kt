@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Button
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -46,6 +47,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import com.tal.hebrewdino.R
 import com.tal.hebrewdino.ui.audio.AudioClips
+import com.tal.hebrewdino.ui.audio.SoundPoolPlayer
 import com.tal.hebrewdino.ui.audio.VoicePlayer
 import com.tal.hebrewdino.ui.data.CharacterPrefs
 import com.tal.hebrewdino.ui.data.DinoCharacter
@@ -69,10 +71,12 @@ fun LevelScreen(
     var correct by remember(levelId) { mutableStateOf(0) }
     var mistakes by remember(levelId) { mutableStateOf(0) }
     var feedback by remember(levelId) { mutableStateOf<String?>(null) }
+    fun rtl(text: String): String = "\u200F$text"
 
     val scope = rememberCoroutineScope()
     val context = androidx.compose.ui.platform.LocalContext.current
     val voice = remember { VoicePlayer(context = context) }
+    val sfx = remember { SoundPoolPlayer(context = context) }
     val characterPrefs = remember { CharacterPrefs(context) }
     val character by characterPrefs.characterFlow.collectAsState(initial = DinoCharacter.Dino)
 
@@ -85,10 +89,15 @@ fun LevelScreen(
     var inputLocked by remember(levelId) { mutableStateOf(false) }
 
     DisposableEffect(Unit) {
-        onDispose { voice.release() }
+        onDispose {
+            voice.release()
+            sfx.release()
+        }
     }
 
     val current: Question? = questions.getOrNull(index)
+    val totalQuestions = questions.size
+    val questionNumber = index + 1
 
     if (current == null) {
         onComplete(levelId, correct, mistakes)
@@ -161,6 +170,19 @@ fun LevelScreen(
             text = "שלב $levelId",
             style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Black),
         )
+        Spacer(modifier = Modifier.height(10.dp))
+
+        Text(
+            text = "שאלה $questionNumber מתוך $totalQuestions",
+            style = MaterialTheme.typography.titleMedium,
+            color = Color(0xFF0B2B3D),
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        LinearProgressIndicator(
+            progress = { questionNumber.toFloat() / totalQuestions.toFloat() },
+            modifier = Modifier.width(320.dp),
+        )
+
         Spacer(modifier = Modifier.height(16.dp))
         Text(
             text = current.prompt,
@@ -187,8 +209,9 @@ fun LevelScreen(
                     scope.launch {
                         inputLocked = true
                         correct += 1
-                        feedback = "כל הכבוד!"
+                        feedback = rtl("כל הכבוד!")
                         playSuccessAnimation(scope, dinoScale, showConfetti)
+                        sfx.playFirstAvailable(AudioClips.SfxCorrect, volume = 0.7f)
                         voice.playFirstAvailableBlocking(AudioClips.VoGoodJob1, AudioClips.VoGoodJob2)
                         index += 1
                         inputLocked = false
@@ -199,6 +222,7 @@ fun LevelScreen(
                         mistakes += 1
                         feedback = "כמעט… בוא ננסה שוב"
                         playMistakeAnimation(scope, optionsShake)
+                        sfx.playFirstAvailable(AudioClips.SfxWrong, volume = 0.7f)
                         voice.playFirstAvailableBlocking(AudioClips.VoTryAgain2, AudioClips.VoTryAgain1)
                         inputLocked = false
                     }

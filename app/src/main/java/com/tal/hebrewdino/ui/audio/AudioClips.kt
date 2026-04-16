@@ -13,6 +13,15 @@ object AudioClips {
     const val VoTryAgain2 = "audio/vo_try_again_2.wav"
     const val VoLevelDone = "audio/vo_level_done.wav"
 
+    // SFX (optional). If missing from assets, playback will be skipped.
+    const val SfxBalloonPop = "audio/sfx_pop.wav"
+    const val SfxCorrect = "audio/sfx_correct.wav"
+    const val SfxWrong = "audio/sfx_wrong.wav"
+
+    // Story narration (optional)
+    const val StoryBeachIntro = "audio/story_beach_intro.wav"
+    const val StoryBeachOutro = "audio/story_beach_outro.wav"
+
     // Letter-specific
     fun chooseLetterClip(letter: String): String? =
         when (letter) {

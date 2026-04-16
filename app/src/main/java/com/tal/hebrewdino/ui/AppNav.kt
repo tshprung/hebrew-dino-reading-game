@@ -13,6 +13,8 @@ import androidx.navigation.navArgument
 import com.tal.hebrewdino.ui.data.CharacterPrefs
 import com.tal.hebrewdino.ui.data.DinoCharacter
 import com.tal.hebrewdino.ui.data.ProgressPrefs
+import com.tal.hebrewdino.ui.screens.BeachIntroScreen
+import com.tal.hebrewdino.ui.screens.BeachOutroScreen
 import com.tal.hebrewdino.ui.screens.CharacterSelectScreen
 import com.tal.hebrewdino.ui.screens.LevelScreen
 import com.tal.hebrewdino.ui.screens.MapScreen
@@ -28,10 +30,17 @@ fun AppNav() {
     val progress = ProgressPrefs(context)
     val scope = rememberCoroutineScope()
     val character by prefs.characterFlow.collectAsState(initial = null)
+    val beachIntroSeen by progress.beachIntroSeenFlow.collectAsState(initial = false)
+    val beachOutroSeen by progress.beachOutroSeenFlow.collectAsState(initial = false)
     val unlockedLevel by progress.unlockedLevelFlow.collectAsState(initial = 1)
     val completedLevels by progress.completedLevelsFlow.collectAsState(initial = emptySet())
 
-    val startDestination = if (character == null) Routes.CharacterSelect else Routes.Map
+    val startDestination =
+        when {
+            character == null -> Routes.CharacterSelect
+            !beachIntroSeen -> Routes.StoryIntro
+            else -> Routes.Map
+        }
 
     NavHost(navController = navController, startDestination = startDestination) {
         composable(Routes.CharacterSelect) {
@@ -39,9 +48,28 @@ fun AppNav() {
                 onPick = { picked ->
                     scope.launch {
                         prefs.setCharacter(picked)
-                        navController.navigate(Routes.Map) {
+                        navController.navigate(if (beachIntroSeen) Routes.Map else Routes.StoryIntro) {
                             popUpTo(Routes.CharacterSelect) { inclusive = true }
                         }
+                    }
+                },
+            )
+        }
+
+        composable(Routes.StoryIntro) {
+            val c = character ?: DinoCharacter.Dino
+            BeachIntroScreen(
+                character = c,
+                onContinue = {
+                    scope.launch { progress.markBeachIntroSeen() }
+                    navController.navigate(Routes.Map) {
+                        popUpTo(Routes.CharacterSelect) { inclusive = true }
+                    }
+                },
+                onSkip = {
+                    scope.launch { progress.markBeachIntroSeen() }
+                    navController.navigate(Routes.Map) {
+                        popUpTo(Routes.CharacterSelect) { inclusive = true }
                     }
                 },
             )
@@ -92,6 +120,32 @@ fun AppNav() {
                 correct = correct,
                 mistakes = mistakes,
                 onBackToMap = {
+                    val isChapterEnd = levelId >= 10
+                    if (isChapterEnd && !beachOutroSeen) {
+                        navController.navigate(Routes.StoryOutro) {
+                            popUpTo(Routes.Map) { inclusive = true }
+                        }
+                    } else {
+                        navController.navigate(Routes.Map) {
+                            popUpTo(Routes.Map) { inclusive = true }
+                        }
+                    }
+                },
+            )
+        }
+
+        composable(Routes.StoryOutro) {
+            val c = character ?: DinoCharacter.Dino
+            BeachOutroScreen(
+                character = c,
+                onContinue = {
+                    scope.launch { progress.markBeachOutroSeen() }
+                    navController.navigate(Routes.Map) {
+                        popUpTo(Routes.Map) { inclusive = true }
+                    }
+                },
+                onSkip = {
+                    scope.launch { progress.markBeachOutroSeen() }
                     navController.navigate(Routes.Map) {
                         popUpTo(Routes.Map) { inclusive = true }
                     }
@@ -101,8 +155,18 @@ fun AppNav() {
 
         composable(Routes.Settings) {
             SettingsScreen(
+                selectedCharacter = character,
                 onPick = { picked: DinoCharacter ->
                     scope.launch { prefs.setCharacter(picked) }
+                },
+                onResetAll = {
+                    scope.launch {
+                        progress.resetAll()
+                        prefs.clearCharacter()
+                        navController.navigate(Routes.CharacterSelect) {
+                            popUpTo(Routes.Map) { inclusive = true }
+                        }
+                    }
                 },
                 onBack = { navController.popBackStack() },
             )
@@ -112,9 +176,11 @@ fun AppNav() {
 
 private object Routes {
     const val CharacterSelect = "character_select"
+    const val StoryIntro = "story_intro"
     const val Map = "map"
     const val Level = "level"
     const val Reward = "reward"
+    const val StoryOutro = "story_outro"
     const val Settings = "settings"
 }
 

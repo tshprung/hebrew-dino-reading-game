@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.tal.hebrewdino.R
 import com.tal.hebrewdino.ui.audio.AudioClips
+import com.tal.hebrewdino.ui.audio.SoundPoolPlayer
 import com.tal.hebrewdino.ui.audio.VoicePlayer
 import kotlin.math.max
 import kotlin.math.min
@@ -50,11 +51,17 @@ fun RewardScreen(
     onBackToMap: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    fun rtl(text: String): String = "\u200F$text"
+
     val context = androidx.compose.ui.platform.LocalContext.current
     val voice = remember { VoicePlayer(context = context) }
+    val sfx = remember { SoundPoolPlayer(context = context) }
 
     DisposableEffect(Unit) {
-        onDispose { voice.release() }
+        onDispose {
+            voice.release()
+            sfx.release()
+        }
     }
 
     val balloonCount = remember(levelId, correct, mistakes) {
@@ -86,7 +93,7 @@ fun RewardScreen(
             verticalArrangement = Arrangement.Center,
         ) {
         Text(
-            text = "כל הכבוד!",
+            text = rtl("כל הכבוד!"),
             style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Black),
         )
         Spacer(modifier = Modifier.height(8.dp))
@@ -96,7 +103,7 @@ fun RewardScreen(
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(
-            text = "תפוצץ/י בלונים!",
+            text = rtl("תפוצץ/י בלונים!"),
             style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
         )
         Spacer(modifier = Modifier.height(18.dp))
@@ -109,7 +116,12 @@ fun RewardScreen(
                 if (alive) {
                     Balloon(
                         color = BALLOON_COLORS[idx % BALLOON_COLORS.size],
-                        onPop = { balloons[idx] = false },
+                        onPop = {
+                            balloons[idx] = false
+                        },
+                        onPopSfx = {
+                            sfx.playFirstAvailable(AudioClips.SfxBalloonPop, volume = 0.8f)
+                        },
                     )
                 }
             }
@@ -127,6 +139,7 @@ fun RewardScreen(
 private fun Balloon(
     color: Color,
     onPop: () -> Unit,
+    onPopSfx: suspend () -> Unit,
 ) {
     var popping by remember { mutableStateOf(false) }
     var visible by remember { mutableStateOf(true) }
@@ -143,6 +156,7 @@ private fun Balloon(
             targetValue = 0.2f,
             animationSpec = androidx.compose.animation.core.tween(durationMillis = 90),
         )
+        onPopSfx()
         visible = false
         onPop()
     }
