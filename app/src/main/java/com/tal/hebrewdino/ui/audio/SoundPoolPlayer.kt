@@ -4,9 +4,11 @@ import android.content.Context
 import android.media.AudioAttributes
 import android.media.SoundPool
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import java.io.IOException
 import java.util.concurrent.ConcurrentHashMap
+import kotlin.coroutines.resume
 
 class SoundPoolPlayer(context: Context) {
     private val appContext = context.applicationContext
@@ -17,12 +19,22 @@ class SoundPoolPlayer(context: Context) {
             .setAudioAttributes(
                 AudioAttributes.Builder()
                     .setUsage(AudioAttributes.USAGE_GAME)
-                    .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
                     .build(),
             )
             .build()
 
-    private val loaded = ConcurrentHashMap<String, Int>()
+    private val loadedSoundIdByPath = ConcurrentHashMap<String, Int>()
+    private val readySoundIds = ConcurrentHashMap<Int, Boolean>()
+    private val pendingLoads = ConcurrentHashMap<Int, MutableList<(Boolean) -> Unit>>()
+
+    init {
+        soundPool.setOnLoadCompleteListener { _, sampleId, status ->
+            val ok = status == 0
+            readySoundIds[sampleId] = ok
+            pendingLoads.remove(sampleId)?.forEach { cb -> cb(ok) }
+        }
+    }
 
     suspend fun play(assetPath: String, volume: Float = 1f) {
         val soundId = loadIfNeeded(assetPath) ?: return
@@ -40,21 +52,51 @@ class SoundPoolPlayer(context: Context) {
 
     fun release() {
         soundPool.release()
-        loaded.clear()
+        loadedSoundIdByPath.clear()
+        readySoundIds.clear()
+        pendingLoads.clear()
     }
 
     private suspend fun loadIfNeeded(assetPath: String): Int? {
-        loaded[assetPath]?.let { return it }
+        loadedSoundIdByPath[assetPath]?.let { existingId ->
+            val ready = readySoundIds[existingId]
+            return if (ready == true) existingId else awaitLoaded(existingId)
+        }
 
-        return withContext(Dispatchers.IO) {
-            try {
-                val afd = appContext.assets.openFd(assetPath)
-                val id = soundPool.load(afd, 1)
-                loaded[assetPath] = id
-                id
-            } catch (_: IOException) {
-                null
+        val id =
+            withContext(Dispatchers.IO) {
+                try {
+                    val afd = appContext.assets.openFd(assetPath)
+                    val newId = soundPool.load(afd, 1)
+                    loadedSoundIdByPath[assetPath] = newId
+                    newId
+                } catch (_: IOException) {
+                    null
+                }
+            } ?: return null
+
+        return awaitLoaded(id)
+    }
+
+    private suspend fun awaitLoaded(soundId: Int): Int? {
+        val ready = readySoundIds[soundId]
+        if (ready == true) return soundId
+        if (ready == false) return null
+
+        val ok =
+            suspendCancellableCoroutine<Boolean> { cont ->
+                val list = pendingLoads.getOrPut(soundId) { mutableListOf() }
+                list.add { success ->
+                    if (cont.isActive) cont.resume(success)
+                }
             }
+        return if (ok) soundId else null
+    }
+
+    suspend fun preload(vararg assetPaths: String) {
+        for (p in assetPaths) {
+            if (p.isBlank()) continue
+            loadIfNeeded(p)
         }
     }
 }

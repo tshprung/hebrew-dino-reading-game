@@ -26,6 +26,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -119,22 +120,23 @@ fun LevelScreen(
     val current = session.currentQuestion
     val totalQuestions = session.totalQuestions
     val questionNumber = session.questionNumber
+    val correctLetter =
+        when (current) {
+            is Question.TapChoiceQuestion -> current.correctAnswer
+            is Question.PopBalloonsQuestion -> current.correctAnswer
+            is Question.DragToEggQuestion -> current.correctAnswer
+            null -> ""
+        }
 
     if (current == null) {
         onComplete(levelId, session.correctCount, session.mistakeCount)
         return
     }
 
-    LaunchedEffect(levelId, session.currentIndex) {
-        feedback = null
-        // Let UI settle a bit before speaking.
-        delay(120)
-        val target =
-            when (current) {
-                is Question.TapChoiceQuestion -> current.correctAnswer
-                is Question.PopBalloonsQuestion -> current.correctAnswer
-                is Question.DragToEggQuestion -> current.correctAnswer
-            }
+    var wrongAttemptsThisQuestion by remember(levelId, session.currentIndex) { mutableStateOf(0) }
+
+    suspend fun speakPrompt() {
+        val target = correctLetter
         val chooseSpecific = AudioClips.chooseLetterClip(target)
         if (chooseSpecific != null) {
             voice.playBlocking(chooseSpecific)
@@ -142,10 +144,18 @@ fun LevelScreen(
             // Fallback: "choose letter" + letter name
             val name = AudioClips.letterNameClip(target)
             voice.playBlocking(AudioClips.VoChooseLetter)
-            if (name != null) {
-                voice.playBlocking(name)
-            }
+            if (name != null) voice.playBlocking(name)
         }
+    }
+
+    LaunchedEffect(levelId, session.currentIndex) {
+        feedback = null
+        wrongAttemptsThisQuestion = 0
+        // Preload SFX so the first play isn't silent.
+        sfx.preload(AudioClips.SfxCorrect, AudioClips.SfxWrong, AudioClips.SfxBalloonPop)
+        // Let UI settle a bit before speaking.
+        delay(120)
+        speakPrompt()
     }
 
     Box(modifier = modifier.fillMaxSize()) {
@@ -218,13 +228,26 @@ fun LevelScreen(
                 is Question.DragToEggQuestion -> "משימה: תגרור/י את האות אל הביצה"
             }
 
-        val eggProgress = (questionNumber - 1).coerceAtLeast(0).toFloat() / totalQuestions.toFloat()
+        // Make progress feel chunky (kids notice each step).
+        val rawProgress = (questionNumber - 1).coerceAtLeast(0).toFloat() / totalQuestions.toFloat()
+        val steps = 5
+        val eggProgress = (kotlin.math.floor(rawProgress * steps) / steps).coerceIn(0f, 1f)
         MissionWidget(
             mission = mission,
             progress = eggProgress,
             modifier = Modifier.width(360.dp),
         )
         Spacer(modifier = Modifier.height(8.dp))
+
+        TextButton(
+            onClick = {
+                if (inputLocked) return@TextButton
+                scope.launch { speakPrompt() }
+            },
+        ) {
+            Text("שמע/י שוב")
+        }
+        Spacer(modifier = Modifier.height(4.dp))
 
         Text(
             text = mission,
@@ -272,10 +295,14 @@ fun LevelScreen(
                 AnswerResult.Wrong -> {
                     scope.launch {
                         inputLocked = true
+                        wrongAttemptsThisQuestion += 1
                         feedback = "כמעט… בוא ננסה שוב"
                         playMistakeAnimation(scope, optionsShake)
                         sfx.playFirstAvailable(AudioClips.SfxWrong, volume = 0.7f)
                         voice.playFirstAvailableBlocking(AudioClips.VoTryAgain2, AudioClips.VoTryAgain1)
+                        if (wrongAttemptsThisQuestion >= 2) {
+                            feedback = rtl("רמז: $correctLetter")
+                        }
                         inputLocked = false
                     }
                 }
