@@ -2,6 +2,7 @@ package com.tal.hebrewdino.ui.screens
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -17,6 +18,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.Button
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -282,8 +284,10 @@ fun LevelScreen(
             is Question.PopBalloonsQuestion -> {
                 PopBalloonsOptions(
                     options = current.options,
+                    correctAnswer = current.correctAnswer,
                     enabled = !inputLocked,
                     shakePx = optionsShake.value,
+                    onPopSfx = { sfx.playFirstAvailable(AudioClips.SfxBalloonPop, volume = 0.8f) },
                     onPick = onPick,
                 )
             }
@@ -328,17 +332,25 @@ private fun LetterOptions(
 @Composable
 private fun PopBalloonsOptions(
     options: List<String>,
+    correctAnswer: String,
     enabled: Boolean,
     shakePx: Float,
+    onPopSfx: suspend () -> Unit,
     onPick: (String) -> Unit,
 ) {
     // Reuses the reward-screen “balloon pop” feel but shows letters inside.
+    val alive = remember(options, correctAnswer) { options.associateWith { true }.toMutableMap() }
+    val scope = rememberCoroutineScope()
+
     FlowRow(
         horizontalArrangement = Arrangement.spacedBy(14.dp, Alignment.CenterHorizontally),
         verticalArrangement = Arrangement.spacedBy(14.dp),
         modifier = Modifier.offset { IntOffset(shakePx.roundToInt(), 0) },
     ) {
         options.forEachIndexed { idx, letter ->
+            val isAlive = alive[letter] == true
+            if (!isAlive) return@forEachIndexed
+
             val color =
                 when (idx % 5) {
                     0 -> Color(0xFFFF6B6B)
@@ -347,17 +359,72 @@ private fun PopBalloonsOptions(
                     3 -> Color(0xFF4D96FF)
                     else -> Color(0xFFB983FF)
                 }
-            Box(
-                modifier =
-                    Modifier
-                        .size(86.dp)
-                        .background(color, shape = CircleShape)
-                        .clickable(enabled = enabled, onClick = { onPick(letter) }),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(text = letter, fontSize = 38.sp, fontWeight = FontWeight.Black, color = Color(0xFF0B2B3D))
-            }
+            PopBalloon(
+                letter = letter,
+                color = color,
+                enabled = enabled,
+                shouldPop = letter == correctAnswer,
+                onPop = {
+                    // Only pop the correct balloon (keeps retry possible).
+                    alive[letter] = false
+                    scope.launch { onPopSfx() }
+                    onPick(letter)
+                },
+                onPickWithoutPop = { onPick(letter) },
+            )
         }
+    }
+}
+
+@Composable
+private fun PopBalloon(
+    letter: String,
+    color: Color,
+    enabled: Boolean,
+    shouldPop: Boolean,
+    onPop: () -> Unit,
+    onPickWithoutPop: () -> Unit,
+) {
+    var popping by remember(letter) { mutableStateOf(false) }
+    var visible by remember(letter) { mutableStateOf(true) }
+    val scale = remember(letter) { androidx.compose.animation.core.Animatable(1f) }
+
+    LaunchedEffect(popping) {
+        if (!popping) return@LaunchedEffect
+        scale.snapTo(1f)
+        scale.animateTo(
+            targetValue = 1.22f,
+            animationSpec = androidx.compose.animation.core.tween(durationMillis = 110),
+        )
+        scale.animateTo(
+            targetValue = 0.15f,
+            animationSpec = androidx.compose.animation.core.tween(durationMillis = 90),
+        )
+        visible = false
+        onPop()
+    }
+
+    if (!visible) return
+
+    Box(
+        modifier =
+            Modifier
+                .size(86.dp)
+                .background(color, shape = CircleShape)
+                .scale(scale.value)
+                .clickable(
+                    enabled = enabled && !popping,
+                    onClick = {
+                        if (shouldPop) {
+                            popping = true
+                        } else {
+                            onPickWithoutPop()
+                        }
+                    },
+                ),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(text = letter, fontSize = 38.sp, fontWeight = FontWeight.Black, color = Color(0xFF0B2B3D))
     }
 }
 
@@ -369,74 +436,114 @@ private fun DragToEggOptions(
     shakePx: Float,
     onDrop: (String) -> Unit,
 ) {
+    var containerRect by remember { mutableStateOf<Rect?>(null) }
     var eggRect by remember { mutableStateOf<Rect?>(null) }
     var draggingLetter by remember { mutableStateOf<String?>(null) }
     var dragPosInRoot by remember { mutableStateOf<Offset?>(null) }
 
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        // Drop target (egg)
-        Box(
-            modifier =
-                Modifier
-                    .size(120.dp)
-                    .onGloballyPositioned { coords ->
-                        eggRect = coords.boundsInRoot()
+    val hoveringEgg = eggRect != null && dragPosInRoot != null && eggRect!!.contains(dragPosInRoot!!)
+
+    Box(
+        modifier =
+            Modifier.onGloballyPositioned { containerRect = it.boundsInRoot() },
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            // Drop target (egg)
+            Box(
+                modifier =
+                    Modifier
+                        .size(120.dp)
+                        .onGloballyPositioned { coords ->
+                            eggRect = coords.boundsInRoot()
+                        }
+                        .background(
+                            if (hoveringEgg) Color(0xFFFFF3C4).copy(alpha = 0.90f) else Color.White.copy(alpha = 0.75f),
+                            shape = CircleShape,
+                        ),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(text = "🥚", fontSize = 56.sp)
+            }
+
+            Spacer(modifier = Modifier.height(18.dp))
+
+            // Draggables
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.offset { IntOffset(shakePx.roundToInt(), 0) },
+            ) {
+                options.forEach { letter ->
+                    var coords: LayoutCoordinates? by remember(letter) { mutableStateOf(null) }
+                    val isDraggingThis = draggingLetter == letter
+
+                    Box(
+                        modifier =
+                            Modifier
+                                .size(84.dp)
+                                .background(
+                                    Color(0xFFF3F7FF).copy(alpha = if (isDraggingThis) 0.35f else 0.95f),
+                                    shape = CircleShape,
+                                )
+                                .onGloballyPositioned { coords = it }
+                                .pointerInput(enabled, letter) {
+                                    if (!enabled) return@pointerInput
+                                    detectDragGestures(
+                                        onDragStart = {
+                                            draggingLetter = letter
+                                            dragPosInRoot = coords?.localToRoot(Offset(42f, 42f))
+                                        },
+                                        onDrag = { change, _ ->
+                                            change.consume()
+                                            val c = coords
+                                            if (c != null) {
+                                                dragPosInRoot = c.localToRoot(change.position)
+                                            }
+                                        },
+                                        onDragEnd = {
+                                            val rect = eggRect
+                                            val pos = dragPosInRoot
+                                            if (rect != null && pos != null && rect.contains(pos)) {
+                                                onDrop(letter)
+                                            }
+                                            draggingLetter = null
+                                            dragPosInRoot = null
+                                        },
+                                        onDragCancel = {
+                                            draggingLetter = null
+                                            dragPosInRoot = null
+                                        },
+                                    )
+                                }
+                                .clickable(enabled = enabled) {
+                                    // Fallback: allow tap to attempt (useful for accessibility / if drag is hard).
+                                    onDrop(letter)
+                                },
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(text = letter, fontSize = 38.sp, fontWeight = FontWeight.Black, color = Color(0xFF0B2B3D))
                     }
-                    .background(Color.White.copy(alpha = 0.75f), shape = CircleShape),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(text = "🥚", fontSize = 56.sp)
+                }
+            }
         }
 
-        Spacer(modifier = Modifier.height(18.dp))
-
-        // Draggables
-        FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-            modifier = Modifier.offset { IntOffset(shakePx.roundToInt(), 0) },
-        ) {
-            options.forEach { letter ->
-                var coords: LayoutCoordinates? by remember(letter) { mutableStateOf(null) }
-                Box(
-                    modifier =
-                        Modifier
-                            .size(84.dp)
-                            .background(Color(0xFFF3F7FF).copy(alpha = 0.95f), shape = CircleShape)
-                            .onGloballyPositioned { coords = it }
-                            .pointerInput(enabled, letter) {
-                                if (!enabled) return@pointerInput
-                                detectDragGestures(
-                                    onDragStart = {
-                                        draggingLetter = letter
-                                        dragPosInRoot = null
-                                    },
-                                    onDrag = { change, delta ->
-                                        change.consume()
-                                        val c = coords
-                                        if (c != null) {
-                                            dragPosInRoot = c.localToRoot(change.position)
-                                        }
-                                    },
-                                    onDragEnd = {
-                                        val rect = eggRect
-                                        val pos = dragPosInRoot
-                                        if (rect != null && pos != null && rect.contains(pos)) {
-                                            onDrop(letter)
-                                        }
-                                        draggingLetter = null
-                                        dragPosInRoot = null
-                                    },
-                                    onDragCancel = {
-                                        draggingLetter = null
-                                        dragPosInRoot = null
-                                    },
-                                )
-                            },
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(text = letter, fontSize = 38.sp, fontWeight = FontWeight.Black, color = Color(0xFF0B2B3D))
-                }
+        // Floating dragged letter (visual feedback)
+        val cRect = containerRect
+        val posRoot = dragPosInRoot
+        val dragging = draggingLetter
+        if (cRect != null && posRoot != null && dragging != null) {
+            val local = posRoot - cRect.topLeft
+            val half = 42
+            Box(
+                modifier =
+                    Modifier
+                        .offset { IntOffset((local.x - half).toInt(), (local.y - half).toInt()) }
+                        .size(84.dp)
+                        .background(Color.White.copy(alpha = 0.92f), shape = CircleShape)
+                        .border(2.dp, Color(0xFFFFC400), CircleShape),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(text = dragging, fontSize = 38.sp, fontWeight = FontWeight.Black, color = Color(0xFF0B2B3D))
             }
         }
     }
