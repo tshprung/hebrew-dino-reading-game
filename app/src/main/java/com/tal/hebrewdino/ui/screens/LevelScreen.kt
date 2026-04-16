@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.material3.Button
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -41,6 +42,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -122,6 +129,7 @@ fun LevelScreen(
             when (current) {
                 is Question.TapChoiceQuestion -> current.correctAnswer
                 is Question.PopBalloonsQuestion -> current.correctAnswer
+                is Question.DragToEggQuestion -> current.correctAnswer
             }
         val chooseSpecific = AudioClips.chooseLetterClip(target)
         if (chooseSpecific != null) {
@@ -198,12 +206,28 @@ fun LevelScreen(
         )
 
         Spacer(modifier = Modifier.height(16.dp))
+
+        val mission =
+            when (current) {
+                is Question.TapChoiceQuestion -> "משימה: תבחר/י את האות הנכונה"
+                is Question.PopBalloonsQuestion -> "משימה: תפוצץ/י בלון עם האות הנכונה"
+                is Question.DragToEggQuestion -> "משימה: תגרור/י את האות אל הביצה"
+            }
+        Text(
+            text = mission,
+            style = MaterialTheme.typography.titleMedium,
+            color = Color(0xFF0B2B3D),
+            textAlign = TextAlign.Center,
+        )
+        Spacer(modifier = Modifier.height(10.dp))
+
         Text(
             text =
                 "בחר את האות: " +
                     when (current) {
                         is Question.TapChoiceQuestion -> current.correctAnswer
                         is Question.PopBalloonsQuestion -> current.correctAnswer
+                        is Question.DragToEggQuestion -> current.correctAnswer
                     },
             style = MaterialTheme.typography.titleLarge,
             textAlign = TextAlign.Center,
@@ -261,6 +285,14 @@ fun LevelScreen(
                     enabled = !inputLocked,
                     shakePx = optionsShake.value,
                     onPick = onPick,
+                )
+            }
+            is Question.DragToEggQuestion -> {
+                DragToEggOptions(
+                    options = current.options,
+                    enabled = !inputLocked,
+                    shakePx = optionsShake.value,
+                    onDrop = onPick,
                 )
             }
         }
@@ -324,6 +356,87 @@ private fun PopBalloonsOptions(
                 contentAlignment = Alignment.Center,
             ) {
                 Text(text = letter, fontSize = 38.sp, fontWeight = FontWeight.Black, color = Color(0xFF0B2B3D))
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun DragToEggOptions(
+    options: List<String>,
+    enabled: Boolean,
+    shakePx: Float,
+    onDrop: (String) -> Unit,
+) {
+    var eggRect by remember { mutableStateOf<Rect?>(null) }
+    var draggingLetter by remember { mutableStateOf<String?>(null) }
+    var dragPosInRoot by remember { mutableStateOf<Offset?>(null) }
+
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        // Drop target (egg)
+        Box(
+            modifier =
+                Modifier
+                    .size(120.dp)
+                    .onGloballyPositioned { coords ->
+                        eggRect = coords.boundsInRoot()
+                    }
+                    .background(Color.White.copy(alpha = 0.75f), shape = CircleShape),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(text = "🥚", fontSize = 56.sp)
+        }
+
+        Spacer(modifier = Modifier.height(18.dp))
+
+        // Draggables
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.offset { IntOffset(shakePx.roundToInt(), 0) },
+        ) {
+            options.forEach { letter ->
+                var coords: LayoutCoordinates? by remember(letter) { mutableStateOf(null) }
+                Box(
+                    modifier =
+                        Modifier
+                            .size(84.dp)
+                            .background(Color(0xFFF3F7FF).copy(alpha = 0.95f), shape = CircleShape)
+                            .onGloballyPositioned { coords = it }
+                            .pointerInput(enabled, letter) {
+                                if (!enabled) return@pointerInput
+                                detectDragGestures(
+                                    onDragStart = {
+                                        draggingLetter = letter
+                                        dragPosInRoot = null
+                                    },
+                                    onDrag = { change, delta ->
+                                        change.consume()
+                                        val c = coords
+                                        if (c != null) {
+                                            dragPosInRoot = c.localToRoot(change.position)
+                                        }
+                                    },
+                                    onDragEnd = {
+                                        val rect = eggRect
+                                        val pos = dragPosInRoot
+                                        if (rect != null && pos != null && rect.contains(pos)) {
+                                            onDrop(letter)
+                                        }
+                                        draggingLetter = null
+                                        dragPosInRoot = null
+                                    },
+                                    onDragCancel = {
+                                        draggingLetter = null
+                                        dragPosInRoot = null
+                                    },
+                                )
+                            },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(text = letter, fontSize = 38.sp, fontWeight = FontWeight.Black, color = Color(0xFF0B2B3D))
+                }
             }
         }
     }

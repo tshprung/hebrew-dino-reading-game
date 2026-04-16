@@ -10,5 +10,10 @@ sealed class Question {
         val correctAnswer: String,
         val options: List<String>,
     ) : Question()
+
+    data class DragToEggQuestion(
+        val correctAnswer: String,
+        val options: List<String>,
+    ) : Question()
 }
 

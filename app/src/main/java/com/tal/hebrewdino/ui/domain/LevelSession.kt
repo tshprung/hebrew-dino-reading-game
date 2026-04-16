@@ -12,6 +12,7 @@ class LevelSession(
     private val questionCount: Int,
     private val tapGenerator: TapChoiceGenerator = TapChoiceGenerator(),
     private val popGenerator: PopBalloonsGenerator = PopBalloonsGenerator(),
+    private val dragGenerator: DragToEggGenerator = DragToEggGenerator(),
 ) {
     private val rnd = Random.Default
     private val maxGroupIndex = max(0, LetterPool.groups.size - 1)
@@ -55,7 +56,14 @@ class LevelSession(
                 val optionCount = 3 // MVP: difficulty = group only
 
                 _currentQuestion =
-                    if (shouldUsePopQuestion()) {
+                    if (shouldUseDragQuestion()) {
+                        dragGenerator.generate(
+                            rnd = rnd,
+                            group = group,
+                            correctAnswer = correct,
+                            optionCount = optionCount,
+                        )
+                    } else if (shouldUsePopQuestion()) {
                         popGenerator.generate(
                             rnd = rnd,
                             group = group,
@@ -80,6 +88,7 @@ class LevelSession(
             when (q) {
                 is Question.TapChoiceQuestion -> answer == q.correctAnswer
                 is Question.PopBalloonsQuestion -> answer == q.correctAnswer
+                is Question.DragToEggQuestion -> answer == q.correctAnswer
             }
 
         if (correct) {
@@ -143,6 +152,11 @@ class LevelSession(
         // Mix types lightly: about 30% pop-balloons questions.
         // (Keeps MVP stable while adding variety.)
         return rnd.nextInt(100) < 30
+    }
+
+    private fun shouldUseDragQuestion(): Boolean {
+        // Slightly rarer than pop; drag is "bigger" interaction.
+        return rnd.nextInt(100) < 20
     }
 }
 
