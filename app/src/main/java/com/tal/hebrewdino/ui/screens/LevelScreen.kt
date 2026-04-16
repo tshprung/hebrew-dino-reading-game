@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -16,6 +17,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.material3.LocalContentColor
@@ -215,6 +217,15 @@ fun LevelScreen(
                 is Question.PopBalloonsQuestion -> "משימה: תפוצץ/י בלון עם האות הנכונה"
                 is Question.DragToEggQuestion -> "משימה: תגרור/י את האות אל הביצה"
             }
+
+        val eggProgress = (questionNumber - 1).coerceAtLeast(0).toFloat() / totalQuestions.toFloat()
+        MissionWidget(
+            mission = mission,
+            progress = eggProgress,
+            modifier = Modifier.width(360.dp),
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+
         Text(
             text = mission,
             style = MaterialTheme.typography.titleMedium,
@@ -425,6 +436,37 @@ private fun PopBalloon(
         contentAlignment = Alignment.Center,
     ) {
         Text(text = letter, fontSize = 38.sp, fontWeight = FontWeight.Black, color = Color(0xFF0B2B3D))
+    }
+}
+
+@Composable
+private fun MissionWidget(
+    mission: String,
+    progress: Float,
+    modifier: Modifier = Modifier,
+) {
+    // Tiny “game loop” context: egg cracks as you progress through the level.
+    val p = progress.coerceIn(0f, 1f)
+    val cracks =
+        when {
+            p < 0.34f -> ""
+            p < 0.67f -> " ᐟ"
+            else -> " ᐟᐟ"
+        }
+    Box(
+        modifier =
+            modifier
+                .background(Color.White.copy(alpha = 0.70f), shape = RoundedCornerShape(18.dp))
+                .padding(horizontal = 14.dp, vertical = 10.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text(text = "🥚$cracks", fontSize = 28.sp)
+            LinearProgressIndicator(
+                progress = { p },
+                modifier = Modifier.width(180.dp),
+            )
+        }
     }
 }
 
