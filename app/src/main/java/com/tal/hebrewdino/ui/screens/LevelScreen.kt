@@ -73,6 +73,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
+import kotlin.collections.mutableSetOf
 
 @Composable
 fun LevelScreen(
@@ -81,14 +82,20 @@ fun LevelScreen(
     onComplete: (levelId: Int, correctCount: Int, mistakeCount: Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    // Keep the same feel as before: question count scales with level id.
+    // Chapter 1 pacing: short early levels, longer later.
     val questionCount =
         remember(levelId) {
             when (levelId) {
-                1, 2 -> 6
-                3, 4 -> 8
-                5, 6, 7 -> 10
-                else -> 12
+                1 -> 3
+                2 -> 4
+                3 -> 5
+                4 -> 5
+                5 -> 6
+                6 -> 6
+                7 -> 7
+                8 -> 7
+                9 -> 8
+                else -> 8
             }
         }
     val session = remember(levelId) { LevelSession(questionCount = questionCount) }
@@ -133,6 +140,7 @@ fun LevelScreen(
         return
     }
 
+    val taughtLetters = remember(levelId) { mutableSetOf<String>() }
     var wrongAttemptsThisQuestion by remember(levelId, session.currentIndex) { mutableStateOf(0) }
 
     suspend fun speakPrompt() {
@@ -143,6 +151,12 @@ fun LevelScreen(
         } else {
             // Fallback: "choose letter" + letter name
             val name = AudioClips.letterNameClip(target)
+            if (target !in taughtLetters) {
+                taughtLetters.add(target)
+                if (name != null) {
+                    voice.playBlocking(name)
+                }
+            }
             voice.playBlocking(AudioClips.VoChooseLetter)
             if (name != null) voice.playBlocking(name)
         }
