@@ -47,6 +47,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.input.pointer.pointerInput
@@ -470,25 +473,55 @@ private fun PopBalloon(
 
     if (!visible) return
 
-    Box(
-        modifier =
-            Modifier
-                .size(86.dp)
-                .background(color, shape = CircleShape)
-                .scale(scale.value)
-                .clickable(
-                    enabled = enabled && !popping,
-                    onClick = {
-                        if (shouldPop) {
-                            popping = true
-                        } else {
-                            onPickWithoutPop()
-                        }
-                    },
-                ),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(text = letter, fontSize = 38.sp, fontWeight = FontWeight.Black, color = Color(0xFF0B2B3D))
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Box(
+            modifier =
+                Modifier
+                    .size(86.dp)
+                    .scale(scale.value)
+                    .clickable(
+                        enabled = enabled && !popping,
+                        onClick = {
+                            if (shouldPop) popping = true else onPickWithoutPop()
+                        },
+                    ),
+            contentAlignment = Alignment.Center,
+        ) {
+            // Balloon body
+            androidx.compose.foundation.Canvas(modifier = Modifier.fillMaxSize()) {
+                val w = size.width
+                val h = size.height
+                val center = Offset(w / 2f, h / 2f)
+                val r = w * 0.48f
+
+                drawCircle(color = color, radius = r, center = center)
+                // Shine
+                drawCircle(
+                    brush =
+                        Brush.radialGradient(
+                            colors = listOf(Color.White.copy(alpha = 0.55f), Color.Transparent),
+                            center = Offset(center.x - r * 0.25f, center.y - r * 0.25f),
+                            radius = r * 0.9f,
+                        ),
+                    radius = r,
+                    center = center,
+                )
+                // Knot
+                drawCircle(color = Color(0xFF0B2B3D).copy(alpha = 0.18f), radius = r * 0.08f, center = Offset(center.x, center.y + r * 0.55f))
+            }
+
+            Text(text = letter, fontSize = 38.sp, fontWeight = FontWeight.Black, color = Color(0xFF0B2B3D))
+        }
+
+        // String
+        androidx.compose.foundation.Canvas(modifier = Modifier.width(2.dp).height(18.dp)) {
+            drawLine(
+                color = Color(0xFF0B2B3D).copy(alpha = 0.30f),
+                start = Offset(size.width / 2f, 0f),
+                end = Offset(size.width / 2f, size.height),
+                strokeWidth = 2f,
+            )
+        }
     }
 }
 
@@ -498,26 +531,112 @@ private fun MissionWidget(
     progress: Float,
     modifier: Modifier = Modifier,
 ) {
-    // Tiny “game loop” context: egg cracks as you progress through the level.
     val p = progress.coerceIn(0f, 1f)
-    val cracks =
+    val crackStage =
         when {
-            p < 0.34f -> ""
-            p < 0.67f -> " ᐟ"
-            else -> " ᐟᐟ"
+            p < 0.25f -> 0
+            p < 0.50f -> 1
+            p < 0.75f -> 2
+            else -> 3
         }
+
     Box(
         modifier =
             modifier
-                .background(Color.White.copy(alpha = 0.70f), shape = RoundedCornerShape(18.dp))
+                .background(Color.White.copy(alpha = 0.72f), shape = RoundedCornerShape(18.dp))
+                .border(1.dp, Color.White.copy(alpha = 0.75f), RoundedCornerShape(18.dp))
                 .padding(horizontal = 14.dp, vertical = 10.dp),
-        contentAlignment = Alignment.Center,
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text(text = "🥚$cracks", fontSize = 28.sp)
-            LinearProgressIndicator(
-                progress = { p },
-                modifier = Modifier.width(180.dp),
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            EggGraphic(stage = crackStage, modifier = Modifier.size(42.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                LinearProgressIndicator(
+                    progress = { p },
+                    modifier = Modifier.fillMaxSize().height(10.dp),
+                    color = Color(0xFFFFC400),
+                    trackColor = Color(0xFF0B2B3D).copy(alpha = 0.12f),
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = mission,
+                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                    color = Color(0xFF0B2B3D),
+                    textAlign = TextAlign.Start,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun EggGraphic(stage: Int, modifier: Modifier = Modifier) {
+    // Simple drawn egg with crack stages (no asset needed).
+    androidx.compose.foundation.Canvas(modifier = modifier) {
+        val w = size.width
+        val h = size.height
+        val center = Offset(w / 2f, h / 2f)
+        val eggRadiusX = w * 0.36f
+        val eggRadiusY = h * 0.44f
+
+        // Soft glow as we progress.
+        if (stage >= 2) {
+            drawCircle(
+                brush =
+                    Brush.radialGradient(
+                        colors = listOf(Color(0x66FFC400), Color.Transparent),
+                        center = center,
+                        radius = w * 0.7f,
+                    ),
+                radius = w * 0.45f,
+                center = center,
+            )
+        }
+
+        // Egg body gradient
+        drawOval(
+            brush =
+                Brush.verticalGradient(
+                    listOf(Color(0xFFFFFBF2), Color(0xFFF1E3C6)),
+                ),
+            topLeft = Offset(center.x - eggRadiusX, center.y - eggRadiusY),
+            size = androidx.compose.ui.geometry.Size(eggRadiusX * 2f, eggRadiusY * 2f),
+        )
+        drawOval(
+            color = Color(0xFF8B6B3E).copy(alpha = 0.35f),
+            topLeft = Offset(center.x - eggRadiusX, center.y - eggRadiusY),
+            size = androidx.compose.ui.geometry.Size(eggRadiusX * 2f, eggRadiusY * 2f),
+            style = Stroke(width = w * 0.06f),
+        )
+
+        if (stage >= 1) {
+            // A simple crack line
+            val y0 = center.y - eggRadiusY * 0.15f
+            val y1 = center.y + eggRadiusY * 0.25f
+            val x = center.x
+            val pts =
+                listOf(
+                    Offset(x - w * 0.06f, y0),
+                    Offset(x + w * 0.02f, y0 + h * 0.08f),
+                    Offset(x - w * 0.03f, y0 + h * 0.16f),
+                    Offset(x + w * 0.05f, y0 + h * 0.24f),
+                    Offset(x - w * 0.01f, y1),
+                )
+            for (i in 0 until pts.size - 1) {
+                drawLine(
+                    color = Color(0xFF6B4A2A),
+                    start = pts[i],
+                    end = pts[i + 1],
+                    strokeWidth = w * 0.05f,
+                )
+            }
+        }
+        if (stage >= 3) {
+            // A second crack
+            drawLine(
+                color = Color(0xFF6B4A2A),
+                start = Offset(center.x - w * 0.10f, center.y + h * 0.02f),
+                end = Offset(center.x + w * 0.12f, center.y + h * 0.18f),
+                strokeWidth = w * 0.04f,
             )
         }
     }
@@ -535,6 +654,8 @@ private fun DragToEggOptions(
     var eggRect by remember { mutableStateOf<Rect?>(null) }
     var draggingLetter by remember { mutableStateOf<String?>(null) }
     var dragPosInRoot by remember { mutableStateOf<Offset?>(null) }
+    val snapAnim = remember { androidx.compose.animation.core.Animatable(0f) }
+    val scope = rememberCoroutineScope()
 
     val hoveringEgg = eggRect != null && dragPosInRoot != null && eggRect!!.contains(dragPosInRoot!!)
 
@@ -599,6 +720,10 @@ private fun DragToEggOptions(
                                             val rect = eggRect
                                             val pos = dragPosInRoot
                                             if (rect != null && pos != null && rect.contains(pos)) {
+                                                scope.launch {
+                                                    snapAnim.snapTo(0f)
+                                                    snapAnim.animateTo(1f, animationSpec = androidx.compose.animation.core.tween(140))
+                                                }
                                                 onDrop(letter)
                                             }
                                             draggingLetter = null
@@ -629,10 +754,23 @@ private fun DragToEggOptions(
         if (cRect != null && posRoot != null && dragging != null) {
             val local = posRoot - cRect.topLeft
             val half = 42
+            val egg = eggRect
+            val snapT = snapAnim.value
+            val snapTargetLocal =
+                if (egg != null) {
+                    (egg.center - cRect.topLeft) - Offset(half.toFloat(), half.toFloat())
+                } else {
+                    Offset((local.x - half), (local.y - half))
+                }
+            val start = Offset((local.x - half), (local.y - half))
+            val blended = Offset(
+                x = start.x + (snapTargetLocal.x - start.x) * snapT,
+                y = start.y + (snapTargetLocal.y - start.y) * snapT,
+            )
             Box(
                 modifier =
                     Modifier
-                        .offset { IntOffset((local.x - half).toInt(), (local.y - half).toInt()) }
+                        .offset { IntOffset(blended.x.toInt(), blended.y.toInt()) }
                         .size(84.dp)
                         .background(Color.White.copy(alpha = 0.92f), shape = CircleShape)
                         .border(2.dp, Color(0xFFFFC400), CircleShape),
