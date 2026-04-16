@@ -73,7 +73,6 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
-import kotlin.collections.mutableSetOf
 
 @Composable
 fun LevelScreen(
@@ -152,14 +151,13 @@ fun LevelScreen(
         return
     }
 
-    val taughtLetters = remember(levelId) { mutableSetOf<String>() }
     var wrongAttemptsThisQuestion by remember(levelId, session.currentIndex) { mutableStateOf(0) }
 
     suspend fun speakPrompt() {
         val target = correctLetter
         val chooseSpecific = AudioClips.chooseLetterClip(target)
         val name = AudioClips.letterNameClip(target)
-        val firstTime = taughtLetters.add(target)
+        val firstTime = session.consumeFirstTimeSeen(target)
 
         // Teaching moment: first time this letter appears, say its name (if we have it).
         if (firstTime && name != null) {

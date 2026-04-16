@@ -20,6 +20,7 @@ class LevelSession(
 
     private var lastCorrectAnswer: String? = null
     private var bag: MutableList<String> = mutableListOf()
+    private val seenLetters: MutableSet<String> = mutableSetOf()
 
     var currentIndex by mutableIntStateOf(0)
         private set
@@ -119,6 +120,12 @@ class LevelSession(
         currentIndex += 1
         _currentQuestion = null
     }
+
+    /**
+     * Returns true only the first time this letter is seen in this session.
+     * (We intentionally do NOT persist this between sessions.)
+     */
+    fun consumeFirstTimeSeen(letter: String): Boolean = seenLetters.add(letter)
 
     private fun moveGroup(delta: Int) {
         val newIndex = min(maxGroupIndex, max(0, groupIndex + delta))
