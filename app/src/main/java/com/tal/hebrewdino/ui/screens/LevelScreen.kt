@@ -14,6 +14,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.clickable
 import androidx.compose.material3.Button
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -53,6 +55,7 @@ import com.tal.hebrewdino.ui.data.CharacterPrefs
 import com.tal.hebrewdino.ui.data.DinoCharacter
 import com.tal.hebrewdino.ui.domain.AnswerResult
 import com.tal.hebrewdino.ui.domain.LevelSession
+import com.tal.hebrewdino.ui.domain.Question
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -115,7 +118,11 @@ fun LevelScreen(
         feedback = null
         // Let UI settle a bit before speaking.
         delay(120)
-        val target = current.correctAnswer
+        val target =
+            when (current) {
+                is Question.TapChoiceQuestion -> current.correctAnswer
+                is Question.PopBalloonsQuestion -> current.correctAnswer
+            }
         val chooseSpecific = AudioClips.chooseLetterClip(target)
         if (chooseSpecific != null) {
             voice.playBlocking(chooseSpecific)
@@ -192,7 +199,12 @@ fun LevelScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
         Text(
-            text = "בחר את האות: ${current.correctAnswer}",
+            text =
+                "בחר את האות: " +
+                    when (current) {
+                        is Question.TapChoiceQuestion -> current.correctAnswer
+                        is Question.PopBalloonsQuestion -> current.correctAnswer
+                    },
             style = MaterialTheme.typography.titleLarge,
             textAlign = TextAlign.Center,
         )
@@ -206,13 +218,9 @@ fun LevelScreen(
         }
         Spacer(modifier = Modifier.height(24.dp))
 
-        LetterOptions(
-            options = current.options,
-            enabled = !inputLocked,
-            shakePx = optionsShake.value,
-            onPick = { picked ->
-                when (session.submitAnswer(picked)) {
-                    AnswerResult.Correct -> {
+        val onPick: (String) -> Unit = { picked ->
+            when (session.submitAnswer(picked)) {
+                AnswerResult.Correct -> {
                     // Advance ONLY after "good job" finishes (no overlaps).
                     scope.launch {
                         inputLocked = true
@@ -223,8 +231,8 @@ fun LevelScreen(
                         session.nextQuestion()
                         inputLocked = false
                     }
-                    }
-                    AnswerResult.Wrong -> {
+                }
+                AnswerResult.Wrong -> {
                     scope.launch {
                         inputLocked = true
                         feedback = "כמעט… בוא ננסה שוב"
@@ -233,11 +241,29 @@ fun LevelScreen(
                         voice.playFirstAvailableBlocking(AudioClips.VoTryAgain2, AudioClips.VoTryAgain1)
                         inputLocked = false
                     }
-                    }
-                    AnswerResult.Finished -> {}
                 }
-            },
-        )
+                AnswerResult.Finished -> {}
+            }
+        }
+
+        when (current) {
+            is Question.TapChoiceQuestion -> {
+                LetterOptions(
+                    options = current.options,
+                    enabled = !inputLocked,
+                    shakePx = optionsShake.value,
+                    onPick = onPick,
+                )
+            }
+            is Question.PopBalloonsQuestion -> {
+                PopBalloonsOptions(
+                    options = current.options,
+                    enabled = !inputLocked,
+                    shakePx = optionsShake.value,
+                    onPick = onPick,
+                )
+            }
+        }
 
         Spacer(modifier = Modifier.height(32.dp))
         OutlinedButton(onClick = onBack) { Text("חזרה למפה") }
@@ -261,6 +287,43 @@ private fun LetterOptions(
         options.forEach { letter ->
             Button(onClick = { onPick(letter) }, enabled = enabled) {
                 Text(text = letter, fontSize = 42.sp, fontWeight = FontWeight.Black)
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun PopBalloonsOptions(
+    options: List<String>,
+    enabled: Boolean,
+    shakePx: Float,
+    onPick: (String) -> Unit,
+) {
+    // Reuses the reward-screen “balloon pop” feel but shows letters inside.
+    FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(14.dp, Alignment.CenterHorizontally),
+        verticalArrangement = Arrangement.spacedBy(14.dp),
+        modifier = Modifier.offset { IntOffset(shakePx.roundToInt(), 0) },
+    ) {
+        options.forEachIndexed { idx, letter ->
+            val color =
+                when (idx % 5) {
+                    0 -> Color(0xFFFF6B6B)
+                    1 -> Color(0xFFFFD93D)
+                    2 -> Color(0xFF6BCB77)
+                    3 -> Color(0xFF4D96FF)
+                    else -> Color(0xFFB983FF)
+                }
+            Box(
+                modifier =
+                    Modifier
+                        .size(86.dp)
+                        .background(color, shape = CircleShape)
+                        .clickable(enabled = enabled, onClick = { onPick(letter) }),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(text = letter, fontSize = 38.sp, fontWeight = FontWeight.Black, color = Color(0xFF0B2B3D))
             }
         }
     }

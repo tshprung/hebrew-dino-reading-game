@@ -5,5 +5,10 @@ sealed class Question {
         val correctAnswer: String,
         val options: List<String>,
     ) : Question()
+
+    data class PopBalloonsQuestion(
+        val correctAnswer: String,
+        val options: List<String>,
+    ) : Question()
 }
 

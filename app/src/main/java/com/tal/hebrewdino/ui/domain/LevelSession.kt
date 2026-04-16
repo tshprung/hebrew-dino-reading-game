@@ -10,7 +10,8 @@ import kotlin.random.Random
 
 class LevelSession(
     private val questionCount: Int,
-    private val generator: TapChoiceGenerator = TapChoiceGenerator(),
+    private val tapGenerator: TapChoiceGenerator = TapChoiceGenerator(),
+    private val popGenerator: PopBalloonsGenerator = PopBalloonsGenerator(),
 ) {
     private val rnd = Random.Default
     private val maxGroupIndex = max(0, LetterPool.groups.size - 1)
@@ -39,32 +40,47 @@ class LevelSession(
     var groupIndex by mutableIntStateOf(0)
         private set
 
-    private var _currentQuestion: Question.TapChoiceQuestion? by mutableStateOf(null)
+    private var _currentQuestion: Question? by mutableStateOf(null)
 
     val totalQuestions: Int get() = questionCount
 
     val questionNumber: Int get() = currentIndex + 1
 
-    val currentQuestion: Question.TapChoiceQuestion?
+    val currentQuestion: Question?
         get() {
             if (currentIndex >= questionCount) return null
             if (_currentQuestion == null) {
-                val group = generator.group(groupIndex)
+                val group = tapGenerator.group(groupIndex)
                 val correct = nextBalancedCorrect(group)
+                val optionCount = 3 // MVP: difficulty = group only
+
                 _currentQuestion =
-                    generator.generateTapChoiceQuestion(
-                        rnd = rnd,
-                        group = group,
-                        correctAnswer = correct,
-                        optionCount = 3, // MVP: difficulty = group only
-                    )
+                    if (shouldUsePopQuestion()) {
+                        popGenerator.generate(
+                            rnd = rnd,
+                            group = group,
+                            correctAnswer = correct,
+                            optionCount = optionCount,
+                        )
+                    } else {
+                        tapGenerator.generateTapChoiceQuestion(
+                            rnd = rnd,
+                            group = group,
+                            correctAnswer = correct,
+                            optionCount = optionCount,
+                        )
+                    }
             }
             return _currentQuestion
         }
 
     fun submitAnswer(answer: String): AnswerResult {
         val q = currentQuestion ?: return AnswerResult.Finished
-        val correct = answer == q.correctAnswer
+        val correct =
+            when (q) {
+                is Question.TapChoiceQuestion -> answer == q.correctAnswer
+                is Question.PopBalloonsQuestion -> answer == q.correctAnswer
+            }
 
         if (correct) {
             correctCount += 1
@@ -121,6 +137,12 @@ class LevelSession(
 
         lastCorrectAnswer = candidate
         return candidate
+    }
+
+    private fun shouldUsePopQuestion(): Boolean {
+        // Mix types lightly: about 30% pop-balloons questions.
+        // (Keeps MVP stable while adding variety.)
+        return rnd.nextInt(100) < 30
     }
 }
 
