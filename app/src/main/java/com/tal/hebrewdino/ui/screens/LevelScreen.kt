@@ -98,7 +98,19 @@ fun LevelScreen(
                 else -> 8
             }
         }
-    val session = remember(levelId) { LevelSession(questionCount = questionCount) }
+    val initialGroupIndex =
+        remember(levelId) {
+            when (levelId) {
+                1, 2 -> 0
+                3, 4 -> 1
+                5, 6 -> 2
+                7 -> 3
+                8 -> 4
+                9 -> 5
+                else -> 6
+            }
+        }
+    val session = remember(levelId) { LevelSession(questionCount = questionCount, initialGroupIndex = initialGroupIndex) }
     var feedback by remember(levelId) { mutableStateOf<String?>(null) }
     fun rtl(text: String): String = "\u200F$text"
 
@@ -146,19 +158,21 @@ fun LevelScreen(
     suspend fun speakPrompt() {
         val target = correctLetter
         val chooseSpecific = AudioClips.chooseLetterClip(target)
+        val name = AudioClips.letterNameClip(target)
+        val firstTime = taughtLetters.add(target)
+
+        // Teaching moment: first time this letter appears, say its name (if we have it).
+        if (firstTime && name != null) {
+            voice.playBlocking(name)
+            delay(90)
+        }
+
         if (chooseSpecific != null) {
             voice.playBlocking(chooseSpecific)
         } else {
             // Fallback: "choose letter" + letter name
-            val name = AudioClips.letterNameClip(target)
-            if (target !in taughtLetters) {
-                taughtLetters.add(target)
-                if (name != null) {
-                    voice.playBlocking(name)
-                }
-            }
             voice.playBlocking(AudioClips.VoChooseLetter)
-            if (name != null) voice.playBlocking(name)
+            if (name != null && !firstTime) voice.playBlocking(name)
         }
     }
 

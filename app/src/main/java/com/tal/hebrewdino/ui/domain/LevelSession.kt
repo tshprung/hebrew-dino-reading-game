@@ -10,6 +10,7 @@ import kotlin.random.Random
 
 class LevelSession(
     private val questionCount: Int,
+    initialGroupIndex: Int = 0,
     private val tapGenerator: TapChoiceGenerator = TapChoiceGenerator(),
     private val popGenerator: PopBalloonsGenerator = PopBalloonsGenerator(),
     private val dragGenerator: DragToEggGenerator = DragToEggGenerator(),
@@ -38,7 +39,7 @@ class LevelSession(
     var difficultyLevel by mutableIntStateOf(0)
         private set
 
-    var groupIndex by mutableIntStateOf(0)
+    var groupIndex by mutableIntStateOf(initialGroupIndex.coerceIn(0, maxGroupIndex))
         private set
 
     private var _currentQuestion: Question? by mutableStateOf(null)
