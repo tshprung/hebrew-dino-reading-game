@@ -1,7 +1,6 @@
 package com.tal.hebrewdino.ui.screens
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,7 +9,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
@@ -36,6 +34,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.Image
 import com.tal.hebrewdino.R
+import com.tal.hebrewdino.ui.components.learning.LetterChoiceTile
 import com.tal.hebrewdino.ui.audio.AudioClips
 import com.tal.hebrewdino.ui.audio.VoicePlayer
 import kotlinx.coroutines.launch
@@ -158,30 +157,15 @@ fun ChapterLettersIntroScreen(
                     )
                     Spacer(modifier = Modifier.height(10.dp))
 
-                    Row(horizontalArrangement = Arrangement.spacedBy(18.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
                         stableLetters.forEach { l ->
-                            val isOn = highlightedLetter == l
-                            Box(
-                                modifier =
-                                    Modifier
-                                        .size(86.dp)
-                                        .clip(RoundedCornerShape(22.dp))
-                                        .background(
-                                            if (isOn) Color(0xFFFFC400).copy(alpha = 0.95f) else Color(0xFFFFF3C4).copy(alpha = 0.95f),
-                                        )
-                                        .border(
-                                            width = if (isOn) 4.dp else 2.dp,
-                                            color = if (isOn) Color(0xFF0B2B3D) else Color.White.copy(alpha = 0.65f),
-                                            shape = RoundedCornerShape(22.dp),
-                                        ),
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                Text(
-                                    text = l,
-                                    style = MaterialTheme.typography.displaySmall.copy(fontWeight = FontWeight.Black),
-                                    color = Color(0xFF0B2B3D),
-                                )
-                            }
+                            LetterChoiceTile(
+                                letter = l,
+                                tileSize = 88.dp,
+                                haloActive = highlightedLetter == l,
+                                enabled = false,
+                                onClick = { },
+                            )
                         }
                     }
 

@@ -6,7 +6,6 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -29,8 +28,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -38,19 +39,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.StrokeJoin
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.tal.hebrewdino.R
+import com.tal.hebrewdino.ui.components.learning.LearningUxTiming
+import com.tal.hebrewdino.ui.components.learning.LetterChoiceTile
+import com.tal.hebrewdino.ui.components.learning.PathLetterPathChoice
 import com.tal.hebrewdino.ui.domain.Chapter3Config
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -63,7 +62,7 @@ fun Chapter3LevelScreen(
     modifier: Modifier = Modifier,
 ) {
     val scope = rememberCoroutineScope()
-    val station = stationId.coerceIn(1, Chapter3Config.STATION_COUNT)
+    val station = stationId.coerceIn(1, Chapter3Config.MAX_PLAYABLE_STATION)
     val letters = Chapter3Config.letters
 
     val targetLetter = remember(station) { letters[(station - 1) % letters.size] }
@@ -85,6 +84,23 @@ fun Chapter3LevelScreen(
     val dinoScale = remember(station) { Animatable(1f) }
     val shake = remember(station) { Animatable(0f) }
     var dinoState by remember(station) { mutableStateOf(Ch3DinoVisual.Idle) }
+    var lastTapMs by remember { mutableLongStateOf(0L) }
+    var wrongFlashLetter by remember { mutableStateOf<String?>(null) }
+    val dinoTilt = remember { Animatable(0f) }
+
+    LaunchedEffect(wrongFlashLetter) {
+        if (wrongFlashLetter != null) {
+            delay(380)
+            wrongFlashLetter = null
+        }
+    }
+
+    fun tryConsumeTap(): Boolean {
+        val now = android.os.SystemClock.elapsedRealtime()
+        if (now - lastTapMs < LearningUxTiming.TapCooldownMs) return false
+        lastTapMs = now
+        return true
+    }
 
     val whoOptions =
         remember(station, targetLetter) {
@@ -96,9 +112,9 @@ fun Chapter3LevelScreen(
         }
 
     val pulse by rememberInfiniteTransition(label = "pulse").animateFloat(
-        initialValue = 0.98f,
-        targetValue = 1.06f,
-        animationSpec = infiniteRepeatable(animation = tween(800), repeatMode = RepeatMode.Reverse),
+        initialValue = 0.99f,
+        targetValue = 1.02f,
+        animationSpec = infiniteRepeatable(animation = tween(1400), repeatMode = RepeatMode.Reverse),
         label = "pulseTarget",
     )
 
@@ -178,31 +194,38 @@ fun Chapter3LevelScreen(
 
             Spacer(modifier = Modifier.height(18.dp))
 
-            when {
-                station <= 1 -> {
-                    PathChoiceAreaCh3(
+            when (station) {
+                1 -> {
+                    PathLetterPathChoice(
                         options = options,
+                        targetLetter = targetLetter,
                         pathCount = pathCount,
                         locked = locked,
                         shakePx = shake.value,
                         enabled = true,
-                        onPick = { picked ->
-                            if (locked) return@PathChoiceAreaCh3
-                            if (picked == targetLetter) {
+                        allowInteraction = { tryConsumeTap() },
+                        onPickResolved = { picked, correct ->
+                            if (locked) return@PathLetterPathChoice
+                            if (correct) {
                                 scope.launch {
                                     locked = true
                                     dinoState = Ch3DinoVisual.Jump
                                     dinoScale.snapTo(1f)
-                                    dinoScale.animateTo(1.16f, tween(120))
+                                    dinoScale.animateTo(1.12f, tween(120))
                                     dinoScale.animateTo(1f, tween(160))
-                                    delay(260)
+                                    delay(LearningUxTiming.AfterCorrectHoldMs)
                                     onComplete(station, 1, wrongCount)
                                 }
                             } else {
                                 scope.launch {
                                     locked = true
+                                    wrongFlashLetter = picked
                                     wrongCount += 1
                                     dinoState = Ch3DinoVisual.Think
+                                    dinoTilt.snapTo(0f)
+                                    dinoTilt.animateTo(-5f, tween(90))
+                                    dinoTilt.animateTo(5f, tween(90))
+                                    dinoTilt.animateTo(0f, tween(120))
                                     if (wrongCount >= 2 && pathCount > 2) {
                                         pathCount = 2
                                         options = listOf(targetLetter, options.first { it != targetLetter }).shuffled()
@@ -213,7 +236,7 @@ fun Chapter3LevelScreen(
                                         shake.animateTo(if (i % 2 == 0) amp else -amp, tween(45))
                                     }
                                     shake.animateTo(0f, tween(60))
-                                    delay(220)
+                                    delay(LearningUxTiming.AfterWrongHoldMs)
                                     dinoState = Ch3DinoVisual.Idle
                                     locked = false
                                 }
@@ -221,35 +244,41 @@ fun Chapter3LevelScreen(
                         },
                     )
                 }
-                station == 2 -> {
+                2 -> {
                     WhoCalledGrid(
                         letters = whoOptions,
                         locked = locked,
                         shakePx = shake.value,
+                        wrongFlashLetter = wrongFlashLetter,
                         onPick = { picked ->
-                            if (locked) return@WhoCalledGrid
+                            if (locked || !tryConsumeTap()) return@WhoCalledGrid
                             if (picked == targetLetter) {
                                 scope.launch {
                                     locked = true
                                     dinoState = Ch3DinoVisual.Jump
                                     dinoScale.snapTo(1f)
-                                    dinoScale.animateTo(1.16f, tween(120))
+                                    dinoScale.animateTo(1.12f, tween(120))
                                     dinoScale.animateTo(1f, tween(160))
-                                    delay(260)
+                                    delay(LearningUxTiming.AfterCorrectHoldMs)
                                     onComplete(station, 1, wrongCount)
                                 }
                             } else {
                                 scope.launch {
                                     locked = true
+                                    wrongFlashLetter = picked
                                     wrongCount += 1
                                     dinoState = Ch3DinoVisual.Think
+                                    dinoTilt.snapTo(0f)
+                                    dinoTilt.animateTo(-5f, tween(90))
+                                    dinoTilt.animateTo(5f, tween(90))
+                                    dinoTilt.animateTo(0f, tween(120))
                                     shake.snapTo(0f)
                                     val amp = 18f
                                     repeat(4) { i ->
                                         shake.animateTo(if (i % 2 == 0) amp else -amp, tween(45))
                                     }
                                     shake.animateTo(0f, tween(60))
-                                    delay(220)
+                                    delay(LearningUxTiming.AfterWrongHoldMs)
                                     dinoState = Ch3DinoVisual.Idle
                                     locked = false
                                 }
@@ -257,23 +286,7 @@ fun Chapter3LevelScreen(
                         },
                     )
                 }
-                else -> {
-                    Box(
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .background(Color.White.copy(alpha = 0.82f), RoundedCornerShape(22.dp))
-                                .padding(16.dp),
-                    ) {
-                        Text(
-                            text = rtl("תחנות 3–6 בפרק 3 יתווספו בהמשך."),
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                            color = Color(0xFF0B2B3D),
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.fillMaxWidth(),
-                        )
-                    }
-                }
+                else -> Unit
             }
 
             Spacer(modifier = Modifier.height(18.dp))
@@ -287,7 +300,11 @@ fun Chapter3LevelScreen(
             Image(
                 painter = painterResource(id = dinoRes),
                 contentDescription = null,
-                modifier = Modifier.size(140.dp).scale(dinoScale.value),
+                modifier =
+                    Modifier
+                        .size(140.dp)
+                        .graphicsLayer { rotationZ = dinoTilt.value }
+                        .scale(dinoScale.value),
                 contentScale = ContentScale.Fit,
             )
         }
@@ -297,100 +314,14 @@ fun Chapter3LevelScreen(
 private enum class Ch3DinoVisual { Idle, Think, Jump }
 
 @Composable
-private fun PathChoiceAreaCh3(
-    options: List<String>,
-    pathCount: Int,
-    locked: Boolean,
-    shakePx: Float,
-    enabled: Boolean,
-    onPick: (String) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Box(
-        modifier =
-            modifier
-                .fillMaxWidth()
-                .height(260.dp)
-                .offset(x = shakePx.dp)
-                .background(Color.White.copy(alpha = 0.65f), RoundedCornerShape(22.dp))
-                .padding(14.dp),
-    ) {
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            val w = size.width
-            val h = size.height
-            val startX = w * 0.92f
-            val endX = w * 0.14f
-            val lanes = pathCount.coerceIn(2, 3)
-            val ys =
-                when (lanes) {
-                    2 -> listOf(h * 0.35f, h * 0.68f)
-                    else -> listOf(h * 0.26f, h * 0.50f, h * 0.76f)
-                }
-            ys.forEachIndexed { idx, y ->
-                val p = Path()
-                p.moveTo(startX, y)
-                val c1 = Offset(w * 0.70f, y + (if (idx % 2 == 0) -h * 0.10f else h * 0.10f))
-                val c2 = Offset(w * 0.40f, y + (if (idx % 2 == 0) h * 0.08f else -h * 0.08f))
-                p.cubicTo(c1.x, c1.y, c2.x, c2.y, endX, y)
-                drawPath(
-                    path = p,
-                    color = Color(0xFFE2C999).copy(alpha = 0.92f),
-                    style = Stroke(width = 44f, cap = StrokeCap.Round, join = StrokeJoin.Round),
-                )
-                drawPath(
-                    path = p,
-                    color = Color(0xFF6B4A2A).copy(alpha = 0.22f),
-                    style = Stroke(width = 50f, cap = StrokeCap.Round, join = StrokeJoin.Round),
-                )
-            }
-        }
-        val laneYs = if (pathCount == 2) listOf(0.28f, 0.62f) else listOf(0.20f, 0.46f, 0.74f)
-        options.take(pathCount).forEachIndexed { idx, letter ->
-            val yFrac = laneYs[idx]
-            Box(
-                modifier =
-                    Modifier
-                        .align(Alignment.TopEnd)
-                        .offset(x = (-14).dp, y = (yFrac * 240f).dp)
-                        .size(78.dp)
-                        .background(
-                            Brush.radialGradient(
-                                colors =
-                                    listOf(
-                                        Color.White.copy(alpha = 0.95f),
-                                        Color(0xFFFFF3C4).copy(alpha = 0.92f),
-                                    ),
-                            ),
-                            shape = CircleShape,
-                        )
-                        .clickable(enabled = enabled && !locked) { onPick(letter) },
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = letter,
-                    style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.Black),
-                    color = Color(0xFF0B2B3D),
-                )
-            }
-        }
-    }
-}
-
-@Composable
 private fun WhoCalledGrid(
     letters: List<String>,
     locked: Boolean,
     shakePx: Float,
+    wrongFlashLetter: String?,
     onPick: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val palette =
-        listOf(
-            Color(0xFFFFE082),
-            Color(0xFF80DEEA),
-            Color(0xFFC5E1A5),
-            Color(0xFFFFAB91),
-        )
     Column(
         modifier =
             modifier
@@ -401,42 +332,28 @@ private fun WhoCalledGrid(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            letters.take(2).forEachIndexed { i, l ->
-                val c = palette.getOrElse(i) { Color(0xFFFFF3C4) }
-                Box(
-                    modifier =
-                        Modifier
-                            .size(92.dp)
-                            .background(c.copy(alpha = 0.95f), CircleShape)
-                            .clickable(enabled = !locked) { onPick(l) },
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        text = l,
-                        style = MaterialTheme.typography.displaySmall.copy(fontWeight = FontWeight.Black),
-                        color = Color(0xFF0B2B3D),
-                    )
-                }
+            letters.take(2).forEach { l ->
+                LetterChoiceTile(
+                    letter = l,
+                    tileSize = 88.dp,
+                    haloActive = false,
+                    enabled = !locked,
+                    wrongDimmed = wrongFlashLetter == l,
+                    onClick = { onPick(l) },
+                )
             }
         }
         Spacer(modifier = Modifier.height(12.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            letters.drop(2).take(2).forEachIndexed { i, l ->
-                val c = palette.getOrElse(i + 2) { Color(0xFFFFF3C4) }
-                Box(
-                    modifier =
-                        Modifier
-                            .size(92.dp)
-                            .background(c.copy(alpha = 0.95f), CircleShape)
-                            .clickable(enabled = !locked) { onPick(l) },
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        text = l,
-                        style = MaterialTheme.typography.displaySmall.copy(fontWeight = FontWeight.Black),
-                        color = Color(0xFF0B2B3D),
-                    )
-                }
+            letters.drop(2).take(2).forEach { l ->
+                LetterChoiceTile(
+                    letter = l,
+                    tileSize = 88.dp,
+                    haloActive = false,
+                    enabled = !locked,
+                    wrongDimmed = wrongFlashLetter == l,
+                    onClick = { onPick(l) },
+                )
             }
         }
     }

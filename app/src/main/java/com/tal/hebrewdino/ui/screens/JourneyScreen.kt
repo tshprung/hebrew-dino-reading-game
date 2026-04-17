@@ -2,6 +2,10 @@ package com.tal.hebrewdino.ui.screens
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
@@ -41,6 +45,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.geometry.Offset
@@ -55,8 +61,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.tal.hebrewdino.R
+import com.tal.hebrewdino.ui.components.learning.CaveHomeMark
 import com.tal.hebrewdino.ui.domain.Chapter1Config
-import androidx.compose.ui.graphics.drawscope.Fill
+import androidx.compose.ui.draw.scale
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.abs
@@ -122,15 +129,19 @@ fun JourneyScreen(
     onBack: () -> Unit,
     onDebugUnlockNext: (() -> Unit)? = null,
     totalLevels: Int = Chapter1Config.STATION_COUNT,
+    /** Stations above this are shown locked until content ships (e.g. chapter 3). */
+    playableLevels: Int = totalLevels,
     headerTitle: String = "פרק 1 - מצא את הביצה",
     headerSubtitle: String? = null,
     endMarker: JourneyEndMarker = JourneyEndMarker.Egg,
     modifier: Modifier = Modifier,
 ) {
     val resolvedSubtitle = headerSubtitle ?: "הדרך לביצה — $totalLevels תחנות"
-    val nextSuggested =
-        (1..totalLevels).firstOrNull { !completedLevels.contains(it) } ?: (totalLevels + 1)
-    val quickPlayLevel = nextSuggested.coerceAtMost(unlockedLevel)
+    val nextPlayableSuggested =
+        (1..playableLevels).firstOrNull { !completedLevels.contains(it) } ?: (playableLevels + 1)
+    val quickPlayLevel =
+        nextPlayableSuggested.coerceAtMost(unlockedLevel).coerceAtMost(playableLevels)
+    val completedPlayableCount = completedLevels.count { it in 1..playableLevels }
 
     val scope = rememberCoroutineScope()
     var walking by remember { mutableStateOf(false) }
@@ -144,15 +155,14 @@ fun JourneyScreen(
         }
     }
 
-    LaunchedEffect(nextSuggested, unlockedLevel, completedLevels) {
+    LaunchedEffect(nextPlayableSuggested, unlockedLevel, completedLevels, playableLevels) {
         if (walking) return@LaunchedEffect
         val target =
-            if (nextSuggested <= totalLevels) {
-                // Stand exactly on the next uncompleted station.
-                (nextSuggested - 1).toFloat().coerceIn(0f, (totalLevels - 1).toFloat())
+            if (nextPlayableSuggested <= playableLevels) {
+                (nextPlayableSuggested - 1).toFloat().coerceIn(0f, (playableLevels - 1).toFloat().coerceAtLeast(0f))
             } else {
-                // All done: stand near the egg at the end of the road.
-                roadFractions.lastIndex.toFloat()
+                // All playable stations done — ease dino toward the goal.
+                (roadFractions.lastIndex * 0.88f).coerceAtLeast((playableLevels - 1).coerceAtLeast(1) - 1f)
             }
         dinoProgress.snapTo(target)
     }
@@ -160,6 +170,7 @@ fun JourneyScreen(
     fun launchWalkThenPlay(targetLevel: Int) {
         if (walking) return
         if (targetLevel > unlockedLevel) return
+        if (targetLevel > playableLevels) return
         scope.launch {
             walking = true
             try {
@@ -267,9 +278,11 @@ fun JourneyScreen(
 
             JourneyRoadStrip(
                 totalLevels = totalLevels,
+                playableLevels = playableLevels,
                 unlockedLevel = unlockedLevel,
                 completedLevels = completedLevels,
-                nextSuggested = nextSuggested,
+                nextSuggested = nextPlayableSuggested,
+                completedPlayableCount = completedPlayableCount,
                 walking = walking,
                 dinoProgress = dinoProgress.value,
                 walkDrawable = walkFrames[walkFrame],
@@ -286,9 +299,11 @@ fun JourneyScreen(
 @Composable
 private fun JourneyRoadStrip(
     totalLevels: Int,
+    playableLevels: Int,
     unlockedLevel: Int,
     completedLevels: Set<Int>,
     nextSuggested: Int,
+    completedPlayableCount: Int,
     walking: Boolean,
     dinoProgress: Float,
     walkDrawable: Int,
@@ -345,24 +360,62 @@ private fun JourneyRoadStrip(
                     color = Color(0xFF6B4A2A).copy(alpha = 0.28f),
                     style = Stroke(width = 60f, cap = StrokeCap.Round, join = StrokeJoin.Round),
                 )
-                // Center highlight
+                // Center highlight — slightly clearer as the child finishes playable stations.
+                val clarityBoost = (completedPlayableCount.coerceAtMost(playableLevels)) * 0.028f
                 drawPath(
                     path = path,
-                    color = Color.White.copy(alpha = 0.20f),
+                    color = Color.White.copy(alpha = (0.20f + clarityBoost).coerceAtMost(0.32f)),
                     style = Stroke(width = 26f, cap = StrokeCap.Round, join = StrokeJoin.Round),
                 )
 
                 // Light texture (pebbles) to feel “old road”.
-                val dots = 65
+                val hasFutureTrack = playableLevels < totalLevels
+                val dots = if (hasFutureTrack) 38 else 65
+                val pebbleAlpha =
+                    (0.14f - completedPlayableCount * 0.008f).coerceIn(0.08f, 0.14f) -
+                        if (hasFutureTrack) 0.02f else 0f
                 for (i in 0 until dots) {
                     val t = i.toFloat() / (dots - 1).toFloat()
                     val (px, py) = xyAlongRoad(t * (roadFractions.lastIndex.toFloat()), roadFractions)
                     val x = px * size.width + (if (i % 2 == 0) 18f else -14f)
                     val y = py * size.height + (if (i % 3 == 0) 10f else -8f)
                     drawCircle(
-                        color = Color(0xFF6B4A2A).copy(alpha = 0.14f),
-                        radius = if (i % 4 == 0) 6.5f else 4.5f,
+                        color = Color(0xFF6B4A2A).copy(alpha = pebbleAlpha.coerceIn(0.06f, 0.12f)),
+                        radius = if (i % 4 == 0) 6f else 4f,
                         center = Offset(x, y),
+                    )
+                }
+
+                // One subtle “sparkle” per completed playable station (cumulative, capped).
+                val sparkCap = if (hasFutureTrack) 2 else 6
+                val sparkles = completedPlayableCount.coerceIn(0, sparkCap)
+                repeat(sparkles) { k ->
+                    val t = 0.15f + k * 0.11f
+                    val (px, py) = xyAlongRoad(t * roadFractions.lastIndex.toFloat(), roadFractions)
+                    drawCircle(
+                        color = Color(0xFFFFF59D).copy(alpha = if (hasFutureTrack) 0.16f else 0.22f),
+                        radius = if (hasFutureTrack) 4f else 5f,
+                        center = Offset(px * size.width, py * size.height),
+                    )
+                }
+
+                if (hasFutureTrack) {
+                    val anchorIdx = (playableLevels - 1).coerceIn(0, stationFractions.lastIndex)
+                    val (_, fy) = stationFractions[anchorIdx]
+                    val startY = (size.height * (fy + 0.05f)).coerceIn(0f, size.height * 0.88f)
+                    drawRect(
+                        brush =
+                            Brush.verticalGradient(
+                                colors =
+                                    listOf(
+                                        Color.Transparent,
+                                        Color(0xFF1B2F3A).copy(alpha = 0.11f),
+                                    ),
+                                startY = startY,
+                                endY = size.height,
+                            ),
+                        topLeft = Offset(0f, startY),
+                        size = Size(size.width, size.height - startY),
                     )
                 }
             }
@@ -372,13 +425,15 @@ private fun JourneyRoadStrip(
                 val (fx, fy) = stationFractions[idx]
                 val xPx = fx * wPx
                 val yPx = fy * hPx
-                val enabled = levelId <= unlockedLevel && !walking
+                val playable = levelId <= playableLevels
+                val enabled = playable && levelId <= unlockedLevel && !walking
                 val completed = completedLevels.contains(levelId)
                 val suggested = enabled && !completed && levelId == nextSuggested
                 val isLast = levelId == totalLevels
 
                 JourneyStationMarker(
                     levelId = levelId,
+                    playableLevels = playableLevels,
                     enabled = enabled,
                     completed = completed,
                     suggested = suggested,
@@ -417,6 +472,12 @@ private fun JourneyRoadStrip(
 
             // Goal at end of the road (egg or cave home).
             val (gfx, gfy) = roadFractions.last()
+            val goalPulse by rememberInfiniteTransition(label = "goal").animateFloat(
+                initialValue = 0.98f,
+                targetValue = 1.04f,
+                animationSpec = infiniteRepeatable(animation = tween(1600), repeatMode = RepeatMode.Reverse),
+                label = "goalPulse",
+            )
             Box(
                 modifier =
                     Modifier
@@ -435,34 +496,14 @@ private fun JourneyRoadStrip(
                         Image(
                             painter = painterResource(id = R.drawable.finish_marker_egg),
                             contentDescription = null,
-                            modifier = Modifier.size(110.dp),
+                            modifier = Modifier.size(110.dp).scale(goalPulse),
                             contentScale = ContentScale.Fit,
                         )
                     JourneyEndMarker.HomeCave ->
-                        Canvas(modifier = Modifier.fillMaxSize()) {
-                            val cx = size.width * 0.52f
-                            val cy = size.height * 0.62f
-                            drawOval(
-                                color = Color(0xFF3E2723),
-                                topLeft = Offset(cx - size.width * 0.42f, cy - size.height * 0.18f),
-                                size = androidx.compose.ui.geometry.Size(size.width * 0.84f, size.height * 0.50f),
-                                style = Fill,
-                            )
-                            drawArc(
-                                color = Color(0xFF1B120E),
-                                startAngle = 180f,
-                                sweepAngle = 180f,
-                                useCenter = true,
-                                topLeft = Offset(cx - size.width * 0.38f, cy - size.height * 0.55f),
-                                size = androidx.compose.ui.geometry.Size(size.width * 0.76f, size.height * 0.72f),
-                                style = Fill,
-                            )
-                            drawOval(
-                                color = Color(0xFF0D0705).copy(alpha = 0.35f),
-                                topLeft = Offset(cx - size.width * 0.22f, cy + size.height * 0.02f),
-                                size = androidx.compose.ui.geometry.Size(size.width * 0.44f, size.height * 0.22f),
-                                style = Fill,
-                            )
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Box(modifier = Modifier.scale(goalPulse)) {
+                                CaveHomeMark()
+                            }
                         }
                 }
             }
@@ -473,6 +514,7 @@ private fun JourneyRoadStrip(
 @Composable
 private fun JourneyStationMarker(
     levelId: Int,
+    playableLevels: Int,
     enabled: Boolean,
     completed: Boolean,
     suggested: Boolean,
@@ -481,6 +523,7 @@ private fun JourneyStationMarker(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val isFutureTrack = levelId > playableLevels
     val markerRes =
         when {
             !enabled -> null
@@ -495,6 +538,7 @@ private fun JourneyStationMarker(
 
     val baseColor =
         when {
+            isFutureTrack -> Color(0xFF5D6A73).copy(alpha = 0.22f)
             !enabled -> Color(0xFF7E8A93).copy(alpha = 0.35f)
             completed -> Color(0xFF2E7D32).copy(alpha = 0.85f)
             suggested -> Color(0xFF2AA6C9).copy(alpha = 0.95f)
@@ -508,12 +552,14 @@ private fun JourneyStationMarker(
         }
     val label =
         when {
+            isFutureTrack -> "…"
             !enabled -> "🔒"
             completed -> "✓"
             else -> levelId.toString()
         }
     val subtitle =
         when {
+            isFutureTrack -> "בהמשך"
             !enabled -> "נעול"
             completed -> "בוצע"
             else -> "תחנה $levelId"

@@ -5,6 +5,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
+import com.tal.hebrewdino.ui.domain.Chapter3Config
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -76,7 +77,9 @@ class ProgressPrefs(private val context: Context) {
         context.dataStore.data.map { prefs -> prefs[chapter3LettersIntroSeenKey] ?: false }
 
     val chapter3UnlockedStationFlow: Flow<Int> =
-        context.dataStore.data.map { prefs -> prefs[chapter3UnlockedStationKey] ?: 1 }
+        context.dataStore.data.map { prefs ->
+            (prefs[chapter3UnlockedStationKey] ?: 1).coerceAtMost(Chapter3Config.MAX_PLAYABLE_STATION)
+        }
 
     val chapter3CompletedStationsFlow: Flow<Set<Int>> =
         context.dataStore.data.map { prefs ->
@@ -84,6 +87,7 @@ class ProgressPrefs(private val context: Context) {
             if (raw.isBlank()) return@map emptySet()
             raw.split(",")
                 .mapNotNull { it.trim().toIntOrNull() }
+                .filter { it <= Chapter3Config.MAX_PLAYABLE_STATION }
                 .toSet()
         }
 
@@ -142,21 +146,43 @@ class ProgressPrefs(private val context: Context) {
     }
 
     suspend fun unlockChapter3AtLeast(stationId: Int) {
+        val capped = stationId.coerceAtMost(Chapter3Config.MAX_PLAYABLE_STATION)
         context.dataStore.edit { prefs ->
-            val current = prefs[chapter3UnlockedStationKey] ?: 1
-            if (stationId > current) prefs[chapter3UnlockedStationKey] = stationId
+            val current = (prefs[chapter3UnlockedStationKey] ?: 1).coerceAtMost(Chapter3Config.MAX_PLAYABLE_STATION)
+            if (capped > current) prefs[chapter3UnlockedStationKey] = capped
         }
     }
 
     suspend fun markChapter3CompletedStation(stationId: Int) {
+        if (stationId > Chapter3Config.MAX_PLAYABLE_STATION) return
         context.dataStore.edit { prefs ->
             val current = prefs[chapter3CompletedStationsKey].orEmpty()
             val set =
                 current.split(",")
                     .mapNotNull { it.trim().toIntOrNull() }
+                    .filter { it <= Chapter3Config.MAX_PLAYABLE_STATION }
                     .toMutableSet()
             set.add(stationId)
             prefs[chapter3CompletedStationsKey] = set.toList().sorted().joinToString(",")
+        }
+    }
+
+    /** One-shot repair if older builds wrote chapter 3 progress beyond released stations. */
+    suspend fun repairChapter3ProgressIfNeeded() {
+        context.dataStore.edit { prefs ->
+            val u = prefs[chapter3UnlockedStationKey] ?: 1
+            if (u > Chapter3Config.MAX_PLAYABLE_STATION) {
+                prefs[chapter3UnlockedStationKey] = Chapter3Config.MAX_PLAYABLE_STATION
+            }
+            val raw = prefs[chapter3CompletedStationsKey].orEmpty()
+            if (raw.isNotBlank()) {
+                val set =
+                    raw.split(",")
+                        .mapNotNull { it.trim().toIntOrNull() }
+                        .filter { it <= Chapter3Config.MAX_PLAYABLE_STATION }
+                        .toMutableSet()
+                prefs[chapter3CompletedStationsKey] = set.toList().sorted().joinToString(",")
+            }
         }
     }
 

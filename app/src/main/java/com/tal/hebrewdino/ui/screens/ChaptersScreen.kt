@@ -1,5 +1,10 @@
 package com.tal.hebrewdino.ui.screens
 
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -23,10 +28,13 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import com.tal.hebrewdino.ui.components.learning.CaveHomeMark
 import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
@@ -48,6 +56,7 @@ data class ChapterCard(
 @Composable
 fun ChaptersScreen(
     unlockedChapter: Int,
+    chapter4ComingSoon: Boolean = false,
     onOpenChapter: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -69,8 +78,7 @@ fun ChaptersScreen(
                 title = "פרק 3 - מצא את החבר",
                 subtitle = "מי קרא? אותיות כרמזים",
             ),
-            // Placeholders (no titles yet) to reserve space in the journey.
-            ChapterCard(id = 4, title = "", subtitle = ""),
+            ChapterCard(id = 4, title = "פרק 4", subtitle = ""),
             ChapterCard(id = 5, title = "", subtitle = ""),
             ChapterCard(id = 6, title = "", subtitle = ""),
         )
@@ -101,6 +109,7 @@ fun ChaptersScreen(
             ChapterVerticalPath(
                 chapters = chapters,
                 unlockedChapter = unlockedChapter,
+                chapter4ComingSoon = chapter4ComingSoon,
                 onOpenChapter = onOpenChapter,
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -112,6 +121,7 @@ fun ChaptersScreen(
 private fun ChapterVerticalPath(
     chapters: List<ChapterCard>,
     unlockedChapter: Int,
+    chapter4ComingSoon: Boolean,
     onOpenChapter: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -179,14 +189,17 @@ private fun ChapterVerticalPath(
         )
 
         chapters.take(6).forEachIndexed { idx, ch ->
-            val locked = ch.id > unlockedChapter
+            val comingSoon = chapter4ComingSoon && ch.id == 4
+            val locked = ch.id > unlockedChapter && !comingSoon
             val (xF, yF) = slots.getOrElse(idx) { 0.55f to (0.12f + idx * 0.22f) }
 
             ChapterNode(
                 chapter = ch,
                 locked = locked,
+                comingSoon = comingSoon,
                 isCurrent = ch.id == unlockedChapter,
-                onClick = { if (!locked) onOpenChapter(ch.id) },
+                isPast = !locked && ch.id < unlockedChapter && ch.title.isNotBlank(),
+                onClick = { if (!locked && !comingSoon) onOpenChapter(ch.id) },
                 modifier =
                     Modifier
                         .align(Alignment.TopStart)
@@ -216,31 +229,7 @@ private fun ChapterVerticalPath(
                     .offset(y = (-10).dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Canvas(modifier = Modifier.size(width = 120.dp, height = 88.dp)) {
-                val cx = size.width * 0.52f
-                val cy = size.height * 0.62f
-                drawOval(
-                    color = Color(0xFF3E2723),
-                    topLeft = Offset(cx - size.width * 0.42f, cy - size.height * 0.18f),
-                    size = androidx.compose.ui.geometry.Size(size.width * 0.84f, size.height * 0.50f),
-                    style = Fill,
-                )
-                drawArc(
-                    color = Color(0xFF1B120E),
-                    startAngle = 180f,
-                    sweepAngle = 180f,
-                    useCenter = true,
-                    topLeft = Offset(cx - size.width * 0.38f, cy - size.height * 0.55f),
-                    size = androidx.compose.ui.geometry.Size(size.width * 0.76f, size.height * 0.72f),
-                    style = Fill,
-                )
-                drawOval(
-                    color = Color(0xFF0D0705).copy(alpha = 0.35f),
-                    topLeft = Offset(cx - size.width * 0.22f, cy + size.height * 0.02f),
-                    size = androidx.compose.ui.geometry.Size(size.width * 0.44f, size.height * 0.22f),
-                    style = Fill,
-                )
-            }
+            CaveHomeMark(modifier = Modifier.size(width = 120.dp, height = 88.dp))
             Text(
                 text = "המערה — הבית",
                 style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Black),
@@ -254,10 +243,18 @@ private fun ChapterVerticalPath(
 private fun ChapterNode(
     chapter: ChapterCard,
     locked: Boolean,
+    comingSoon: Boolean,
     isCurrent: Boolean,
+    isPast: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val pulse by rememberInfiniteTransition(label = "chNode").animateFloat(
+        initialValue = 1f,
+        targetValue = if (isCurrent) 1.06f else 1f,
+        animationSpec = infiniteRepeatable(animation = tween(950), repeatMode = RepeatMode.Reverse),
+        label = "chNodePulse",
+    )
     Column(
         modifier = modifier,
         horizontalAlignment = Alignment.End,
@@ -266,21 +263,34 @@ private fun ChapterNode(
         Box(
             modifier =
                 Modifier
-                    .size(if (isCurrent) 84.dp else 76.dp)
+                    .scale(pulse)
+                    .size(if (isCurrent) 86.dp else 76.dp)
                     .background(
                         when {
-                            locked -> Color(0xFF7E8A93).copy(alpha = 0.35f)
-                            isCurrent -> Color(0xFFFFC400).copy(alpha = 0.95f)
-                            else -> Color(0xFF2AA6C9).copy(alpha = 0.90f)
+                            comingSoon -> Color(0xFF78909C).copy(alpha = 0.62f)
+                            locked -> Color(0xFF5D6A73).copy(alpha = 0.42f)
+                            isCurrent -> Color(0xFFFFC400).copy(alpha = 0.98f)
+                            isPast -> Color(0xFF2E7D32).copy(alpha = 0.55f)
+                            else -> Color(0xFF2AA6C9).copy(alpha = 0.78f)
                         },
                         shape = RoundedCornerShape(28.dp),
                     )
-                    .clickable(enabled = !locked, onClick = onClick),
+                    .clickable(enabled = !locked && !comingSoon, onClick = onClick),
             contentAlignment = Alignment.Center,
         ) {
             Text(
-                text = if (locked) "🔒" else chapter.id.toString(),
-                style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Black),
+                text =
+                    when {
+                        comingSoon -> "בקרוב"
+                        locked -> "🔒"
+                        else -> chapter.id.toString()
+                    },
+                style =
+                    if (comingSoon) {
+                        MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black)
+                    } else {
+                        MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Black)
+                    },
                 color = Color.White,
             )
         }
@@ -302,7 +312,12 @@ private fun ChapterNode(
                     )
                     Spacer(modifier = Modifier.height(3.dp))
                     Text(
-                        text = if (locked) "נעול עד שמסיימים את הפרק הקודם" else chapter.subtitle,
+                        text =
+                            when {
+                                comingSoon -> "בהמשך — כרגע אפשר לשחק בפרקים שמוכנים"
+                                locked -> "נעול עד שמסיימים את הפרק הקודם"
+                                else -> chapter.subtitle
+                            },
                         style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
                         color = Color(0xFF0B2B3D).copy(alpha = 0.85f),
                         textAlign = TextAlign.End,
