@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -31,7 +32,7 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -66,9 +67,8 @@ import com.tal.hebrewdino.R
 import com.tal.hebrewdino.ui.audio.AudioClips
 import com.tal.hebrewdino.ui.audio.SoundPoolPlayer
 import com.tal.hebrewdino.ui.audio.VoicePlayer
-import com.tal.hebrewdino.ui.data.CharacterPrefs
-import com.tal.hebrewdino.ui.data.DinoCharacter
 import com.tal.hebrewdino.ui.domain.AnswerResult
+import com.tal.hebrewdino.ui.domain.Chapter1Config
 import com.tal.hebrewdino.ui.domain.LevelSession
 import com.tal.hebrewdino.ui.domain.Question
 import kotlinx.coroutines.CoroutineScope
@@ -77,6 +77,12 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
+private enum class LevelDinoVisual {
+    Idle,
+    TryAgain,
+    Jump,
+}
+
 @Composable
 fun LevelScreen(
     levelId: Int,
@@ -84,52 +90,48 @@ fun LevelScreen(
     onComplete: (levelId: Int, correctCount: Int, mistakeCount: Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    // Chapter 1 pacing: short early levels, longer later.
+    val chapterLevel = levelId.coerceIn(1, Chapter1Config.STATION_COUNT)
+    // Chapter 1 pacing: short early levels, longer later (six stations).
     val questionCount =
-        remember(levelId) {
-            when (levelId) {
+        remember(chapterLevel) {
+            when (chapterLevel) {
                 1 -> 3
                 2 -> 4
                 3 -> 5
                 4 -> 5
                 5 -> 6
-                6 -> 6
-                7 -> 7
-                8 -> 7
-                9 -> 8
-                else -> 8
+                else -> 7
             }
         }
     val initialGroupIndex =
-        remember(levelId) {
-            when (levelId) {
+        remember(chapterLevel) {
+            when (chapterLevel) {
                 1, 2 -> 0
                 3, 4 -> 1
-                5, 6 -> 2
-                7 -> 3
-                8 -> 4
-                9 -> 5
-                else -> 6
+                5 -> 2
+                else -> 3
             }
         }
-    val session = remember(levelId) { LevelSession(questionCount = questionCount, initialGroupIndex = initialGroupIndex) }
-    var feedback by remember(levelId) { mutableStateOf<String?>(null) }
+    val session = remember(chapterLevel) { LevelSession(questionCount = questionCount, initialGroupIndex = initialGroupIndex) }
+    var feedback by remember(chapterLevel) { mutableStateOf<String?>(null) }
     fun rtl(text: String): String = "\u200F$text"
 
     val scope = rememberCoroutineScope()
     val context = androidx.compose.ui.platform.LocalContext.current
     val voice = remember { VoicePlayer(context = context) }
     val sfx = remember { SoundPoolPlayer(context = context) }
-    val characterPrefs = remember { CharacterPrefs(context) }
-    val character by characterPrefs.characterFlow.collectAsState(initial = DinoCharacter.Dino)
-
-    val dinoRes = if (character == DinoCharacter.Dina) R.drawable.dino_girl else R.drawable.dino_boy
+    val jumpFrames =
+        remember(chapterLevel) {
+            listOf(R.drawable.dino_jump_0, R.drawable.dino_jump_1, R.drawable.dino_jump_2)
+        }
+    var dinoVisual by remember(chapterLevel) { mutableStateOf(LevelDinoVisual.Idle) }
+    var jumpFrameIndex by remember(chapterLevel) { mutableIntStateOf(0) }
 
     // Animations
-    val dinoScale = remember(levelId) { androidx.compose.animation.core.Animatable(1f) }
-    val optionsShake = remember(levelId) { androidx.compose.animation.core.Animatable(0f) }
-    val showConfetti = remember(levelId) { mutableStateOf(false) }
-    var inputLocked by remember(levelId) { mutableStateOf(false) }
+    val dinoScale = remember(chapterLevel) { androidx.compose.animation.core.Animatable(1f) }
+    val optionsShake = remember(chapterLevel) { androidx.compose.animation.core.Animatable(0f) }
+    val showConfetti = remember(chapterLevel) { mutableStateOf(false) }
+    var inputLocked by remember(chapterLevel) { mutableStateOf(false) }
 
     DisposableEffect(Unit) {
         onDispose {
@@ -150,46 +152,45 @@ fun LevelScreen(
         }
 
     if (current == null) {
-        onComplete(levelId, session.correctCount, session.mistakeCount)
+        onComplete(chapterLevel, session.correctCount, session.mistakeCount)
         return
     }
 
-    var wrongAttemptsThisQuestion by remember(levelId, session.currentIndex) { mutableStateOf(0) }
+    var wrongAttemptsThisQuestion by remember(chapterLevel, session.currentIndex) { mutableStateOf(0) }
 
-    suspend fun speakPrompt() {
-        val target = correctLetter
-        val chooseSpecific = AudioClips.chooseLetterClip(target)
-        val name = AudioClips.letterNameClip(target)
-        val firstTime = session.consumeFirstTimeSeen(target)
-
-        // Teaching moment: first time this letter appears, say its name (if we have it).
-        if (firstTime && name != null) {
-            voice.playBlocking(name)
-            delay(90)
-        }
-
+    suspend fun speakPrompt(targetLetter: String) {
+        // Chapter letters are taught at the chapter intro screen, so in-level we only say “choose X”.
+        val chooseSpecific = AudioClips.chooseLetterClip(targetLetter)
         if (chooseSpecific != null) {
             voice.playBlocking(chooseSpecific)
         } else {
-            // Fallback: "choose letter" + letter name
             voice.playBlocking(AudioClips.VoChooseLetter)
-            if (name != null && !firstTime) voice.playBlocking(name)
         }
     }
 
-    LaunchedEffect(levelId, session.currentIndex) {
+    LaunchedEffect(dinoVisual) {
+        if (dinoVisual != LevelDinoVisual.Jump) return@LaunchedEffect
+        repeat(9) { i ->
+            jumpFrameIndex = i % jumpFrames.size
+            delay(85)
+        }
+        dinoVisual = LevelDinoVisual.Idle
+    }
+
+    LaunchedEffect(chapterLevel, session.currentIndex) {
+        val promptLetter = correctLetter
         feedback = null
         wrongAttemptsThisQuestion = 0
         // Preload SFX so the first play isn't silent.
         sfx.preload(AudioClips.SfxCorrect, AudioClips.SfxWrong, AudioClips.SfxBalloonPop)
         // Let UI settle a bit before speaking.
         delay(120)
-        speakPrompt()
+        speakPrompt(promptLetter)
     }
 
     Box(modifier = modifier.fillMaxSize()) {
         Image(
-            painter = painterResource(id = R.drawable.bg_level_beach),
+            painter = painterResource(id = R.drawable.forest_bg_level_overlay),
             contentDescription = null,
             modifier = Modifier.fillMaxSize(),
             contentScale = ContentScale.Crop,
@@ -205,24 +206,23 @@ fun LevelScreen(
             label = "bobOffset",
         )
 
-        // Dino avatar (idle bob + reacts to success)
-        Image(
-            painter = painterResource(id = dinoRes),
-            contentDescription = null,
-            modifier = Modifier
-                .padding(12.dp)
-                .size(96.dp)
-                .align(Alignment.TopStart)
-                .offset(y = bob.dp)
-                .scale(dinoScale.value),
-            contentScale = ContentScale.Fit,
-        )
-
         if (showConfetti.value) {
             ConfettiOverlay(
                 modifier = Modifier.fillMaxSize(),
             )
         }
+
+        val dinoDrawable =
+            when (dinoVisual) {
+                LevelDinoVisual.Idle -> R.drawable.dino_idle
+                LevelDinoVisual.TryAgain -> R.drawable.dino_try_again
+                LevelDinoVisual.Jump -> jumpFrames[jumpFrameIndex.coerceIn(0, jumpFrames.lastIndex)]
+            }
+        val dinoBobY =
+            when (dinoVisual) {
+                LevelDinoVisual.Idle -> bob.dp
+                else -> 0.dp
+            }
 
         Column(
             modifier = Modifier
@@ -231,9 +231,25 @@ fun LevelScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Start,
+        ) {
+            OutlinedButton(
+                onClick = onBack,
+                colors =
+                    androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
+                        containerColor = Color.White.copy(alpha = 0.86f),
+                        contentColor = Color(0xFF0B2B3D),
+                    ),
+            ) { Text("חזור") }
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+
         Text(
-            text = "שלב $levelId",
+            text = "שלב $chapterLevel",
             style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Black),
+            color = Color(0xFF0B2B3D),
         )
         Spacer(modifier = Modifier.height(10.dp))
 
@@ -261,58 +277,67 @@ fun LevelScreen(
         val rawProgress = (questionNumber - 1).coerceAtLeast(0).toFloat() / totalQuestions.toFloat()
         val steps = 5
         val eggProgress = (kotlin.math.floor(rawProgress * steps) / steps).coerceIn(0f, 1f)
-        MissionWidget(
-            mission = mission,
-            progress = eggProgress,
-            modifier = Modifier.width(360.dp),
-        )
-        Spacer(modifier = Modifier.height(8.dp))
 
-        TextButton(
-            onClick = {
-                if (inputLocked) return@TextButton
-                scope.launch { speakPrompt() }
-            },
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Text("שמע/י שוב")
-        }
-        Spacer(modifier = Modifier.height(4.dp))
+                MissionWidget(
+                    mission = mission,
+                    progress = eggProgress,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Spacer(modifier = Modifier.height(8.dp))
 
-        Text(
-            text = mission,
-            style = MaterialTheme.typography.titleMedium,
-            color = Color(0xFF0B2B3D),
-            textAlign = TextAlign.Center,
-        )
-        Spacer(modifier = Modifier.height(10.dp))
-
-        Text(
-            text =
-                "בחר את האות: " +
-                    when (current) {
-                        is Question.TapChoiceQuestion -> current.correctAnswer
-                        is Question.PopBalloonsQuestion -> current.correctAnswer
-                        is Question.DragToEggQuestion -> current.correctAnswer
+                TextButton(
+                    onClick = {
+                        if (inputLocked) return@TextButton
+                        val promptLetter = correctLetter
+                        scope.launch { speakPrompt(promptLetter) }
                     },
-            style = MaterialTheme.typography.titleLarge,
-            textAlign = TextAlign.Center,
-        )
-        Spacer(modifier = Modifier.height(12.dp))
-        Box(modifier = Modifier.height(28.dp), contentAlignment = Alignment.Center) {
-            Text(
-                text = feedback ?: "",
-                style = MaterialTheme.typography.titleMedium,
-                textAlign = TextAlign.Center,
-            )
-        }
-        Spacer(modifier = Modifier.height(24.dp))
+                ) {
+                    Text("שמע/י שוב")
+                }
+                Spacer(modifier = Modifier.height(4.dp))
 
-        val onPick: (String) -> Unit = { picked ->
+                Text(
+                    text = mission,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = Color(0xFF0B2B3D),
+                    textAlign = TextAlign.Center,
+                )
+                Spacer(modifier = Modifier.height(10.dp))
+
+                Text(
+                    text =
+                        "בחר את האות: " +
+                            when (current) {
+                                is Question.TapChoiceQuestion -> current.correctAnswer
+                                is Question.PopBalloonsQuestion -> current.correctAnswer
+                                is Question.DragToEggQuestion -> current.correctAnswer
+                            },
+                    style = MaterialTheme.typography.titleLarge,
+                    textAlign = TextAlign.Center,
+                    color = Color(0xFF0B2B3D),
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                Box(modifier = Modifier.height(28.dp), contentAlignment = Alignment.Center) {
+                    Text(
+                        text = feedback ?: "",
+                        style = MaterialTheme.typography.titleMedium,
+                        textAlign = TextAlign.Center,
+                        color = Color(0xFF0B2B3D),
+                    )
+                }
+                Spacer(modifier = Modifier.height(24.dp))
+
+                val onPick: (String) -> Unit = { picked ->
             when (session.submitAnswer(picked)) {
                 AnswerResult.Correct -> {
                     // Advance ONLY after "good job" finishes (no overlaps).
                     scope.launch {
                         inputLocked = true
+                        dinoVisual = LevelDinoVisual.Jump
                         feedback = rtl("כל הכבוד!")
                         playSuccessAnimation(scope, dinoScale, showConfetti)
                         sfx.playFirstAvailable(AudioClips.SfxCorrect, volume = 0.7f)
@@ -324,6 +349,7 @@ fun LevelScreen(
                 AnswerResult.Wrong -> {
                     scope.launch {
                         inputLocked = true
+                        dinoVisual = LevelDinoVisual.TryAgain
                         wrongAttemptsThisQuestion += 1
                         feedback = "כמעט… בוא ננסה שוב"
                         playMistakeAnimation(scope, optionsShake)
@@ -332,6 +358,7 @@ fun LevelScreen(
                         if (wrongAttemptsThisQuestion >= 2) {
                             feedback = rtl("רמז: $correctLetter")
                         }
+                        dinoVisual = LevelDinoVisual.Idle
                         inputLocked = false
                     }
                 }
@@ -367,9 +394,22 @@ fun LevelScreen(
                 )
             }
         }
+        Spacer(modifier = Modifier.height(10.dp))
 
-        Spacer(modifier = Modifier.height(32.dp))
-        OutlinedButton(onClick = onBack) { Text("חזרה למפה") }
+        // Dino sits near the options area (bottom-ish), so it’s easy to notice.
+        Image(
+            painter = painterResource(id = dinoDrawable),
+            contentDescription = null,
+            modifier = Modifier
+                .size(140.dp)
+                .offset(y = dinoBobY)
+                .scale(dinoScale.value),
+            contentScale = ContentScale.Fit,
+        )
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+        OutlinedButton(onClick = onBack) { Text("חזרה לדרך") }
     }
     }
 }
@@ -552,7 +592,7 @@ private fun MissionWidget(
             Column(modifier = Modifier.weight(1f)) {
                 LinearProgressIndicator(
                     progress = { p },
-                    modifier = Modifier.fillMaxSize().height(10.dp),
+                    modifier = Modifier.fillMaxWidth().height(10.dp),
                     color = Color(0xFFFFC400),
                     trackColor = Color(0xFF0B2B3D).copy(alpha = 0.12f),
                 )

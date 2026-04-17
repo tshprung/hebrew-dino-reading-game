@@ -40,7 +40,7 @@ fun CharacterSelectScreen(
 ) {
     Box(modifier = modifier.fillMaxSize()) {
         Image(
-            painter = painterResource(id = R.drawable.bg_beach),
+            painter = painterResource(id = R.drawable.forest_bg_story_intro),
             contentDescription = null,
             modifier = Modifier.fillMaxSize(),
             contentScale = ContentScale.Crop,

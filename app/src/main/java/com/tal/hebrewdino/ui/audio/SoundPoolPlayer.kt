@@ -11,6 +11,11 @@ import java.util.concurrent.ConcurrentHashMap
 import kotlin.coroutines.resume
 
 class SoundPoolPlayer(context: Context) {
+    companion object {
+        /** Temporarily disable all SFX playback (we’ll re-enable later). */
+        const val ENABLED: Boolean = false
+    }
+
     private val appContext = context.applicationContext
 
     private val soundPool: SoundPool =
@@ -37,11 +42,13 @@ class SoundPoolPlayer(context: Context) {
     }
 
     suspend fun play(assetPath: String, volume: Float = 1f) {
+        if (!ENABLED) return
         val soundId = loadIfNeeded(assetPath) ?: return
         soundPool.play(soundId, volume, volume, 1, 0, 1f)
     }
 
     suspend fun playFirstAvailable(vararg assetPaths: String, volume: Float = 1f) {
+        if (!ENABLED) return
         for (p in assetPaths) {
             if (p.isBlank()) continue
             val soundId = loadIfNeeded(p) ?: continue
@@ -94,6 +101,7 @@ class SoundPoolPlayer(context: Context) {
     }
 
     suspend fun preload(vararg assetPaths: String) {
+        if (!ENABLED) return
         for (p in assetPaths) {
             if (p.isBlank()) continue
             loadIfNeeded(p)

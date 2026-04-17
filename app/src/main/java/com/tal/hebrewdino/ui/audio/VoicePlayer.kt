@@ -11,11 +11,17 @@ import java.io.IOException
 import kotlin.coroutines.resume
 
 class VoicePlayer(context: Context) {
+    companion object {
+        /** Temporarily disable all voice playback (we’ll re-enable later). */
+        const val ENABLED: Boolean = false
+    }
+
     private val appContext = context.applicationContext
     private val mutex = Mutex()
     private var player: MediaPlayer? = null
 
     suspend fun playBlocking(assetPath: String) {
+        if (!ENABLED) return
         mutex.withLock {
             stopLocked()
             player = MediaPlayer()
@@ -45,6 +51,7 @@ class VoicePlayer(context: Context) {
     }
 
     suspend fun playFirstAvailableBlocking(vararg assetPaths: String) {
+        if (!ENABLED) return
         for (p in assetPaths) {
             if (p.isBlank()) continue
             val ok = exists(p)
