@@ -4,6 +4,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -26,6 +27,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -45,6 +47,8 @@ fun PictureLetterMatchBoard(
     shakePx: Float,
     onWrongPair: () -> Unit,
     onRoundComplete: () -> Unit,
+    /** When set, wrong letter after choosing a picture calls this instead of [onWrongPair] (softer finale). */
+    onSoftLetterMismatch: (() -> Unit)? = null,
 ) {
     val pairs = question.pairs
     val letterRow = remember(pairs, contentKey) { pairs.map { it.letter }.shuffled() }
@@ -71,6 +75,7 @@ fun PictureLetterMatchBoard(
             pairs.forEach { pair ->
                 val done = pair.letter in matchedLetters
                 val selected = pair.letter == selectedPictureLetter
+                val picInteraction = remember(pair.letter, contentKey) { MutableInteractionSource() }
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     modifier =
@@ -93,7 +98,11 @@ fun PictureLetterMatchBoard(
                             )
                             .background(Color.White.copy(alpha = 0.9f), RoundedCornerShape(16.dp))
                             .padding(8.dp)
-                            .clickable(enabled = enabled && !done) {
+                            .clickable(
+                                interactionSource = picInteraction,
+                                indication = null,
+                                enabled = enabled && !done,
+                            ) {
                                 selectedPictureLetter = pair.letter
                             },
                 ) {
@@ -105,15 +114,19 @@ fun PictureLetterMatchBoard(
                                 .fillMaxWidth()
                                 .height(72.dp),
                         contentScale = ContentScale.Fit,
+                        colorFilter =
+                            pair.tintArgb?.let { argb ->
+                                ColorFilter.tint(Color(argb))
+                            },
                     )
                     pair.caption?.let { cap ->
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
                             text = cap,
-                            style = MaterialTheme.typography.labelLarge,
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
                             color = Color(0xFF0B2B3D),
                             textAlign = TextAlign.Center,
-                            maxLines = 1,
+                            maxLines = 2,
                         )
                     }
                 }
@@ -145,7 +158,11 @@ fun PictureLetterMatchBoard(
                             }
                         } else {
                             selectedPictureLetter = null
-                            onWrongPair()
+                            if (onSoftLetterMismatch != null) {
+                                onSoftLetterMismatch.invoke()
+                            } else {
+                                onWrongPair()
+                            }
                         }
                     },
                     enabled = enabled && !done,

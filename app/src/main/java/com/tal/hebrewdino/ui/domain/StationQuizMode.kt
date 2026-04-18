@@ -8,5 +8,7 @@ enum class StationQuizMode {
     TapChoice,
     PopBalloons,
     RevealTiles,
+    PicturePickOne,
+    PicturePickAll,
     PictureLetterMatch,
 }

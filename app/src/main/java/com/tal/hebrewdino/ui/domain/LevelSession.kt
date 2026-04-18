@@ -90,6 +90,22 @@ class LevelSession(
                                 options = tap.options,
                             )
                         }
+                        StationQuizMode.PicturePickOne -> {
+                            val correct = nextBalancedCorrect(group)
+                            Chapter1LessonGenerators.picturePickOne(
+                                rnd = rnd,
+                                group = group,
+                                targetLetter = correct,
+                            )
+                        }
+                        StationQuizMode.PicturePickAll -> {
+                            val correct = nextBalancedCorrect(group)
+                            Chapter1LessonGenerators.picturePickAll(
+                                rnd = rnd,
+                                group = group,
+                                targetLetter = correct,
+                            )
+                        }
                         StationQuizMode.PictureLetterMatch -> {
                             val (a, b) = nextTwoDistinctCorrect(group)
                             matchGenerator.generate(
@@ -113,8 +129,25 @@ class LevelSession(
                 is Question.RevealTilesQuestion -> answer == q.correctAnswer
                 is Question.PictureLetterMatchQuestion ->
                     error("PictureLetterMatchQuestion uses submitMatchOutcome(success)")
+                is Question.PicturePickOneQuestion,
+                is Question.PicturePickAllQuestion,
+                ->
+                    error("Use submitPicturePickOne / submitPicturePickAll")
             }
         return applyOutcome(correct)
+    }
+
+    fun submitPicturePickOne(choiceId: String): AnswerResult {
+        val q = currentQuestion as? Question.PicturePickOneQuestion ?: return AnswerResult.Finished
+        val picked = q.choices.find { it.id == choiceId } ?: return applyOutcome(false)
+        val ok = picked.letter == q.targetLetter
+        return applyOutcome(ok)
+    }
+
+    fun submitPicturePickAll(selection: Set<String>): AnswerResult {
+        val q = currentQuestion as? Question.PicturePickAllQuestion ?: return AnswerResult.Finished
+        if (selection.size != q.correctIds.size) return AnswerResult.Finished
+        return applyOutcome(selection == q.correctIds)
     }
 
     /** Called when the child finished a tap–tap matching board (both pairs correct) or made a wrong pair attempt. */

@@ -118,6 +118,14 @@ fun PictureLetterMatchStation(
                 val c = AudioClips.chooseLetterClip(q.correctAnswer)
                 if (c != null) voice.playBlocking(c) else voice.playBlocking(AudioClips.VoChooseLetter)
             }
+            is Question.PicturePickOneQuestion -> {
+                val c = AudioClips.chooseLetterClip(q.targetLetter)
+                if (c != null) voice.playBlocking(c) else voice.playBlocking(AudioClips.VoChooseLetter)
+            }
+            is Question.PicturePickAllQuestion -> {
+                val c = AudioClips.chooseLetterClip(q.targetLetter)
+                if (c != null) voice.playBlocking(c) else voice.playBlocking(AudioClips.VoChooseLetter)
+            }
         }
     }
 

@@ -51,7 +51,10 @@ import com.tal.hebrewdino.ui.audio.AudioClips
 import com.tal.hebrewdino.ui.audio.SoundPoolPlayer
 import com.tal.hebrewdino.ui.audio.VoicePlayer
 import com.tal.hebrewdino.ui.components.learning.PictureLetterMatchBoard
+import com.tal.hebrewdino.ui.components.learning.PicturePickAllBoard
+import com.tal.hebrewdino.ui.components.learning.PicturePickOneBoard
 import com.tal.hebrewdino.ui.domain.AnswerResult
+import com.tal.hebrewdino.ui.domain.Chapter1Config
 import com.tal.hebrewdino.ui.domain.LetterPoolSpec
 import com.tal.hebrewdino.ui.domain.LevelSession
 import com.tal.hebrewdino.ui.domain.Question
@@ -117,6 +120,8 @@ fun LetterQuizStationScreen(
             is Question.TapChoiceQuestion -> current.correctAnswer
             is Question.PopBalloonsQuestion -> current.correctAnswer
             is Question.RevealTilesQuestion -> current.correctAnswer
+            is Question.PicturePickOneQuestion -> current.targetLetter
+            is Question.PicturePickAllQuestion -> current.targetLetter
             is Question.PictureLetterMatchQuestion -> current.pairs.joinToString(" ו־") { it.letter }
             null -> ""
         }
@@ -127,6 +132,7 @@ fun LetterQuizStationScreen(
     }
 
     var wrongAttemptsThisQuestion by remember(stationId, session.currentIndex) { mutableStateOf(0) }
+    var picturePickAllEpoch by remember(stationId) { mutableIntStateOf(0) }
 
     suspend fun speakPrompt(targetLetter: String) {
         val chooseSpecific = AudioClips.chooseLetterClip(targetLetter)
@@ -143,6 +149,8 @@ fun LetterQuizStationScreen(
             is Question.TapChoiceQuestion -> speakPrompt(q.correctAnswer)
             is Question.PopBalloonsQuestion -> speakPrompt(q.correctAnswer)
             is Question.RevealTilesQuestion -> speakPrompt(q.correctAnswer)
+            is Question.PicturePickOneQuestion -> speakPrompt(q.targetLetter)
+            is Question.PicturePickAllQuestion -> speakPrompt(q.targetLetter)
         }
     }
 
@@ -159,6 +167,7 @@ fun LetterQuizStationScreen(
         val q = session.currentQuestion
         feedback = null
         wrongAttemptsThisQuestion = 0
+        picturePickAllEpoch = 0
         sfx.preload(AudioClips.SfxCorrect, AudioClips.SfxWrong, AudioClips.SfxBalloonPop)
         delay(120)
         if (q != null) speakPromptForQuestion(q)
@@ -246,6 +255,10 @@ fun LetterQuizStationScreen(
                         when (current) {
                             is Question.PictureLetterMatchQuestion ->
                                 "חבר כל תמונה למילה שמתחילה באות המתאימה (תמונה ואז אות)"
+                            is Question.PicturePickOneQuestion ->
+                                "בחרו את התמונה של המילה שמתחילה באות: " + current.targetLetter
+                            is Question.PicturePickAllQuestion ->
+                                "בחרו את שתי התמונות של מילים שמתחילות באות: " + current.targetLetter
                             is Question.RevealTilesQuestion ->
                                 "לחצו על כרטיסייה כדי לחשוף, ואז מצאו את האות: " + current.correctAnswer
                             is Question.TapChoiceQuestion -> "בחר את האות: " + current.correctAnswer
@@ -333,12 +346,101 @@ fun LetterQuizStationScreen(
                             shakePx = optionsShake.value,
                             onRevealPick = onPick,
                         )
+                    is Question.PicturePickOneQuestion ->
+                        PicturePickOneBoard(
+                            question = current,
+                            contentKey = session.currentIndex,
+                            enabled = !inputLocked,
+                            shakePx = optionsShake.value,
+                            onPickId = { id ->
+                                when (session.submitPicturePickOne(id)) {
+                                    AnswerResult.Correct ->
+                                        scope.launch {
+                                            inputLocked = true
+                                            dinoVisual = LqDinoVisual.Jump
+                                            feedback = rtl("כל הכבוד!")
+                                            playLqSuccess(scope, dinoScale, showConfetti)
+                                            sfx.playFirstAvailable(AudioClips.SfxCorrect, volume = 0.7f)
+                                            voice.playFirstAvailableBlocking(AudioClips.VoGoodJob1, AudioClips.VoGoodJob2)
+                                            session.nextQuestion()
+                                            inputLocked = false
+                                        }
+                                    AnswerResult.Wrong ->
+                                        scope.launch {
+                                            inputLocked = true
+                                            dinoVisual = LqDinoVisual.TryAgain
+                                            wrongAttemptsThisQuestion += 1
+                                            feedback = "כמעט… ננסה שוב"
+                                            playLqMistake(scope, optionsShake)
+                                            sfx.playFirstAvailable(AudioClips.SfxWrong, volume = 0.55f)
+                                            voice.playFirstAvailableBlocking(AudioClips.VoTryAgain2, AudioClips.VoTryAgain1)
+                                            if (wrongAttemptsThisQuestion >= 2) {
+                                                feedback = rtl("רמז: $correctLetter")
+                                            }
+                                            dinoVisual = LqDinoVisual.Idle
+                                            inputLocked = false
+                                        }
+                                    AnswerResult.Finished -> {}
+                                }
+                            },
+                        )
+                    is Question.PicturePickAllQuestion ->
+                        PicturePickAllBoard(
+                            question = current,
+                            contentKey = session.currentIndex,
+                            resetEpoch = picturePickAllEpoch,
+                            enabled = !inputLocked,
+                            shakePx = optionsShake.value,
+                            onTwoPicked = { picked ->
+                                when (session.submitPicturePickAll(picked)) {
+                                    AnswerResult.Correct ->
+                                        scope.launch {
+                                            inputLocked = true
+                                            dinoVisual = LqDinoVisual.Jump
+                                            feedback = rtl("כל הכבוד!")
+                                            playLqSuccess(scope, dinoScale, showConfetti)
+                                            sfx.playFirstAvailable(AudioClips.SfxCorrect, volume = 0.7f)
+                                            voice.playFirstAvailableBlocking(AudioClips.VoGoodJob1, AudioClips.VoGoodJob2)
+                                            session.nextQuestion()
+                                            inputLocked = false
+                                        }
+                                    AnswerResult.Wrong -> {
+                                        picturePickAllEpoch++
+                                        scope.launch {
+                                            inputLocked = true
+                                            dinoVisual = LqDinoVisual.TryAgain
+                                            wrongAttemptsThisQuestion += 1
+                                            feedback = "עוד ניסיון — בחרו שתי תמונות נכונות"
+                                            sfx.playFirstAvailable(AudioClips.SfxWrong, volume = 0.45f)
+                                            delay(650)
+                                            dinoVisual = LqDinoVisual.Idle
+                                            inputLocked = false
+                                        }
+                                    }
+                                    AnswerResult.Finished -> {}
+                                }
+                            },
+                        )
                     is Question.PictureLetterMatchQuestion ->
                         PictureLetterMatchBoard(
                             question = current,
                             contentKey = session.currentIndex,
                             enabled = !inputLocked,
                             shakePx = optionsShake.value,
+                            onSoftLetterMismatch =
+                                if (stationId == Chapter1Config.STATION_COUNT) {
+                                    {
+                                        scope.launch {
+                                            wrongAttemptsThisQuestion += 1
+                                            feedback = "נסו אות אחרת…"
+                                            sfx.playFirstAvailable(AudioClips.SfxWrong, volume = 0.4f)
+                                            delay(420)
+                                            feedback = null
+                                        }
+                                    }
+                                } else {
+                                    null
+                                },
                             onWrongPair = {
                                 when (session.submitMatchOutcome(false)) {
                                     AnswerResult.Wrong ->

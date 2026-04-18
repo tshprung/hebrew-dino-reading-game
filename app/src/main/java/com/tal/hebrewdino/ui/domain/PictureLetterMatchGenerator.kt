@@ -17,12 +17,21 @@ class PictureLetterMatchGenerator(
         require(letter1 in group && letter2 in group)
         require(letter1 != letter2)
 
-        val e1 = MatchWordCatalog.pickForLetter(rnd, letter1, excludeImageRes = null)
-        val e2 = MatchWordCatalog.pickForLetter(rnd, letter2, excludeImageRes = e1.imageRes)
+        val (e1, e2) = LessonWordCatalog.pickTwoDistinctForLetters(rnd, letter1, letter2)
         val pairs =
             listOf(
-                PictureLetterPair(imageRes = e1.imageRes, caption = e1.word, letter = letter1),
-                PictureLetterPair(imageRes = e2.imageRes, caption = e2.word, letter = letter2),
+                PictureLetterPair(
+                    imageRes = e1.tileDrawable,
+                    tintArgb = e1.tintArgb,
+                    caption = e1.word,
+                    letter = letter1,
+                ),
+                PictureLetterPair(
+                    imageRes = e2.tileDrawable,
+                    tintArgb = e2.tintArgb,
+                    caption = e2.word,
+                    letter = letter2,
+                ),
             ).shuffled(rnd)
         return Question.PictureLetterMatchQuestion(pairs = pairs)
     }
