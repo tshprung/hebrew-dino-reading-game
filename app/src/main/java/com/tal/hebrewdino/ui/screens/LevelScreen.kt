@@ -16,9 +16,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.clickable
-import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.Button
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -35,6 +36,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.AnimationVector1D
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -55,6 +61,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import com.tal.hebrewdino.R
+import com.tal.hebrewdino.ui.StationMatchPlaceholders
 import com.tal.hebrewdino.ui.audio.AudioClips
 import com.tal.hebrewdino.ui.audio.SoundPoolPlayer
 import com.tal.hebrewdino.ui.audio.VoicePlayer
@@ -62,6 +69,8 @@ import com.tal.hebrewdino.ui.domain.AnswerResult
 import com.tal.hebrewdino.ui.domain.Chapter1Config
 import com.tal.hebrewdino.ui.domain.LevelSession
 import com.tal.hebrewdino.ui.domain.Question
+import com.tal.hebrewdino.ui.domain.StationQuizMode
+import com.tal.hebrewdino.ui.components.learning.PictureLetterMatchBoard
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -74,6 +83,22 @@ private enum class LevelDinoVisual {
     Jump,
 }
 
+private data class Chapter1StationSpec(
+    val mode: StationQuizMode,
+    val questionCount: Int,
+    val initialGroupIndex: Int,
+)
+
+private fun chapter1StationSpec(stationId: Int): Chapter1StationSpec =
+    when (stationId) {
+        1 -> Chapter1StationSpec(StationQuizMode.TapChoice, questionCount = 3, initialGroupIndex = 0)
+        2 -> Chapter1StationSpec(StationQuizMode.PopBalloons, questionCount = 4, initialGroupIndex = 0)
+        3 -> Chapter1StationSpec(StationQuizMode.RevealTiles, questionCount = 5, initialGroupIndex = 1)
+        4 -> Chapter1StationSpec(StationQuizMode.TapChoice, questionCount = 5, initialGroupIndex = 1)
+        5 -> Chapter1StationSpec(StationQuizMode.PopBalloons, questionCount = 6, initialGroupIndex = 2)
+        else -> Chapter1StationSpec(StationQuizMode.PictureLetterMatch, questionCount = 3, initialGroupIndex = 3)
+    }
+
 @Composable
 fun LevelScreen(
     levelId: Int,
@@ -82,28 +107,19 @@ fun LevelScreen(
     modifier: Modifier = Modifier,
 ) {
     val chapterLevel = levelId.coerceIn(1, Chapter1Config.STATION_COUNT)
-    // Chapter 1 pacing: short early levels, longer later (six stations).
-    val questionCount =
-        remember(chapterLevel) {
-            when (chapterLevel) {
-                1 -> 3
-                2 -> 4
-                3 -> 5
-                4 -> 5
-                5 -> 6
-                else -> 7
-            }
+    val stationSpec = remember(chapterLevel) { chapter1StationSpec(chapterLevel) }
+    val questionCount = stationSpec.questionCount
+    val initialGroupIndex = stationSpec.initialGroupIndex
+    val quizMode = stationSpec.mode
+    val session =
+        remember(chapterLevel, quizMode) {
+            LevelSession(
+                questionCount = questionCount,
+                initialGroupIndex = initialGroupIndex,
+                quizMode = quizMode,
+                matchPlaceholders = StationMatchPlaceholders.forest,
+            )
         }
-    val initialGroupIndex =
-        remember(chapterLevel) {
-            when (chapterLevel) {
-                1, 2 -> 0
-                3, 4 -> 1
-                5 -> 2
-                else -> 3
-            }
-        }
-    val session = remember(chapterLevel) { LevelSession(questionCount = questionCount, initialGroupIndex = initialGroupIndex) }
     var feedback by remember(chapterLevel) { mutableStateOf<String?>(null) }
     fun rtl(text: String): String = "\u200F$text"
 
@@ -138,6 +154,9 @@ fun LevelScreen(
         when (current) {
             is Question.TapChoiceQuestion -> current.correctAnswer
             is Question.PopBalloonsQuestion -> current.correctAnswer
+            is Question.RevealTilesQuestion -> current.correctAnswer
+            is Question.PictureLetterMatchQuestion ->
+                current.pairs.joinToString(" ו־") { it.letter }
             null -> ""
         }
 
@@ -158,6 +177,17 @@ fun LevelScreen(
         }
     }
 
+    suspend fun speakPromptForQuestion(q: Question) {
+        when (q) {
+            is Question.PictureLetterMatchQuestion -> {
+                voice.playBlocking(AudioClips.VoChooseLetter)
+            }
+            is Question.TapChoiceQuestion -> speakPrompt(q.correctAnswer)
+            is Question.PopBalloonsQuestion -> speakPrompt(q.correctAnswer)
+            is Question.RevealTilesQuestion -> speakPrompt(q.correctAnswer)
+        }
+    }
+
     LaunchedEffect(dinoVisual) {
         if (dinoVisual != LevelDinoVisual.Jump) return@LaunchedEffect
         repeat(9) { i ->
@@ -168,14 +198,14 @@ fun LevelScreen(
     }
 
     LaunchedEffect(chapterLevel, session.currentIndex) {
-        val promptLetter = correctLetter
+        val q = session.currentQuestion
         feedback = null
         wrongAttemptsThisQuestion = 0
         // Preload SFX so the first play isn't silent.
         sfx.preload(AudioClips.SfxCorrect, AudioClips.SfxWrong, AudioClips.SfxBalloonPop)
         // Let UI settle a bit before speaking.
         delay(120)
-        speakPrompt(promptLetter)
+        if (q != null) speakPromptForQuestion(q)
     }
 
     Box(modifier = modifier.fillMaxSize()) {
@@ -263,8 +293,8 @@ fun LevelScreen(
                 TextButton(
                     onClick = {
                         if (inputLocked) return@TextButton
-                        val promptLetter = correctLetter
-                        scope.launch { speakPrompt(promptLetter) }
+                        val q = current
+                        scope.launch { speakPromptForQuestion(q) }
                     },
                 ) {
                     Text("שמע/י שוב")
@@ -273,11 +303,16 @@ fun LevelScreen(
 
                 Text(
                     text =
-                        "בחר את האות: " +
-                            when (current) {
-                                is Question.TapChoiceQuestion -> current.correctAnswer
-                                is Question.PopBalloonsQuestion -> current.correctAnswer
-                            },
+                        when (current) {
+                            is Question.PictureLetterMatchQuestion ->
+                                "חבר כל תמונה לאות המתאימה (הקישו תמונה ואז אות)"
+                            is Question.RevealTilesQuestion ->
+                                "לחצו על כרטיסייה כדי לחשוף, ואז מצאו את האות: " + current.correctAnswer
+                            is Question.TapChoiceQuestion ->
+                                "בחר את האות: " + current.correctAnswer
+                            is Question.PopBalloonsQuestion ->
+                                "בחר את האות: " + current.correctAnswer
+                        },
                     style = MaterialTheme.typography.titleLarge,
                     textAlign = TextAlign.Center,
                     color = Color(0xFF0B2B3D),
@@ -294,60 +329,114 @@ fun LevelScreen(
                 Spacer(modifier = Modifier.height(24.dp))
 
                 val onPick: (String) -> Unit = { picked ->
-            when (session.submitAnswer(picked)) {
-                AnswerResult.Correct -> {
-                    // Advance ONLY after "good job" finishes (no overlaps).
-                    scope.launch {
-                        inputLocked = true
-                        dinoVisual = LevelDinoVisual.Jump
-                        feedback = rtl("כל הכבוד!")
-                        playSuccessAnimation(scope, dinoScale, showConfetti)
-                        sfx.playFirstAvailable(AudioClips.SfxCorrect, volume = 0.7f)
-                        voice.playFirstAvailableBlocking(AudioClips.VoGoodJob1, AudioClips.VoGoodJob2)
-                        session.nextQuestion()
-                        inputLocked = false
-                    }
-                }
-                AnswerResult.Wrong -> {
-                    scope.launch {
-                        inputLocked = true
-                        dinoVisual = LevelDinoVisual.TryAgain
-                        wrongAttemptsThisQuestion += 1
-                        feedback = "כמעט… בוא ננסה שוב"
-                        playMistakeAnimation(scope, optionsShake)
-                        sfx.playFirstAvailable(AudioClips.SfxWrong, volume = 0.7f)
-                        voice.playFirstAvailableBlocking(AudioClips.VoTryAgain2, AudioClips.VoTryAgain1)
-                        if (wrongAttemptsThisQuestion >= 2) {
-                            feedback = rtl("רמז: $correctLetter")
+                    when (session.submitAnswer(picked)) {
+                        AnswerResult.Correct -> {
+                            // Advance ONLY after "good job" finishes (no overlaps).
+                            scope.launch {
+                                inputLocked = true
+                                dinoVisual = LevelDinoVisual.Jump
+                                feedback = rtl("כל הכבוד!")
+                                playSuccessAnimation(scope, dinoScale, showConfetti)
+                                sfx.playFirstAvailable(AudioClips.SfxCorrect, volume = 0.7f)
+                                voice.playFirstAvailableBlocking(AudioClips.VoGoodJob1, AudioClips.VoGoodJob2)
+                                session.nextQuestion()
+                                inputLocked = false
+                            }
                         }
-                        dinoVisual = LevelDinoVisual.Idle
-                        inputLocked = false
+                        AnswerResult.Wrong -> {
+                            scope.launch {
+                                inputLocked = true
+                                dinoVisual = LevelDinoVisual.TryAgain
+                                wrongAttemptsThisQuestion += 1
+                                feedback = "כמעט… בוא ננסה שוב"
+                                playMistakeAnimation(scope, optionsShake)
+                                sfx.playFirstAvailable(AudioClips.SfxWrong, volume = 0.7f)
+                                voice.playFirstAvailableBlocking(AudioClips.VoTryAgain2, AudioClips.VoTryAgain1)
+                                if (wrongAttemptsThisQuestion >= 2) {
+                                    feedback = rtl("רמז: $correctLetter")
+                                }
+                                dinoVisual = LevelDinoVisual.Idle
+                                inputLocked = false
+                            }
+                        }
+                        AnswerResult.Finished -> {}
                     }
                 }
-                AnswerResult.Finished -> {}
-            }
-        }
 
-        when (current) {
-            is Question.TapChoiceQuestion -> {
-                LetterOptions(
-                    options = current.options,
-                    enabled = !inputLocked,
-                    shakePx = optionsShake.value,
-                    onPick = onPick,
-                )
-            }
-            is Question.PopBalloonsQuestion -> {
-                PopBalloonsOptions(
-                    options = current.options,
-                    correctAnswer = current.correctAnswer,
-                    enabled = !inputLocked,
-                    shakePx = optionsShake.value,
-                    onPopSfx = { sfx.playFirstAvailable(AudioClips.SfxBalloonPop, volume = 0.8f) },
-                    onPick = onPick,
-                )
-            }
-        }
+                when (current) {
+                    is Question.TapChoiceQuestion -> {
+                        LetterOptions(
+                            options = current.options,
+                            enabled = !inputLocked,
+                            shakePx = optionsShake.value,
+                            onPick = onPick,
+                        )
+                    }
+                    is Question.PopBalloonsQuestion -> {
+                        PopBalloonsOptions(
+                            options = current.options,
+                            correctAnswer = current.correctAnswer,
+                            enabled = !inputLocked,
+                            shakePx = optionsShake.value,
+                            onPopSfx = { sfx.playFirstAvailable(AudioClips.SfxBalloonPop, volume = 0.8f) },
+                            onPick = onPick,
+                        )
+                    }
+                    is Question.RevealTilesQuestion -> {
+                        RevealLetterTiles(
+                            options = current.options,
+                            correctAnswer = current.correctAnswer,
+                            contentKey = session.currentIndex,
+                            enabled = !inputLocked,
+                            shakePx = optionsShake.value,
+                            onRevealPick = onPick,
+                        )
+                    }
+                    is Question.PictureLetterMatchQuestion -> {
+                        PictureLetterMatchBoard(
+                            question = current,
+                            contentKey = session.currentIndex,
+                            enabled = !inputLocked,
+                            shakePx = optionsShake.value,
+                            onWrongPair = {
+                                when (session.submitMatchOutcome(false)) {
+                                    AnswerResult.Wrong ->
+                                        scope.launch {
+                                            inputLocked = true
+                                            dinoVisual = LevelDinoVisual.TryAgain
+                                            wrongAttemptsThisQuestion += 1
+                                            feedback = "זוג לא מתאים — ננסה שוב"
+                                            playMistakeAnimation(scope, optionsShake)
+                                            sfx.playFirstAvailable(AudioClips.SfxWrong, volume = 0.7f)
+                                            voice.playFirstAvailableBlocking(AudioClips.VoTryAgain2, AudioClips.VoTryAgain1)
+                                            if (wrongAttemptsThisQuestion >= 2) {
+                                                feedback = rtl("רמז: האותות $correctLetter")
+                                            }
+                                            dinoVisual = LevelDinoVisual.Idle
+                                            inputLocked = false
+                                        }
+                                    else -> {}
+                                }
+                            },
+                            onRoundComplete = {
+                                when (session.submitMatchOutcome(true)) {
+                                    AnswerResult.Correct ->
+                                        scope.launch {
+                                            inputLocked = true
+                                            dinoVisual = LevelDinoVisual.Jump
+                                            feedback = rtl("כל הכבוד!")
+                                            playSuccessAnimation(scope, dinoScale, showConfetti)
+                                            sfx.playFirstAvailable(AudioClips.SfxCorrect, volume = 0.7f)
+                                            voice.playFirstAvailableBlocking(AudioClips.VoGoodJob1, AudioClips.VoGoodJob2)
+                                            session.nextQuestion()
+                                            inputLocked = false
+                                        }
+                                    else -> {}
+                                }
+                            },
+                        )
+                    }
+                }
         Spacer(modifier = Modifier.height(10.dp))
 
         // Dino sits near the options area (bottom-ish), so it’s easy to notice.
@@ -365,6 +454,55 @@ fun LevelScreen(
         Spacer(modifier = Modifier.height(24.dp))
         OutlinedButton(onClick = onBack) { Text("חזרה לדרך") }
     }
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun RevealLetterTiles(
+    options: List<String>,
+    correctAnswer: String,
+    contentKey: Int,
+    enabled: Boolean,
+    shakePx: Float,
+    onRevealPick: (String) -> Unit,
+) {
+    var revealed by remember(options, correctAnswer, contentKey) { mutableStateOf<Set<Int>>(emptySet()) }
+    FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(14.dp, Alignment.CenterHorizontally),
+        verticalArrangement = Arrangement.spacedBy(14.dp),
+        modifier = Modifier.offset { IntOffset(shakePx.roundToInt(), 0) },
+    ) {
+        options.forEachIndexed { idx, letter ->
+            val faceUp = idx in revealed
+            Box(
+                modifier =
+                    Modifier
+                        .width(76.dp)
+                        .height(92.dp)
+                        .border(
+                            width = 2.dp,
+                            color = Color(0xFF0B2B3D).copy(alpha = 0.25f),
+                            shape = RoundedCornerShape(14.dp),
+                        )
+                        .background(
+                            color = if (faceUp) Color.White.copy(alpha = 0.92f) else Color(0xFFE8F4F8),
+                            shape = RoundedCornerShape(14.dp),
+                        )
+                        .clickable(enabled = enabled && !faceUp) {
+                            revealed = revealed + idx
+                            onRevealPick(letter)
+                        },
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = if (faceUp) letter else "?",
+                    fontSize = if (faceUp) 40.sp else 34.sp,
+                    fontWeight = FontWeight.Black,
+                    color = Color(0xFF0B2B3D),
+                )
+            }
+        }
     }
 }
 
@@ -402,6 +540,7 @@ private fun PopBalloonsOptions(
     // Reuses the reward-screen “balloon pop” feel but shows letters inside.
     val alive = remember(options, correctAnswer) { options.associateWith { true }.toMutableMap() }
     val scope = rememberCoroutineScope()
+    var wrongRecoverRunning by remember(options, correctAnswer) { mutableStateOf(false) }
 
     FlowRow(
         horizontalArrangement = Arrangement.spacedBy(14.dp, Alignment.CenterHorizontally),
@@ -423,18 +562,36 @@ private fun PopBalloonsOptions(
             PopBalloon(
                 letter = letter,
                 color = color,
-                enabled = enabled,
+                enabled = enabled && !wrongRecoverRunning,
                 shouldPop = letter == correctAnswer,
+                bobPhaseMillis = idx * 220,
                 onPop = {
                     // Only pop the correct balloon (keeps retry possible).
                     alive[letter] = false
                     scope.launch { onPopSfx() }
                     onPick(letter)
                 },
-                onPickWithoutPop = { onPick(letter) },
+                onPickWrong = { fall ->
+                    scope.launch {
+                        wrongRecoverRunning = true
+                        runWrongBalloonVerticalRecover(fall)
+                        onPick(letter)
+                        wrongRecoverRunning = false
+                    }
+                },
             )
         }
     }
+}
+
+private suspend fun runWrongBalloonVerticalRecover(
+    offset: Animatable<Float, AnimationVector1D>,
+) {
+    offset.snapTo(0f)
+    offset.animateTo(48f, tween(durationMillis = 120))
+    offset.animateTo(640f, tween(durationMillis = 340, easing = LinearOutSlowInEasing))
+    offset.snapTo(-560f)
+    offset.animateTo(0f, tween(durationMillis = 520, easing = FastOutSlowInEasing))
 }
 
 @Composable
@@ -443,13 +600,26 @@ private fun PopBalloon(
     color: Color,
     enabled: Boolean,
     shouldPop: Boolean,
+    bobPhaseMillis: Int,
     onPop: () -> Unit,
-    onPickWithoutPop: () -> Unit,
+    onPickWrong: (Animatable<Float, AnimationVector1D>) -> Unit,
 ) {
     var popping by remember(letter) { mutableStateOf(false) }
     var visible by remember(letter) { mutableStateOf(true) }
-    val scale = remember(letter) { androidx.compose.animation.core.Animatable(1f) }
-    val fade = remember(letter) { androidx.compose.animation.core.Animatable(1f) }
+    val scale = remember(letter) { Animatable(1f) }
+    val fade = remember(letter) { Animatable(1f) }
+    val wrongFall = remember(letter) { Animatable(0f) }
+    val bob =
+        rememberInfiniteTransition(label = "balloonBob$letter").animateFloat(
+            initialValue = -2.5f,
+            targetValue = 2.5f,
+            animationSpec =
+                infiniteRepeatable(
+                    animation = tween(durationMillis = 2600, easing = LinearEasing, delayMillis = bobPhaseMillis),
+                    repeatMode = RepeatMode.Reverse,
+                ),
+            label = "balloonBob",
+        )
 
     LaunchedEffect(popping) {
         if (!popping) return@LaunchedEffect
@@ -469,7 +639,13 @@ private fun PopBalloon(
 
     if (!visible) return
 
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier =
+            Modifier.offset {
+                IntOffset(0, (bob.value + wrongFall.value).roundToInt())
+            },
+    ) {
         Box(
             modifier =
                 Modifier
@@ -479,7 +655,11 @@ private fun PopBalloon(
                     .clickable(
                         enabled = enabled && !popping,
                         onClick = {
-                            if (shouldPop) popping = true else onPickWithoutPop()
+                            if (shouldPop) {
+                                popping = true
+                            } else {
+                                onPickWrong(wrongFall)
+                            }
                         },
                     ),
             contentAlignment = Alignment.Center,

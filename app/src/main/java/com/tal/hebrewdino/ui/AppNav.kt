@@ -227,7 +227,7 @@ fun AppNav() {
                 totalLevels = Chapter3Config.STATION_COUNT,
                 playableLevels = Chapter3Config.MAX_PLAYABLE_STATION,
                 headerTitle = "פרק 3 - מצא את החבר",
-                headerSubtitle = "בדרך עם דינו — ההמשך יגיע בקרוב",
+                headerSubtitle = "בדרך עם דינו — ${Chapter3Config.STATION_COUNT} תחנות",
                 headerSubtitleCompact = true,
                 endMarker = JourneyEndMarker.HomeCave,
                 onPlayLevel = { stationId ->
@@ -296,7 +296,7 @@ fun AppNav() {
                         scope.launch {
                             progress.markChapter3CompletedStation(completedStationId)
                             progress.unlockChapter3AtLeast(completedStationId + 1)
-                            if (completedStationId >= Chapter3Config.MAX_PLAYABLE_STATION) {
+                            if (completedStationId >= Chapter3Config.STATION_COUNT) {
                                 progress.markChapter3Completed()
                             }
                         }
@@ -399,7 +399,7 @@ fun AppNav() {
                 correct = correct,
                 mistakes = mistakes,
                 onBackToMap = {
-                    if (stationId >= Chapter3Config.MAX_PLAYABLE_STATION) {
+                    if (stationId >= Chapter3Config.STATION_COUNT) {
                         navController.navigate(Routes.Chapters) {
                             popUpTo(Routes.Ch3Journey) { inclusive = true }
                         }

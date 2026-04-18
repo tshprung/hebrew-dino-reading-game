@@ -11,11 +11,16 @@ import kotlin.random.Random
 class LevelSession(
     private val questionCount: Int,
     initialGroupIndex: Int = 0,
-    private val tapGenerator: TapChoiceGenerator = TapChoiceGenerator(),
-    private val popGenerator: PopBalloonsGenerator = PopBalloonsGenerator(),
+    private val quizMode: StationQuizMode,
+    /** Drawable id + optional caption for picture–letter matching (chapter finale). */
+    private val matchPlaceholders: List<Pair<Int, String?>> = emptyList(),
+    letterPoolSpec: LetterPoolSpec = LetterPoolSpec.Default,
 ) {
     private val rnd = Random.Default
-    private val maxGroupIndex = max(0, LetterPool.groups.size - 1)
+    private val tapGenerator = TapChoiceGenerator(letterPoolSpec)
+    private val popGenerator = PopBalloonsGenerator(letterPoolSpec)
+    private val matchGenerator = PictureLetterMatchGenerator(letterPoolSpec)
+    private val maxGroupIndex = max(0, letterPoolSpec.groups.lastIndex)
 
     private var lastCorrectAnswer: String? = null
     private var bag: MutableList<String> = mutableListOf()
@@ -53,24 +58,53 @@ class LevelSession(
             if (currentIndex >= questionCount) return null
             if (_currentQuestion == null) {
                 val group = tapGenerator.group(groupIndex)
-                val correct = nextBalancedCorrect(group)
-                val optionCount = 3 // MVP: difficulty = group only
-
                 _currentQuestion =
-                    if (shouldUsePopQuestion()) {
-                        popGenerator.generate(
-                            rnd = rnd,
-                            group = group,
-                            correctAnswer = correct,
-                            optionCount = optionCount,
-                        )
-                    } else {
-                        tapGenerator.generateTapChoiceQuestion(
-                            rnd = rnd,
-                            group = group,
-                            correctAnswer = correct,
-                            optionCount = optionCount,
-                        )
+                    when (quizMode) {
+                        StationQuizMode.TapChoice -> {
+                            val correct = nextBalancedCorrect(group)
+                            tapGenerator.generateTapChoiceQuestion(
+                                rnd = rnd,
+                                group = group,
+                                correctAnswer = correct,
+                                optionCount = 3,
+                            )
+                        }
+                        StationQuizMode.PopBalloons -> {
+                            val correct = nextBalancedCorrect(group)
+                            popGenerator.generate(
+                                rnd = rnd,
+                                group = group,
+                                correctAnswer = correct,
+                                optionCount = 3,
+                            )
+                        }
+                        StationQuizMode.RevealTiles -> {
+                            val correct = nextBalancedCorrect(group)
+                            val tap =
+                                tapGenerator.generateTapChoiceQuestion(
+                                    rnd = rnd,
+                                    group = group,
+                                    correctAnswer = correct,
+                                    optionCount = 3,
+                                )
+                            Question.RevealTilesQuestion(
+                                correctAnswer = tap.correctAnswer,
+                                options = tap.options,
+                            )
+                        }
+                        StationQuizMode.PictureLetterMatch -> {
+                            require(matchPlaceholders.size >= 2) {
+                                "Picture–letter match needs at least two placeholder images"
+                            }
+                            val (a, b) = nextTwoDistinctCorrect(group)
+                            matchGenerator.generate(
+                                rnd = rnd,
+                                group = group,
+                                letter1 = a,
+                                letter2 = b,
+                                placeholders = matchPlaceholders,
+                            )
+                        }
                     }
             }
             return _currentQuestion
@@ -82,8 +116,21 @@ class LevelSession(
             when (q) {
                 is Question.TapChoiceQuestion -> answer == q.correctAnswer
                 is Question.PopBalloonsQuestion -> answer == q.correctAnswer
+                is Question.RevealTilesQuestion -> answer == q.correctAnswer
+                is Question.PictureLetterMatchQuestion ->
+                    error("PictureLetterMatchQuestion uses submitMatchOutcome(success)")
             }
+        return applyOutcome(correct)
+    }
 
+    /** Called when the child finished a tap–tap matching board (both pairs correct) or made a wrong pair attempt. */
+    fun submitMatchOutcome(success: Boolean): AnswerResult {
+        val q = currentQuestion ?: return AnswerResult.Finished
+        require(q is Question.PictureLetterMatchQuestion)
+        return applyOutcome(success)
+    }
+
+    private fun applyOutcome(correct: Boolean): AnswerResult {
         if (correct) {
             correctCount += 1
             correctStreak += 1
@@ -147,9 +194,15 @@ class LevelSession(
         return candidate
     }
 
-    private fun shouldUsePopQuestion(): Boolean {
-        // Mix types lightly: about 30% pop-balloons questions.
-        return rnd.nextInt(100) < 30
+    private fun nextTwoDistinctCorrect(group: List<String>): Pair<String, String> {
+        val first = nextBalancedCorrect(group)
+        var second = nextBalancedCorrect(group)
+        if (second != first) return first to second
+        val others = group.filter { it != first }
+        require(others.isNotEmpty()) { "Letter group needs at least two letters for matching" }
+        val alt = others.random(rnd)
+        lastCorrectAnswer = alt
+        return first to alt
     }
 }
 
