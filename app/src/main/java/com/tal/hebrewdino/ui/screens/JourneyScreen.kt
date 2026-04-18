@@ -1,6 +1,7 @@
 package com.tal.hebrewdino.ui.screens
 
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -12,6 +13,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -125,7 +127,6 @@ fun JourneyScreen(
     unlockedLevel: Int,
     completedLevels: Set<Int>,
     onPlayLevel: (Int) -> Unit,
-    onOpenSettings: () -> Unit,
     onBack: () -> Unit,
     onDebugUnlockNext: (() -> Unit)? = null,
     totalLevels: Int = Chapter1Config.STATION_COUNT,
@@ -133,6 +134,10 @@ fun JourneyScreen(
     playableLevels: Int = totalLevels,
     headerTitle: String = "פרק 1 - מצא את הביצה",
     headerSubtitle: String? = null,
+    /** Softer, slightly smaller subtitle so long lines wrap calmly (e.g. chapter 3). */
+    headerSubtitleCompact: Boolean = false,
+    /** Optional second character drawn beside Dino (e.g. mom in chapter 2). */
+    companionImageRes: Int? = null,
     endMarker: JourneyEndMarker = JourneyEndMarker.Egg,
     modifier: Modifier = Modifier,
 ) {
@@ -142,6 +147,9 @@ fun JourneyScreen(
     val quickPlayLevel =
         nextPlayableSuggested.coerceAtMost(unlockedLevel).coerceAtMost(playableLevels)
     val completedPlayableCount = completedLevels.count { it in 1..playableLevels }
+    val goalSegmentComplete =
+        playableLevels < totalLevels &&
+            (1..playableLevels).all { level -> completedLevels.contains(level) }
 
     val scope = rememberCoroutineScope()
     var walking by remember { mutableStateOf(false) }
@@ -164,7 +172,9 @@ fun JourneyScreen(
                 // All playable stations done — ease dino toward the goal.
                 (roadFractions.lastIndex * 0.88f).coerceAtLeast((playableLevels - 1).coerceAtLeast(1) - 1f)
             }
-        dinoProgress.snapTo(target)
+        val dist = kotlin.math.abs(dinoProgress.value - target)
+        val ms = (280 + dist * 420f).roundToInt().coerceIn(320, 2200)
+        dinoProgress.animateTo(target, tween(ms, easing = FastOutSlowInEasing))
     }
 
     fun launchWalkThenPlay(targetLevel: Int) {
@@ -212,12 +222,18 @@ fun JourneyScreen(
             Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = resolvedSubtitle,
-                style = MaterialTheme.typography.titleLarge,
-                color = Color(0xFF0B2B3D),
+                modifier = Modifier.fillMaxWidth(),
+                style =
+                    if (headerSubtitleCompact) {
+                        MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Medium)
+                    } else {
+                        MaterialTheme.typography.titleLarge
+                    },
+                color = Color(0xFF0B2B3D).copy(alpha = if (headerSubtitleCompact) 0.78f else 1f),
+                textAlign = TextAlign.Center,
             )
             Spacer(modifier = Modifier.height(8.dp))
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                Spacer(modifier = Modifier.weight(1f))
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Start) {
                 OutlinedButton(
                     onClick = onBack,
                     enabled = !walking,
@@ -228,17 +244,6 @@ fun JourneyScreen(
                         ),
                 ) {
                     Text(text = "חזור")
-                }
-                OutlinedButton(
-                    onClick = onOpenSettings,
-                    enabled = !walking,
-                    colors =
-                        ButtonDefaults.outlinedButtonColors(
-                            containerColor = Color.White.copy(alpha = 0.86f),
-                            contentColor = Color(0xFF0B2B3D),
-                        ),
-                ) {
-                    Text(text = "הגדרות")
                 }
             }
             Spacer(modifier = Modifier.height(10.dp))
@@ -283,9 +288,11 @@ fun JourneyScreen(
                 completedLevels = completedLevels,
                 nextSuggested = nextPlayableSuggested,
                 completedPlayableCount = completedPlayableCount,
+                goalSegmentComplete = goalSegmentComplete,
                 walking = walking,
                 dinoProgress = dinoProgress.value,
                 walkDrawable = walkFrames[walkFrame],
+                companionImageRes = companionImageRes,
                 roadScrollState = roadScroll,
                 endMarker = endMarker,
                 onStationClick = { levelId -> launchWalkThenPlay(levelId) },
@@ -304,9 +311,12 @@ private fun JourneyRoadStrip(
     completedLevels: Set<Int>,
     nextSuggested: Int,
     completedPlayableCount: Int,
+    /** All playable stations finished while more stations exist on the map (e.g. chapter 3). */
+    goalSegmentComplete: Boolean,
     walking: Boolean,
     dinoProgress: Float,
     walkDrawable: Int,
+    companionImageRes: Int?,
     roadScrollState: ScrollState,
     endMarker: JourneyEndMarker,
     onStationClick: (Int) -> Unit,
@@ -387,14 +397,14 @@ private fun JourneyRoadStrip(
                 }
 
                 // One subtle “sparkle” per completed playable station (cumulative, capped).
-                val sparkCap = if (hasFutureTrack) 2 else 6
+                val sparkCap = if (hasFutureTrack) 1 else 6
                 val sparkles = completedPlayableCount.coerceIn(0, sparkCap)
                 repeat(sparkles) { k ->
                     val t = 0.15f + k * 0.11f
                     val (px, py) = xyAlongRoad(t * roadFractions.lastIndex.toFloat(), roadFractions)
                     drawCircle(
-                        color = Color(0xFFFFF59D).copy(alpha = if (hasFutureTrack) 0.16f else 0.22f),
-                        radius = if (hasFutureTrack) 4f else 5f,
+                        color = Color(0xFFFFF59D).copy(alpha = if (hasFutureTrack) 0.12f else 0.22f),
+                        radius = if (hasFutureTrack) 3.5f else 5f,
                         center = Offset(px * size.width, py * size.height),
                     )
                 }
@@ -443,10 +453,12 @@ private fun JourneyRoadStrip(
                         Modifier
                             .align(Alignment.TopStart)
                             .offset {
-                                IntOffset(
-                                    (xPx - 40.dp.toPx()).roundToInt(),
-                                    (yPx - 40.dp.toPx()).roundToInt(),
-                                )
+                                with(density) {
+                                    IntOffset(
+                                        (xPx - 40.dp.toPx()).roundToInt(),
+                                        (yPx - 40.dp.toPx()).roundToInt(),
+                                    )
+                                }
                             },
                     onClick = { if (enabled) onStationClick(levelId) },
                 )
@@ -454,6 +466,33 @@ private fun JourneyRoadStrip(
 
             val (dfx, dfy) = xyAlongRoad(dinoProgress, roadFractions)
             val dinoRes = if (walking) walkDrawable else R.drawable.dino_idle
+            val dinoX =
+                with(density) {
+                    (dfx * wPx - 44.dp.toPx()).roundToInt()
+                }
+            val dinoY =
+                with(density) {
+                    (dfy * hPx - 70.dp.toPx()).roundToInt()
+                }
+            if (companionImageRes != null) {
+                Image(
+                    painter = painterResource(id = companionImageRes),
+                    contentDescription = null,
+                    modifier =
+                        Modifier
+                            .align(Alignment.TopStart)
+                            .size(80.dp)
+                            .offset {
+                                with(density) {
+                                    IntOffset(
+                                        dinoX - 52.dp.roundToPx(),
+                                        dinoY + 6.dp.roundToPx(),
+                                    )
+                                }
+                            },
+                    contentScale = ContentScale.Fit,
+                )
+            }
             Image(
                 painter = painterResource(id = dinoRes),
                 contentDescription = null,
@@ -461,21 +500,20 @@ private fun JourneyRoadStrip(
                     Modifier
                         .align(Alignment.TopStart)
                         .size(88.dp)
-                        .offset {
-                            IntOffset(
-                                (dfx * wPx - 44.dp.toPx()).roundToInt(),
-                                (dfy * hPx - 70.dp.toPx()).roundToInt(),
-                            )
-                        },
+                        .offset { IntOffset(dinoX, dinoY) },
                 contentScale = ContentScale.Fit,
             )
 
             // Goal at end of the road (egg or cave home).
             val (gfx, gfy) = roadFractions.last()
             val goalPulse by rememberInfiniteTransition(label = "goal").animateFloat(
-                initialValue = 0.98f,
-                targetValue = 1.04f,
-                animationSpec = infiniteRepeatable(animation = tween(1600), repeatMode = RepeatMode.Reverse),
+                initialValue = if (goalSegmentComplete) 0.94f else 0.98f,
+                targetValue = if (goalSegmentComplete) 1.08f else 1.04f,
+                animationSpec =
+                    infiniteRepeatable(
+                        animation = tween(if (goalSegmentComplete) 1350 else 1600),
+                        repeatMode = RepeatMode.Reverse,
+                    ),
                 label = "goalPulse",
             )
             Box(
@@ -484,10 +522,12 @@ private fun JourneyRoadStrip(
                         .align(Alignment.TopStart)
                         .size(118.dp, 102.dp)
                         .offset {
-                            IntOffset(
-                                (gfx * wPx - 18.dp.toPx()).roundToInt(),
-                                (gfy * hPx - 88.dp.toPx()).roundToInt(),
-                            )
+                            with(density) {
+                                IntOffset(
+                                    (gfx * wPx - 18.dp.toPx()).roundToInt(),
+                                    (gfy * hPx - 88.dp.toPx()).roundToInt(),
+                                )
+                            }
                         },
                 contentAlignment = Alignment.Center,
             ) {
@@ -538,7 +578,7 @@ private fun JourneyStationMarker(
 
     val baseColor =
         when {
-            isFutureTrack -> Color(0xFF5D6A73).copy(alpha = 0.22f)
+            isFutureTrack -> Color(0xFF5D6A73).copy(alpha = 0.19f)
             !enabled -> Color(0xFF7E8A93).copy(alpha = 0.35f)
             completed -> Color(0xFF2E7D32).copy(alpha = 0.85f)
             suggested -> Color(0xFF2AA6C9).copy(alpha = 0.95f)
@@ -552,7 +592,7 @@ private fun JourneyStationMarker(
         }
     val label =
         when {
-            isFutureTrack -> "…"
+            isFutureTrack -> ""
             !enabled -> "🔒"
             completed -> "✓"
             else -> levelId.toString()
@@ -587,6 +627,13 @@ private fun JourneyStationMarker(
                                 .offset(y = (-2).dp),
                         contentScale = ContentScale.Fit,
                     )
+                } else if (isFutureTrack) {
+                    Box(
+                        modifier =
+                            Modifier
+                                .size(5.dp)
+                                .background(Color.White.copy(alpha = 0.16f), CircleShape),
+                    )
                 } else {
                     Text(
                         text = label,
@@ -604,6 +651,7 @@ private fun JourneyStationMarker(
                     .width(88.dp)
                     .background(
                         when {
+                            isFutureTrack -> Color.White.copy(alpha = 0.36f)
                             !enabled -> Color.White.copy(alpha = 0.60f)
                             suggested -> Color(0xFFFFF3C4).copy(alpha = 0.95f)
                             else -> Color.White.copy(alpha = 0.70f)
@@ -615,8 +663,11 @@ private fun JourneyStationMarker(
         ) {
             Text(
                 text = subtitle,
-                style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
-                color = Color(0xFF0B2B3D),
+                style =
+                    MaterialTheme.typography.bodySmall.copy(
+                        fontWeight = if (isFutureTrack) FontWeight.Medium else FontWeight.Bold,
+                    ),
+                color = Color(0xFF0B2B3D).copy(alpha = if (isFutureTrack) 0.48f else 1f),
                 textAlign = TextAlign.Center,
             )
         }

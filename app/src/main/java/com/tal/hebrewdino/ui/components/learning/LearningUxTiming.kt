@@ -5,6 +5,6 @@ object LearningUxTiming {
     const val AfterCorrectHoldMs: Long = 260L
     const val AfterWrongHoldMs: Long = 520L
     const val TapCooldownMs: Long = 165L
-    const val CorrectPathWalkMs: Int = 820
-    const val WrongPathWalkMs: Int = 480
+    const val CorrectPathWalkMs: Int = 800
+    const val WrongPathWalkMs: Int = 450
 }

@@ -3,7 +3,6 @@ package com.tal.hebrewdino.ui.components.learning
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -27,8 +26,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 /**
- * Large, readable Hebrew letter tile with optional focus halo (intro / guided tasks).
- * Touch target is at least [tileSize]; halo padding sits outside that box.
+ * Large, readable Hebrew letter tile. When [haloActive] is true, the **entire tile** uses a strong
+ * filled background (current / spoken letter), not a separate glow layer.
  */
 @Composable
 fun LetterChoiceTile(
@@ -53,7 +52,12 @@ fun LetterChoiceTile(
         animationSpec = tween(200),
         label = "correctPulse",
     )
-    LetterTileWithHalo(haloActive = haloActive, modifier = modifier) {
+    val fillColor =
+        when {
+            haloActive -> Color(0xFFFFC400).copy(alpha = 0.96f)
+            else -> Color(0xFFFFF3C4).copy(alpha = 0.96f)
+        }
+    Box(modifier = modifier, contentAlignment = Alignment.Center) {
         Box(
             modifier =
                 Modifier
@@ -61,15 +65,13 @@ fun LetterChoiceTile(
                     .scale(pulseScale)
                     .alpha(dimAlpha)
                     .clip(RoundedCornerShape(22.dp))
-                    .background(
-                        if (haloActive) Color(0xFFFFE082).copy(alpha = 0.95f) else Color(0xFFFFF3C4).copy(alpha = 0.96f),
-                    )
+                    .background(fillColor)
                     .border(
-                        width = if (correctPulse) 4.dp else 2.dp,
+                        width = if (correctPulse) 4.dp else if (haloActive) 3.dp else 2.dp,
                         color =
                             when {
                                 correctPulse -> Color(0xFF2E7D32).copy(alpha = 0.85f)
-                                haloActive -> Color(0xFF0B2B3D).copy(alpha = 0.75f)
+                                haloActive -> Color(0xFF1565C0).copy(alpha = 0.55f)
                                 else -> Color.White.copy(alpha = 0.65f)
                             },
                         shape = RoundedCornerShape(22.dp),

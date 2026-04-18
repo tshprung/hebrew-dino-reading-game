@@ -27,7 +27,6 @@ import com.tal.hebrewdino.ui.screens.Chapter3IntroScreen
 import com.tal.hebrewdino.ui.screens.Chapter3LettersIntroScreen
 import com.tal.hebrewdino.ui.screens.Chapter3LevelScreen
 import com.tal.hebrewdino.ui.screens.ChaptersScreen
-import com.tal.hebrewdino.ui.screens.CharacterSelectScreen
 import com.tal.hebrewdino.ui.screens.Chapter2IntroScreen
 import com.tal.hebrewdino.ui.screens.ForestIntroScreen
 import com.tal.hebrewdino.ui.screens.ForestOutroScreen
@@ -37,6 +36,7 @@ import com.tal.hebrewdino.ui.screens.LevelScreen
 import com.tal.hebrewdino.ui.screens.RewardScreen
 import com.tal.hebrewdino.ui.screens.SettingsScreen
 import com.tal.hebrewdino.ui.screens.Chapter2LevelScreen
+import com.tal.hebrewdino.R
 import kotlinx.coroutines.launch
 
 @Composable
@@ -46,7 +46,6 @@ fun AppNav() {
     val prefs = CharacterPrefs(context)
     val progress = ProgressPrefs(context)
     val scope = rememberCoroutineScope()
-    val character by prefs.characterFlow.collectAsState(initial = null)
     val beachIntroSeen by progress.beachIntroSeenFlow.collectAsState(initial = false)
     val beachOutroSeen by progress.beachOutroSeenFlow.collectAsState(initial = false)
     val chapter1LettersIntroSeen by progress.chapter1LettersIntroSeenFlow.collectAsState(initial = false)
@@ -72,14 +71,11 @@ fun AppNav() {
         }
     val chapter4ComingSoon = chapter3Completed
 
-    val startDestination =
-        when {
-            character == null -> Routes.CharacterSelect
-            else -> Routes.Chapters
-        }
+    val startDestination = Routes.Chapters
 
     LaunchedEffect(Unit) {
         progress.repairChapter3ProgressIfNeeded()
+        prefs.setCharacter(DinoCharacter.Dino)
     }
 
     NavHost(navController = navController, startDestination = startDestination) {
@@ -87,6 +83,7 @@ fun AppNav() {
             ChaptersScreen(
                 unlockedChapter = unlockedChapter,
                 chapter4ComingSoon = chapter4ComingSoon,
+                onOpenSettings = { navController.navigate(Routes.Settings) },
                 onOpenChapter = { chapterId ->
                     when (chapterId) {
                         1 -> {
@@ -124,33 +121,13 @@ fun AppNav() {
             )
         }
 
-        composable(Routes.CharacterSelect) {
-            CharacterSelectScreen(
-                onPick = { picked ->
-                    scope.launch {
-                        prefs.setCharacter(picked)
-                        navController.navigate(Routes.Chapters) {
-                            popUpTo(Routes.CharacterSelect) { inclusive = true }
-                        }
-                    }
-                },
-            )
-        }
-
         composable(Routes.StoryIntro) {
-            val c = character ?: DinoCharacter.Dino
             ForestIntroScreen(
-                character = c,
+                character = DinoCharacter.Dino,
                 onContinue = {
                     scope.launch { progress.markBeachIntroSeen() }
                     navController.navigate(Routes.ChapterLettersIntro) {
-                        popUpTo(Routes.CharacterSelect) { inclusive = true }
-                    }
-                },
-                onSkip = {
-                    scope.launch { progress.markBeachIntroSeen() }
-                    navController.navigate(Routes.ChapterLettersIntro) {
-                        popUpTo(Routes.CharacterSelect) { inclusive = true }
+                        popUpTo(Routes.StoryIntro) { inclusive = true }
                     }
                 },
                 onBack = { navController.popBackStack() },
@@ -201,10 +178,10 @@ fun AppNav() {
                 headerTitle = "פרק 2 - חוזרים למערה",
                 headerSubtitle = "הדרך חזרה למערה — ${Chapter2Config.STATION_COUNT} תחנות",
                 endMarker = JourneyEndMarker.HomeCave,
+                companionImageRes = R.drawable.mom_idle,
                 onPlayLevel = { stationId ->
                     navController.navigate("${Routes.Ch2Level}/$stationId")
                 },
-                onOpenSettings = { navController.navigate(Routes.Settings) },
                 onBack = { navController.navigate(Routes.Chapters) { popUpTo(Routes.Ch2Journey) { inclusive = true } } },
                 onDebugUnlockNext = {
                     scope.launch {
@@ -250,12 +227,12 @@ fun AppNav() {
                 totalLevels = Chapter3Config.STATION_COUNT,
                 playableLevels = Chapter3Config.MAX_PLAYABLE_STATION,
                 headerTitle = "פרק 3 - מצא את החבר",
-                headerSubtitle = "בדרך עם דינו — עוד חלק בדרך מחכה בהמשך",
+                headerSubtitle = "בדרך עם דינו — ההמשך יגיע בקרוב",
+                headerSubtitleCompact = true,
                 endMarker = JourneyEndMarker.HomeCave,
                 onPlayLevel = { stationId ->
                     navController.navigate("${Routes.Ch3Level}/$stationId")
                 },
-                onOpenSettings = { navController.navigate(Routes.Settings) },
                 onBack = { navController.navigate(Routes.Chapters) { popUpTo(Routes.Ch3Journey) { inclusive = true } } },
                 onDebugUnlockNext = null,
             )
@@ -268,7 +245,6 @@ fun AppNav() {
                 onPlayLevel = { levelId ->
                     navController.navigate("${Routes.Level}/$levelId")
                 },
-                onOpenSettings = { navController.navigate(Routes.Settings) },
                 onBack = {
                     navController.navigate(Routes.Chapters) { popUpTo(Routes.Journey) { inclusive = true } }
                 },
@@ -437,16 +413,9 @@ fun AppNav() {
         }
 
         composable(Routes.StoryOutro) {
-            val c = character ?: DinoCharacter.Dino
             ForestOutroScreen(
-                character = c,
+                character = DinoCharacter.Dino,
                 onContinue = {
-                    scope.launch { progress.markBeachOutroSeen() }
-                    navController.navigate(Routes.Chapters) {
-                        popUpTo(Routes.StoryOutro) { inclusive = true }
-                    }
-                },
-                onSkip = {
                     scope.launch { progress.markBeachOutroSeen() }
                     navController.navigate(Routes.Chapters) {
                         popUpTo(Routes.StoryOutro) { inclusive = true }
@@ -458,16 +427,12 @@ fun AppNav() {
 
         composable(Routes.Settings) {
             SettingsScreen(
-                selectedCharacter = character,
-                onPick = { picked: DinoCharacter ->
-                    scope.launch { prefs.setCharacter(picked) }
-                },
                 onResetAll = {
                     scope.launch {
                         progress.resetAll()
-                        prefs.clearCharacter()
-                        navController.navigate(Routes.CharacterSelect) {
-                            popUpTo(Routes.Journey) { inclusive = true }
+                        prefs.setCharacter(DinoCharacter.Dino)
+                        navController.navigate(Routes.Chapters) {
+                            popUpTo(Routes.Settings) { inclusive = true }
                         }
                     }
                 },
@@ -479,7 +444,6 @@ fun AppNav() {
 
 private object Routes {
     const val Chapters = "chapters"
-    const val CharacterSelect = "character_select"
     const val StoryIntro = "story_intro"
     const val ChapterLettersIntro = "chapter_letters_intro"
     const val Journey = "journey"

@@ -37,6 +37,7 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
@@ -44,10 +45,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.tal.hebrewdino.R
+import com.tal.hebrewdino.ui.domain.Chapter1Config
 import com.tal.hebrewdino.ui.audio.AudioClips
 import com.tal.hebrewdino.ui.audio.SoundPoolPlayer
 import com.tal.hebrewdino.ui.audio.VoicePlayer
@@ -158,17 +161,33 @@ fun RewardScreen(
                     Text("חזור")
                 }
             }
-            Text(
-                text = rtl("כל הכבוד!"),
-                style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Black),
-                color = Color(0xFF0B2B3D),
-            )
-            Spacer(modifier = Modifier.height(6.dp))
-            Text(
-                text = "שלב $levelId הסתיים",
-                style = MaterialTheme.typography.titleLarge,
-                color = Color(0xFF0B2B3D),
-            )
+            val chapterOneFinale = levelId == Chapter1Config.STATION_COUNT
+            if (chapterOneFinale) {
+                Text(
+                    text = rtl("מצאתם את הביצה!"),
+                    style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.Black),
+                    color = Color(0xFF0B2B3D),
+                    textAlign = TextAlign.Center,
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = rtl("כל הכבוד!"),
+                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                    color = Color(0xFF0B2B3D),
+                )
+            } else {
+                Text(
+                    text = rtl("כל הכבוד!"),
+                    style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Black),
+                    color = Color(0xFF0B2B3D),
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = "שלב $levelId הסתיים",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = Color(0xFF0B2B3D),
+                )
+            }
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = rtl("תפוצצו את הבלונים — הם טסים על המסך!"),
@@ -234,6 +253,7 @@ private fun FloatingRewardBalloon(
     var popping by remember(idx) { mutableStateOf(false) }
     var visible by remember(idx) { mutableStateOf(true) }
     val scale = remember(idx) { androidx.compose.animation.core.Animatable(1f) }
+    val fade = remember(idx) { androidx.compose.animation.core.Animatable(1f) }
 
     val t = driftPhase * 2f * PI.toFloat() + phase
     val ox = sin(t.toDouble()).toFloat() * ampXPx
@@ -242,15 +262,16 @@ private fun FloatingRewardBalloon(
     LaunchedEffect(popping) {
         if (!popping) return@LaunchedEffect
         scale.snapTo(1f)
+        fade.snapTo(1f)
         scale.animateTo(
-            targetValue = 1.22f,
-            animationSpec = androidx.compose.animation.core.tween(durationMillis = 110),
-        )
-        scale.animateTo(
-            targetValue = 0.12f,
-            animationSpec = androidx.compose.animation.core.tween(durationMillis = 100),
+            targetValue = 1.1f,
+            animationSpec = androidx.compose.animation.core.tween(durationMillis = 90),
         )
         onPopSfx()
+        fade.animateTo(
+            targetValue = 0f,
+            animationSpec = androidx.compose.animation.core.tween(durationMillis = 220),
+        )
         visible = false
         onPop()
     }
@@ -270,6 +291,7 @@ private fun FloatingRewardBalloon(
             Modifier
                 .offset { IntOffset(xPx.roundToInt(), yPx.roundToInt()) }
                 .size(96.dp, 118.dp)
+                .alpha(fade.value)
                 .clickable(enabled = !popping, onClick = { popping = true }),
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {

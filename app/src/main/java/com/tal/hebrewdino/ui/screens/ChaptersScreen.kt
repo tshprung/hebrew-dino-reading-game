@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -25,7 +26,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -33,6 +36,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import com.tal.hebrewdino.ui.components.learning.CaveHomeMark
 import androidx.compose.ui.graphics.drawscope.Fill
@@ -57,6 +62,7 @@ data class ChapterCard(
 fun ChaptersScreen(
     unlockedChapter: Int,
     chapter4ComingSoon: Boolean = false,
+    onOpenSettings: () -> Unit,
     onOpenChapter: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -91,12 +97,31 @@ fun ChaptersScreen(
             contentScale = ContentScale.Crop,
         )
 
+        Box(
+            modifier =
+                Modifier
+                    .align(Alignment.TopEnd)
+                    .statusBarsPadding()
+                    .padding(top = 4.dp, end = 8.dp),
+        ) {
+            OutlinedButton(
+                onClick = onOpenSettings,
+                colors =
+                    ButtonDefaults.outlinedButtonColors(
+                        containerColor = Color.White.copy(alpha = 0.90f),
+                        contentColor = Color(0xFF0B2B3D),
+                    ),
+            ) {
+                Text("הגדרות", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
+            }
+        }
+
         Column(
             modifier =
                 Modifier
                     .fillMaxSize()
                     .verticalScroll(scroll)
-                    .padding(20.dp),
+                    .padding(start = 20.dp, end = 20.dp, top = 52.dp, bottom = 20.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(
@@ -131,51 +156,76 @@ private fun ChapterVerticalPath(
         val h = maxHeight
 
         // Draw a vertical “medieval road” (top -> bottom), snake-like and irregular.
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            val path = Path()
-            val start = Offset(size.width * 0.66f, size.height * 0.06f)
-            path.moveTo(start.x, start.y)
-            val p1 = Offset(size.width * 0.44f, size.height * 0.18f)
-            val p2 = Offset(size.width * 0.70f, size.height * 0.34f)
-            val p3 = Offset(size.width * 0.38f, size.height * 0.46f)
-            val p4 = Offset(size.width * 0.72f, size.height * 0.62f)
-            val p5 = Offset(size.width * 0.40f, size.height * 0.78f)
-            val end = Offset(size.width * 0.64f, size.height * 0.94f)
-            path.cubicTo(p1.x, p1.y, p2.x, p2.y, p3.x, p3.y)
-            path.cubicTo(p4.x, p4.y, p5.x, p5.y, end.x, end.y)
+        Box(modifier = Modifier.fillMaxSize()) {
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                val path = Path()
+                val start = Offset(size.width * 0.66f, size.height * 0.06f)
+                path.moveTo(start.x, start.y)
+                val p1 = Offset(size.width * 0.44f, size.height * 0.18f)
+                val p2 = Offset(size.width * 0.70f, size.height * 0.34f)
+                val p3 = Offset(size.width * 0.38f, size.height * 0.46f)
+                val p4 = Offset(size.width * 0.72f, size.height * 0.62f)
+                val p5 = Offset(size.width * 0.40f, size.height * 0.78f)
+                val end = Offset(size.width * 0.64f, size.height * 0.94f)
+                path.cubicTo(p1.x, p1.y, p2.x, p2.y, p3.x, p3.y)
+                path.cubicTo(p4.x, p4.y, p5.x, p5.y, end.x, end.y)
 
-            drawPath(
-                path = path,
-                color = Color(0xFFE2C999).copy(alpha = 0.92f),
-                style = Stroke(width = 56f, cap = StrokeCap.Round, join = StrokeJoin.Round),
-            )
-            drawPath(
-                path = path,
-                color = Color(0xFF6B4A2A).copy(alpha = 0.26f),
-                style = Stroke(width = 62f, cap = StrokeCap.Round, join = StrokeJoin.Round),
-            )
-            drawPath(
-                path = path,
-                color = Color.White.copy(alpha = 0.18f),
-                style = Stroke(width = 26f, cap = StrokeCap.Round, join = StrokeJoin.Round),
-            )
-
-            // Pebble texture along the road to feel more “real”.
-            val dots = 95
-            for (i in 0 until dots) {
-                val t = i.toFloat() / (dots - 1).toFloat()
-                // sample along the vertical axis and place stones around the road centerline
-                val x = lerp(
-                    lerp(start.x, p3.x, t),
-                    lerp(p3.x, end.x, t),
-                    t,
-                ) + (if (i % 2 == 0) 16f else -12f)
-                val y = start.y + (end.y - start.y) * t + (if (i % 3 == 0) 10f else -8f)
-                drawCircle(
-                    color = Color(0xFF6B4A2A).copy(alpha = 0.12f),
-                    radius = if (i % 5 == 0) 6.5f else 4.5f,
-                    center = Offset(x, y),
+                drawPath(
+                    path = path,
+                    color = Color(0xFFE2C999).copy(alpha = 0.92f),
+                    style = Stroke(width = 56f, cap = StrokeCap.Round, join = StrokeJoin.Round),
                 )
+                drawPath(
+                    path = path,
+                    color = Color(0xFF6B4A2A).copy(alpha = 0.26f),
+                    style = Stroke(width = 62f, cap = StrokeCap.Round, join = StrokeJoin.Round),
+                )
+                drawPath(
+                    path = path,
+                    color = Color.White.copy(alpha = 0.18f),
+                    style = Stroke(width = 26f, cap = StrokeCap.Round, join = StrokeJoin.Round),
+                )
+
+                // Pebble texture along the road to feel more “real”.
+                val dots = 95
+                for (i in 0 until dots) {
+                    val t = i.toFloat() / (dots - 1).toFloat()
+                    // sample along the vertical axis and place stones around the road centerline
+                    val x = lerp(
+                        lerp(start.x, p3.x, t),
+                        lerp(p3.x, end.x, t),
+                        t,
+                    ) + (if (i % 2 == 0) 16f else -12f)
+                    val y = start.y + (end.y - start.y) * t + (if (i % 3 == 0) 10f else -8f)
+                    drawCircle(
+                        color = Color(0xFF6B4A2A).copy(alpha = 0.12f),
+                        radius = if (i % 5 == 0) 6.5f else 4.5f,
+                        center = Offset(x, y),
+                    )
+                }
+            }
+            // Soften the road segment leading toward “פרק 4 — בקרוב” so it does not read like a hot goal.
+            if (chapter4ComingSoon) {
+                Canvas(modifier = Modifier.fillMaxSize()) {
+                    val yMid = size.height * 0.50f
+                    val half = size.height * 0.12f
+                    drawRect(
+                        brush =
+                            Brush.verticalGradient(
+                                colors =
+                                    listOf(
+                                        Color.Transparent,
+                                        Color(0xFFECEFF1).copy(alpha = 0.30f),
+                                        Color(0xFFB0BEC5).copy(alpha = 0.14f),
+                                        Color.Transparent,
+                                    ),
+                                startY = yMid - half,
+                                endY = yMid + half,
+                            ),
+                        topLeft = Offset(0f, yMid - half),
+                        size = Size(size.width, half * 2f),
+                    )
+                }
             }
         }
 
@@ -251,10 +301,11 @@ private fun ChapterNode(
 ) {
     val pulse by rememberInfiniteTransition(label = "chNode").animateFloat(
         initialValue = 1f,
-        targetValue = if (isCurrent) 1.06f else 1f,
+        targetValue = if (isCurrent && !comingSoon) 1.06f else 1f,
         animationSpec = infiniteRepeatable(animation = tween(950), repeatMode = RepeatMode.Reverse),
         label = "chNodePulse",
     )
+    val chipScale = if (comingSoon) 1f else pulse
     Column(
         modifier = modifier,
         horizontalAlignment = Alignment.End,
@@ -263,11 +314,17 @@ private fun ChapterNode(
         Box(
             modifier =
                 Modifier
-                    .scale(pulse)
-                    .size(if (isCurrent) 86.dp else 76.dp)
+                    .scale(chipScale)
+                    .size(
+                        when {
+                            comingSoon -> 70.dp
+                            isCurrent -> 86.dp
+                            else -> 76.dp
+                        },
+                    )
                     .background(
                         when {
-                            comingSoon -> Color(0xFF78909C).copy(alpha = 0.62f)
+                            comingSoon -> Color(0xFF90A4AE).copy(alpha = 0.44f)
                             locked -> Color(0xFF5D6A73).copy(alpha = 0.42f)
                             isCurrent -> Color(0xFFFFC400).copy(alpha = 0.98f)
                             isPast -> Color(0xFF2E7D32).copy(alpha = 0.55f)
@@ -287,11 +344,11 @@ private fun ChapterNode(
                     },
                 style =
                     if (comingSoon) {
-                        MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black)
+                        MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Medium)
                     } else {
                         MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Black)
                     },
-                color = Color.White,
+                color = if (comingSoon) Color.White.copy(alpha = 0.82f) else Color.White,
             )
         }
 
@@ -300,26 +357,35 @@ private fun ChapterNode(
                 modifier =
                     Modifier
                         .width(240.dp)
-                        .background(Color.White.copy(alpha = 0.88f), RoundedCornerShape(18.dp))
+                        .background(
+                            if (comingSoon) Color.White.copy(alpha = 0.72f) else Color.White.copy(alpha = 0.88f),
+                            RoundedCornerShape(18.dp),
+                        )
                         .padding(horizontal = 12.dp, vertical = 8.dp),
             ) {
                 Column(horizontalAlignment = Alignment.End) {
                     Text(
                         text = chapter.title,
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black),
-                        color = Color(0xFF0B2B3D),
+                        style =
+                            MaterialTheme.typography.titleMedium.copy(
+                                fontWeight = if (comingSoon) FontWeight.SemiBold else FontWeight.Black,
+                            ),
+                        color = Color(0xFF0B2B3D).copy(alpha = if (comingSoon) 0.72f else 1f),
                         textAlign = TextAlign.End,
                     )
                     Spacer(modifier = Modifier.height(3.dp))
                     Text(
                         text =
                             when {
-                                comingSoon -> "בהמשך — כרגע אפשר לשחק בפרקים שמוכנים"
+                                comingSoon -> "עדיין לא זמין — אפשר לשחק בפרקים שמוכנים"
                                 locked -> "נעול עד שמסיימים את הפרק הקודם"
                                 else -> chapter.subtitle
                             },
-                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-                        color = Color(0xFF0B2B3D).copy(alpha = 0.85f),
+                        style =
+                            MaterialTheme.typography.bodyMedium.copy(
+                                fontWeight = if (comingSoon) FontWeight.Medium else FontWeight.Bold,
+                            ),
+                        color = Color(0xFF0B2B3D).copy(alpha = if (comingSoon) 0.60f else 0.85f),
                         textAlign = TextAlign.End,
                     )
                 }

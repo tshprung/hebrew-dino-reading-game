@@ -59,7 +59,6 @@ private val dinoTalkFrames =
 fun ForestIntroScreen(
     character: DinoCharacter,
     onContinue: () -> Unit,
-    onSkip: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -74,7 +73,6 @@ fun ForestIntroScreen(
                 "ונחזיר את הביצה הביתה.",
         voiceAssetPath = AudioClips.StoryBeachIntro,
         onContinue = onContinue,
-        onSkip = onSkip,
         onBack = onBack,
         modifier = modifier,
     )
@@ -84,21 +82,18 @@ fun ForestIntroScreen(
 fun ForestOutroScreen(
     character: DinoCharacter,
     onContinue: () -> Unit,
-    onSkip: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     ForestStoryScreen(
         backgroundRes = R.drawable.forest_bg_story_outro_egg,
         dinoContentDescription = if (character == DinoCharacter.Dina) "דינה" else "דינו",
-        title = "פרק 1 - מצא את הביצה",
+        title = "מצאתם את הביצה!",
         body =
-            "מצאתם את הביצה!\n" +
-                "אמא מחבקת חזק, והיער שקט שוב.\n" +
+            "אמא מחבקת חזק, והיער שקט שוב.\n" +
                 "מחר נמשיך להרפתקה חדשה…",
         voiceAssetPath = AudioClips.StoryBeachOutro,
         onContinue = onContinue,
-        onSkip = onSkip,
         onBack = onBack,
         modifier = modifier,
     )
@@ -112,7 +107,6 @@ private fun ForestStoryScreen(
     body: String,
     voiceAssetPath: String,
     onContinue: () -> Unit,
-    onSkip: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -202,17 +196,6 @@ private fun ForestStoryScreen(
                         ),
                 ) {
                     Text("חזור")
-                }
-                OutlinedButton(
-                    onClick = onSkip,
-                    modifier = Modifier.width(160.dp),
-                    colors =
-                        androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
-                            containerColor = Color.White.copy(alpha = 0.86f),
-                            contentColor = Color(0xFF0B2B3D),
-                        ),
-                ) {
-                    Text("דלג")
                 }
                 Button(onClick = onContinue, modifier = Modifier.width(160.dp)) {
                     Text("המשך")

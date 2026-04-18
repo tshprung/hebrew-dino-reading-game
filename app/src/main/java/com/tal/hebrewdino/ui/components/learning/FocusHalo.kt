@@ -37,12 +37,12 @@ fun FocusHalo(
         val r = size.minDimension * 0.52f
         val c = Offset(size.width / 2f, size.height / 2f)
         drawCircle(
-            color = Color(0xFF2E7D32).copy(alpha = 0.16f * pulse),
+            color = Color(0xFF2E7D32).copy(alpha = 0.085f * pulse),
             radius = r,
             center = c,
         )
         drawCircle(
-            color = Color(0xFF81C784).copy(alpha = 0.12f * pulse),
+            color = Color(0xFF81C784).copy(alpha = 0.055f * pulse),
             radius = r * 0.78f,
             center = c,
         )

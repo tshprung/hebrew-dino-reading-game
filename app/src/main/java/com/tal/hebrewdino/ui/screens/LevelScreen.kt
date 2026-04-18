@@ -2,7 +2,6 @@ package com.tal.hebrewdino.ui.screens
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -17,10 +16,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.Button
 import androidx.compose.material3.LinearProgressIndicator
@@ -43,20 +40,14 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.LayoutCoordinates
-import androidx.compose.ui.layout.boundsInRoot
-import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -147,7 +138,6 @@ fun LevelScreen(
         when (current) {
             is Question.TapChoiceQuestion -> current.correctAnswer
             is Question.PopBalloonsQuestion -> current.correctAnswer
-            is Question.DragToEggQuestion -> current.correctAnswer
             null -> ""
         }
 
@@ -266,29 +256,10 @@ fun LevelScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        val mission =
-            when (current) {
-                is Question.TapChoiceQuestion -> "משימה: תבחר/י את האות הנכונה"
-                is Question.PopBalloonsQuestion -> "משימה: תפוצץ/י בלון עם האות הנכונה"
-                is Question.DragToEggQuestion -> "משימה: תגרור/י את האות אל הביצה"
-            }
-
-        // Make progress feel chunky (kids notice each step).
-        val rawProgress = (questionNumber - 1).coerceAtLeast(0).toFloat() / totalQuestions.toFloat()
-        val steps = 5
-        val eggProgress = (kotlin.math.floor(rawProgress * steps) / steps).coerceIn(0f, 1f)
-
         Column(
             modifier = Modifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-                MissionWidget(
-                    mission = mission,
-                    progress = eggProgress,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-
                 TextButton(
                     onClick = {
                         if (inputLocked) return@TextButton
@@ -298,14 +269,6 @@ fun LevelScreen(
                 ) {
                     Text("שמע/י שוב")
                 }
-                Spacer(modifier = Modifier.height(4.dp))
-
-                Text(
-                    text = mission,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = Color(0xFF0B2B3D),
-                    textAlign = TextAlign.Center,
-                )
                 Spacer(modifier = Modifier.height(10.dp))
 
                 Text(
@@ -314,7 +277,6 @@ fun LevelScreen(
                             when (current) {
                                 is Question.TapChoiceQuestion -> current.correctAnswer
                                 is Question.PopBalloonsQuestion -> current.correctAnswer
-                                is Question.DragToEggQuestion -> current.correctAnswer
                             },
                     style = MaterialTheme.typography.titleLarge,
                     textAlign = TextAlign.Center,
@@ -383,14 +345,6 @@ fun LevelScreen(
                     shakePx = optionsShake.value,
                     onPopSfx = { sfx.playFirstAvailable(AudioClips.SfxBalloonPop, volume = 0.8f) },
                     onPick = onPick,
-                )
-            }
-            is Question.DragToEggQuestion -> {
-                DragToEggOptions(
-                    options = current.options,
-                    enabled = !inputLocked,
-                    shakePx = optionsShake.value,
-                    onDrop = onPick,
                 )
             }
         }
@@ -495,17 +449,19 @@ private fun PopBalloon(
     var popping by remember(letter) { mutableStateOf(false) }
     var visible by remember(letter) { mutableStateOf(true) }
     val scale = remember(letter) { androidx.compose.animation.core.Animatable(1f) }
+    val fade = remember(letter) { androidx.compose.animation.core.Animatable(1f) }
 
     LaunchedEffect(popping) {
         if (!popping) return@LaunchedEffect
         scale.snapTo(1f)
+        fade.snapTo(1f)
         scale.animateTo(
-            targetValue = 1.22f,
-            animationSpec = androidx.compose.animation.core.tween(durationMillis = 110),
+            targetValue = 1.12f,
+            animationSpec = androidx.compose.animation.core.tween(durationMillis = 100),
         )
-        scale.animateTo(
-            targetValue = 0.15f,
-            animationSpec = androidx.compose.animation.core.tween(durationMillis = 90),
+        fade.animateTo(
+            targetValue = 0f,
+            animationSpec = androidx.compose.animation.core.tween(durationMillis = 200),
         )
         visible = false
         onPop()
@@ -519,6 +475,7 @@ private fun PopBalloon(
                 Modifier
                     .size(86.dp)
                     .scale(scale.value)
+                    .alpha(fade.value)
                     .clickable(
                         enabled = enabled && !popping,
                         onClick = {
@@ -561,263 +518,6 @@ private fun PopBalloon(
                 end = Offset(size.width / 2f, size.height),
                 strokeWidth = 2f,
             )
-        }
-    }
-}
-
-@Composable
-private fun MissionWidget(
-    mission: String,
-    progress: Float,
-    modifier: Modifier = Modifier,
-) {
-    val p = progress.coerceIn(0f, 1f)
-    val crackStage =
-        when {
-            p < 0.25f -> 0
-            p < 0.50f -> 1
-            p < 0.75f -> 2
-            else -> 3
-        }
-
-    Box(
-        modifier =
-            modifier
-                .background(Color.White.copy(alpha = 0.72f), shape = RoundedCornerShape(18.dp))
-                .border(1.dp, Color.White.copy(alpha = 0.75f), RoundedCornerShape(18.dp))
-                .padding(horizontal = 14.dp, vertical = 10.dp),
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            EggGraphic(stage = crackStage, modifier = Modifier.size(42.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                LinearProgressIndicator(
-                    progress = { p },
-                    modifier = Modifier.fillMaxWidth().height(10.dp),
-                    color = Color(0xFFFFC400),
-                    trackColor = Color(0xFF0B2B3D).copy(alpha = 0.12f),
-                )
-                Spacer(modifier = Modifier.height(6.dp))
-                Text(
-                    text = mission,
-                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-                    color = Color(0xFF0B2B3D),
-                    textAlign = TextAlign.Start,
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun EggGraphic(stage: Int, modifier: Modifier = Modifier) {
-    // Simple drawn egg with crack stages (no asset needed).
-    androidx.compose.foundation.Canvas(modifier = modifier) {
-        val w = size.width
-        val h = size.height
-        val center = Offset(w / 2f, h / 2f)
-        val eggRadiusX = w * 0.36f
-        val eggRadiusY = h * 0.44f
-
-        // Soft glow as we progress.
-        if (stage >= 2) {
-            drawCircle(
-                brush =
-                    Brush.radialGradient(
-                        colors = listOf(Color(0x66FFC400), Color.Transparent),
-                        center = center,
-                        radius = w * 0.7f,
-                    ),
-                radius = w * 0.45f,
-                center = center,
-            )
-        }
-
-        // Egg body gradient
-        drawOval(
-            brush =
-                Brush.verticalGradient(
-                    listOf(Color(0xFFFFFBF2), Color(0xFFF1E3C6)),
-                ),
-            topLeft = Offset(center.x - eggRadiusX, center.y - eggRadiusY),
-            size = androidx.compose.ui.geometry.Size(eggRadiusX * 2f, eggRadiusY * 2f),
-        )
-        drawOval(
-            color = Color(0xFF8B6B3E).copy(alpha = 0.35f),
-            topLeft = Offset(center.x - eggRadiusX, center.y - eggRadiusY),
-            size = androidx.compose.ui.geometry.Size(eggRadiusX * 2f, eggRadiusY * 2f),
-            style = Stroke(width = w * 0.06f),
-        )
-
-        if (stage >= 1) {
-            // A simple crack line
-            val y0 = center.y - eggRadiusY * 0.15f
-            val y1 = center.y + eggRadiusY * 0.25f
-            val x = center.x
-            val pts =
-                listOf(
-                    Offset(x - w * 0.06f, y0),
-                    Offset(x + w * 0.02f, y0 + h * 0.08f),
-                    Offset(x - w * 0.03f, y0 + h * 0.16f),
-                    Offset(x + w * 0.05f, y0 + h * 0.24f),
-                    Offset(x - w * 0.01f, y1),
-                )
-            for (i in 0 until pts.size - 1) {
-                drawLine(
-                    color = Color(0xFF6B4A2A),
-                    start = pts[i],
-                    end = pts[i + 1],
-                    strokeWidth = w * 0.05f,
-                )
-            }
-        }
-        if (stage >= 3) {
-            // A second crack
-            drawLine(
-                color = Color(0xFF6B4A2A),
-                start = Offset(center.x - w * 0.10f, center.y + h * 0.02f),
-                end = Offset(center.x + w * 0.12f, center.y + h * 0.18f),
-                strokeWidth = w * 0.04f,
-            )
-        }
-    }
-}
-
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-private fun DragToEggOptions(
-    options: List<String>,
-    enabled: Boolean,
-    shakePx: Float,
-    onDrop: (String) -> Unit,
-) {
-    var containerRect by remember { mutableStateOf<Rect?>(null) }
-    var eggRect by remember { mutableStateOf<Rect?>(null) }
-    var draggingLetter by remember { mutableStateOf<String?>(null) }
-    var dragPosInRoot by remember { mutableStateOf<Offset?>(null) }
-    val snapAnim = remember { androidx.compose.animation.core.Animatable(0f) }
-    val scope = rememberCoroutineScope()
-
-    val hoveringEgg = eggRect != null && dragPosInRoot != null && eggRect!!.contains(dragPosInRoot!!)
-
-    Box(
-        modifier =
-            Modifier.onGloballyPositioned { containerRect = it.boundsInRoot() },
-    ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            // Drop target (egg)
-            Box(
-                modifier =
-                    Modifier
-                        .size(120.dp)
-                        .onGloballyPositioned { coords ->
-                            eggRect = coords.boundsInRoot()
-                        }
-                        .background(
-                            if (hoveringEgg) Color(0xFFFFF3C4).copy(alpha = 0.90f) else Color.White.copy(alpha = 0.75f),
-                            shape = CircleShape,
-                        ),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(text = "🥚", fontSize = 56.sp)
-            }
-
-            Spacer(modifier = Modifier.height(18.dp))
-
-            // Draggables
-            FlowRow(
-                horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier.offset { IntOffset(shakePx.roundToInt(), 0) },
-            ) {
-                options.forEach { letter ->
-                    var coords: LayoutCoordinates? by remember(letter) { mutableStateOf(null) }
-                    val isDraggingThis = draggingLetter == letter
-
-                    Box(
-                        modifier =
-                            Modifier
-                                .size(84.dp)
-                                .background(
-                                    Color(0xFFF3F7FF).copy(alpha = if (isDraggingThis) 0.35f else 0.95f),
-                                    shape = CircleShape,
-                                )
-                                .onGloballyPositioned { coords = it }
-                                .pointerInput(enabled, letter) {
-                                    if (!enabled) return@pointerInput
-                                    detectDragGestures(
-                                        onDragStart = {
-                                            draggingLetter = letter
-                                            dragPosInRoot = coords?.localToRoot(Offset(42f, 42f))
-                                        },
-                                        onDrag = { change, _ ->
-                                            change.consume()
-                                            val c = coords
-                                            if (c != null) {
-                                                dragPosInRoot = c.localToRoot(change.position)
-                                            }
-                                        },
-                                        onDragEnd = {
-                                            val rect = eggRect
-                                            val pos = dragPosInRoot
-                                            if (rect != null && pos != null && rect.contains(pos)) {
-                                                scope.launch {
-                                                    snapAnim.snapTo(0f)
-                                                    snapAnim.animateTo(1f, animationSpec = androidx.compose.animation.core.tween(140))
-                                                }
-                                                onDrop(letter)
-                                            }
-                                            draggingLetter = null
-                                            dragPosInRoot = null
-                                        },
-                                        onDragCancel = {
-                                            draggingLetter = null
-                                            dragPosInRoot = null
-                                        },
-                                    )
-                                }
-                                .clickable(enabled = enabled) {
-                                    // Fallback: allow tap to attempt (useful for accessibility / if drag is hard).
-                                    onDrop(letter)
-                                },
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text(text = letter, fontSize = 38.sp, fontWeight = FontWeight.Black, color = Color(0xFF0B2B3D))
-                    }
-                }
-            }
-        }
-
-        // Floating dragged letter (visual feedback)
-        val cRect = containerRect
-        val posRoot = dragPosInRoot
-        val dragging = draggingLetter
-        if (cRect != null && posRoot != null && dragging != null) {
-            val local = posRoot - cRect.topLeft
-            val half = 42
-            val egg = eggRect
-            val snapT = snapAnim.value
-            val snapTargetLocal =
-                if (egg != null) {
-                    (egg.center - cRect.topLeft) - Offset(half.toFloat(), half.toFloat())
-                } else {
-                    Offset((local.x - half), (local.y - half))
-                }
-            val start = Offset((local.x - half), (local.y - half))
-            val blended = Offset(
-                x = start.x + (snapTargetLocal.x - start.x) * snapT,
-                y = start.y + (snapTargetLocal.y - start.y) * snapT,
-            )
-            Box(
-                modifier =
-                    Modifier
-                        .offset { IntOffset(blended.x.toInt(), blended.y.toInt()) }
-                        .size(84.dp)
-                        .background(Color.White.copy(alpha = 0.92f), shape = CircleShape)
-                        .border(2.dp, Color(0xFFFFC400), CircleShape),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(text = dragging, fontSize = 38.sp, fontWeight = FontWeight.Black, color = Color(0xFF0B2B3D))
-            }
         }
     }
 }
