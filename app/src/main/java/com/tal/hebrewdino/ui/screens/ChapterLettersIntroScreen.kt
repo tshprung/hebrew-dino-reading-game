@@ -61,7 +61,7 @@ fun Chapter2LettersIntroScreen(
     modifier: Modifier = Modifier,
 ) {
     ChapterLettersIntroScreen(
-        chapterTitle = "פרק 2 - חוזרים למערה",
+        chapterTitle = "פרק 2 - חוזרים הביתה",
         letters = listOf("ב", "מ", "ל", "ק", "ט"),
         onContinue = onContinue,
         onBack = onBack,

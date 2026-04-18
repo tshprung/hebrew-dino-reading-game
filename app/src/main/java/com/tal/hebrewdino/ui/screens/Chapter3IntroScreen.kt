@@ -70,7 +70,7 @@ fun Chapter3IntroScreen(
                         text =
                             "מישהו מהחברים קורא לדינו.\n" +
                                 "נאזין לרמז של האות ונמצא מי זה.\n" +
-                                "בסוף כולם ניפגש שוב ליד המערה.",
+                                "בסוף כולם ניפגש שוב ליד הקן.",
                         style = MaterialTheme.typography.titleLarge,
                         color = Color(0xFF0B2B3D),
                         textAlign = TextAlign.Center,

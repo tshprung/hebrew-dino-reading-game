@@ -65,6 +65,7 @@ import androidx.compose.ui.unit.dp
 import com.tal.hebrewdino.R
 import com.tal.hebrewdino.ui.components.learning.CaveHomeMark
 import com.tal.hebrewdino.ui.domain.Chapter1Config
+import com.tal.hebrewdino.ui.domain.JourneyMapLayout
 import androidx.compose.ui.draw.scale
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -77,17 +78,6 @@ private val walkFrames =
         R.drawable.dino_walk_0,
         R.drawable.dino_walk_1,
         R.drawable.dino_walk_2,
-    )
-
-/** Station points along the road (fractions of the road box). */
-private val stationFractions: List<Pair<Float, Float>> =
-    listOf(
-        0.92f to 0.58f,
-        0.76f to 0.42f,
-        0.60f to 0.60f,
-        0.44f to 0.44f,
-        0.28f to 0.62f,
-        0.16f to 0.46f,
     )
 
 /** More “snake-like” road points for drawing + walking. */
@@ -105,6 +95,8 @@ private val roadFractions: List<Pair<Float, Float>> =
         0.10f to 0.48f,
         0.04f to 0.54f, // goal point (egg) sits just after last station
     )
+
+private val stationFractions = JourneyMapLayout.stationFractions
 
 enum class JourneyEndMarker {
     Egg,
@@ -144,6 +136,16 @@ fun JourneyScreen(
     val resolvedSubtitle = headerSubtitle ?: "הדרך לביצה — $totalLevels תחנות"
     val nextPlayableSuggested =
         (1..playableLevels).firstOrNull { !completedLevels.contains(it) } ?: (playableLevels + 1)
+    fun idleDinoProgressAlongRoad(): Float =
+        if (nextPlayableSuggested <= playableLevels) {
+            if (nextPlayableSuggested > 1) {
+                (nextPlayableSuggested - 2).toFloat().coerceIn(0f, (totalLevels - 1).toFloat().coerceAtLeast(1f))
+            } else {
+                0f
+            }
+        } else {
+            (roadFractions.lastIndex * 0.88f).coerceAtLeast((playableLevels - 1).coerceAtLeast(1) - 1f)
+        }
     val quickPlayLevel =
         nextPlayableSuggested.coerceAtMost(unlockedLevel).coerceAtMost(playableLevels)
     val completedPlayableCount = completedLevels.count { it in 1..playableLevels }
@@ -154,27 +156,16 @@ fun JourneyScreen(
     val scope = rememberCoroutineScope()
     var walking by remember { mutableStateOf(false) }
     var walkFrame by remember { mutableIntStateOf(0) }
-    val dinoProgress = remember { Animatable(0f) }
+    val dinoProgress =
+        remember(completedLevels, unlockedLevel, playableLevels, totalLevels, nextPlayableSuggested) {
+            Animatable(idleDinoProgressAlongRoad())
+        }
 
     LaunchedEffect(walking) {
         while (walking) {
             delay(95)
             walkFrame = (walkFrame + 1) % walkFrames.size
         }
-    }
-
-    LaunchedEffect(nextPlayableSuggested, unlockedLevel, completedLevels, playableLevels) {
-        if (walking) return@LaunchedEffect
-        val target =
-            if (nextPlayableSuggested <= playableLevels) {
-                (nextPlayableSuggested - 1).toFloat().coerceIn(0f, (playableLevels - 1).toFloat().coerceAtLeast(0f))
-            } else {
-                // All playable stations done — ease dino toward the goal.
-                (roadFractions.lastIndex * 0.88f).coerceAtLeast((playableLevels - 1).coerceAtLeast(1) - 1f)
-            }
-        val dist = kotlin.math.abs(dinoProgress.value - target)
-        val ms = (280 + dist * 420f).roundToInt().coerceIn(320, 2200)
-        dinoProgress.animateTo(target, tween(ms, easing = FastOutSlowInEasing))
     }
 
     fun launchWalkThenPlay(targetLevel: Int) {
@@ -430,6 +421,49 @@ private fun JourneyRoadStrip(
                 }
             }
 
+            val (gfx, gfy) = roadFractions.last()
+            val goalPulse by rememberInfiniteTransition(label = "goal").animateFloat(
+                initialValue = if (goalSegmentComplete) 0.94f else 0.98f,
+                targetValue = if (goalSegmentComplete) 1.08f else 1.04f,
+                animationSpec =
+                    infiniteRepeatable(
+                        animation = tween(if (goalSegmentComplete) 1350 else 1600),
+                        repeatMode = RepeatMode.Reverse,
+                    ),
+                label = "goalPulse",
+            )
+            Box(
+                modifier =
+                    Modifier
+                        .align(Alignment.TopStart)
+                        .size(118.dp, 102.dp)
+                        .offset {
+                            with(density) {
+                                IntOffset(
+                                    (gfx * wPx - 18.dp.toPx()).roundToInt(),
+                                    (gfy * hPx - 88.dp.toPx()).roundToInt(),
+                                )
+                            }
+                        },
+                contentAlignment = Alignment.Center,
+            ) {
+                when (endMarker) {
+                    JourneyEndMarker.Egg ->
+                        Image(
+                            painter = painterResource(id = R.drawable.finish_marker_egg),
+                            contentDescription = null,
+                            modifier = Modifier.size(110.dp).scale(goalPulse),
+                            contentScale = ContentScale.Fit,
+                        )
+                    JourneyEndMarker.HomeCave ->
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Box(modifier = Modifier.scale(goalPulse)) {
+                                CaveHomeMark()
+                            }
+                        }
+                }
+            }
+
             for (levelId in 1..totalLevels) {
                 val idx = (levelId - 1).coerceIn(0, stationFractions.lastIndex)
                 val (fx, fy) = stationFractions[idx]
@@ -503,50 +537,6 @@ private fun JourneyRoadStrip(
                         .offset { IntOffset(dinoX, dinoY) },
                 contentScale = ContentScale.Fit,
             )
-
-            // Goal at end of the road (egg or cave home).
-            val (gfx, gfy) = roadFractions.last()
-            val goalPulse by rememberInfiniteTransition(label = "goal").animateFloat(
-                initialValue = if (goalSegmentComplete) 0.94f else 0.98f,
-                targetValue = if (goalSegmentComplete) 1.08f else 1.04f,
-                animationSpec =
-                    infiniteRepeatable(
-                        animation = tween(if (goalSegmentComplete) 1350 else 1600),
-                        repeatMode = RepeatMode.Reverse,
-                    ),
-                label = "goalPulse",
-            )
-            Box(
-                modifier =
-                    Modifier
-                        .align(Alignment.TopStart)
-                        .size(118.dp, 102.dp)
-                        .offset {
-                            with(density) {
-                                IntOffset(
-                                    (gfx * wPx - 18.dp.toPx()).roundToInt(),
-                                    (gfy * hPx - 88.dp.toPx()).roundToInt(),
-                                )
-                            }
-                        },
-                contentAlignment = Alignment.Center,
-            ) {
-                when (endMarker) {
-                    JourneyEndMarker.Egg ->
-                        Image(
-                            painter = painterResource(id = R.drawable.finish_marker_egg),
-                            contentDescription = null,
-                            modifier = Modifier.size(110.dp).scale(goalPulse),
-                            contentScale = ContentScale.Fit,
-                        )
-                    JourneyEndMarker.HomeCave ->
-                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Box(modifier = Modifier.scale(goalPulse)) {
-                                CaveHomeMark()
-                            }
-                        }
-                }
-            }
         }
     }
 }

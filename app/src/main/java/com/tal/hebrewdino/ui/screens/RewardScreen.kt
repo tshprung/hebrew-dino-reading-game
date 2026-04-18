@@ -9,6 +9,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Arrangement
@@ -278,6 +279,8 @@ private fun FloatingRewardBalloon(
 
     if (!visible) return
 
+    val interaction = remember(idx) { MutableInteractionSource() }
+
     // Clamp so balloons never drift fully off-screen.
     // We're in px space already; clamping with generous margins prevents “invisible unpoppable balloon”.
     val paddingPx = 10f
@@ -292,7 +295,12 @@ private fun FloatingRewardBalloon(
                 .offset { IntOffset(xPx.roundToInt(), yPx.roundToInt()) }
                 .size(96.dp, 118.dp)
                 .alpha(fade.value)
-                .clickable(enabled = !popping, onClick = { popping = true }),
+                .clickable(
+                    interactionSource = interaction,
+                    indication = null,
+                    enabled = !popping,
+                    onClick = { popping = true },
+                ),
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Box(

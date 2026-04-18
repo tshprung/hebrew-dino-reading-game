@@ -60,7 +60,7 @@ fun Chapter2IntroScreen(
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
-                        text = "פרק 2 - חוזרים למערה",
+                        text = "פרק 2 - חוזרים הביתה",
                         style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Black),
                         color = Color(0xFF0B2B3D),
                         textAlign = TextAlign.Center,
@@ -69,7 +69,7 @@ fun Chapter2IntroScreen(
                     Text(
                         text =
                             "דינו קצת הלך לאיבוד.\n" +
-                                "נעזור לו לבחור שביל חזרה הביתה — למערה שבה גרים הדינוזאורים.\n" +
+                                "נעזור לו לחזור הביתה — לקן שבו גרים הדינוזאורים.\n" +
                                 "בכל צומת נזהה אות ונבחר שביל.",
                         style = MaterialTheme.typography.titleLarge,
                         color = Color(0xFF0B2B3D),

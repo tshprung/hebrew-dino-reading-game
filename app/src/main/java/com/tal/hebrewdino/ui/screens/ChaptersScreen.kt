@@ -34,6 +34,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.zIndex
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -76,8 +77,8 @@ fun ChaptersScreen(
             ),
             ChapterCard(
                 id = 2,
-                title = "פרק 2 - חוזרים למערה",
-                subtitle = "שבילים לפי אות — הבית במערה",
+                title = "פרק 2 - חוזרים הביתה",
+                subtitle = "הדרך חזרה לקן — אותיות בדרך",
             ),
             ChapterCard(
                 id = 3,
@@ -96,25 +97,6 @@ fun ChaptersScreen(
             modifier = Modifier.fillMaxSize(),
             contentScale = ContentScale.Crop,
         )
-
-        Box(
-            modifier =
-                Modifier
-                    .align(Alignment.TopEnd)
-                    .statusBarsPadding()
-                    .padding(top = 4.dp, end = 8.dp),
-        ) {
-            OutlinedButton(
-                onClick = onOpenSettings,
-                colors =
-                    ButtonDefaults.outlinedButtonColors(
-                        containerColor = Color.White.copy(alpha = 0.90f),
-                        contentColor = Color(0xFF0B2B3D),
-                    ),
-            ) {
-                Text("הגדרות", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
-            }
-        }
 
         Column(
             modifier =
@@ -138,6 +120,27 @@ fun ChaptersScreen(
                 onOpenChapter = onOpenChapter,
                 modifier = Modifier.fillMaxWidth(),
             )
+        }
+
+        // Above the scroll column so touches reach the button (column uses fillMaxSize).
+        Box(
+            modifier =
+                Modifier
+                    .align(Alignment.TopEnd)
+                    .statusBarsPadding()
+                    .padding(top = 4.dp, end = 8.dp)
+                    .zIndex(1f),
+        ) {
+            OutlinedButton(
+                onClick = onOpenSettings,
+                colors =
+                    ButtonDefaults.outlinedButtonColors(
+                        containerColor = Color.White.copy(alpha = 0.90f),
+                        contentColor = Color(0xFF0B2B3D),
+                    ),
+            ) {
+                Text("הגדרות", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
+            }
         }
     }
 }
@@ -229,19 +232,11 @@ private fun ChapterVerticalPath(
             }
         }
 
-        val slots = listOf(
-            0.60f to 0.10f,
-            0.38f to 0.26f,
-            0.64f to 0.42f,
-            0.40f to 0.58f,
-            0.66f to 0.74f,
-            0.44f to 0.86f,
-        )
-
         chapters.take(6).forEachIndexed { idx, ch ->
             val comingSoon = chapter4ComingSoon && ch.id == 4
             val locked = ch.id > unlockedChapter && !comingSoon
-            val (xF, yF) = slots.getOrElse(idx) { 0.55f to (0.12f + idx * 0.22f) }
+            val t = (idx + 1) / 7f
+            val pt = pointOnChaptersRoad(t)
 
             ChapterNode(
                 chapter = ch,
@@ -253,20 +248,19 @@ private fun ChapterVerticalPath(
                 modifier =
                     Modifier
                         .align(Alignment.TopStart)
-                        .offset(x = w * xF - 90.dp, y = h * yF - 24.dp),
+                        .offset(x = w * pt.x - 90.dp, y = h * pt.y - 28.dp),
             )
         }
 
-        // Dino stands near the next locked chapter (the “next goal”).
-        val nextLocked = (1..6).firstOrNull { it > unlockedChapter } ?: 6
-        val (dxF, dyF) = slots.getOrElse(nextLocked - 1) { 0.55f to 0.90f }
+        val dinoT = ((unlockedChapter.coerceIn(1, 6) / 7f) - 0.08f).coerceIn(0.04f, 0.92f)
+        val dinoPt = pointOnChaptersRoad(dinoT)
         Image(
             painter = painterResource(id = R.drawable.dino_idle),
             contentDescription = null,
             modifier =
                 Modifier
                     .align(Alignment.TopStart)
-                    .offset(x = w * dxF - 170.dp, y = h * dyF - 36.dp)
+                    .offset(x = w * dinoPt.x - 160.dp, y = h * dinoPt.y - 32.dp)
                     .size(88.dp),
             contentScale = ContentScale.Fit,
         )
@@ -281,7 +275,7 @@ private fun ChapterVerticalPath(
         ) {
             CaveHomeMark(modifier = Modifier.size(width = 120.dp, height = 88.dp))
             Text(
-                text = "המערה — הבית",
+                text = "הקן — הבית",
                 style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Black),
                 color = Color(0xFF0B2B3D),
             )
@@ -395,4 +389,32 @@ private fun ChapterNode(
 }
 
 private fun lerp(a: Float, b: Float, t: Float): Float = a + (b - a) * t
+
+private data class ChapPt(val x: Float, val y: Float)
+
+private fun chapCubic(t: Float, p0: ChapPt, p1: ChapPt, p2: ChapPt, p3: ChapPt): ChapPt {
+    val u = 1f - t
+    val uu = u * u
+    val tt = t * t
+    val x = u * uu * p0.x + 3f * uu * t * p1.x + 3f * u * tt * p2.x + t * tt * p3.x
+    val y = u * uu * p0.y + 3f * uu * t * p1.y + 3f * u * tt * p2.y + t * tt * p3.y
+    return ChapPt(x, y)
+}
+
+/** Same centerline as the road drawn in [ChapterVerticalPath] (normalized 0–1 of width/height). */
+private fun pointOnChaptersRoad(t: Float): ChapPt {
+    val p0 = ChapPt(0.66f, 0.06f)
+    val p1 = ChapPt(0.44f, 0.18f)
+    val p2 = ChapPt(0.70f, 0.34f)
+    val p3 = ChapPt(0.38f, 0.46f)
+    val p4 = ChapPt(0.72f, 0.62f)
+    val p5 = ChapPt(0.40f, 0.78f)
+    val p6 = ChapPt(0.64f, 0.94f)
+    val tt = t.coerceIn(0f, 1f)
+    return if (tt <= 0.5f) {
+        chapCubic(tt * 2f, p0, p1, p2, p3)
+    } else {
+        chapCubic((tt - 0.5f) * 2f, p3, p4, p5, p6)
+    }
+}
 

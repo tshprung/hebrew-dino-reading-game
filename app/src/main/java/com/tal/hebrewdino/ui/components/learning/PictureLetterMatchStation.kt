@@ -58,7 +58,6 @@ fun PictureLetterMatchStation(
     questionCount: Int,
     initialGroupIndex: Int,
     letterPoolSpec: LetterPoolSpec,
-    matchPlaceholders: List<Pair<Int, String?>>,
     onBack: () -> Unit,
     onComplete: (stationId: Int, correctCount: Int, mistakeCount: Int) -> Unit,
     modifier: Modifier = Modifier,
@@ -69,7 +68,6 @@ fun PictureLetterMatchStation(
                 questionCount = questionCount,
                 initialGroupIndex = initialGroupIndex,
                 quizMode = StationQuizMode.PictureLetterMatch,
-                matchPlaceholders = matchPlaceholders,
                 letterPoolSpec = letterPoolSpec,
             )
         }
@@ -196,7 +194,7 @@ fun PictureLetterMatchStation(
             ) { Text("שמע/י שוב") }
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "חבר כל תמונה לאות המתאימה (הקישו תמונה ואז אות)",
+                text = "חבר כל תמונה למילה שמתחילה באות המתאימה (הקישו תמונה ואז אות)",
                 style = MaterialTheme.typography.titleLarge,
                 textAlign = TextAlign.Center,
                 color = Color(0xFF0B2B3D),

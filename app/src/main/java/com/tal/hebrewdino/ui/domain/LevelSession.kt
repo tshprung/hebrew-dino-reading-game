@@ -12,8 +12,6 @@ class LevelSession(
     private val questionCount: Int,
     initialGroupIndex: Int = 0,
     private val quizMode: StationQuizMode,
-    /** Drawable id + optional caption for picture–letter matching (chapter finale). */
-    private val matchPlaceholders: List<Pair<Int, String?>> = emptyList(),
     letterPoolSpec: LetterPoolSpec = LetterPoolSpec.Default,
 ) {
     private val rnd = Random.Default
@@ -93,16 +91,12 @@ class LevelSession(
                             )
                         }
                         StationQuizMode.PictureLetterMatch -> {
-                            require(matchPlaceholders.size >= 2) {
-                                "Picture–letter match needs at least two placeholder images"
-                            }
                             val (a, b) = nextTwoDistinctCorrect(group)
                             matchGenerator.generate(
                                 rnd = rnd,
                                 group = group,
                                 letter1 = a,
                                 letter2 = b,
-                                placeholders = matchPlaceholders,
                             )
                         }
                     }

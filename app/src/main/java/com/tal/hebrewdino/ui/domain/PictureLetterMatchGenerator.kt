@@ -12,26 +12,17 @@ class PictureLetterMatchGenerator(
         group: List<String>,
         letter1: String,
         letter2: String,
-        placeholders: List<Pair<Int, String?>>,
     ): Question.PictureLetterMatchQuestion {
         require(group.isNotEmpty())
         require(letter1 in group && letter2 in group)
         require(letter1 != letter2)
-        require(placeholders.size >= 2)
 
-        val shuffledPlaceholders = placeholders.shuffled(rnd)
+        val e1 = MatchWordCatalog.pickForLetter(rnd, letter1, excludeImageRes = null)
+        val e2 = MatchWordCatalog.pickForLetter(rnd, letter2, excludeImageRes = e1.imageRes)
         val pairs =
             listOf(
-                PictureLetterPair(
-                    imageRes = shuffledPlaceholders[0].first,
-                    caption = shuffledPlaceholders[0].second,
-                    letter = letter1,
-                ),
-                PictureLetterPair(
-                    imageRes = shuffledPlaceholders[1].first,
-                    caption = shuffledPlaceholders[1].second,
-                    letter = letter2,
-                ),
+                PictureLetterPair(imageRes = e1.imageRes, caption = e1.word, letter = letter1),
+                PictureLetterPair(imageRes = e2.imageRes, caption = e2.word, letter = letter2),
             ).shuffled(rnd)
         return Question.PictureLetterMatchQuestion(pairs = pairs)
     }

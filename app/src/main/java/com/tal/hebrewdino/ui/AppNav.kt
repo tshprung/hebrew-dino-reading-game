@@ -175,8 +175,8 @@ fun AppNav() {
                 unlockedLevel = chapter2UnlockedStation,
                 completedLevels = chapter2CompletedStations,
                 totalLevels = Chapter2Config.STATION_COUNT,
-                headerTitle = "פרק 2 - חוזרים למערה",
-                headerSubtitle = "הדרך חזרה למערה — ${Chapter2Config.STATION_COUNT} תחנות",
+                headerTitle = "פרק 2 - חוזרים הביתה",
+                headerSubtitle = "הדרך חזרה לקן — ${Chapter2Config.STATION_COUNT} תחנות",
                 endMarker = JourneyEndMarker.HomeCave,
                 companionImageRes = R.drawable.mom_idle,
                 onPlayLevel = { stationId ->
