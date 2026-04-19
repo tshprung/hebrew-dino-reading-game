@@ -13,8 +13,8 @@ object ChaptersPathLayout {
 
     /** `t` in [0,1] along the same centerline as the road drawn on the chapters screen. */
     fun pointOnPath(t: Float): NormPt {
-        val p0 = NormPt(0.66f, 0.06f)
-        val p1 = NormPt(0.44f, 0.18f)
+        val p0 = NormPt(0.66f, 0.045f)
+        val p1 = NormPt(0.44f, 0.16f)
         val p2 = NormPt(0.70f, 0.34f)
         val p3 = NormPt(0.38f, 0.46f)
         val p4 = NormPt(0.72f, 0.62f)

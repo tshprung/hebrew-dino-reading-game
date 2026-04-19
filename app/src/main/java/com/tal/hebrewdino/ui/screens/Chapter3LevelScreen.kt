@@ -67,6 +67,8 @@ fun Chapter3LevelScreen(
     stationId: Int,
     onBack: () -> Unit,
     onComplete: (stationId: Int, correctCount: Int, mistakeCount: Int) -> Unit,
+    onLettersHelp: (() -> Unit)? = null,
+    onDebugStationAdvance: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     val station = stationId.coerceIn(1, Chapter3Config.STATION_COUNT)
@@ -80,6 +82,8 @@ fun Chapter3LevelScreen(
                 letterPoolSpec = Chapter3LetterPoolSpec,
                 onBack = onBack,
                 onComplete = onComplete,
+                onLettersHelp = onLettersHelp,
+                onDebugStationAdvance = onDebugStationAdvance,
                 modifier = modifier,
             )
         4 ->
@@ -108,6 +112,8 @@ fun Chapter3LevelScreen(
                 letterPoolSpec = Chapter3LetterPoolSpec,
                 onBack = onBack,
                 onComplete = onComplete,
+                onLettersHelp = onLettersHelp,
+                onDebugStationAdvance = onDebugStationAdvance,
                 modifier = modifier,
             )
         }

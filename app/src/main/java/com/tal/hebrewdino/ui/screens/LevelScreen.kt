@@ -82,15 +82,14 @@ import com.tal.hebrewdino.ui.domain.LevelSession
 import com.tal.hebrewdino.ui.domain.Question
 import com.tal.hebrewdino.ui.domain.StationQuizMode
 import com.tal.hebrewdino.ui.domain.StationQuizPlans
-import com.tal.hebrewdino.ui.components.learning.PictureLetterMatchBoard
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.PI
 import kotlin.math.cos
-import kotlin.math.roundToInt
 import kotlin.math.sin
+import kotlin.math.roundToInt
 import kotlin.random.Random
 
 @Composable
@@ -98,6 +97,8 @@ fun LevelScreen(
     levelId: Int,
     onBack: () -> Unit,
     onComplete: (levelId: Int, correctCount: Int, mistakeCount: Int) -> Unit,
+    onLettersHelp: (() -> Unit)? = null,
+    onDebugStationAdvance: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     val chapterLevel = levelId.coerceIn(1, Chapter1Config.STATION_COUNT)
@@ -109,6 +110,8 @@ fun LevelScreen(
         letterPoolSpec = LetterPoolSpec.Default,
         onBack = onBack,
         onComplete = onComplete,
+        onLettersHelp = onLettersHelp,
+        onDebugStationAdvance = onDebugStationAdvance,
         modifier = modifier,
     )
 }
@@ -360,10 +363,12 @@ internal fun PopBalloon(
         if (!popping || !shouldPop) return@LaunchedEffect
         scale.snapTo(1f)
         fade.snapTo(1f)
-        scale.animateTo(1.28f, tween(durationMillis = 90))
-        fade.animateTo(0f, tween(durationMillis = 240))
-        visible = false
+        scale.animateTo(1.38f, tween(durationMillis = 85))
+        scale.animateTo(1.62f, tween(durationMillis = 95))
+        scale.animateTo(1.48f, tween(durationMillis = 55))
+        fade.animateTo(0f, tween(durationMillis = 200))
         onPop()
+        visible = false
     }
 
     if (!visible) return
@@ -424,6 +429,38 @@ internal fun PopBalloon(
                 )
                 // Knot
                 drawCircle(color = Color(0xFF0B2B3D).copy(alpha = 0.18f), radius = r * 0.08f, center = Offset(center.x, center.y + r * 0.55f))
+
+                if (popping) {
+                    val flash = ((scale.value - 1f) / 0.62f).coerceIn(0f, 1f)
+                    if (flash > 0.02f) {
+                        drawCircle(
+                            brush =
+                                Brush.radialGradient(
+                                    colors =
+                                        listOf(
+                                            Color.White.copy(alpha = 0.55f * flash),
+                                            Color(0xFFFFE082).copy(alpha = 0.35f * flash),
+                                            Color.Transparent,
+                                        ),
+                                    center = center,
+                                    radius = r * (1.05f + flash * 0.85f),
+                                ),
+                            radius = r * (1.05f + flash * 0.85f),
+                            center = center,
+                        )
+                        val rays = 14
+                        for (i in 0 until rays) {
+                            val ang = (i / rays.toFloat()) * 2f * PI.toFloat()
+                            val len = r * (0.55f + flash * 1.35f)
+                            drawLine(
+                                color = Color(0xFFFFAB40).copy(alpha = 0.75f * flash),
+                                start = center,
+                                end = Offset(center.x + cos(ang) * len, center.y + sin(ang) * len),
+                                strokeWidth = 4.5f,
+                            )
+                        }
+                    }
+                }
             }
 
             Text(text = letter, fontSize = 38.sp, fontWeight = FontWeight.Black, color = Color(0xFF0B2B3D))

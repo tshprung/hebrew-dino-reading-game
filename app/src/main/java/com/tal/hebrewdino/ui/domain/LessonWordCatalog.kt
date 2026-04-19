@@ -1,6 +1,7 @@
 package com.tal.hebrewdino.ui.domain
 
 import androidx.annotation.ColorInt
+import androidx.annotation.DrawableRes
 import com.tal.hebrewdino.R
 import kotlin.random.Random
 
@@ -8,19 +9,15 @@ import kotlin.random.Random
  * Authoritative picture↔word↔letter rows for picture-first stations.
  * [letter] is the pedagogical first visible print letter taught for [word] (stored explicitly).
  *
- * **TODO (art, not logic):** [tintArgb] + [R.drawable.lesson_word_tile] is a **prototype** so rows stay
- * visually distinct without shipping N bitmaps yet. Question types use [LessonWordEntry] / [LessonChoice]
- * as opaque rows — swapping to **per-word drawables** later should not require changing session rules,
- * only this catalog (and small UI that reads [LessonWordEntry.tileDrawable] / optional tint).
+ * [tintArgb] + [tileRes] drive card art; many rows still use [R.drawable.lesson_word_tile] as placeholder.
  */
 data class LessonWordEntry(
     val id: String,
     val letter: String,
     val word: String,
     @ColorInt val tintArgb: Int,
-) {
-    val tileDrawable: Int = R.drawable.lesson_word_tile
-}
+    @DrawableRes val tileRes: Int = R.drawable.lesson_word_tile,
+)
 
 /**
  * Frozen catalog: validated once at class load (fail fast in debug if corrupted).
@@ -31,12 +28,12 @@ object LessonWordCatalog {
             LessonWordEntry("w_א_1", "א", "אבא", 0xFFB3E5FC.toInt()),
             LessonWordEntry("w_א_2", "א", "אריה", 0xFFFFF9C4.toInt()),
             LessonWordEntry("w_א_3", "א", "אבטיח", 0xFFC8E6C9.toInt()),
-            LessonWordEntry("w_ב_1", "ב", "בית", 0xFFE1BEE7.toInt()),
+            LessonWordEntry("w_ב_1", "ב", "בית", 0xFFE1BEE7.toInt(), tileRes = R.drawable.lesson_pic_bait),
             LessonWordEntry("w_ב_2", "ב", "בלון", 0xFFFFCDD2.toInt()),
             LessonWordEntry("w_ב_3", "ב", "ברווז", 0xFFB2EBF2.toInt()),
             LessonWordEntry("w_מ_1", "מ", "מכונית", 0xFFFFE0B2.toInt()),
             LessonWordEntry("w_מ_2", "מ", "מחבת", 0xFFDCEDC8.toInt()),
-            LessonWordEntry("w_מ_3", "מ", "מדוזה", 0xFFC5CAE9.toInt()),
+            LessonWordEntry("w_מ_3", "מ", "מדוזה", 0xFFC5CAE9.toInt(), tileRes = R.drawable.lesson_pic_medusa),
             LessonWordEntry("w_ל_1", "ל", "לחם", 0xFFFFE082.toInt()),
             LessonWordEntry("w_ל_2", "ל", "לב", 0xFFF8BBD0.toInt()),
             LessonWordEntry("w_ל_3", "ל", "למידה", 0xFFB2DFDB.toInt()),

@@ -12,12 +12,10 @@ class LevelSession(
     private val questionCount: Int,
     initialGroupIndex: Int = 0,
     private val quizMode: StationQuizMode,
-    letterPoolSpec: LetterPoolSpec = LetterPoolSpec.Default,
+    private val letterPoolSpec: LetterPoolSpec = LetterPoolSpec.Default,
 ) {
     private val rnd = Random.Default
-    private val tapGenerator = TapChoiceGenerator(letterPoolSpec)
     private val popGenerator = PopBalloonsGenerator(letterPoolSpec)
-    private val matchGenerator = PictureLetterMatchGenerator(letterPoolSpec)
     private val maxGroupIndex = max(0, letterPoolSpec.groups.lastIndex)
 
     private var lastCorrectAnswer: String? = null
@@ -47,6 +45,12 @@ class LevelSession(
 
     private var _currentQuestion: Question? by mutableStateOf(null)
 
+    private fun letterGroup(): List<String> {
+        val g = letterPoolSpec.groups.getOrNull(groupIndex).orEmpty()
+        require(g.isNotEmpty()) { "Letter group empty for index $groupIndex" }
+        return g
+    }
+
     val totalQuestions: Int get() = questionCount
 
     val questionNumber: Int get() = currentIndex + 1
@@ -55,17 +59,12 @@ class LevelSession(
         get() {
             if (currentIndex >= questionCount) return null
             if (_currentQuestion == null) {
-                val group = tapGenerator.group(groupIndex)
+                val group = letterGroup()
                 _currentQuestion =
                     when (quizMode) {
-                        StationQuizMode.TapChoice -> {
+                        StationQuizMode.FindLetterGrid -> {
                             val correct = nextBalancedCorrect(group)
-                            tapGenerator.generateTapChoiceQuestion(
-                                rnd = rnd,
-                                group = group,
-                                correctAnswer = correct,
-                                optionCount = 3,
-                            )
+                            FindLetterGridGenerator.generate(rnd, group, correct)
                         }
                         StationQuizMode.PopBalloons -> {
                             val correct = nextBalancedCorrect(group)
@@ -76,44 +75,13 @@ class LevelSession(
                                 optionCount = 3,
                             )
                         }
-                        StationQuizMode.RevealTiles -> {
+                        StationQuizMode.ImageMatch -> {
                             val correct = nextBalancedCorrect(group)
-                            val tap =
-                                tapGenerator.generateTapChoiceQuestion(
-                                    rnd = rnd,
-                                    group = group,
-                                    correctAnswer = correct,
-                                    optionCount = 3,
-                                )
-                            Question.RevealTilesQuestion(
-                                correctAnswer = tap.correctAnswer,
-                                options = tap.options,
-                            )
+                            Chapter1LessonGenerators.imageMatch(rnd, group, correct)
                         }
-                        StationQuizMode.PicturePickOne -> {
-                            val correct = nextBalancedCorrect(group)
-                            Chapter1LessonGenerators.picturePickOne(
-                                rnd = rnd,
-                                group = group,
-                                targetLetter = correct,
-                            )
-                        }
-                        StationQuizMode.PicturePickAll -> {
-                            val correct = nextBalancedCorrect(group)
-                            Chapter1LessonGenerators.picturePickAll(
-                                rnd = rnd,
-                                group = group,
-                                targetLetter = correct,
-                            )
-                        }
-                        StationQuizMode.PictureLetterMatch -> {
+                        StationQuizMode.FinaleSlot -> {
                             val (a, b) = nextTwoDistinctCorrect(group)
-                            matchGenerator.generate(
-                                rnd = rnd,
-                                group = group,
-                                letter1 = a,
-                                letter2 = b,
-                            )
+                            FinaleSlotGenerator.generate(rnd, group, a, b)
                         }
                     }
             }
@@ -124,37 +92,30 @@ class LevelSession(
         val q = currentQuestion ?: return AnswerResult.Finished
         val correct =
             when (q) {
-                is Question.TapChoiceQuestion -> answer == q.correctAnswer
                 is Question.PopBalloonsQuestion -> answer == q.correctAnswer
-                is Question.RevealTilesQuestion -> answer == q.correctAnswer
-                is Question.PictureLetterMatchQuestion ->
-                    error("PictureLetterMatchQuestion uses submitMatchOutcome(success)")
-                is Question.PicturePickOneQuestion,
-                is Question.PicturePickAllQuestion,
+                is Question.FindLetterGridQuestion,
+                is Question.ImageMatchQuestion,
+                is Question.FinaleSlotQuestion,
                 ->
-                    error("Use submitPicturePickOne / submitPicturePickAll")
+                    error("Use grid / imageMatch / finale APIs")
             }
         return applyOutcome(correct)
     }
 
-    fun submitPicturePickOne(choiceId: String): AnswerResult {
-        val q = currentQuestion as? Question.PicturePickOneQuestion ?: return AnswerResult.Finished
-        val picked = q.choices.find { it.id == choiceId } ?: return applyOutcome(false)
-        val ok = picked.letter == q.targetLetter
+    fun wrongTap(): AnswerResult = applyOutcome(false)
+
+    fun completeCurrentRound(): AnswerResult = applyOutcome(true)
+
+    fun submitImageMatch(choiceId: String): AnswerResult {
+        val q = currentQuestion as? Question.ImageMatchQuestion ?: return AnswerResult.Finished
+        val ok = choiceId == q.correctChoiceId
         return applyOutcome(ok)
     }
 
-    fun submitPicturePickAll(selection: Set<String>): AnswerResult {
-        val q = currentQuestion as? Question.PicturePickAllQuestion ?: return AnswerResult.Finished
-        if (selection.size != q.correctIds.size) return AnswerResult.Finished
-        return applyOutcome(selection == q.correctIds)
-    }
-
-    /** Called when the child finished a tap–tap matching board (both pairs correct) or made a wrong pair attempt. */
-    fun submitMatchOutcome(success: Boolean): AnswerResult {
-        val q = currentQuestion ?: return AnswerResult.Finished
-        require(q is Question.PictureLetterMatchQuestion)
-        return applyOutcome(success)
+    fun submitFinaleWords(filled: List<String>): AnswerResult {
+        val q = currentQuestion as? Question.FinaleSlotQuestion ?: return AnswerResult.Finished
+        val ok = filled == q.words
+        return applyOutcome(ok)
     }
 
     private fun applyOutcome(correct: Boolean): AnswerResult {
@@ -186,10 +147,6 @@ class LevelSession(
         _currentQuestion = null
     }
 
-    /**
-     * Returns true only the first time this letter is seen in this session.
-     * (We intentionally do NOT persist this between sessions.)
-     */
     fun consumeFirstTimeSeen(letter: String): Boolean = seenLetters.add(letter)
 
     private fun moveGroup(delta: Int) {
@@ -203,11 +160,9 @@ class LevelSession(
 
     private fun nextBalancedCorrect(group: List<String>): String {
         if (bag.isEmpty()) {
-            // Ensure each letter appears once before repeating.
             bag = group.shuffled(rnd).toMutableList()
         }
 
-        // Try to avoid the same correct answer twice in a row.
         val candidate = bag.removeAt(0)
         val last = lastCorrectAnswer
         if (last != null && candidate == last && bag.isNotEmpty()) {
@@ -226,7 +181,7 @@ class LevelSession(
         var second = nextBalancedCorrect(group)
         if (second != first) return first to second
         val others = group.filter { it != first }
-        require(others.isNotEmpty()) { "Letter group needs at least two letters for matching" }
+        require(others.isNotEmpty()) { "Letter group needs at least two letters for finale" }
         val alt = others.random(rnd)
         lastCorrectAnswer = alt
         return first to alt

@@ -63,7 +63,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.tal.hebrewdino.R
-import com.tal.hebrewdino.ui.components.learning.CaveHomeMark
+import com.tal.hebrewdino.ui.components.learning.DinoNestMark
 import com.tal.hebrewdino.ui.domain.Chapter1Config
 import com.tal.hebrewdino.ui.domain.JourneyMapLayout
 import androidx.compose.ui.draw.scale
@@ -458,7 +458,7 @@ private fun JourneyRoadStrip(
                     JourneyEndMarker.HomeCave ->
                         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                             Box(modifier = Modifier.scale(goalPulse)) {
-                                CaveHomeMark()
+                                DinoNestMark()
                             }
                         }
                 }

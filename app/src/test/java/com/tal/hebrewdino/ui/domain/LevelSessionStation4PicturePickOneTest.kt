@@ -7,7 +7,7 @@ class LevelSessionStation4PicturePickOneTest {
     @Test
     fun firstQuestionLoadsManyTimesWithoutThrowing() {
         val plan = Chapter1StationOrder.quizPlan(Chapter1StationOrder.PICTURE_PICK_ONE)
-        assertTrue(plan.mode == StationQuizMode.PicturePickOne)
+        assertTrue(plan.mode == StationQuizMode.ImageMatch)
         repeat(20_000) {
             val session =
                 LevelSession(
@@ -17,7 +17,7 @@ class LevelSessionStation4PicturePickOneTest {
                     letterPoolSpec = LetterPoolSpec.Default,
                 )
             val q = session.currentQuestion
-            check(q is Question.PicturePickOneQuestion) { "expected PicturePickOne, got ${q?.javaClass}" }
+            check(q is Question.ImageMatchQuestion) { "expected ImageMatch, got ${q?.javaClass}" }
         }
     }
 }

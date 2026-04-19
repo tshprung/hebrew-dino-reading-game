@@ -5,10 +5,8 @@ package com.tal.hebrewdino.ui.domain
  * Never mix patterns within the same station session.
  */
 enum class StationQuizMode {
-    TapChoice,
+    FindLetterGrid,
     PopBalloons,
-    RevealTiles,
-    PicturePickOne,
-    PicturePickAll,
-    PictureLetterMatch,
+    ImageMatch,
+    FinaleSlot,
 }

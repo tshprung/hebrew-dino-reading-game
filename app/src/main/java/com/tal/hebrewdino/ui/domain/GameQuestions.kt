@@ -4,53 +4,46 @@ import androidx.annotation.ColorInt
 import com.tal.hebrewdino.R
 
 sealed class Question {
-    data class TapChoiceQuestion(
-        val correctAnswer: String,
-        val options: List<String>,
-    ) : Question()
-
     data class PopBalloonsQuestion(
         val correctAnswer: String,
         val options: List<String>,
     ) : Question()
 
-    /** Letters sit under face-down tiles; tap a tile to reveal, then the choice is that letter. */
-    data class RevealTilesQuestion(
-        val correctAnswer: String,
-        val options: List<String>,
-    ) : Question()
-
-    /** Two pictures and two letters; child taps a picture then the matching letter (tap–tap). */
-    data class PictureLetterMatchQuestion(
-        val pairs: List<PictureLetterPair>,
+    /** Tap every cell that shows [targetLetter] on a square grid (3×3 or 4×4). */
+    data class FindLetterGridQuestion(
+        val targetLetter: String,
+        val columns: Int,
+        val rows: Int,
+        val cells: List<String>,
     ) : Question() {
         init {
-            require(pairs.size == 2) { "Chapter 1 finale uses exactly two picture–letter pairs" }
+            require(columns in 3..4 && rows in 3..4)
+            require(cells.size == columns * rows)
+            require(cells.count { it == targetLetter } >= 3)
         }
     }
 
-    /** Tap the one picture whose word starts with [targetLetter] (three choices). */
-    data class PicturePickOneQuestion(
+    /** Pick the card whose word matches [targetWord] (2–3 large image cards). */
+    data class ImageMatchQuestion(
+        val targetWord: String,
         val targetLetter: String,
         val choices: List<LessonChoice>,
+        val correctChoiceId: String,
     ) : Question() {
         init {
-            require(choices.size == 3)
-            require(choices.count { it.letter == targetLetter } == 1)
+            require(choices.size in 2..3)
+            require(choices.any { it.id == correctChoiceId })
         }
     }
 
-    /** Select exactly the two pictures that start with [targetLetter]; max four choices. */
-    data class PicturePickAllQuestion(
-        val targetLetter: String,
-        val choices: List<LessonChoice>,
-        val correctIds: Set<String>,
+    /** Fill word slots by dragging / placing letters from the pool (two words). */
+    data class FinaleSlotQuestion(
+        val words: List<String>,
+        val letterPool: List<String>,
+        val pairHints: List<PictureLetterPair>,
     ) : Question() {
         init {
-            require(choices.size <= 4)
-            require(correctIds.size == 2)
-            require(correctIds.all { id -> choices.any { it.id == id } })
-            require(choices.count { it.id in correctIds && it.letter == targetLetter } == 2)
+            require(words.size == 2)
         }
     }
 }

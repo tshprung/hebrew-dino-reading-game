@@ -70,7 +70,7 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.ui.draw.scale
 import com.tal.hebrewdino.R
-import com.tal.hebrewdino.ui.components.learning.CaveHomeMark
+import com.tal.hebrewdino.ui.components.learning.DinoNestMark
 import com.tal.hebrewdino.ui.domain.ChaptersPathLayout
 import kotlin.math.hypot
 import kotlin.math.max
@@ -98,7 +98,7 @@ data class ChaptersProgress(
 
 /** Must match [ChapterVerticalPath] map height for initial scroll math. */
 private val ChaptersMapPathHeight =
-    288.dp + (ChaptersPathLayout.CHAPTER_COUNT * 218).dp + 176.dp
+    200.dp + (ChaptersPathLayout.CHAPTER_COUNT * 210).dp + 160.dp
 
 /**
  * Natural **horizontal** egg: **width > height**, full rounded bottom (large y), slightly narrower top,
@@ -200,7 +200,7 @@ fun ChaptersScreen(
                 Modifier
                     .fillMaxSize()
                     .verticalScroll(scroll)
-                    .padding(start = 12.dp, end = 12.dp, top = 48.dp, bottom = 24.dp),
+                    .padding(start = 12.dp, end = 12.dp, top = 28.dp, bottom = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(
@@ -208,7 +208,7 @@ fun ChaptersScreen(
                 style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Black),
                 color = Color(0xFF1A3A4A),
             )
-            Spacer(modifier = Modifier.height(14.dp))
+            Spacer(modifier = Modifier.height(6.dp))
 
             ChapterVerticalPath(
                 chapters = chapters,
@@ -373,7 +373,7 @@ private fun ChapterVerticalPath(
                     modifier = Modifier.align(Alignment.BottomCenter),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    CaveHomeMark(modifier = Modifier.size(width = 208.dp, height = 144.dp))
+                    DinoNestMark(modifier = Modifier.size(width = 208.dp, height = 144.dp))
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
                         text = "הקן — הבית",
@@ -598,15 +598,16 @@ private fun buildCenterlinePath(size: Size, samples: Int = 96): Path {
 private fun ChaptersRoadCanvas(modifier: Modifier = Modifier) {
     Canvas(modifier = modifier) {
         val m = size.minDimension
-        // Extra-narrow + very low contrast (background guide only).
-        val edgePath = buildRoadRibbonPath(size, halfWidthPx = m * 0.0168f, widthWobble = true)
-        drawPath(path = edgePath, color = Color(0xFFB0A69A).copy(alpha = 0.09f), style = Fill)
+        val wScale = 1.52f
+        // Wider dirt ribbon + readable contrast (still behind eggs / UI).
+        val edgePath = buildRoadRibbonPath(size, halfWidthPx = m * 0.0168f * wScale, widthWobble = true)
+        drawPath(path = edgePath, color = Color(0xFF5D4037).copy(alpha = 0.22f), style = Fill)
 
-        val basePath = buildRoadRibbonPath(size, halfWidthPx = m * 0.0136f, widthWobble = true)
-        drawPath(path = basePath, color = Color(0xFFEDE8E0).copy(alpha = 0.20f), style = Fill)
+        val basePath = buildRoadRibbonPath(size, halfWidthPx = m * 0.0136f * wScale, widthWobble = true)
+        drawPath(path = basePath, color = Color(0xFF8D6E63).copy(alpha = 0.55f), style = Fill)
 
-        val innerPath = buildRoadRibbonPath(size, halfWidthPx = m * 0.0104f, widthWobble = true)
-        drawPath(path = innerPath, color = Color(0xFFF5F2EC).copy(alpha = 0.10f), style = Fill)
+        val innerPath = buildRoadRibbonPath(size, halfWidthPx = m * 0.0104f * wScale, widthWobble = true)
+        drawPath(path = innerPath, color = Color(0xFFD7CCC8).copy(alpha = 0.42f), style = Fill)
 
         val centerPath = buildCenterlinePath(size)
         drawPath(
@@ -615,17 +616,24 @@ private fun ChaptersRoadCanvas(modifier: Modifier = Modifier) {
             style = Stroke(width = m * 0.006f, cap = StrokeCap.Round, join = StrokeJoin.Round),
         )
 
-        for (i in 0 until 28) {
+        for (i in 0 until 42) {
             val t = (i * 37 % 100) / 100f
             val p = ChaptersPathLayout.pointOnPath(t)
             val cx = p.x * size.width
             val cy = p.y * size.height
-            val jitterX = (i % 5 - 2) * 1.6f
-            val jitterY = ((i * 11) % 7 - 3) * 1.4f
-            drawCircle(
-                color = Color(0xFF8A8278).copy(alpha = 0.008f + (i % 3) * 0.004f),
-                radius = 1f + (i % 2),
-                center = Offset(cx + jitterX, cy + jitterY),
+            val jitterX = (i % 5 - 2) * 2.4f
+            val jitterY = ((i * 11) % 7 - 3) * 2.0f
+            val pebbleW = 2.5f + (i % 4)
+            val pebbleH = 1.8f + (i % 3)
+            drawOval(
+                color =
+                    when (i % 3) {
+                        0 -> Color(0xFF6D4C41).copy(alpha = 0.16f)
+                        1 -> Color(0xFF8D6E63).copy(alpha = 0.14f)
+                        else -> Color(0xFFBCAAA4).copy(alpha = 0.12f)
+                    },
+                topLeft = Offset(cx + jitterX - pebbleW, cy + jitterY - pebbleH),
+                size = Size(pebbleW * 2f, pebbleH * 2f),
             )
         }
     }
