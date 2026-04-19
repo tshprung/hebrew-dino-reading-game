@@ -22,6 +22,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -30,6 +31,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -38,6 +41,8 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.tal.hebrewdino.R
+import com.tal.hebrewdino.ui.audio.SoundPoolPlayer
+import com.tal.hebrewdino.ui.feedback.GameFeedback
 import com.tal.hebrewdino.ui.components.learning.ChapterStartsWithPrompts
 import com.tal.hebrewdino.ui.components.learning.LearningUxTiming
 import com.tal.hebrewdino.ui.components.learning.PictureLetterMatchStation
@@ -107,6 +112,13 @@ private fun Chapter2PictureStartsWithStation(
 ) {
     val letters = Chapter2Config.letters
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+    val view = LocalView.current
+    val sfx = remember(station) { SoundPoolPlayer(context) }
+    val gameFeedback = remember(station, sfx, view) { GameFeedback(scope, sfx, view) }
+    DisposableEffect(station) {
+        onDispose { sfx.release() }
+    }
     val prompt =
         remember(station) {
             ChapterStartsWithPrompts.all
@@ -184,6 +196,7 @@ private fun Chapter2PictureStartsWithStation(
                         scope.launch {
                             locked = true
                             dinoState = Ch2PicDino.Jump
+                            gameFeedback.playSuccessBig()
                             dinoScale.snapTo(1f)
                             dinoScale.animateTo(1.12f, tween(120))
                             dinoScale.animateTo(1f, tween(160))
@@ -194,6 +207,7 @@ private fun Chapter2PictureStartsWithStation(
                         scope.launch {
                             locked = true
                             wrongCount += 1
+                            gameFeedback.playWrong()
                             dinoState = Ch2PicDino.Think
                             dinoTilt.snapTo(0f)
                             dinoTilt.animateTo(-5f, tween(90))

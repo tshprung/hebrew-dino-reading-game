@@ -12,8 +12,8 @@ import kotlin.coroutines.resume
 
 class SoundPoolPlayer(context: Context) {
     companion object {
-        /** Temporarily disable all SFX playback (we’ll re-enable later). */
-        const val ENABLED: Boolean = false
+        /** Kid-game SFX; pool creation is still wrapped in [runCatching] — null pool = silent no-op. */
+        const val ENABLED: Boolean = true
     }
 
     private val appContext = context.applicationContext

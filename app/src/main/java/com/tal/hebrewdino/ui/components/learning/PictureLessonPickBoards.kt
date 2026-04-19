@@ -19,6 +19,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -27,6 +30,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -57,6 +61,8 @@ fun PicturePickOneBoard(
     contentKey: Int,
     enabled: Boolean,
     shakePx: Float,
+    successChoiceId: String? = null,
+    successKey: Int = 0,
     onPickId: (String) -> Unit,
 ) {
     Column(
@@ -98,6 +104,7 @@ fun PicturePickOneBoard(
                     selected = false,
                     locked = false,
                     enabled = enabled,
+                    successGlow = successKey > 0 && choice.id == successChoiceId,
                     cardWidth = 152.dp,
                     imageHeight = 100.dp,
                     onClick = { onPickId(choice.id) },
@@ -115,6 +122,8 @@ fun PicturePickAllBoard(
     resetEpoch: Int,
     enabled: Boolean,
     shakePx: Float,
+    successChoiceIds: Set<String> = emptySet(),
+    successKey: Int = 0,
     onTwoPicked: (Set<String>) -> Unit,
 ) {
     var selected by remember(question, contentKey, resetEpoch) { mutableStateOf<Set<String>>(emptySet()) }
@@ -159,6 +168,7 @@ fun PicturePickAllBoard(
                     selected = on,
                     locked = false,
                     enabled = enabled,
+                    successGlow = successKey > 0 && choice.id in successChoiceIds,
                     cardWidth = 118.dp,
                     imageHeight = 82.dp,
                     onClick = {
@@ -188,20 +198,33 @@ private fun LessonPictureCard(
     selected: Boolean,
     locked: Boolean,
     enabled: Boolean,
+    successGlow: Boolean = false,
     cardWidth: Dp,
     imageHeight: Dp,
     onClick: () -> Unit,
 ) {
     val interaction = remember(choice.id) { MutableInteractionSource() }
+    val selectNudge by animateFloatAsState(
+        targetValue = if (selected) 1.04f else 1f,
+        animationSpec = spring(dampingRatio = 0.58f, stiffness = 520f),
+        label = "picCardNudge",
+    )
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier =
             Modifier
                 .width(cardWidth)
+                .scale(selectNudge)
                 .border(
-                    width = if (selected) 5.dp else 2.dp,
+                    width =
+                        when {
+                            successGlow -> 5.dp
+                            selected -> 5.dp
+                            else -> 2.dp
+                        },
                     color =
                         when {
+                            successGlow -> Color(0xFF2E7D32).copy(alpha = 0.92f)
                             locked -> Color(0xFF2E7D32).copy(alpha = 0.85f)
                             selected -> Color(0xFFFFC400)
                             else -> Color(0xFF0B2B3D).copy(alpha = 0.18f)

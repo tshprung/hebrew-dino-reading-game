@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -22,6 +23,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -40,6 +42,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.tal.hebrewdino.R
 import com.tal.hebrewdino.ui.domain.Question
+import com.tal.hebrewdino.ui.feedback.FeedbackSparkles
 import kotlin.math.roundToInt
 
 private fun argbToComposeColor(argb: Int): Color =
@@ -71,12 +74,14 @@ fun PictureLetterMatchBoard(
     val letterRow = remember(pairs, contentKey) { pairs.map { it.letter }.shuffled() }
     var selectedPictureLetter by remember(pairs, contentKey) { mutableStateOf<String?>(null) }
     var matchedLetters by remember(pairs, contentKey) { mutableStateOf<Set<String>>(emptySet()) }
+    var sparkleBurst by remember(pairs, contentKey) { mutableIntStateOf(0) }
 
     val picTileWidth = if (chapter1FinalePresentation) 124.dp else 118.dp
     val picImageH = if (chapter1FinalePresentation) 76.dp else 72.dp
     val picRowHGap = if (chapter1FinalePresentation) 10.dp else 12.dp
     val picLetterGap = if (chapter1FinalePresentation) 12.dp else 18.dp
 
+    Box(modifier = Modifier.fillMaxWidth()) {
     Column(
         modifier =
             Modifier
@@ -237,6 +242,7 @@ fun PictureLetterMatchBoard(
                         if (pic == null) return@OutlinedButton
                         if (letter == pic) {
                             matchedLetters = matchedLetters + letter
+                            sparkleBurst += 1
                             selectedPictureLetter = null
                             if (matchedLetters.size >= pairs.size) {
                                 onRoundComplete()
@@ -257,5 +263,11 @@ fun PictureLetterMatchBoard(
                 }
             }
         }
+    }
+        FeedbackSparkles(
+            burstKey = sparkleBurst,
+            modifier = Modifier.matchParentSize(),
+            seed = contentKey,
+        )
     }
 }

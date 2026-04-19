@@ -22,6 +22,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.material3.Button
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -40,12 +41,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.key
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.animation.core.AnimationVector1D
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
@@ -122,7 +128,7 @@ internal fun RevealLetterTiles(
     var revealed by remember(options, correctAnswer, contentKey) { mutableStateOf<Set<Int>>(emptySet()) }
     LaunchedEffect(wrongRevealSignal) {
         if (wrongRevealSignal == 0) return@LaunchedEffect
-        delay(3000)
+        delay(1400)
         revealed = emptySet()
     }
     FlowRow(
@@ -156,12 +162,20 @@ internal fun RevealLetterTiles(
                         },
                 contentAlignment = Alignment.Center,
             ) {
-                Text(
-                    text = if (faceUp) letter else "?",
-                    fontSize = if (faceUp) 40.sp else 34.sp,
-                    fontWeight = FontWeight.Black,
-                    color = Color(0xFF0B2B3D),
-                )
+                AnimatedContent(
+                    targetState = faceUp,
+                    transitionSpec = {
+                        fadeIn(animationSpec = tween(160)) togetherWith fadeOut(animationSpec = tween(110))
+                    },
+                    label = "revealFace",
+                ) { up ->
+                    Text(
+                        text = if (up) letter else "?",
+                        fontSize = if (up) 40.sp else 34.sp,
+                        fontWeight = FontWeight.Black,
+                        color = Color(0xFF0B2B3D),
+                    )
+                }
             }
         }
     }
@@ -173,6 +187,8 @@ internal fun LetterOptions(
     options: List<String>,
     enabled: Boolean,
     shakePx: Float,
+    correctPulseLetter: String? = null,
+    correctPulseEpoch: Int = 0,
     onPick: (String) -> Unit,
 ) {
     FlowRow(
@@ -181,8 +197,28 @@ internal fun LetterOptions(
         modifier = Modifier.offset { IntOffset(shakePx.roundToInt(), 0) },
     ) {
         options.forEach { letter ->
-            Button(onClick = { onPick(letter) }, enabled = enabled) {
-                Text(text = letter, fontSize = 42.sp, fontWeight = FontWeight.Black)
+            val interaction = remember(letter) { MutableInteractionSource() }
+            val pressed by interaction.collectIsPressedAsState()
+            val pop = remember { Animatable(1f) }
+            LaunchedEffect(correctPulseEpoch, correctPulseLetter) {
+                if (correctPulseEpoch <= 0 || correctPulseLetter != letter) return@LaunchedEffect
+                pop.snapTo(1f)
+                pop.animateTo(0.88f, tween(durationMillis = 70))
+                pop.animateTo(1.18f, tween(durationMillis = 110))
+                pop.animateTo(1f, spring(dampingRatio = 0.5f, stiffness = 500f))
+            }
+            val pressSquish = if (pressed) 0.94f else 1f
+            Button(
+                onClick = { onPick(letter) },
+                enabled = enabled,
+                interactionSource = interaction,
+            ) {
+                Text(
+                    text = letter,
+                    fontSize = 42.sp,
+                    fontWeight = FontWeight.Black,
+                    modifier = Modifier.scale(pressSquish * pop.value),
+                )
             }
         }
     }
@@ -195,7 +231,7 @@ internal fun PopBalloonsOptions(
     correctAnswer: String,
     enabled: Boolean,
     shakePx: Float,
-    onPopSfx: suspend () -> Unit,
+    onPopSfx: suspend (isCorrect: Boolean) -> Unit,
     onPick: (String) -> Unit,
 ) {
     val alive =
@@ -263,7 +299,7 @@ internal fun PopBalloonsOptions(
                     driftYPx = yPx,
                     onPop = {
                         if (idx < alive.size) alive[idx] = false
-                        scope.launch { onPopSfx() }
+                        scope.launch { onPopSfx(letter == correctAnswer) }
                         onPick(letter)
                     },
                     onPickWrong = { fall ->
@@ -307,6 +343,7 @@ internal fun PopBalloon(
     val scale = remember(letter) { Animatable(1f) }
     val fade = remember(letter) { Animatable(1f) }
     val wrongFall = remember(letter) { Animatable(0f) }
+    val scope = rememberCoroutineScope()
     val bob =
         rememberInfiniteTransition(label = "balloonBob$letter").animateFloat(
             initialValue = -2.5f,
@@ -320,17 +357,11 @@ internal fun PopBalloon(
         )
 
     LaunchedEffect(popping) {
-        if (!popping) return@LaunchedEffect
+        if (!popping || !shouldPop) return@LaunchedEffect
         scale.snapTo(1f)
         fade.snapTo(1f)
-        scale.animateTo(
-            targetValue = 1.12f,
-            animationSpec = androidx.compose.animation.core.tween(durationMillis = 100),
-        )
-        fade.animateTo(
-            targetValue = 0f,
-            animationSpec = androidx.compose.animation.core.tween(durationMillis = 200),
-        )
+        scale.animateTo(1.28f, tween(durationMillis = 90))
+        fade.animateTo(0f, tween(durationMillis = 240))
         visible = false
         onPop()
     }
@@ -362,7 +393,11 @@ internal fun PopBalloon(
                             if (shouldPop) {
                                 popping = true
                             } else {
-                                onPickWrong(wrongFall)
+                                scope.launch {
+                                    scale.animateTo(0.92f, tween(durationMillis = 65))
+                                    scale.animateTo(1f, tween(durationMillis = 110))
+                                    onPickWrong(wrongFall)
+                                }
                             }
                         },
                     ),

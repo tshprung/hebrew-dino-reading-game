@@ -40,7 +40,9 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -51,6 +53,8 @@ import com.tal.hebrewdino.R
 import com.tal.hebrewdino.ui.audio.AudioClips
 import com.tal.hebrewdino.ui.audio.SoundPoolPlayer
 import com.tal.hebrewdino.ui.audio.VoicePlayer
+import com.tal.hebrewdino.ui.feedback.FeedbackSparkles
+import com.tal.hebrewdino.ui.feedback.GameFeedback
 import com.tal.hebrewdino.ui.components.learning.PictureLetterMatchBoard
 import com.tal.hebrewdino.ui.components.learning.PicturePickAllBoard
 import com.tal.hebrewdino.ui.components.learning.PicturePickOneBoard
@@ -67,6 +71,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 private enum class LqDinoVisual { Idle, TryAgain, Jump }
+
+private const val StationQuestionPauseMs = 560L
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -93,8 +99,10 @@ fun LetterQuizStationScreen(
     fun rtl(text: String) = "\u200F$text"
     val scope = rememberCoroutineScope()
     val context = androidx.compose.ui.platform.LocalContext.current
+    val view = LocalView.current
     val voice = remember { VoicePlayer(context = context) }
     val sfx = remember { SoundPoolPlayer(context = context) }
+    val gameFeedback = remember(stationId, sfx, view) { GameFeedback(scope, sfx, view) }
     val jumpFrames =
         remember(stationId) {
             listOf(R.drawable.dino_jump_0, R.drawable.dino_jump_1, R.drawable.dino_jump_2)
@@ -103,7 +111,15 @@ fun LetterQuizStationScreen(
     var jumpFrameIndex by remember(stationId) { mutableIntStateOf(0) }
     val dinoScale = remember(stationId) { Animatable(1f) }
     val optionsShake = remember(stationId) { Animatable(0f) }
+    val contentAlpha = remember(stationId) { Animatable(1f) }
     val showConfetti = remember(stationId) { mutableStateOf(false) }
+    var sparkBurst by remember(stationId) { mutableIntStateOf(0) }
+    var correctTapEpoch by remember(stationId) { mutableIntStateOf(0) }
+    var lastCorrectLetter by remember(stationId) { mutableStateOf<String?>(null) }
+    var pickGlowId by remember(stationId) { mutableStateOf<String?>(null) }
+    var pickGlowKey by remember(stationId) { mutableIntStateOf(0) }
+    var pickAllGlowIds by remember(stationId) { mutableStateOf<Set<String>>(emptySet()) }
+    var pickAllGlowKey by remember(stationId) { mutableIntStateOf(0) }
     var inputLocked by remember(stationId) { mutableStateOf(false) }
     var revealWrongSignal by remember(stationId, session.currentIndex) { mutableIntStateOf(0) }
 
@@ -182,6 +198,8 @@ fun LetterQuizStationScreen(
         feedback = null
         wrongAttemptsThisQuestion = 0
         picturePickAllEpoch = 0
+        pickGlowId = null
+        pickAllGlowIds = emptySet()
         sfx.preload(AudioClips.SfxCorrect, AudioClips.SfxWrong, AudioClips.SfxBalloonPop)
         delay(120)
         if (q != null) speakPromptForQuestion(q)
@@ -203,6 +221,11 @@ fun LetterQuizStationScreen(
         if (showConfetti.value) {
             ConfettiOverlay(modifier = Modifier.fillMaxSize())
         }
+        FeedbackSparkles(
+            burstKey = sparkBurst,
+            modifier = Modifier.fillMaxSize(),
+            seed = stationId,
+        )
         val dinoDrawable =
             when (dinoVisual) {
                 LqDinoVisual.Idle -> R.drawable.dino_idle
@@ -256,7 +279,10 @@ fun LetterQuizStationScreen(
             )
             Spacer(modifier = Modifier.height(16.dp))
             Column(
-                modifier = Modifier.fillMaxWidth(),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .alpha(contentAlpha.value),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 TextButton(
@@ -301,13 +327,24 @@ fun LetterQuizStationScreen(
                         AnswerResult.Correct -> {
                             scope.launch {
                                 inputLocked = true
-                                if (isReveal) delay(3000)
+                                val isLast = session.currentIndex >= session.totalQuestions - 1
+                                if (isLast) {
+                                    gameFeedback.playSuccessBig()
+                                } else {
+                                    gameFeedback.playCorrect()
+                                    sparkBurst += 1
+                                }
+                                lastCorrectLetter = picked
+                                correctTapEpoch += 1
+                                if (isReveal) delay(680)
                                 dinoVisual = LqDinoVisual.Jump
                                 feedback = rtl("כל הכבוד!")
                                 playLqSuccess(scope, dinoScale, showConfetti)
-                                sfx.playFirstAvailable(AudioClips.SfxCorrect, volume = 0.7f)
                                 voice.playFirstAvailableBlocking(AudioClips.VoGoodJob1, AudioClips.VoGoodJob2)
+                                contentAlpha.animateTo(0f, tween(durationMillis = 200))
+                                delay(StationQuestionPauseMs)
                                 session.nextQuestion()
+                                contentAlpha.animateTo(1f, tween(durationMillis = 260))
                                 inputLocked = false
                             }
                         }
@@ -318,7 +355,7 @@ fun LetterQuizStationScreen(
                                 wrongAttemptsThisQuestion += 1
                                 feedback = "כמעט… בוא ננסה שוב"
                                 playLqMistake(scope, optionsShake)
-                                sfx.playFirstAvailable(AudioClips.SfxWrong, volume = 0.7f)
+                                gameFeedback.playWrong()
                                 voice.playFirstAvailableBlocking(AudioClips.VoTryAgain2, AudioClips.VoTryAgain1)
                                 if (wrongAttemptsThisQuestion >= 2) {
                                     feedback = rtl("רמז: $correctLetter")
@@ -326,7 +363,7 @@ fun LetterQuizStationScreen(
                                 dinoVisual = LqDinoVisual.Idle
                                 inputLocked = false
                                 if (isReveal) {
-                                    delay(3000)
+                                    delay(1200)
                                     revealWrongSignal++
                                 }
                             }
@@ -341,6 +378,8 @@ fun LetterQuizStationScreen(
                             options = current.options,
                             enabled = !inputLocked,
                             shakePx = optionsShake.value,
+                            correctPulseLetter = lastCorrectLetter,
+                            correctPulseEpoch = correctTapEpoch,
                             onPick = onPick,
                         )
                     is Question.PopBalloonsQuestion ->
@@ -349,7 +388,16 @@ fun LetterQuizStationScreen(
                             correctAnswer = current.correctAnswer,
                             enabled = !inputLocked,
                             shakePx = optionsShake.value,
-                            onPopSfx = { sfx.playFirstAvailable(AudioClips.SfxBalloonPop, volume = 0.8f) },
+                            onPopSfx = { isCorrect ->
+                                if (isCorrect) {
+                                    gameFeedback.playCorrect()
+                                    sparkBurst += 1
+                                    sfx.playFirstAvailable(AudioClips.SfxBalloonPop, volume = 0.88f)
+                                } else {
+                                    gameFeedback.playWrong()
+                                    sfx.playFirstAvailable(AudioClips.SfxBalloonPop, volume = 0.32f)
+                                }
+                            },
                             onPick = onPick,
                         )
                     is Question.RevealTilesQuestion ->
@@ -368,17 +416,29 @@ fun LetterQuizStationScreen(
                             contentKey = session.currentIndex,
                             enabled = !inputLocked,
                             shakePx = optionsShake.value,
+                            successChoiceId = pickGlowId,
+                            successKey = pickGlowKey,
                             onPickId = { id ->
                                 when (session.submitPicturePickOne(id)) {
                                     AnswerResult.Correct ->
                                         scope.launch {
                                             inputLocked = true
+                                            val isLast = session.currentIndex >= session.totalQuestions - 1
+                                            if (isLast) gameFeedback.playSuccessBig() else {
+                                                gameFeedback.playCorrect()
+                                                sparkBurst += 1
+                                            }
+                                            pickGlowId = id
+                                            pickGlowKey += 1
                                             dinoVisual = LqDinoVisual.Jump
                                             feedback = rtl("כל הכבוד!")
                                             playLqSuccess(scope, dinoScale, showConfetti)
-                                            sfx.playFirstAvailable(AudioClips.SfxCorrect, volume = 0.7f)
                                             voice.playFirstAvailableBlocking(AudioClips.VoGoodJob1, AudioClips.VoGoodJob2)
+                                            delay(420)
+                                            contentAlpha.animateTo(0f, tween(durationMillis = 200))
+                                            delay(StationQuestionPauseMs)
                                             session.nextQuestion()
+                                            contentAlpha.animateTo(1f, tween(durationMillis = 260))
                                             inputLocked = false
                                         }
                                     AnswerResult.Wrong ->
@@ -388,7 +448,7 @@ fun LetterQuizStationScreen(
                                             wrongAttemptsThisQuestion += 1
                                             feedback = "כמעט… ננסה שוב"
                                             playLqMistake(scope, optionsShake)
-                                            sfx.playFirstAvailable(AudioClips.SfxWrong, volume = 0.55f)
+                                            gameFeedback.playWrong()
                                             voice.playFirstAvailableBlocking(AudioClips.VoTryAgain2, AudioClips.VoTryAgain1)
                                             if (wrongAttemptsThisQuestion >= 2) {
                                                 feedback = rtl("רמז: $correctLetter")
@@ -407,17 +467,29 @@ fun LetterQuizStationScreen(
                             resetEpoch = picturePickAllEpoch,
                             enabled = !inputLocked,
                             shakePx = optionsShake.value,
+                            successChoiceIds = pickAllGlowIds,
+                            successKey = pickAllGlowKey,
                             onTwoPicked = { picked ->
                                 when (session.submitPicturePickAll(picked)) {
                                     AnswerResult.Correct ->
                                         scope.launch {
                                             inputLocked = true
+                                            val isLast = session.currentIndex >= session.totalQuestions - 1
+                                            if (isLast) gameFeedback.playSuccessBig() else {
+                                                gameFeedback.playCorrect()
+                                                sparkBurst += 1
+                                            }
+                                            pickAllGlowIds = picked
+                                            pickAllGlowKey += 1
                                             dinoVisual = LqDinoVisual.Jump
                                             feedback = rtl("כל הכבוד!")
                                             playLqSuccess(scope, dinoScale, showConfetti)
-                                            sfx.playFirstAvailable(AudioClips.SfxCorrect, volume = 0.7f)
                                             voice.playFirstAvailableBlocking(AudioClips.VoGoodJob1, AudioClips.VoGoodJob2)
+                                            delay(420)
+                                            contentAlpha.animateTo(0f, tween(durationMillis = 200))
+                                            delay(StationQuestionPauseMs)
                                             session.nextQuestion()
+                                            contentAlpha.animateTo(1f, tween(durationMillis = 260))
                                             inputLocked = false
                                         }
                                     AnswerResult.Wrong -> {
@@ -427,7 +499,7 @@ fun LetterQuizStationScreen(
                                             dinoVisual = LqDinoVisual.TryAgain
                                             wrongAttemptsThisQuestion += 1
                                             feedback = "עוד ניסיון — בחרו שתי תמונות נכונות"
-                                            sfx.playFirstAvailable(AudioClips.SfxWrong, volume = 0.45f)
+                                            gameFeedback.playWrong()
                                             delay(650)
                                             dinoVisual = LqDinoVisual.Idle
                                             inputLocked = false
@@ -451,7 +523,7 @@ fun LetterQuizStationScreen(
                                         scope.launch {
                                             wrongAttemptsThisQuestion += 1
                                             feedback = "נסו אות אחרת…"
-                                            sfx.playFirstAvailable(AudioClips.SfxWrong, volume = 0.4f)
+                                            gameFeedback.playWrong()
                                             delay(420)
                                             feedback = null
                                         }
@@ -468,7 +540,7 @@ fun LetterQuizStationScreen(
                                             wrongAttemptsThisQuestion += 1
                                             feedback = "זוג לא מתאים — ננסה שוב"
                                             playLqMistake(scope, optionsShake)
-                                            sfx.playFirstAvailable(AudioClips.SfxWrong, volume = 0.7f)
+                                            gameFeedback.playWrong()
                                             voice.playFirstAvailableBlocking(AudioClips.VoTryAgain2, AudioClips.VoTryAgain1)
                                             if (wrongAttemptsThisQuestion >= 2) {
                                                 feedback = rtl("רמז: האותות $correctLetter")
@@ -484,12 +556,19 @@ fun LetterQuizStationScreen(
                                     AnswerResult.Correct ->
                                         scope.launch {
                                             inputLocked = true
+                                            val isLast = session.currentIndex >= session.totalQuestions - 1
+                                            if (isLast) gameFeedback.playSuccessBig() else {
+                                                gameFeedback.playCorrect()
+                                                sparkBurst += 1
+                                            }
                                             dinoVisual = LqDinoVisual.Jump
                                             feedback = rtl("כל הכבוד!")
                                             playLqSuccess(scope, dinoScale, showConfetti)
-                                            sfx.playFirstAvailable(AudioClips.SfxCorrect, volume = 0.7f)
                                             voice.playFirstAvailableBlocking(AudioClips.VoGoodJob1, AudioClips.VoGoodJob2)
+                                            contentAlpha.animateTo(0f, tween(durationMillis = 200))
+                                            delay(StationQuestionPauseMs)
                                             session.nextQuestion()
+                                            contentAlpha.animateTo(1f, tween(durationMillis = 260))
                                             inputLocked = false
                                         }
                                     else -> {}

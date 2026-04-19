@@ -1,5 +1,8 @@
 package com.tal.hebrewdino.ui.components.learning
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.AnimationVector1D
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -28,9 +31,11 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -39,15 +44,30 @@ import com.tal.hebrewdino.R
 import com.tal.hebrewdino.ui.audio.AudioClips
 import com.tal.hebrewdino.ui.audio.SoundPoolPlayer
 import com.tal.hebrewdino.ui.audio.VoicePlayer
+import com.tal.hebrewdino.ui.feedback.GameFeedback
 import com.tal.hebrewdino.ui.domain.AnswerResult
 import com.tal.hebrewdino.ui.domain.LetterPoolSpec
 import com.tal.hebrewdino.ui.domain.LevelSession
 import com.tal.hebrewdino.ui.domain.Question
 import com.tal.hebrewdino.ui.domain.StationQuizMode
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 private enum class MatchDinoVisual { Idle, TryAgain, Jump }
+
+private const val MatchStationPauseMs = 560L
+
+private fun playBoardShake(scope: CoroutineScope, shake: Animatable<Float, AnimationVector1D>): Job =
+    scope.launch {
+        shake.snapTo(0f)
+        val amp = 18f
+        repeat(5) { i ->
+            shake.animateTo(if (i % 2 == 0) amp else -amp, tween(durationMillis = 45))
+        }
+        shake.animateTo(0f, tween(durationMillis = 60))
+    }
 
 /**
  * Full-screen picture–letter matching finale (several rounds), shared by chapters 2–3.
@@ -75,8 +95,12 @@ fun PictureLetterMatchStation(
     var feedback by remember(stationId) { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
+    val view = LocalView.current
     val voice = remember { VoicePlayer(context = context) }
     val sfx = remember { SoundPoolPlayer(context = context) }
+    val gameFeedback = remember(stationId, sfx, view) { GameFeedback(scope, sfx, view) }
+    val boardShake = remember(stationId) { Animatable(0f) }
+    val contentAlpha = remember(stationId) { Animatable(1f) }
     var dinoVisual by remember(stationId) { mutableStateOf(MatchDinoVisual.Idle) }
     var inputLocked by remember(stationId) { mutableStateOf(false) }
     var wrongAttemptsThisQuestion by remember(stationId, session.currentIndex) { mutableStateOf(0) }
@@ -168,7 +192,8 @@ fun PictureLetterMatchStation(
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .padding(24.dp),
+                    .padding(24.dp)
+                    .alpha(contentAlpha.value),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Start) {
@@ -234,7 +259,7 @@ fun PictureLetterMatchStation(
                         question = current,
                         contentKey = session.currentIndex,
                         enabled = !inputLocked,
-                        shakePx = 0f,
+                        shakePx = boardShake.value,
                         onWrongPair = {
                             when (session.submitMatchOutcome(false)) {
                                 AnswerResult.Wrong ->
@@ -243,7 +268,8 @@ fun PictureLetterMatchStation(
                                         dinoVisual = MatchDinoVisual.TryAgain
                                         wrongAttemptsThisQuestion += 1
                                         feedback = "זוג לא מתאים — ננסה שוב"
-                                        sfx.playFirstAvailable(AudioClips.SfxWrong, volume = 0.7f)
+                                        playBoardShake(scope, boardShake)
+                                        gameFeedback.playWrong()
                                         voice.playFirstAvailableBlocking(AudioClips.VoTryAgain2, AudioClips.VoTryAgain1)
                                         if (wrongAttemptsThisQuestion >= 2) {
                                             feedback = rtl("רמז: האותות $correctLettersHint")
@@ -259,11 +285,15 @@ fun PictureLetterMatchStation(
                                 AnswerResult.Correct ->
                                     scope.launch {
                                         inputLocked = true
+                                        val isLast = session.currentIndex >= session.totalQuestions - 1
+                                        if (isLast) gameFeedback.playSuccessBig() else gameFeedback.playCorrect()
                                         dinoVisual = MatchDinoVisual.Jump
                                         feedback = rtl("כל הכבוד!")
-                                        sfx.playFirstAvailable(AudioClips.SfxCorrect, volume = 0.7f)
                                         voice.playFirstAvailableBlocking(AudioClips.VoGoodJob1, AudioClips.VoGoodJob2)
+                                        contentAlpha.animateTo(0f, tween(durationMillis = 200))
+                                        delay(MatchStationPauseMs)
                                         session.nextQuestion()
+                                        contentAlpha.animateTo(1f, tween(durationMillis = 260))
                                         dinoVisual = MatchDinoVisual.Idle
                                         inputLocked = false
                                     }
