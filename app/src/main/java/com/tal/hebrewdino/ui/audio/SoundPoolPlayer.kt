@@ -18,23 +18,34 @@ class SoundPoolPlayer(context: Context) {
 
     private val appContext = context.applicationContext
 
-    private val soundPool: SoundPool =
-        SoundPool.Builder()
-            .setMaxStreams(2)
-            .setAudioAttributes(
-                AudioAttributes.Builder()
-                    .setUsage(AudioAttributes.USAGE_GAME)
-                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                    .build(),
-            )
-            .build()
+    /**
+     * When [ENABLED] is false, do not allocate a native SoundPool at all (some devices crash on
+     * pool creation even if we never call [play]). When true, creation can still fail — then all
+     * calls no-op.
+     */
+    private val soundPool: SoundPool? =
+        if (!ENABLED) {
+            null
+        } else {
+            runCatching {
+                SoundPool.Builder()
+                    .setMaxStreams(2)
+                    .setAudioAttributes(
+                        AudioAttributes.Builder()
+                            .setUsage(AudioAttributes.USAGE_GAME)
+                            .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                            .build(),
+                    )
+                    .build()
+            }.getOrNull()
+        }
 
     private val loadedSoundIdByPath = ConcurrentHashMap<String, Int>()
     private val readySoundIds = ConcurrentHashMap<Int, Boolean>()
     private val pendingLoads = ConcurrentHashMap<Int, MutableList<(Boolean) -> Unit>>()
 
     init {
-        soundPool.setOnLoadCompleteListener { _, sampleId, status ->
+        soundPool?.setOnLoadCompleteListener { _, sampleId, status ->
             val ok = status == 0
             readySoundIds[sampleId] = ok
             pendingLoads.remove(sampleId)?.forEach { cb -> cb(ok) }
@@ -43,28 +54,30 @@ class SoundPoolPlayer(context: Context) {
 
     suspend fun play(assetPath: String, volume: Float = 1f) {
         if (!ENABLED) return
-        val soundId = loadIfNeeded(assetPath) ?: return
-        soundPool.play(soundId, volume, volume, 1, 0, 1f)
+        val pool = soundPool ?: return
+        val soundId = loadIfNeeded(pool, assetPath) ?: return
+        pool.play(soundId, volume, volume, 1, 0, 1f)
     }
 
     suspend fun playFirstAvailable(vararg assetPaths: String, volume: Float = 1f) {
         if (!ENABLED) return
+        val pool = soundPool ?: return
         for (p in assetPaths) {
             if (p.isBlank()) continue
-            val soundId = loadIfNeeded(p) ?: continue
-            soundPool.play(soundId, volume, volume, 1, 0, 1f)
+            val soundId = loadIfNeeded(pool, p) ?: continue
+            pool.play(soundId, volume, volume, 1, 0, 1f)
             return
         }
     }
 
     fun release() {
-        soundPool.release()
+        soundPool?.release()
         loadedSoundIdByPath.clear()
         readySoundIds.clear()
         pendingLoads.clear()
     }
 
-    private suspend fun loadIfNeeded(assetPath: String): Int? {
+    private suspend fun loadIfNeeded(pool: SoundPool, assetPath: String): Int? {
         loadedSoundIdByPath[assetPath]?.let { existingId ->
             val ready = readySoundIds[existingId]
             return if (ready == true) existingId else awaitLoaded(existingId)
@@ -74,7 +87,7 @@ class SoundPoolPlayer(context: Context) {
             withContext(Dispatchers.IO) {
                 try {
                     val afd = appContext.assets.openFd(assetPath)
-                    val newId = soundPool.load(afd, 1)
+                    val newId = pool.load(afd, 1)
                     loadedSoundIdByPath[assetPath] = newId
                     newId
                 } catch (_: IOException) {
@@ -102,10 +115,10 @@ class SoundPoolPlayer(context: Context) {
 
     suspend fun preload(vararg assetPaths: String) {
         if (!ENABLED) return
+        val pool = soundPool ?: return
         for (p in assetPaths) {
             if (p.isBlank()) continue
-            loadIfNeeded(p)
+            loadIfNeeded(pool, p)
         }
     }
 }
-

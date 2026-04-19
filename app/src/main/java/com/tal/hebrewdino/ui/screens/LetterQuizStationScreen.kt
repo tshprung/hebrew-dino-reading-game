@@ -132,7 +132,8 @@ fun LetterQuizStationScreen(
     // briefly; snapshotFlow could see null and call onComplete early (crash / exit mid-station).
     LaunchedEffect(stationId) {
         snapshotFlow { session.currentIndex >= session.totalQuestions }.collect { exhausted ->
-            if (exhausted) {
+            // totalQuestions == 0 would make exhausted true immediately (spurious navigate / crash).
+            if (exhausted && session.totalQuestions > 0) {
                 onComplete(stationId, session.correctCount, session.mistakeCount)
                 return@collect
             }
@@ -248,7 +249,9 @@ fun LetterQuizStationScreen(
             )
             Spacer(modifier = Modifier.height(8.dp))
             LinearProgressIndicator(
-                progress = { questionNumber.toFloat() / totalQuestions.toFloat() },
+                progress = {
+                    (questionNumber.toFloat() / totalQuestions.coerceAtLeast(1)).coerceIn(0f, 1f)
+                },
                 modifier = Modifier.width(320.dp),
             )
             Spacer(modifier = Modifier.height(16.dp))

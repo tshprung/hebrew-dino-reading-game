@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import com.tal.hebrewdino.ui.domain.Chapter1Config
+import com.tal.hebrewdino.ui.domain.Chapter2Config
 import com.tal.hebrewdino.ui.domain.Chapter3Config
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -29,7 +30,7 @@ class ProgressPrefs(private val context: Context) {
 
     val unlockedLevelFlow: Flow<Int> =
         context.dataStore.data.map { prefs ->
-            (prefs[unlockedLevelKey] ?: 1).coerceAtMost(Chapter1Config.STATION_COUNT)
+            (prefs[unlockedLevelKey] ?: 1).coerceIn(1, Chapter1Config.STATION_COUNT)
         }
 
     val completedLevelsFlow: Flow<Set<Int>> =
@@ -38,6 +39,7 @@ class ProgressPrefs(private val context: Context) {
             if (raw.isBlank()) return@map emptySet()
             raw.split(",")
                 .mapNotNull { it.trim().toIntOrNull() }
+                .filter { it in 1..Chapter1Config.STATION_COUNT }
                 .toSet()
         }
 
@@ -57,7 +59,9 @@ class ProgressPrefs(private val context: Context) {
         context.dataStore.data.map { prefs -> prefs[chapter2LettersIntroSeenKey] ?: false }
 
     val chapter2UnlockedStationFlow: Flow<Int> =
-        context.dataStore.data.map { prefs -> prefs[chapter2UnlockedStationKey] ?: 1 }
+        context.dataStore.data.map { prefs ->
+            (prefs[chapter2UnlockedStationKey] ?: 1).coerceIn(1, Chapter2Config.STATION_COUNT)
+        }
 
     val chapter2CompletedStationsFlow: Flow<Set<Int>> =
         context.dataStore.data.map { prefs ->
@@ -65,6 +69,7 @@ class ProgressPrefs(private val context: Context) {
             if (raw.isBlank()) return@map emptySet()
             raw.split(",")
                 .mapNotNull { it.trim().toIntOrNull() }
+                .filter { it in 1..Chapter2Config.STATION_COUNT }
                 .toSet()
         }
 
@@ -116,18 +121,21 @@ class ProgressPrefs(private val context: Context) {
     }
 
     suspend fun unlockChapter2AtLeast(stationId: Int) {
+        val capped = stationId.coerceIn(1, Chapter2Config.STATION_COUNT)
         context.dataStore.edit { prefs ->
-            val current = prefs[chapter2UnlockedStationKey] ?: 1
-            if (stationId > current) prefs[chapter2UnlockedStationKey] = stationId
+            val current = (prefs[chapter2UnlockedStationKey] ?: 1).coerceIn(1, Chapter2Config.STATION_COUNT)
+            if (capped > current) prefs[chapter2UnlockedStationKey] = capped
         }
     }
 
     suspend fun markChapter2CompletedStation(stationId: Int) {
+        if (stationId !in 1..Chapter2Config.STATION_COUNT) return
         context.dataStore.edit { prefs ->
             val current = prefs[chapter2CompletedStationsKey].orEmpty()
             val set =
                 current.split(",")
                     .mapNotNull { it.trim().toIntOrNull() }
+                    .filter { it in 1..Chapter2Config.STATION_COUNT }
                     .toMutableSet()
             set.add(stationId)
             prefs[chapter2CompletedStationsKey] = set.toList().sorted().joinToString(",")
@@ -168,6 +176,69 @@ class ProgressPrefs(private val context: Context) {
         }
     }
 
+    /** One-shot repair if debug / older builds wrote chapter 2 unlock beyond [Chapter2Config.STATION_COUNT]. */
+    suspend fun repairChapter2ProgressIfNeeded() {
+        context.dataStore.edit { prefs ->
+            val u = prefs[chapter2UnlockedStationKey] ?: 1
+            if (u > Chapter2Config.STATION_COUNT) {
+                prefs[chapter2UnlockedStationKey] = Chapter2Config.STATION_COUNT
+            }
+            val raw = prefs[chapter2CompletedStationsKey].orEmpty()
+            if (raw.isNotBlank()) {
+                val set =
+                    raw.split(",")
+                        .mapNotNull { it.trim().toIntOrNull() }
+                        .filter { it in 1..Chapter2Config.STATION_COUNT }
+                        .toMutableSet()
+                prefs[chapter2CompletedStationsKey] = set.toList().sorted().joinToString(",")
+            }
+        }
+    }
+
+    /**
+     * Dev helper: advance chapter 1 from current DataStore state (avoids stale Compose snapshot
+     * when tapping "בדיקה" quickly).
+     */
+    suspend fun debugUnlockNextChapter1Station() {
+        context.dataStore.edit { prefs ->
+            val last = Chapter1Config.STATION_COUNT
+            val completed =
+                prefs[completedLevelsKey].orEmpty()
+                    .split(",")
+                    .mapNotNull { it.trim().toIntOrNull() }
+                    .filter { it in 1..last }
+                    .toMutableSet()
+            val next = (1..last).firstOrNull { it !in completed } ?: last
+            completed.add(next)
+            prefs[completedLevelsKey] = completed.toList().sorted().joinToString(",")
+            val unlockTo = (next + 1).coerceAtMost(last)
+            val currentUnlock = (prefs[unlockedLevelKey] ?: 1).coerceIn(1, last)
+            if (unlockTo > currentUnlock) prefs[unlockedLevelKey] = unlockTo
+        }
+    }
+
+    /**
+     * Dev helper: advance chapter 2 from current DataStore state (avoids stale snapshot; caps unlock).
+     */
+    suspend fun debugUnlockNextChapter2Station() {
+        context.dataStore.edit { prefs ->
+            val last = Chapter2Config.STATION_COUNT
+            val completed =
+                prefs[chapter2CompletedStationsKey].orEmpty()
+                    .split(",")
+                    .mapNotNull { it.trim().toIntOrNull() }
+                    .filter { it in 1..last }
+                    .toMutableSet()
+            val next = (1..last).firstOrNull { it !in completed } ?: last
+            completed.add(next)
+            prefs[chapter2CompletedStationsKey] = completed.toList().sorted().joinToString(",")
+            val unlockTo = (next + 1).coerceAtMost(last)
+            val currentUnlock = (prefs[chapter2UnlockedStationKey] ?: 1).coerceIn(1, last)
+            if (unlockTo > currentUnlock) prefs[chapter2UnlockedStationKey] = unlockTo
+            if (next >= last) prefs[chapter2CompletedKey] = true
+        }
+    }
+
     /** One-shot repair if older builds wrote chapter 3 progress beyond released stations. */
     suspend fun repairChapter3ProgressIfNeeded() {
         context.dataStore.edit { prefs ->
@@ -192,9 +263,9 @@ class ProgressPrefs(private val context: Context) {
     }
 
     suspend fun unlockAtLeast(levelId: Int) {
-        val capped = levelId.coerceAtMost(Chapter1Config.STATION_COUNT)
+        val capped = levelId.coerceIn(1, Chapter1Config.STATION_COUNT)
         context.dataStore.edit { prefs ->
-            val current = (prefs[unlockedLevelKey] ?: 1).coerceAtMost(Chapter1Config.STATION_COUNT)
+            val current = (prefs[unlockedLevelKey] ?: 1).coerceIn(1, Chapter1Config.STATION_COUNT)
             if (capped > current) {
                 prefs[unlockedLevelKey] = capped
             }
@@ -202,11 +273,13 @@ class ProgressPrefs(private val context: Context) {
     }
 
     suspend fun markCompleted(levelId: Int) {
+        if (levelId !in 1..Chapter1Config.STATION_COUNT) return
         context.dataStore.edit { prefs ->
             val current = prefs[completedLevelsKey].orEmpty()
             val set =
                 current.split(",")
                     .mapNotNull { it.trim().toIntOrNull() }
+                    .filter { it in 1..Chapter1Config.STATION_COUNT }
                     .toMutableSet()
             set.add(levelId)
             prefs[completedLevelsKey] = set.toList().sorted().joinToString(",")

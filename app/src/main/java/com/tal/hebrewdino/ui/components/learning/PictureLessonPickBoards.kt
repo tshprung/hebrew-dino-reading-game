@@ -6,6 +6,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -25,8 +26,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -35,9 +36,19 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.tal.hebrewdino.R
 import com.tal.hebrewdino.ui.domain.LessonChoice
 import com.tal.hebrewdino.ui.domain.Question
 import kotlin.math.roundToInt
+
+/** [androidx.compose.ui.res.painterResource] does not support shape drawables (only vector / raster). */
+private fun argbToComposeColor(argb: Int): Color =
+    Color(
+        red = ((argb shr 16) and 0xFF) / 255f,
+        green = ((argb shr 8) and 0xFF) / 255f,
+        blue = (argb and 0xFF) / 255f,
+        alpha = ((argb ushr 24) and 0xFF) / 255f,
+    )
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -77,6 +88,7 @@ fun PicturePickOneBoard(
         }
         Spacer(modifier = Modifier.height(14.dp))
         FlowRow(
+            modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(18.dp, Alignment.CenterHorizontally),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
@@ -136,6 +148,7 @@ fun PicturePickAllBoard(
         }
         Spacer(modifier = Modifier.height(12.dp))
         FlowRow(
+            modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
@@ -203,16 +216,27 @@ private fun LessonPictureCard(
                 )
                 .padding(10.dp),
     ) {
-        Image(
-            painter = painterResource(id = choice.tileDrawable),
-            contentDescription = choice.word,
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .height(imageHeight),
-            contentScale = ContentScale.Fit,
-            colorFilter = ColorFilter.tint(Color(choice.tintArgb)),
-        )
+        if (choice.tileDrawable == R.drawable.lesson_word_tile) {
+            Box(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .height(imageHeight)
+                        .clip(RoundedCornerShape(18.dp))
+                        .background(argbToComposeColor(choice.tintArgb)),
+                contentAlignment = Alignment.Center,
+            ) {}
+        } else {
+            Image(
+                painter = painterResource(id = choice.tileDrawable),
+                contentDescription = choice.word,
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .height(imageHeight),
+                contentScale = ContentScale.Fit,
+            )
+        }
         Spacer(modifier = Modifier.height(6.dp))
         Text(
             text = choice.word,

@@ -17,12 +17,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -58,6 +56,7 @@ import com.tal.hebrewdino.R
 import com.tal.hebrewdino.ui.components.learning.CaveHomeMark
 import com.tal.hebrewdino.ui.domain.ChaptersPathLayout
 import kotlin.math.hypot
+import kotlin.math.max
 import kotlin.math.roundToInt
 import kotlin.math.sin
 import kotlinx.coroutines.delay
@@ -84,51 +83,30 @@ data class ChaptersProgress(
 private val ChaptersMapPathHeight =
     288.dp + (ChaptersPathLayout.CHAPTER_COUNT * 218).dp + 176.dp
 
-/** Wider, shorter egg: rounded dome top, full rounded bottom (reads as dino egg, not a pin). */
+/**
+ * Wide, low egg silhouette: slightly narrower top, full rounded bottom, no sharp tip.
+ * Control points are in normalized egg space (0..1 × 0..1 of the clipped rect).
+ */
 private object EggShape : Shape {
     override fun createOutline(size: Size, layoutDirection: LayoutDirection, density: Density): Outline {
         val w = size.width
         val h = size.height
         val path =
             Path().apply {
-                moveTo(w * 0.5f, h * 0.11f)
-                cubicTo(
-                    w * 0.78f,
-                    h * 0.11f,
-                    w * 0.94f,
-                    h * 0.38f,
-                    w * 0.94f,
-                    h * 0.52f,
-                )
-                cubicTo(
-                    w * 0.94f,
-                    h * 0.78f,
-                    w * 0.72f,
-                    h * 0.94f,
-                    w * 0.5f,
-                    h * 0.94f,
-                )
-                cubicTo(
-                    w * 0.28f,
-                    h * 0.94f,
-                    w * 0.06f,
-                    h * 0.78f,
-                    w * 0.06f,
-                    h * 0.52f,
-                )
-                cubicTo(
-                    w * 0.06f,
-                    h * 0.38f,
-                    w * 0.22f,
-                    h * 0.11f,
-                    w * 0.5f,
-                    h * 0.11f,
-                )
+                moveTo(w * 0.5f, h * 0.12f)
+                cubicTo(w * 0.70f, h * 0.12f, w * 0.88f, h * 0.26f, w * 0.88f, h * 0.46f)
+                cubicTo(w * 0.88f, h * 0.70f, w * 0.72f, h * 0.90f, w * 0.5f, h * 0.92f)
+                cubicTo(w * 0.28f, h * 0.90f, w * 0.12f, h * 0.70f, w * 0.12f, h * 0.46f)
+                cubicTo(w * 0.12f, h * 0.26f, w * 0.30f, h * 0.12f, w * 0.5f, h * 0.12f)
                 close()
             }
         return Outline.Generic(path)
     }
 }
+
+/** Chapter node on the map: wider than tall so it reads as an egg, not a drop. */
+private val ChapterEggWidth = 168.dp
+private val ChapterEggHeight = 96.dp
 
 @Composable
 fun ChaptersScreen(
@@ -160,7 +138,8 @@ fun ChaptersScreen(
         val titleBlockPx = with(density) { 88.dp.toPx() }
         val eggCenterY = topPaddingPx + titleBlockPx + pt.y * pathPx
         val screenPx = with(density) { configuration.screenHeightDp.dp.toPx() }
-        val target = (eggCenterY - screenPx * 0.30f).roundToInt().coerceIn(0, scroll.maxValue)
+        // Chapter 1 lives at low t (top of path); bias scroll so that egg sits a bit below top bar.
+        val target = (eggCenterY - screenPx * 0.26f).roundToInt().coerceIn(0, scroll.maxValue)
         scroll.scrollTo(target)
     }
 
@@ -306,21 +285,28 @@ private fun ChapterVerticalPath(
         val w = maxWidth
         val h = maxHeight
 
+        val eggW = ChapterEggWidth
+        val eggH = ChapterEggHeight
+        val eggHalfW = eggW / 2
+        val eggHalfH = eggH / 2
+        val dinoMapSize = 92.dp
+
         Box(modifier = Modifier.fillMaxSize()) {
-            ChaptersRoadCanvas(modifier = Modifier.fillMaxSize())
+            ChaptersRoadCanvas(modifier = Modifier.fillMaxSize().zIndex(0f))
 
             Column(
                 modifier =
                     Modifier
                         .align(Alignment.BottomCenter)
-                        .offset(y = (-6).dp),
+                        .offset(y = (-6).dp)
+                        .zIndex(0.25f),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 CaveHomeMark(modifier = Modifier.size(width = 128.dp, height = 92.dp))
                 Text(
                     text = "הקן — הבית",
                     style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Black),
-                    color = Color(0xFF1A3A4A),
+                    color = Color(0xFF1A3A4A).copy(alpha = 0.88f),
                 )
             }
 
@@ -339,13 +325,19 @@ private fun ChapterVerticalPath(
             val perpY = dPx / len
             val rtl = layoutDirection == LayoutDirection.Rtl
             val side = if (rtl) -1f else 1f
-            val lateralPx = with(density) { 132.dp.toPx() }
-            val alongPathPx = with(density) { 26.dp.toPx() }
+            val eggRadiusPx = with(density) { eggHalfW.toPx() }
+            val dinoRadiusPx = with(density) { (dinoMapSize / 2).toPx() }
+            val lateralPx =
+                max(
+                    with(density) { 118.dp.toPx() },
+                    eggRadiusPx + dinoRadiusPx + with(density) { 14.dp.toPx() },
+                )
+            val alongPathPx = with(density) { 18.dp.toPx() }
             val eggCxPx = pEgg.x * wPx
             val eggCyPx = pEgg.y * hPx
-            val dinoSizePx = with(density) { 120.dp.toPx() }
-            val dinoCx = eggCxPx + side * perpX * lateralPx + perpY * lateralPx * 0.06f
-            val dinoCy = eggCyPx + perpY * lateralPx * 0.26f + (dPx / len) * alongPathPx
+            val dinoSizePx = with(density) { dinoMapSize.toPx() }
+            val dinoCx = eggCxPx + side * perpX * lateralPx + perpY * lateralPx * 0.05f
+            val dinoCy = eggCyPx + perpY * lateralPx * 0.22f + (dPx / len) * alongPathPx
 
             Image(
                 painter = painterResource(id = R.drawable.dino_idle),
@@ -353,20 +345,16 @@ private fun ChapterVerticalPath(
                 modifier =
                     Modifier
                         .align(Alignment.TopStart)
+                        .zIndex(1f)
                         .offset {
                             IntOffset(
                                 x = (dinoCx - dinoSizePx / 2f).roundToInt(),
-                                y = (dinoCy - dinoSizePx * 0.50f).roundToInt(),
+                                y = (dinoCy - dinoSizePx * 0.48f).roundToInt(),
                             )
                         }
-                        .size(120.dp),
+                        .size(dinoMapSize),
                 contentScale = ContentScale.Fit,
             )
-
-            val eggW = 152.dp
-            val eggH = 118.dp
-            val eggHalfW = eggW / 2
-            val eggHalfH = eggH / 2
 
             chapters.forEachIndexed { idx, ch ->
                 val t = ChaptersPathLayout.tForChapterIndex(idx)
@@ -378,14 +366,18 @@ private fun ChapterVerticalPath(
                         progress = chaptersProgress,
                     )
                 val openable = state != ChapterEggState.Locked && ch.id <= 3
+                val showSubtitle =
+                    ch.id <= 3 &&
+                        ch.subtitle.isNotBlank() &&
+                        ch.subtitle.length <= 42
 
                 Column(
                     modifier =
                         Modifier
                             .align(Alignment.TopStart)
                             .offset(x = w * pt.x - eggHalfW, y = h * pt.y - eggHalfH)
-                            .width(272.dp)
-                            .zIndex(1f),
+                            .width(eggW)
+                            .zIndex(2f),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     ChapterEgg(
@@ -396,35 +388,23 @@ private fun ChapterVerticalPath(
                         modifier = Modifier.size(width = eggW, height = eggH),
                     )
                     if (ch.title.isNotBlank()) {
-                        Spacer(modifier = Modifier.height(14.dp))
-                        Surface(
-                            shape = RoundedCornerShape(14.dp),
-                            color = Color.White.copy(alpha = 0.92f),
-                            shadowElevation = 2.dp,
-                            tonalElevation = 0.dp,
-                        ) {
-                            Column(
-                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                            ) {
-                                Text(
-                                    text = ch.title,
-                                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                                    color = Color(0xFF1A3A4A),
-                                    textAlign = TextAlign.Center,
-                                    maxLines = 2,
-                                )
-                                if (ch.subtitle.isNotBlank()) {
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Text(
-                                        text = ch.subtitle,
-                                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
-                                        color = Color(0xFF1A3A4A).copy(alpha = 0.82f),
-                                        textAlign = TextAlign.Center,
-                                        maxLines = 2,
-                                    )
-                                }
-                            }
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = ch.title,
+                            style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
+                            color = Color(0xFF1A3A4A).copy(alpha = 0.82f),
+                            textAlign = TextAlign.Center,
+                            maxLines = 2,
+                        )
+                        if (showSubtitle) {
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = ch.subtitle,
+                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium),
+                                color = Color(0xFF1A3A4A).copy(alpha = 0.62f),
+                                textAlign = TextAlign.Center,
+                                maxLines = 2,
+                            )
                         }
                     }
                 }
@@ -441,10 +421,10 @@ private fun buildRoadRibbonPath(size: Size, halfWidthPx: Float, widthWobble: Boo
             val p = ChaptersPathLayout.pointOnPath(t)
             Offset(p.x * size.width, p.y * size.height)
         }
-    val halfWidths =
+        val halfWidths =
         List(samples) { i ->
             val t = i / (samples - 1).coerceAtLeast(1).toFloat()
-            val wobble = if (widthWobble) 1f + 0.085f * sin(t * 34.5f) else 1f
+            val wobble = if (widthWobble) 1f + 0.04f * sin(t * 34.5f) else 1f
             halfWidthPx * wobble
         }
     val left = ArrayList<Offset>(samples)
@@ -479,14 +459,15 @@ private fun buildRoadRibbonPath(size: Size, halfWidthPx: Float, widthWobble: Boo
 @Composable
 private fun ChaptersRoadCanvas(modifier: Modifier = Modifier) {
     Canvas(modifier = modifier) {
-        val edgePath = buildRoadRibbonPath(size, halfWidthPx = size.minDimension * 0.072f, widthWobble = true)
-        drawPath(path = edgePath, color = Color(0xFF7A5A3A).copy(alpha = 0.88f), style = Fill)
+        // ~35% narrower than before; lower contrast so road reads as background behind eggs.
+        val edgePath = buildRoadRibbonPath(size, halfWidthPx = size.minDimension * 0.046f, widthWobble = true)
+        drawPath(path = edgePath, color = Color(0xFF7A5A3A).copy(alpha = 0.38f), style = Fill)
 
-        val basePath = buildRoadRibbonPath(size, halfWidthPx = size.minDimension * 0.060f, widthWobble = true)
-        drawPath(path = basePath, color = Color(0xFFD8C49A).copy(alpha = 0.96f), style = Fill)
+        val basePath = buildRoadRibbonPath(size, halfWidthPx = size.minDimension * 0.038f, widthWobble = true)
+        drawPath(path = basePath, color = Color(0xFFD8C49A).copy(alpha = 0.58f), style = Fill)
 
-        val innerPath = buildRoadRibbonPath(size, halfWidthPx = size.minDimension * 0.046f, widthWobble = true)
-        drawPath(path = innerPath, color = Color(0xFFEADDBA).copy(alpha = 0.55f), style = Fill)
+        val innerPath = buildRoadRibbonPath(size, halfWidthPx = size.minDimension * 0.029f, widthWobble = true)
+        drawPath(path = innerPath, color = Color(0xFFEADDBA).copy(alpha = 0.32f), style = Fill)
 
         val centerPath = Path()
         val start = Offset(size.width * 0.66f, size.height * 0.06f)
@@ -501,8 +482,8 @@ private fun ChaptersRoadCanvas(modifier: Modifier = Modifier) {
         centerPath.cubicTo(p4.x, p4.y, p5.x, p5.y, end.x, end.y)
         drawPath(
             path = centerPath,
-            color = Color(0xFFFFFDF8).copy(alpha = 0.28f),
-            style = Stroke(width = size.minDimension * 0.028f, cap = StrokeCap.Round, join = StrokeJoin.Round),
+            color = Color(0xFFFFFDF8).copy(alpha = 0.14f),
+            style = Stroke(width = size.minDimension * 0.018f, cap = StrokeCap.Round, join = StrokeJoin.Round),
         )
 
         for (i in 0 until 72) {
@@ -513,8 +494,8 @@ private fun ChaptersRoadCanvas(modifier: Modifier = Modifier) {
             val jitterX = (i % 5 - 2) * 3.2f
             val jitterY = ((i * 11) % 7 - 3) * 2.8f
             drawCircle(
-                color = Color(0xFF5C4A30).copy(alpha = 0.06f + (i % 3) * 0.02f),
-                radius = 2.2f + (i % 4),
+                color = Color(0xFF5C4A30).copy(alpha = 0.035f + (i % 3) * 0.012f),
+                radius = 2.0f + (i % 3),
                 center = Offset(cx + jitterX, cy + jitterY),
             )
         }
@@ -544,8 +525,6 @@ private fun ChapterEgg(
                 Color(0xFF90CAF9),
             )[(chapterId - 1).coerceIn(0, 9)]
         }
-
-    val patternKind = remember(chapterId) { chapterId % 3 }
 
     val brush =
         remember(state, baseHue) {
@@ -597,54 +576,10 @@ private fun ChapterEgg(
         if (state != ChapterEggState.Locked) {
             Canvas(modifier = Modifier.fillMaxSize()) {
                 drawOval(
-                    color = Color.White.copy(alpha = if (state == ChapterEggState.Unlocked) 0.32f else 0.18f),
-                    topLeft = Offset(size.width * 0.14f, size.height * 0.08f),
-                    size = Size(size.width * 0.42f, size.height * 0.22f),
+                    color = Color.White.copy(alpha = if (state == ChapterEggState.Unlocked) 0.26f else 0.14f),
+                    topLeft = Offset(size.width * 0.16f, size.height * 0.10f),
+                    size = Size(size.width * 0.40f, size.height * 0.20f),
                 )
-            }
-        }
-
-        if (state == ChapterEggState.Unlocked) {
-            Canvas(modifier = Modifier.fillMaxSize()) {
-                when (patternKind) {
-                    0 -> {
-                        val r = size.minDimension * 0.055f
-                        val dots =
-                            listOf(
-                                Offset(size.width * 0.22f, size.height * 0.38f),
-                                Offset(size.width * 0.78f, size.height * 0.32f),
-                                Offset(size.width * 0.48f, size.height * 0.58f),
-                                Offset(size.width * 0.72f, size.height * 0.66f),
-                                Offset(size.width * 0.30f, size.height * 0.62f),
-                            )
-                        dots.forEach { c ->
-                            drawCircle(color = Color.White.copy(alpha = 0.5f), radius = r, center = c)
-                        }
-                    }
-                    1 -> {
-                        val stroke = 4.dp.toPx()
-                        for (k in 0..5) {
-                            val x = size.width * (0.22f + k * 0.11f)
-                            drawLine(
-                                color = Color.White.copy(alpha = 0.28f),
-                                start = Offset(x, size.height * 0.28f),
-                                end = Offset(x, size.height * 0.78f),
-                                strokeWidth = stroke,
-                            )
-                        }
-                    }
-                    else -> {
-                        for (k in 0 until 6) {
-                            val cx = size.width * (0.2f + (k * 0.13f) % 0.7f)
-                            val cy = size.height * (0.35f + (k % 3) * 0.14f)
-                            drawCircle(
-                                color = Color(0xFF3E2723).copy(alpha = 0.12f),
-                                radius = size.minDimension * 0.07f,
-                                center = Offset(cx, cy),
-                            )
-                        }
-                    }
-                }
             }
         }
 
@@ -661,33 +596,11 @@ private fun ChapterEgg(
                     color = Color(0xFF1A2430).copy(alpha = 0.92f),
                 )
             ChapterEggState.Completed ->
-                Box(modifier = Modifier.fillMaxSize()) {
-                    Canvas(modifier = Modifier.fillMaxSize()) {
-                        val stroke = 3.5.dp.toPx()
-                        drawLine(
-                            color = Color(0xFF3E2723).copy(alpha = 0.78f),
-                            start = Offset(size.width * 0.16f, size.height * 0.20f),
-                            end = Offset(size.width * 0.86f, size.height * 0.82f),
-                            strokeWidth = stroke,
-                        )
-                        drawLine(
-                            color = Color(0xFF3E2723).copy(alpha = 0.55f),
-                            start = Offset(size.width * 0.78f, size.height * 0.16f),
-                            end = Offset(size.width * 0.22f, size.height * 0.58f),
-                            strokeWidth = stroke * 0.75f,
-                        )
-                    }
-                    Image(
-                        painter = painterResource(id = R.drawable.dino_idle),
-                        contentDescription = null,
-                        modifier =
-                            Modifier
-                                .align(Alignment.TopCenter)
-                                .padding(top = 0.dp)
-                                .size(56.dp),
-                        contentScale = ContentScale.Fit,
-                    )
-                }
+                Text(
+                    text = "✓",
+                    style = MaterialTheme.typography.displaySmall.copy(fontWeight = FontWeight.Black),
+                    color = Color(0xFF1B5E20).copy(alpha = 0.88f),
+                )
         }
     }
 }

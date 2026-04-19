@@ -101,7 +101,7 @@ fun PictureLetterMatchStation(
 
     LaunchedEffect(stationId) {
         snapshotFlow { session.currentIndex >= session.totalQuestions }.collect { exhausted ->
-            if (exhausted) {
+            if (exhausted && session.totalQuestions > 0) {
                 onComplete(stationId, session.correctCount, session.mistakeCount)
                 return@collect
             }
@@ -199,7 +199,9 @@ fun PictureLetterMatchStation(
                 color = Color(0xFF0B2B3D),
             )
             LinearProgressIndicator(
-                progress = { questionNumber.toFloat() / totalQuestions.toFloat() },
+                progress = {
+                    (questionNumber.toFloat() / totalQuestions.coerceAtLeast(1)).coerceIn(0f, 1f)
+                },
                 modifier = Modifier.width(300.dp),
             )
             Spacer(modifier = Modifier.height(12.dp))

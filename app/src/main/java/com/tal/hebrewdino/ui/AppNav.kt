@@ -75,6 +75,7 @@ fun AppNav() {
     val startDestination = Routes.Chapters
 
     LaunchedEffect(Unit) {
+        progress.repairChapter2ProgressIfNeeded()
         progress.repairChapter3ProgressIfNeeded()
         prefs.setCharacter(DinoCharacter.Dino)
     }
@@ -191,14 +192,7 @@ fun AppNav() {
                 },
                 onBack = { navController.navigate(Routes.Chapters) { popUpTo(Routes.Ch2Journey) { inclusive = true } } },
                 onDebugUnlockNext = {
-                    scope.launch {
-                        val last = Chapter2Config.STATION_COUNT
-                        val next =
-                            (1..last).firstOrNull { !chapter2CompletedStations.contains(it) } ?: last
-                        progress.markChapter2CompletedStation(next)
-                        progress.unlockChapter2AtLeast(next + 1)
-                        if (next >= last) progress.markChapter2Completed()
-                    }
+                    scope.launch { progress.debugUnlockNextChapter2Station() }
                 },
             )
         }
@@ -256,13 +250,7 @@ fun AppNav() {
                     navController.navigate(Routes.Chapters) { popUpTo(Routes.Journey) { inclusive = true } }
                 },
                 onDebugUnlockNext = {
-                    scope.launch {
-                        val last = Chapter1Config.STATION_COUNT
-                        val next =
-                            (1..last).firstOrNull { !completedLevels.contains(it) } ?: last
-                        progress.markCompleted(next)
-                        progress.unlockAtLeast((next + 1).coerceAtMost(last))
-                    }
+                    scope.launch { progress.debugUnlockNextChapter1Station() }
                 },
             )
         }
