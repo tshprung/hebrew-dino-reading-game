@@ -7,7 +7,11 @@ import kotlin.random.Random
 /**
  * Authoritative picture↔word↔letter rows for picture-first stations.
  * [letter] is the pedagogical first visible print letter taught for [word] (stored explicitly).
- * [tintArgb] tints [R.drawable.lesson_word_tile] so each row stays visually distinct without many bitmaps.
+ *
+ * **TODO (art, not logic):** [tintArgb] + [R.drawable.lesson_word_tile] is a **prototype** so rows stay
+ * visually distinct without shipping N bitmaps yet. Question types use [LessonWordEntry] / [LessonChoice]
+ * as opaque rows — swapping to **per-word drawables** later should not require changing session rules,
+ * only this catalog (and small UI that reads [LessonWordEntry.tileDrawable] / optional tint).
  */
 data class LessonWordEntry(
     val id: String,

@@ -1,6 +1,7 @@
 package com.tal.hebrewdino.ui.components.learning
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -30,6 +31,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -46,19 +48,49 @@ fun PicturePickOneBoard(
     shakePx: Float,
     onPickId: (String) -> Unit,
 ) {
-    FlowRow(
-        horizontalArrangement = Arrangement.spacedBy(14.dp, Alignment.CenterHorizontally),
-        verticalArrangement = Arrangement.spacedBy(14.dp),
-        modifier = Modifier.offset { IntOffset(shakePx.roundToInt(), 0) },
+    Column(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .offset { IntOffset(shakePx.roundToInt(), 0) },
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        question.choices.forEach { choice ->
-            LessonPictureCard(
-                choice = choice,
-                selected = false,
-                locked = false,
-                enabled = enabled,
-                onClick = { onPickId(choice.id) },
+        // Distinct from pick-all: warm strip + “one choice” affordance (works without reading).
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .background(Color(0xFFFFF3E0).copy(alpha = 0.72f), RoundedCornerShape(16.dp))
+                    .padding(vertical = 10.dp, horizontal = 12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text(
+                text = "①",
+                style = MaterialTheme.typography.displaySmall,
+                color = Color(0xFF0B2B3D),
             )
+            Text(
+                text = "משימה: בחירה אחת",
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                color = Color(0xFF0B2B3D).copy(alpha = 0.88f),
+            )
+        }
+        Spacer(modifier = Modifier.height(14.dp))
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(18.dp, Alignment.CenterHorizontally),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+            question.choices.forEach { choice ->
+                LessonPictureCard(
+                    choice = choice,
+                    selected = false,
+                    locked = false,
+                    enabled = enabled,
+                    cardWidth = 152.dp,
+                    imageHeight = 100.dp,
+                    onClick = { onPickId(choice.id) },
+                )
+            }
         }
     }
 }
@@ -75,34 +107,64 @@ fun PicturePickAllBoard(
 ) {
     var selected by remember(question, contentKey, resetEpoch) { mutableStateOf<Set<String>>(emptySet()) }
 
-    FlowRow(
-        horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-        modifier = Modifier.offset { IntOffset(shakePx.roundToInt(), 0) },
+    Column(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .offset { IntOffset(shakePx.roundToInt(), 0) },
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        question.choices.forEach { choice ->
-            val on = choice.id in selected
-            LessonPictureCard(
-                choice = choice,
-                selected = on,
-                locked = false,
-                enabled = enabled,
-                onClick = {
-                    if (!enabled) return@LessonPictureCard
-                    val next =
-                        if (on) {
-                            selected - choice.id
-                        } else if (selected.size < question.correctIds.size) {
-                            selected + choice.id
-                        } else {
-                            selected
-                        }
-                    selected = next
-                    if (selected.size == question.correctIds.size) {
-                        onTwoPicked(selected)
-                    }
-                },
+        // Distinct from pick-one: cool strip + “two picks” affordance.
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .background(Color(0xFFE3F2FD).copy(alpha = 0.78f), RoundedCornerShape(16.dp))
+                    .padding(vertical = 10.dp, horizontal = 12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text(
+                text = "②",
+                style = MaterialTheme.typography.displaySmall,
+                color = Color(0xFF0B2B3D),
             )
+            Text(
+                text = "משימה: שתי בחירות",
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                color = Color(0xFF0B2B3D).copy(alpha = 0.88f),
+            )
+        }
+        Spacer(modifier = Modifier.height(12.dp))
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            question.choices.forEach { choice ->
+                val on = choice.id in selected
+                LessonPictureCard(
+                    choice = choice,
+                    selected = on,
+                    locked = false,
+                    enabled = enabled,
+                    cardWidth = 118.dp,
+                    imageHeight = 82.dp,
+                    onClick = {
+                        if (!enabled) return@LessonPictureCard
+                        val next =
+                            if (on) {
+                                selected - choice.id
+                            } else if (selected.size < question.correctIds.size) {
+                                selected + choice.id
+                            } else {
+                                selected
+                            }
+                        selected = next
+                        if (selected.size == question.correctIds.size) {
+                            onTwoPicked(selected)
+                        }
+                    },
+                )
+            }
         }
     }
 }
@@ -113,6 +175,8 @@ private fun LessonPictureCard(
     selected: Boolean,
     locked: Boolean,
     enabled: Boolean,
+    cardWidth: Dp,
+    imageHeight: Dp,
     onClick: () -> Unit,
 ) {
     val interaction = remember(choice.id) { MutableInteractionSource() }
@@ -120,13 +184,13 @@ private fun LessonPictureCard(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier =
             Modifier
-                .width(132.dp)
+                .width(cardWidth)
                 .border(
-                    width = if (selected) 4.dp else 2.dp,
+                    width = if (selected) 5.dp else 2.dp,
                     color =
                         when {
                             locked -> Color(0xFF2E7D32).copy(alpha = 0.85f)
-                            selected -> Color(0xFF2AA6C9)
+                            selected -> Color(0xFFFFC400)
                             else -> Color(0xFF0B2B3D).copy(alpha = 0.18f)
                         },
                     shape = RoundedCornerShape(18.dp),
@@ -145,7 +209,7 @@ private fun LessonPictureCard(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .height(88.dp),
+                    .height(imageHeight),
             contentScale = ContentScale.Fit,
             colorFilter = ColorFilter.tint(Color(choice.tintArgb)),
         )

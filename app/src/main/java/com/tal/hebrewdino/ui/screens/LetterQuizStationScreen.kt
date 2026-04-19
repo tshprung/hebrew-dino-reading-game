@@ -55,6 +55,7 @@ import com.tal.hebrewdino.ui.components.learning.PicturePickAllBoard
 import com.tal.hebrewdino.ui.components.learning.PicturePickOneBoard
 import com.tal.hebrewdino.ui.domain.AnswerResult
 import com.tal.hebrewdino.ui.domain.Chapter1Config
+import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
 import com.tal.hebrewdino.ui.domain.LetterPoolSpec
 import com.tal.hebrewdino.ui.domain.LevelSession
 import com.tal.hebrewdino.ui.domain.Question
@@ -285,7 +286,7 @@ fun LetterQuizStationScreen(
                         AnswerResult.Correct -> {
                             scope.launch {
                                 inputLocked = true
-                                if (isReveal) delay(5000)
+                                if (isReveal) delay(3000)
                                 dinoVisual = LqDinoVisual.Jump
                                 feedback = rtl("כל הכבוד!")
                                 playLqSuccess(scope, dinoScale, showConfetti)
@@ -310,7 +311,7 @@ fun LetterQuizStationScreen(
                                 dinoVisual = LqDinoVisual.Idle
                                 inputLocked = false
                                 if (isReveal) {
-                                    delay(5000)
+                                    delay(3000)
                                     revealWrongSignal++
                                 }
                             }
@@ -427,8 +428,10 @@ fun LetterQuizStationScreen(
                             contentKey = session.currentIndex,
                             enabled = !inputLocked,
                             shakePx = optionsShake.value,
+                            chapter1FinalePresentation =
+                                stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH,
                             onSoftLetterMismatch =
-                                if (stationId == Chapter1Config.STATION_COUNT) {
+                                if (stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH) {
                                     {
                                         scope.launch {
                                             wrongAttemptsThisQuestion += 1

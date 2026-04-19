@@ -26,6 +26,7 @@ import com.tal.hebrewdino.ui.screens.Chapter2LettersIntroScreen
 import com.tal.hebrewdino.ui.screens.Chapter3IntroScreen
 import com.tal.hebrewdino.ui.screens.Chapter3LettersIntroScreen
 import com.tal.hebrewdino.ui.screens.Chapter3LevelScreen
+import com.tal.hebrewdino.ui.screens.ChaptersProgress
 import com.tal.hebrewdino.ui.screens.ChaptersScreen
 import com.tal.hebrewdino.ui.screens.Chapter2IntroScreen
 import com.tal.hebrewdino.ui.screens.ForestIntroScreen
@@ -83,6 +84,12 @@ fun AppNav() {
             ChaptersScreen(
                 unlockedChapter = unlockedChapter,
                 chapter4ComingSoon = chapter4ComingSoon,
+                chaptersProgress =
+                    ChaptersProgress(
+                        chapter1Completed = beachOutroSeen,
+                        chapter2Completed = chapter2Completed,
+                        chapter3Completed = chapter3Completed,
+                    ),
                 onOpenSettings = { navController.navigate(Routes.Settings) },
                 onOpenChapter = { chapterId ->
                     when (chapterId) {
@@ -115,7 +122,7 @@ fun AppNav() {
                                 }
                             if (next != Routes.Chapters) navController.navigate(next)
                         }
-                        4, 5, 6 -> Unit
+                        in 4..10 -> Unit
                     }
                 },
             )

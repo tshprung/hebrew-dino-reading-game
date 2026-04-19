@@ -16,12 +16,24 @@ class PopBalloonsGenerator(
         require(group.isNotEmpty()) { "Letter group must not be empty" }
         require(correctAnswer in group) { "correctAnswer must be in group" }
 
-        val options =
+        // Unique letters only — balloon UI must not collapse duplicate option strings.
+        val unique =
             buildList {
                 add(correctAnswer)
                 val others = group.filter { it != correctAnswer }.shuffled(rnd)
-                addAll(others.take((optionCount - 1).coerceAtLeast(0)))
-            }.shuffled(rnd)
+                for (o in others) {
+                    if (size >= optionCount) break
+                    if (o !in this) add(o)
+                }
+            }.toMutableList()
+        val need = minOf(optionCount, group.distinct().size)
+        while (unique.size < need) {
+            val extra = group.filter { it !in unique }.randomOrNull(rnd) ?: break
+            unique.add(extra)
+        }
+        val options = unique.take(minOf(optionCount, unique.size)).shuffled(rnd)
+        require(correctAnswer in options)
+        require(options.distinct().size == options.size) { "PopBalloons options must be unique: $options" }
 
         return Question.PopBalloonsQuestion(correctAnswer = correctAnswer, options = options)
     }

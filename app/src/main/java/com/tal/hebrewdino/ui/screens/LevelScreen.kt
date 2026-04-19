@@ -33,6 +33,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -121,7 +122,7 @@ internal fun RevealLetterTiles(
     var revealed by remember(options, correctAnswer, contentKey) { mutableStateOf<Set<Int>>(emptySet()) }
     LaunchedEffect(wrongRevealSignal) {
         if (wrongRevealSignal == 0) return@LaunchedEffect
-        delay(5000)
+        delay(3000)
         revealed = emptySet()
     }
     FlowRow(
@@ -197,7 +198,10 @@ internal fun PopBalloonsOptions(
     onPopSfx: suspend () -> Unit,
     onPick: (String) -> Unit,
 ) {
-    val alive = remember(options, correctAnswer) { options.associateWith { true }.toMutableMap() }
+    val alive =
+        remember(options, correctAnswer) {
+            mutableStateListOf<Boolean>().apply { repeat(options.size) { add(true) } }
+        }
     val scope = rememberCoroutineScope()
     var wrongRecoverRunning by remember(options, correctAnswer) { mutableStateOf(false) }
     val phases =
@@ -225,8 +229,7 @@ internal fun PopBalloonsOptions(
         val wPx = with(density) { maxWidth.toPx() }
         val hPx = with(density) { maxHeight.toPx() }
         options.forEachIndexed { idx, letter ->
-            val isAlive = alive[letter] == true
-            if (!isAlive) return@forEachIndexed
+            if (idx >= alive.size || !alive[idx]) return@forEachIndexed
             val color =
                 when (idx % 5) {
                     0 -> Color(0xFFFF6B6B)
@@ -235,8 +238,8 @@ internal fun PopBalloonsOptions(
                     3 -> Color(0xFF4D96FF)
                     else -> Color(0xFFB983FF)
                 }
-            val baseXPx = wPx * (0.08f + (idx % 4) * 0.22f)
-            val baseYPx = hPx * (0.10f + ((idx / 4) % 3) * 0.28f)
+            val baseXPx = wPx * (0.06f + (idx % 3) * 0.30f).coerceIn(0.07f, 0.78f)
+            val baseYPx = hPx * (0.10f + (idx % 2) * 0.24f)
             val ampXPx = 36f + (idx % 3) * 24f
             val ampYPx = 28f + (idx % 2) * 20f
             val ph = phases.getOrElse(idx) { 0f }
@@ -249,7 +252,7 @@ internal fun PopBalloonsOptions(
             val xPx = rawXPx.coerceIn(paddingPx, (wPx - 100f).coerceAtLeast(paddingPx))
             val yPx = rawYPx.coerceIn(paddingPx, (hPx - 130f).coerceAtLeast(paddingPx))
 
-            key(letter) {
+            key(idx, letter) {
                 PopBalloon(
                     letter = letter,
                     color = color,
@@ -259,7 +262,7 @@ internal fun PopBalloonsOptions(
                     driftXPx = xPx,
                     driftYPx = yPx,
                     onPop = {
-                        alive[letter] = false
+                        if (idx < alive.size) alive[idx] = false
                         scope.launch { onPopSfx() }
                         onPick(letter)
                     },

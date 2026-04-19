@@ -26,6 +26,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.ContentScale
@@ -49,28 +50,69 @@ fun PictureLetterMatchBoard(
     onRoundComplete: () -> Unit,
     /** When set, wrong letter after choosing a picture calls this instead of [onWrongPair] (softer finale). */
     onSoftLetterMismatch: (() -> Unit)? = null,
+    /**
+     * Chapter 1 station 6 only: warmer frame, tighter grid, and a very obvious “picture selected” state
+     * so the finale reads as a short climax, not a worksheet row.
+     */
+    chapter1FinalePresentation: Boolean = false,
 ) {
     val pairs = question.pairs
     val letterRow = remember(pairs, contentKey) { pairs.map { it.letter }.shuffled() }
     var selectedPictureLetter by remember(pairs, contentKey) { mutableStateOf<String?>(null) }
     var matchedLetters by remember(pairs, contentKey) { mutableStateOf<Set<String>>(emptySet()) }
 
+    val picTileWidth = if (chapter1FinalePresentation) 124.dp else 118.dp
+    val picImageH = if (chapter1FinalePresentation) 76.dp else 72.dp
+    val picRowHGap = if (chapter1FinalePresentation) 10.dp else 12.dp
+    val picLetterGap = if (chapter1FinalePresentation) 12.dp else 18.dp
+
     Column(
         modifier =
             Modifier
                 .fillMaxWidth()
+                .then(
+                    if (chapter1FinalePresentation) {
+                        Modifier.background(
+                            brush =
+                                Brush.verticalGradient(
+                                    colors =
+                                        listOf(
+                                            Color(0xFFFFF8E1).copy(alpha = 0.92f),
+                                            Color(0xFFFFFDE7).copy(alpha = 0.55f),
+                                        ),
+                                ),
+                            shape = RoundedCornerShape(22.dp),
+                        )
+                    } else {
+                        Modifier
+                    },
+                )
+                .padding(if (chapter1FinalePresentation) 10.dp else 0.dp)
                 .offset { IntOffset(shakePx.roundToInt(), 0) },
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
+        if (chapter1FinalePresentation) {
+            Text(
+                text = "✨",
+                style = MaterialTheme.typography.headlineSmall,
+            )
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = "חיבור קטן",
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                color = Color(0xFF0B2B3D).copy(alpha = 0.9f),
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+        }
         Text(
             text = "תמונות",
             style = MaterialTheme.typography.titleSmall,
             color = Color(0xFF0B2B3D).copy(alpha = 0.75f),
         )
-        Spacer(modifier = Modifier.height(6.dp))
+        Spacer(modifier = Modifier.height(if (chapter1FinalePresentation) 4.dp else 6.dp))
         FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(picRowHGap, Alignment.CenterHorizontally),
+            verticalArrangement = Arrangement.spacedBy(picRowHGap),
         ) {
             pairs.forEach { pair ->
                 val done = pair.letter in matchedLetters
@@ -80,23 +122,40 @@ fun PictureLetterMatchBoard(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     modifier =
                         Modifier
-                            .width(118.dp)
+                            .width(picTileWidth)
                             .border(
                                 width =
                                     when {
                                         done -> 4.dp
-                                        selected -> 3.dp
+                                        selected ->
+                                            if (chapter1FinalePresentation) {
+                                                6.dp
+                                            } else {
+                                                3.dp
+                                            }
                                         else -> 2.dp
                                     },
                                 color =
                                     when {
                                         done -> Color(0xFF2E7D32)
-                                        selected -> Color(0xFF1976D2)
+                                        selected ->
+                                            if (chapter1FinalePresentation) {
+                                                Color(0xFFFFC400)
+                                            } else {
+                                                Color(0xFF1976D2)
+                                            }
                                         else -> Color(0xFF0B2B3D).copy(alpha = 0.22f)
                                     },
                                 shape = RoundedCornerShape(16.dp),
                             )
-                            .background(Color.White.copy(alpha = 0.9f), RoundedCornerShape(16.dp))
+                            .background(
+                                if (chapter1FinalePresentation && selected && !done) {
+                                    Color(0xFFFFECB3).copy(alpha = 0.55f)
+                                } else {
+                                    Color.White.copy(alpha = 0.9f)
+                                },
+                                RoundedCornerShape(16.dp),
+                            )
                             .padding(8.dp)
                             .clickable(
                                 interactionSource = picInteraction,
@@ -112,7 +171,7 @@ fun PictureLetterMatchBoard(
                         modifier =
                             Modifier
                                 .fillMaxWidth()
-                                .height(72.dp),
+                                .height(picImageH),
                         contentScale = ContentScale.Fit,
                         colorFilter =
                             pair.tintArgb?.let { argb ->
@@ -133,16 +192,16 @@ fun PictureLetterMatchBoard(
             }
         }
 
-        Spacer(modifier = Modifier.height(18.dp))
+        Spacer(modifier = Modifier.height(picLetterGap))
         Text(
             text = "אותיות",
             style = MaterialTheme.typography.titleSmall,
             color = Color(0xFF0B2B3D).copy(alpha = 0.75f),
         )
-        Spacer(modifier = Modifier.height(6.dp))
+        Spacer(modifier = Modifier.height(if (chapter1FinalePresentation) 4.dp else 6.dp))
         FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(picRowHGap, Alignment.CenterHorizontally),
+            verticalArrangement = Arrangement.spacedBy(picRowHGap),
         ) {
             letterRow.forEach { letter ->
                 val done = letter in matchedLetters
