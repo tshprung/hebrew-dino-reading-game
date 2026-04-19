@@ -30,6 +30,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -127,8 +128,19 @@ fun LetterQuizStationScreen(
             null -> ""
         }
 
+    // Do NOT key off currentQuestion alone: between questions nextQuestion() clears the question
+    // briefly; snapshotFlow could see null and call onComplete early (crash / exit mid-station).
+    LaunchedEffect(stationId) {
+        snapshotFlow { session.currentIndex >= session.totalQuestions }.collect { exhausted ->
+            if (exhausted) {
+                onComplete(stationId, session.correctCount, session.mistakeCount)
+                return@collect
+            }
+        }
+    }
+
     if (current == null) {
-        onComplete(stationId, session.correctCount, session.mistakeCount)
+        Box(modifier = modifier.fillMaxSize())
         return
     }
 

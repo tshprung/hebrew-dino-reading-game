@@ -29,12 +29,12 @@ object ChaptersPathLayout {
     }
 
     /**
-     * Chapter **1** is at the **bottom** of the scroll (high `t`); chapter **10** near the **top** (low `t`).
+     * Chapter **1** at the **top** (low `t`); last chapter toward the **bottom** (high `t`).
      * `chapterIndex` is 0-based (0 = chapter 1).
      */
     fun tForChapterIndex(chapterIndex: Int, total: Int = CHAPTER_COUNT): Float {
         val i = chapterIndex.coerceIn(0, total - 1)
-        return 1f - (i + 0.5f) / total
+        return (i + 0.5f) / total
     }
 
     private fun chapCubic(t: Float, p0: NormPt, p1: NormPt, p2: NormPt, p3: NormPt): NormPt {

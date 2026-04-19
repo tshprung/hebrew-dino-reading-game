@@ -5,6 +5,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
+import com.tal.hebrewdino.ui.domain.Chapter1Config
 import com.tal.hebrewdino.ui.domain.Chapter3Config
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -28,7 +29,7 @@ class ProgressPrefs(private val context: Context) {
 
     val unlockedLevelFlow: Flow<Int> =
         context.dataStore.data.map { prefs ->
-            prefs[unlockedLevelKey] ?: 1
+            (prefs[unlockedLevelKey] ?: 1).coerceAtMost(Chapter1Config.STATION_COUNT)
         }
 
     val completedLevelsFlow: Flow<Set<Int>> =
@@ -191,10 +192,11 @@ class ProgressPrefs(private val context: Context) {
     }
 
     suspend fun unlockAtLeast(levelId: Int) {
+        val capped = levelId.coerceAtMost(Chapter1Config.STATION_COUNT)
         context.dataStore.edit { prefs ->
-            val current = prefs[unlockedLevelKey] ?: 1
-            if (levelId > current) {
-                prefs[unlockedLevelKey] = levelId
+            val current = (prefs[unlockedLevelKey] ?: 1).coerceAtMost(Chapter1Config.STATION_COUNT)
+            if (capped > current) {
+                prefs[unlockedLevelKey] = capped
             }
         }
     }

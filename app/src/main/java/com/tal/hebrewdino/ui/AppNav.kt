@@ -257,10 +257,11 @@ fun AppNav() {
                 },
                 onDebugUnlockNext = {
                     scope.launch {
+                        val last = Chapter1Config.STATION_COUNT
                         val next =
-                            (1..6).firstOrNull { !completedLevels.contains(it) } ?: 6
+                            (1..last).firstOrNull { !completedLevels.contains(it) } ?: last
                         progress.markCompleted(next)
-                        progress.unlockAtLeast(next + 1)
+                        progress.unlockAtLeast((next + 1).coerceAtMost(last))
                     }
                 },
             )
@@ -324,7 +325,9 @@ fun AppNav() {
                 onComplete = { completedLevelId, correctCount, mistakeCount ->
                     scope.launch {
                         progress.markCompleted(completedLevelId)
-                        progress.unlockAtLeast(completedLevelId + 1)
+                        progress.unlockAtLeast(
+                            (completedLevelId + 1).coerceAtMost(Chapter1Config.STATION_COUNT),
+                        )
                     }
                     navController.navigate("${Routes.Reward}/$completedLevelId/$correctCount/$mistakeCount")
                 },

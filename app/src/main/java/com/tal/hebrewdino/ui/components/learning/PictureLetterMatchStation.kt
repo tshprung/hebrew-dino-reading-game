@@ -20,6 +20,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -98,8 +99,17 @@ fun PictureLetterMatchStation(
             else -> ""
         }
 
+    LaunchedEffect(stationId) {
+        snapshotFlow { session.currentIndex >= session.totalQuestions }.collect { exhausted ->
+            if (exhausted) {
+                onComplete(stationId, session.correctCount, session.mistakeCount)
+                return@collect
+            }
+        }
+    }
+
     if (current == null) {
-        onComplete(stationId, session.correctCount, session.mistakeCount)
+        Box(modifier = modifier.fillMaxSize())
         return
     }
 
