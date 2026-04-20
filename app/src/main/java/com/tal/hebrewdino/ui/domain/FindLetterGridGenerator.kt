@@ -12,6 +12,7 @@ object FindLetterGridGenerator {
         group: List<String>,
         targetLetter: String,
         minTargetCount: Int = 3,
+        maxTargetCount: Int? = null,
     ): Question.FindLetterGridQuestion {
         require(group.isNotEmpty())
         require(targetLetter in group)
@@ -19,7 +20,8 @@ object FindLetterGridGenerator {
         val rows = columns
         val total = columns * rows
         val maxTargets = (total - 2).coerceAtLeast(minTargetCount)
-        val targetCount = (minTargetCount..maxTargets).random(rnd)
+        val cappedMax = maxTargetCount?.coerceIn(minTargetCount, maxTargets) ?: maxTargets
+        val targetCount = (minTargetCount..cappedMax).random(rnd)
         val others = group.filter { it != targetLetter }.ifEmpty { listOf(targetLetter) }
         val indices = (0 until total).shuffled(rnd).take(targetCount).toSet()
         val cells =

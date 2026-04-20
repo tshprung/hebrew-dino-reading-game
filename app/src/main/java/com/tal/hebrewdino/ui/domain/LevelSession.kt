@@ -4,6 +4,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import com.tal.hebrewdino.ui.domain.Chapter1LetterPoolSpec
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.random.Random
@@ -64,7 +65,21 @@ class LevelSession(
                     when (quizMode) {
                         StationQuizMode.FindLetterGrid -> {
                             val correct = nextBalancedCorrect(group)
-                            FindLetterGridGenerator.generate(rnd, group, correct)
+                            FindLetterGridGenerator.generate(
+                                rnd = rnd,
+                                group = group,
+                                targetLetter = correct,
+                                maxTargetCount = if (letterPoolSpec === Chapter1LetterPoolSpec) 4 else null,
+                            )
+                        }
+                        StationQuizMode.PickLetter -> {
+                            val correct = nextBalancedCorrect(group)
+                            popGenerator.generate(
+                                rnd = rnd,
+                                group = group,
+                                correctAnswer = correct,
+                                optionCount = 3,
+                            )
                         }
                         StationQuizMode.PopBalloons -> {
                             val correct = nextBalancedCorrect(group)
@@ -72,7 +87,7 @@ class LevelSession(
                                 rnd = rnd,
                                 group = group,
                                 correctAnswer = correct,
-                                optionCount = 3,
+                                optionCount = 7,
                             )
                         }
                         StationQuizMode.ImageMatch -> {

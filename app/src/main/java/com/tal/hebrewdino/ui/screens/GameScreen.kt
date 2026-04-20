@@ -337,7 +337,7 @@ fun GameScreen(
                                     modifier = Modifier.fillMaxSize(),
                                     horizontalAlignment = Alignment.CenterHorizontally,
                                 ) {
-                                    // Keep the target letter visible throughout the balloon station.
+                                    // Keep the target letter visible throughout.
                                     Box(
                                         modifier =
                                             Modifier
@@ -358,39 +358,64 @@ fun GameScreen(
                                             textAlign = TextAlign.Center,
                                         )
                                     }
-                                    PopBalloonsOptions(
-                                        options = current.options,
-                                        correctAnswer = current.correctAnswer,
-                                        enabled = !inputLocked,
-                                        shakePx = optionsShake.value,
-                                        onPopSfx = { isCorrect ->
-                                            // SFX only; no suspend call needed.
-                                            scope.launch {
-                                                sfx.playFirstAvailable(
-                                                    AudioClips.SfxBalloonPop,
-                                                    volume = if (isCorrect) 0.88f else 0.32f,
-                                                )
-                                            }
-                                        },
-                                        onWrongPick = {
-                                            // Wrong balloon: feedback only, stay on same question.
-                                            session.wrongTap()
-                                            shakeEpoch += 1
-                                            onWrongFeedback()
-                                        },
-                                        onAllCorrectPopped = {
-                                            // Only advance when ALL correct-letter balloons are popped.
-                                            when (session.submitAnswer(current.correctAnswer)) {
-                                                AnswerResult.Correct ->
-                                                    scope.launch {
+
+                                    if (plan.mode == com.tal.hebrewdino.ui.domain.StationQuizMode.PickLetter) {
+                                        LetterOptions(
+                                            options = current.options,
+                                            enabled = !inputLocked,
+                                            shakePx = optionsShake.value,
+                                            onPick = { picked ->
+                                                when (session.submitAnswer(picked)) {
+                                                    AnswerResult.Correct -> {
                                                         ChildGameAudioHooks.onCorrect()
-                                                        val isLast = session.currentIndex >= session.totalQuestions - 1
-                                                        advanceAfterRound(isLast)
+                                                        scope.launch {
+                                                            val isLast = session.currentIndex >= session.totalQuestions - 1
+                                                            advanceAfterRound(isLast)
+                                                        }
                                                     }
-                                                else -> {}
-                                            }
-                                        },
-                                    )
+                                                    AnswerResult.Wrong -> {
+                                                        ChildGameAudioHooks.onWrong()
+                                                        onWrongFeedback()
+                                                    }
+                                                    AnswerResult.Finished -> {}
+                                                }
+                                            },
+                                        )
+                                    } else {
+                                        PopBalloonsOptions(
+                                            options = current.options,
+                                            correctAnswer = current.correctAnswer,
+                                            enabled = !inputLocked,
+                                            shakePx = optionsShake.value,
+                                            onPopSfx = { isCorrect ->
+                                                // SFX only; no suspend call needed.
+                                                scope.launch {
+                                                    sfx.playFirstAvailable(
+                                                        AudioClips.SfxBalloonPop,
+                                                        volume = if (isCorrect) 0.88f else 0.32f,
+                                                    )
+                                                }
+                                            },
+                                            onWrongPick = {
+                                                // Wrong balloon: feedback only, stay on same question.
+                                                session.wrongTap()
+                                                shakeEpoch += 1
+                                                onWrongFeedback()
+                                            },
+                                            onAllCorrectPopped = {
+                                                // Only advance when ALL correct-letter balloons are popped.
+                                                when (session.submitAnswer(current.correctAnswer)) {
+                                                    AnswerResult.Correct ->
+                                                        scope.launch {
+                                                            ChildGameAudioHooks.onCorrect()
+                                                            val isLast = session.currentIndex >= session.totalQuestions - 1
+                                                            advanceAfterRound(isLast)
+                                                        }
+                                                    else -> {}
+                                                }
+                                            },
+                                        )
+                                    }
                                 }
                             is Question.ImageMatchQuestion ->
                                 ImageMatchGame(
@@ -398,7 +423,7 @@ fun GameScreen(
                                     contentKey = session.currentIndex,
                                     enabled = !inputLocked,
                                     shakePx = optionsShake.value,
-                                    showWordCaptions = stationId !in 4..6,
+                                    showWordCaptions = true,
                                     onAttempt = { choiceId ->
                                         when (session.submitImageMatch(choiceId)) {
                                             AnswerResult.Correct -> {

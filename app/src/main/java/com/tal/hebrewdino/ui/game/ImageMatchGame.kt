@@ -178,25 +178,40 @@ private fun ImageMatchCard(
                 .padding(12.dp),
     ) {
         if (choice.tileDrawable == R.drawable.lesson_word_tile) {
+            // `lesson_word_tile` is a ShapeDrawable XML (not supported by painterResource as an Image),
+            // so render a nice placeholder tile ourselves.
             Box(
                 modifier =
                     Modifier
-                        .size(width = 160.dp, height = 110.dp)
+                        .size(width = cardWidth, height = cardHeight)
                         .clip(RoundedCornerShape(18.dp))
                         .background(
                             Color(
                                 red = ((choice.tintArgb shr 16) and 0xFF) / 255f,
                                 green = ((choice.tintArgb shr 8) and 0xFF) / 255f,
                                 blue = (choice.tintArgb and 0xFF) / 255f,
-                                alpha = ((choice.tintArgb ushr 24) and 0xFF) / 255f,
+                                alpha = 1f,
                             ),
                         ),
-            )
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = choice.letter,
+                    fontSize = 54.sp,
+                    fontWeight = FontWeight.Black,
+                    color = Color(0xFF0B2B3D).copy(alpha = 0.92f),
+                    textAlign = TextAlign.Center,
+                    modifier =
+                        Modifier
+                            .background(Color.White.copy(alpha = 0.50f), RoundedCornerShape(18.dp))
+                            .padding(horizontal = 12.dp, vertical = 6.dp),
+                )
+            }
         } else {
             Image(
                 painter = painterResource(id = choice.tileDrawable),
                 contentDescription = choice.word,
-                modifier = Modifier.size(width = 160.dp, height = 110.dp),
+                modifier = Modifier.size(width = cardWidth, height = cardHeight),
                 contentScale = ContentScale.Fit,
             )
         }

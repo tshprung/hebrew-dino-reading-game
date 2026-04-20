@@ -6,6 +6,7 @@ package com.tal.hebrewdino.ui.domain
  */
 enum class StationQuizMode {
     FindLetterGrid,
+    PickLetter,
     PopBalloons,
     ImageMatch,
     FinaleSlot,

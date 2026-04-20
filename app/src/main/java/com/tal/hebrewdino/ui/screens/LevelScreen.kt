@@ -79,6 +79,7 @@ import com.tal.hebrewdino.ui.audio.SoundPoolPlayer
 import com.tal.hebrewdino.ui.audio.VoicePlayer
 import com.tal.hebrewdino.ui.domain.AnswerResult
 import com.tal.hebrewdino.ui.domain.Chapter1Config
+import com.tal.hebrewdino.ui.domain.Chapter1LetterPoolSpec
 import com.tal.hebrewdino.ui.domain.LetterPoolSpec
 import com.tal.hebrewdino.ui.domain.LevelSession
 import com.tal.hebrewdino.ui.domain.Question
@@ -110,7 +111,7 @@ fun LevelScreen(
         chapterTitle = "פרק 1 - מצא את הביצה",
         stageLabel = "שלב $chapterLevel",
         plan = StationQuizPlans.chapter1(chapterLevel),
-        letterPoolSpec = LetterPoolSpec.Default,
+        letterPoolSpec = Chapter1LetterPoolSpec,
         onBack = onBack,
         onComplete = onComplete,
         onLettersHelp = onLettersHelp,
@@ -297,6 +298,9 @@ internal fun PopBalloonsOptions(
         fun remainingCorrectCount(): Int =
             options.indices.count { i -> i < alive.size && alive[i] && options[i] == correctAnswer }
 
+        val minSepPx = 86f // avoid complete overlap (balloon ~86dp wide)
+        val positions = remember(options, correctAnswer, wPx, hPx) { ArrayList<Pair<Float, Float>>(options.size) }
+
         options.forEachIndexed { idx, letter ->
             if (idx >= alive.size || !alive[idx]) return@forEachIndexed
             val color =
@@ -307,8 +311,14 @@ internal fun PopBalloonsOptions(
                     3 -> Color(0xFF4D96FF)
                     else -> Color(0xFFB983FF)
                 }
-            val baseXPx = wPx * (0.06f + (idx % 3) * 0.30f).coerceIn(0.07f, 0.78f)
-            val baseYPx = hPx * (0.10f + (idx % 2) * 0.24f)
+            // Wider scatter using a 4×2 layout with per-balloon deterministic jitter.
+            val col = idx % 4
+            val row = (idx / 4) % 2
+            val r = Random(idx * 4241L + correctAnswer.hashCode() * 31L)
+            val jitterX = (r.nextFloat() - 0.5f) * 0.12f // ±6% of width
+            val jitterY = (r.nextFloat() - 0.5f) * 0.10f // ±5% of height
+            val baseXPx = wPx * (0.08f + col * 0.22f + jitterX).coerceIn(0.07f, 0.86f)
+            val baseYPx = hPx * (0.10f + row * 0.34f + jitterY).coerceIn(0.10f, 0.78f)
             val ampXPx = 36f + (idx % 3) * 24f
             val ampYPx = 28f + (idx % 2) * 20f
             val ph = phases.getOrElse(idx) { 0f }
@@ -318,8 +328,16 @@ internal fun PopBalloonsOptions(
             val paddingPx = 10f
             val rawXPx = baseXPx + ox
             val rawYPx = baseYPx + oy
-            val xPx = rawXPx.coerceIn(paddingPx, (wPx - 100f).coerceAtLeast(paddingPx))
-            val yPx = rawYPx.coerceIn(paddingPx, (hPx - 130f).coerceAtLeast(paddingPx))
+            var xPx = rawXPx.coerceIn(paddingPx, (wPx - 100f).coerceAtLeast(paddingPx))
+            var yPx = rawYPx.coerceIn(paddingPx, (hPx - 130f).coerceAtLeast(paddingPx))
+
+            // Push balloons apart so they don't fully cover each other.
+            var guard = 0
+            while (positions.any { (px, py) -> (kotlin.math.abs(px - xPx) < minSepPx && kotlin.math.abs(py - yPx) < minSepPx) } && guard++ < 12) {
+                xPx = (xPx + minSepPx * if (guard % 2 == 0) 1f else -1f).coerceIn(paddingPx, (wPx - 100f).coerceAtLeast(paddingPx))
+                yPx = (yPx + (minSepPx * 0.6f) * if (guard % 3 == 0) 1f else -1f).coerceIn(paddingPx, (hPx - 130f).coerceAtLeast(paddingPx))
+            }
+            positions.add(xPx to yPx)
 
             key(idx, letter) {
                 PopBalloon(

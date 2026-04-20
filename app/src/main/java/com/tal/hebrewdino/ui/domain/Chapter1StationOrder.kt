@@ -23,9 +23,9 @@ object Chapter1StationOrder {
 
     fun quizPlan(stationId: Int): StationQuizPlan {
         return when (stationId.coerceIn(1, Chapter1Config.STATION_COUNT)) {
-            TAP_LETTER -> StationQuizPlan(StationQuizMode.FindLetterGrid, questionCount = 3, initialGroupIndex = 0)
+            TAP_LETTER -> StationQuizPlan(StationQuizMode.PickLetter, questionCount = 3, initialGroupIndex = 0)
             BALLOON_POP -> StationQuizPlan(StationQuizMode.PopBalloons, questionCount = 4, initialGroupIndex = 0)
-            REVEAL_THEN_CHOOSE -> StationQuizPlan(StationQuizMode.FindLetterGrid, questionCount = 5, initialGroupIndex = 1)
+            REVEAL_THEN_CHOOSE -> StationQuizPlan(StationQuizMode.FindLetterGrid, questionCount = 5, initialGroupIndex = 0)
             PICTURE_PICK_ONE -> StationQuizPlan(StationQuizMode.ImageMatch, questionCount = 4, initialGroupIndex = 1)
             PICTURE_PICK_ALL -> StationQuizPlan(StationQuizMode.ImageMatch, questionCount = 4, initialGroupIndex = 2)
             FINALE_PICTURE_LETTER_MATCH ->

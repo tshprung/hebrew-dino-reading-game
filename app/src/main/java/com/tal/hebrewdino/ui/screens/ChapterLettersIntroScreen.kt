@@ -47,7 +47,8 @@ fun Chapter1LettersIntroScreen(
 ) {
     ChapterLettersIntroScreen(
         chapterTitle = "פרק 1 - מצא את הביצה",
-        letters = listOf("א", "ב", "מ", "ל", "ש"),
+        letters = listOf("א", "ב", "ד", "ל", "מ"),
+        backgroundRes = R.drawable.forest_bg_story_intro,
         onContinue = onContinue,
         onBack = onBack,
         modifier = modifier,
@@ -63,6 +64,7 @@ fun Chapter2LettersIntroScreen(
     ChapterLettersIntroScreen(
         chapterTitle = "פרק 2 - חוזרים הביתה",
         letters = listOf("ב", "מ", "ל", "ק", "ט"),
+        backgroundRes = R.drawable.mountain_bg_chapter2,
         onContinue = onContinue,
         onBack = onBack,
         modifier = modifier,
@@ -78,6 +80,7 @@ fun Chapter3LettersIntroScreen(
     ChapterLettersIntroScreen(
         chapterTitle = "פרק 3 - מצא את החבר",
         letters = listOf("ק", "ט", "נ", "ה", "ר"),
+        backgroundRes = R.drawable.swamp_bg_chapter3,
         onContinue = onContinue,
         onBack = onBack,
         modifier = modifier,
@@ -88,6 +91,7 @@ fun Chapter3LettersIntroScreen(
 fun ChapterLettersIntroScreen(
     chapterTitle: String,
     letters: List<String>,
+    backgroundRes: Int,
     onContinue: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
@@ -126,7 +130,7 @@ fun ChapterLettersIntroScreen(
 
     Box(modifier = modifier.fillMaxSize()) {
         Image(
-            painter = painterResource(id = R.drawable.forest_bg_story_intro),
+            painter = painterResource(id = backgroundRes),
             contentDescription = null,
             modifier = Modifier.fillMaxSize(),
             contentScale = ContentScale.Crop,

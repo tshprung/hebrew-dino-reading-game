@@ -189,6 +189,7 @@ fun AppNav() {
                 headerSubtitle = "הדרך חזרה לקן — ${Chapter2Config.STATION_COUNT} תחנות",
                 endMarker = JourneyEndMarker.HomeCave,
                 companionImageRes = R.drawable.mom_idle,
+                backgroundRes = R.drawable.mountain_bg_chapter2,
                 onPlayLevel = { stationId ->
                     navController.navigate("${NavRoutes.Ch2Level}/$stationId")
                 },
@@ -233,6 +234,7 @@ fun AppNav() {
                 headerSubtitle = "בדרך עם דינו — ${Chapter3Config.STATION_COUNT} תחנות",
                 headerSubtitleCompact = true,
                 endMarker = JourneyEndMarker.HomeCave,
+                backgroundRes = R.drawable.swamp_bg_chapter3,
                 onPlayLevel = { stationId ->
                     navController.navigate("${NavRoutes.Ch3Level}/$stationId")
                 },

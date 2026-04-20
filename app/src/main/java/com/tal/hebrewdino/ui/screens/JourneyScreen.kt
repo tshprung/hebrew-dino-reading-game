@@ -139,20 +139,19 @@ fun JourneyScreen(
     /** Optional second character drawn beside Dino (e.g. mom in chapter 2). */
     companionImageRes: Int? = null,
     endMarker: JourneyEndMarker = JourneyEndMarker.Egg,
+    backgroundRes: Int = R.drawable.forest_bg_journey_road,
     modifier: Modifier = Modifier,
 ) {
-    // Chapter 1 road should run physically Right → Left.
-    val rtlRoad = true
+    // Fractions are authored for Right → Left already; keep mirroring disabled.
+    val rtlRoad = false
     val resolvedSubtitle = headerSubtitle // when null, hide subtitle (chapter 1 request)
     val nextPlayableSuggested =
         (1..playableLevels).firstOrNull { !completedLevels.contains(it) } ?: (playableLevels + 1)
     fun idleDinoProgressAlongRoad(): Float =
         if (nextPlayableSuggested <= playableLevels) {
-            if (nextPlayableSuggested > 1) {
-                (nextPlayableSuggested - 2).toFloat().coerceIn(0f, (totalLevels - 1).toFloat().coerceAtLeast(1f))
-            } else {
-                0f
-            }
+            // Stand near the *current* suggested station (not the previous one).
+            // This ensures that after returning from a station, the dino waits by the newly-unlocked station.
+            (nextPlayableSuggested - 1).toFloat().coerceIn(0f, (totalLevels - 1).toFloat())
         } else {
             (roadFractions.lastIndex * 0.88f).coerceAtLeast((playableLevels - 1).coerceAtLeast(1) - 1f)
         }
@@ -167,8 +166,12 @@ fun JourneyScreen(
     var walking by remember { mutableStateOf(false) }
     var walkFrame by remember { mutableIntStateOf(0) }
     val dinoProgress = remember { Animatable(0f) }
-    LaunchedEffect(Unit) {
-        dinoProgress.snapTo(idleDinoProgressAlongRoad())
+    LaunchedEffect(nextPlayableSuggested, playableLevels, totalLevels) {
+        // If we navigate back to the journey screen after completing a station, the suggested station changes.
+        // Snap the idle progress to that new suggested station unless we're currently walking.
+        if (!walking) {
+            dinoProgress.snapTo(idleDinoProgressAlongRoad())
+        }
     }
 
     LaunchedEffect(walking) {
@@ -204,7 +207,7 @@ fun JourneyScreen(
 
     Box(modifier = modifier.fillMaxSize()) {
         Image(
-            painter = painterResource(id = R.drawable.forest_bg_journey_road),
+            painter = painterResource(id = backgroundRes),
             contentDescription = null,
             modifier = Modifier.fillMaxSize(),
             contentScale = ContentScale.Crop,
@@ -382,17 +385,9 @@ private fun JourneyRoadStrip(
                         .offset(x = (-38).dp),
             ) {
                 val roadPts =
-                    if (rtlRoad) {
-                        roadFractions.map { (fx, fy) -> mirrorX(fx, true) to fy }
-                    } else {
-                        roadFractions
-                    }
+                    roadFractions
                 val stationPts =
-                    if (rtlRoad) {
-                        stationFractions.map { (fx, fy) -> mirrorX(fx, true) to fy }
-                    } else {
-                        stationFractions
-                    }
+                    stationFractions
             val wPx = with(density) { roadWidth.toPx() }
             val hPx = with(density) { roadHeight.toPx() }
             val edgeMarginPx = with(density) { 38.dp.toPx() } // ~1cm
@@ -537,14 +532,17 @@ private fun JourneyRoadStrip(
                 val xPx = if (levelId == 1) xPxRaw.coerceAtMost(maxCenterPx) else xPxRaw
                 val yPx = fy * hPx
                 val playable = levelId <= playableLevels
+                val completed = completedLevels.contains(levelId)
                 val interactive =
-                    playable && levelId <= unlockedLevel && !walking && levelId == nextSuggested
+                    playable &&
+                        levelId <= unlockedLevel &&
+                        !walking &&
+                        (levelId == nextSuggested || completed)
                 val lockedWaiting =
                     playable &&
                         levelId <= unlockedLevel &&
-                        !completedLevels.contains(levelId) &&
+                        !completed &&
                         levelId > nextSuggested
-                val completed = completedLevels.contains(levelId)
                 val suggested = interactive && !completed && levelId == nextSuggested
                 val isLast = levelId == totalLevels
 
@@ -572,15 +570,8 @@ private fun JourneyRoadStrip(
                 )
             }
 
-            val (dfx, dfy) =
-                if (walking) {
-                    xyAlongRoad(dinoProgress, roadPts)
-                } else if (nextSuggested in 1..totalLevels) {
-                    val si = (nextSuggested - 1).coerceIn(0, stationFractions.lastIndex)
-                    stationPts[si]
-                } else {
-                    xyAlongRoad(dinoProgress, roadPts)
-                }
+            // Always place the dino on the road curve itself, using the persisted progress.
+            val (dfx, dfy) = xyAlongRoad(dinoProgress, roadPts)
             val dinoRes = if (walking) walkDrawable else R.drawable.dino_idle
             val dinoX =
                 with(density) {

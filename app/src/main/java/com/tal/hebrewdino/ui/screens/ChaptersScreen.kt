@@ -53,7 +53,6 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
@@ -313,12 +312,6 @@ private fun ChapterHexTile(
     onClick: () -> Unit,
 ) {
     val locked = state == ChapterEggState.Locked
-    val overlay =
-        if (locked) {
-            Color(0xFFCFD8DC).copy(alpha = 0.82f)
-        } else {
-            Color.Transparent
-        }
     Box(
         modifier =
             Modifier
@@ -334,14 +327,29 @@ private fun ChapterHexTile(
             contentDescription = null,
             modifier = Modifier.fillMaxSize(),
             contentScale = ContentScale.Crop,
-            colorFilter =
-                if (locked) {
-                    ColorFilter.tint(Color(0xFFB0BEC5), blendMode = androidx.compose.ui.graphics.BlendMode.Saturation)
-                } else {
-                    null
-                },
         )
-        if (overlay.alpha > 0f) Box(Modifier.fillMaxSize().background(overlay))
+        // Keep all tiles in full color; locked tiles only get a subtle dim + lock badge.
+        if (locked) {
+            Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.18f)))
+        }
+
+        if (locked) {
+            Box(
+                modifier =
+                    Modifier
+                        .align(Alignment.TopCenter)
+                        .padding(top = 10.dp)
+                        .background(Color.Black.copy(alpha = 0.40f), RoundedCornerShape(999.dp))
+                        .padding(horizontal = 10.dp, vertical = 4.dp),
+            ) {
+                Text(
+                    text = "🔒",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = Color.White,
+                )
+            }
+        }
+
         Text(
             text = title,
             modifier =
