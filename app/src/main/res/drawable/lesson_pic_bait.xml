@@ -1,19 +1,26 @@
 <?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="120dp"
-    android:height="88dp"
+    android:height="96dp"
     android:viewportWidth="120"
-    android:viewportHeight="88">
+    android:viewportHeight="96">
+    <!-- Simple readable house: roof, walls, door, window -->
     <path
-        android:fillColor="#8D6E63"
-        android:pathData="M60,78 L22,42 L60,12 L98,42 Z" />
-    <path
-        android:fillColor="#A1887F"
-        android:pathData="M28,78 L92,78 L92,52 L28,52 Z" />
-    <path
-        android:fillColor="#6D4C41"
-        android:pathData="M44,52 L76,52 L76,44 L44,44 Z" />
+        android:fillColor="#795548"
+        android:pathData="M60,10 L18,52 L102,52 Z" />
     <path
         android:fillColor="#D7CCC8"
-        android:pathData="M52,30 L68,30 L68,24 L52,24 Z" />
+        android:pathData="M24,52 L24,88 L96,88 L96,52 Z" />
+    <path
+        android:fillColor="#81D4FA"
+        android:pathData="M32,58 L32,74 L50,74 L50,58 Z" />
+    <path
+        android:fillColor="#5D4037"
+        android:pathData="M52,88 L52,60 L72,60 L72,88 Z" />
+    <path
+        android:fillColor="#6D4C41"
+        android:pathData="M58,60 L58,78 L66,78 L66,60 Z" />
+    <path
+        android:fillColor="#A1887F"
+        android:pathData="M18,52 L102,52 L102,56 L18,56 Z" />
 </vector>

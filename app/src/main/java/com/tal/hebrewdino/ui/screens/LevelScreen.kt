@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.clickable
@@ -57,6 +56,7 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.zIndex
 import androidx.compose.ui.text.style.TextAlign
@@ -123,6 +123,38 @@ fun LevelScreen(
     )
 }
 
+/** Same yellow “header” chip as [com.tal.hebrewdino.ui.game.FindLetterGridGame] target letter. */
+@Composable
+internal fun TargetLetterHeaderChip(
+    letter: String,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier =
+            modifier
+                .clip(RoundedCornerShape(18.dp))
+                .background(
+                    brush =
+                        Brush.verticalGradient(
+                            listOf(
+                                Color(0xFFFFF59D).copy(alpha = 0.95f),
+                                Color(0xFFFFE082).copy(alpha = 0.88f),
+                            ),
+                        ),
+                )
+                .border(2.dp, Color(0xFFFFA000).copy(alpha = 0.45f), RoundedCornerShape(18.dp))
+                .padding(horizontal = 20.dp, vertical = 5.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = letter,
+            fontSize = 56.sp,
+            fontWeight = FontWeight.Black,
+            color = Color(0xFF0B2B3D),
+            textAlign = TextAlign.Center,
+        )
+    }
+}
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -302,7 +334,7 @@ internal fun PopBalloonsOptions(
             options.indices.count { i -> i < alive.size && alive[i] && options[i] == correctAnswer }
 
         // Spawn anchors: random across full area with minimum distance (no overlap).
-        val minSepPx = 110f
+        val minSepPx = 138f
         val paddingPx = 18f
         val anchors =
             remember(options, correctAnswer, wPx, hPx) {
@@ -346,14 +378,18 @@ internal fun PopBalloonsOptions(
                     else -> Color(0xFFB983FF)
                 }
             val (baseXPx, baseYPx) = anchors.getOrElse(idx) { paddingPx to paddingPx }
-            // Each balloon has a slightly different motion path.
-            val ampXPx = 18f + (idx % 4) * 10f
-            val ampYPx = 14f + (idx % 3) * 9f
+            // Each balloon has a slightly different motion path; neighbors drift in opposite directions.
+            val dir = if (idx % 2 == 0) 1f else -1f
+            val ampXPx = 22f + (idx % 4) * 11f
+            val ampYPx = 16f + (idx % 3) * 10f
             val ph = phases.getOrElse(idx) { 0f }
             val f = (0.78f + (idx % 5) * 0.06f)
             val t = driftPhase * 2f * PI.toFloat() * f + ph
-            val ox = sin(t.toDouble()).toFloat() * ampXPx + sin((t * 0.37f).toDouble()).toFloat() * 8f
-            val oy = cos((t * 0.92f).toDouble()).toFloat() * ampYPx
+            val ox =
+                dir * (sin(t.toDouble()).toFloat() * ampXPx + sin((t * 0.37f).toDouble()).toFloat() * 10f)
+            val oy =
+                -dir * cos((t * 0.92f).toDouble()).toFloat() * ampYPx +
+                    sin((t * 0.61f).toDouble()).toFloat() * 6f * dir
             val xPx = (baseXPx + ox).coerceIn(paddingPx, (wPx - 100f).coerceAtLeast(paddingPx))
             val yPx = (baseYPx + oy).coerceIn(paddingPx, (hPx - 130f).coerceAtLeast(paddingPx))
 

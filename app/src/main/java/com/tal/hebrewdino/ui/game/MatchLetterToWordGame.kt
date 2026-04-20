@@ -1,8 +1,8 @@
 package com.tal.hebrewdino.ui.game
 
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateMapOf
@@ -31,30 +32,35 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.tal.hebrewdino.R
 import com.tal.hebrewdino.ui.domain.LessonChoice
+import com.tal.hebrewdino.ui.domain.LessonWordIllustrations
 import kotlin.math.roundToInt
+import kotlin.random.Random
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @Composable
 fun MatchLetterToWordGame(
     choices: List<LessonChoice>,
+    contentKey: Int = 0,
     enabled: Boolean,
     onSolved: () -> Unit,
     modifier: Modifier = Modifier,
@@ -68,6 +74,15 @@ fun MatchLetterToWordGame(
 
     val letterRects = remember { mutableStateMapOf<String, Rect>() }
     val itemRects = remember { mutableStateMapOf<String, Rect>() } // choiceId -> rect
+
+    val wordColumn =
+        remember(maxPairs, contentKey) {
+            maxPairs.shuffled(Random(contentKey * 7919L + maxPairs.hashCode()))
+        }
+    val letterColumn =
+        remember(maxPairs, contentKey) {
+            maxPairs.map { it.letter }.distinct().shuffled(Random(contentKey * 3571L + 17))
+        }
 
     LaunchedEffect(locked.size) {
         if (locked.size == maxPairs.size && maxPairs.isNotEmpty()) {
@@ -90,13 +105,12 @@ fun MatchLetterToWordGame(
         val tileShape = RoundedCornerShape(22.dp)
 
         Box(modifier = Modifier.fillMaxWidth()) {
-            // Connection lines
-            androidx.compose.foundation.Canvas(modifier = Modifier.fillMaxSize()) {
+            Canvas(modifier = Modifier.fillMaxSize()) {
                 locked.forEach { (letter, choiceId) ->
                     val lr = letterRects[letter]
                     val ir = itemRects[choiceId]
-                    val a = lr?.let { Offset(it.left, it.center.y) }
-                    val b = ir?.let { Offset(it.right, it.center.y) }
+                    val a = lr?.center
+                    val b = ir?.center
                     if (a != null && b != null) {
                         drawLine(
                             color = Color(0xFF2E7D32).copy(alpha = 0.92f),
@@ -105,7 +119,6 @@ fun MatchLetterToWordGame(
                             strokeWidth = 10f,
                             cap = StrokeCap.Round,
                         )
-                        // small glow pulse
                         if (glow.value > 0f) {
                             drawLine(
                                 color = Color(0xFFFFD54F).copy(alpha = 0.55f * glow.value),
@@ -119,7 +132,6 @@ fun MatchLetterToWordGame(
                 }
             }
 
-            // RTL layout: letters on RIGHT, items on LEFT.
             Row(
                 modifier =
                     Modifier
@@ -129,13 +141,12 @@ fun MatchLetterToWordGame(
                 horizontalArrangement = Arrangement.spacedBy(gap),
                 verticalAlignment = Alignment.Top,
             ) {
-                // LEFT: items (image + word)
                 Column(
                     modifier = Modifier.width(colW),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    maxPairs.forEach { ch ->
+                    wordColumn.forEach { ch ->
                         val lockedThis = isLockedChoice(ch.id)
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
@@ -143,7 +154,7 @@ fun MatchLetterToWordGame(
                                 Modifier
                                     .width(colW)
                                     .background(Color.White.copy(alpha = 0.86f), tileShape)
-                                    .border(3.dp, Color(0xFF0B2B3D).copy(alpha = if (lockedThis) 0.10f else 0.18f), tileShape)
+                                    .border(1.5.dp, Color(0xFF0B2B3D).copy(alpha = if (lockedThis) 0.10f else 0.18f), tileShape)
                                     .clickable(enabled = enabled && !lockedThis && selectedLetter != null) {
                                         val picked = selectedLetter ?: return@clickable
                                         if (picked == ch.letter && !isLockedLetter(picked)) {
@@ -160,21 +171,20 @@ fun MatchLetterToWordGame(
                                             }
                                         }
                                     }
-                                    .padding(10.dp)
+                                    .padding(8.dp)
                                     .onGloballyPositioned { coords ->
                                         val p = coords.positionInRoot()
                                         itemRects[ch.id] = Rect(p, Size(coords.size.width.toFloat(), coords.size.height.toFloat()))
                                     },
                         ) {
-                            Image(
-                                painter = painterResource(id = ch.tileDrawable),
-                                contentDescription = ch.word,
-                                modifier = Modifier.size(width = colW * 0.86f, height = 110.dp),
-                                contentScale = ContentScale.Fit,
-                                alpha = if (lockedThis) 0.55f else 1f,
+                            MatchWordPicture(
+                                choice = ch,
+                                width = colW * 0.86f,
+                                height = 110.dp,
+                                lockedThis = lockedThis,
                             )
                             Spacer(modifier = Modifier.height(6.dp))
-                            androidx.compose.material3.Text(
+                            Text(
                                 text = ch.word,
                                 fontSize = 20.sp,
                                 fontWeight = FontWeight.Black,
@@ -187,49 +197,29 @@ fun MatchLetterToWordGame(
                     }
                 }
 
-                // RIGHT: letters
                 Column(
                     modifier = Modifier.width(colW),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    maxPairs.map { it.letter }.distinct().forEach { letter ->
+                    letterColumn.forEach { letter ->
                         val lockedThis = isLockedLetter(letter)
-                        val selected = selectedLetter == letter
-                        val scale = remember(letter) { Animatable(1f) }
-                        LaunchedEffect(selected) {
-                            if (selected) {
-                                scale.snapTo(1f)
-                                scale.animateTo(1.08f, spring(dampingRatio = 0.55f, stiffness = 520f))
-                            } else {
-                                scale.animateTo(1f, tween(120))
-                            }
-                        }
                         Box(
                             modifier =
                                 Modifier
                                     .width(colW)
                                     .height(tileH)
-                                    .scale(scale.value)
                                     .background(
-                                        when {
-                                            lockedThis -> Color(0xFF2E7D32).copy(alpha = 0.22f)
-                                            selected -> Color(0xFFFFF3C4).copy(alpha = 0.92f)
-                                            else -> Color.White.copy(alpha = 0.88f)
-                                        },
+                                        if (lockedThis) Color(0xFF2E7D32).copy(alpha = 0.22f) else Color.White.copy(alpha = 0.88f),
                                         tileShape,
                                     )
                                     .border(
-                                        4.dp,
-                                        when {
-                                            lockedThis -> Color(0xFF2E7D32).copy(alpha = 0.85f)
-                                            selected -> Color(0xFFFFC400)
-                                            else -> Color(0xFF0B2B3D).copy(alpha = 0.16f)
-                                        },
+                                        2.dp,
+                                        if (lockedThis) Color(0xFF2E7D32).copy(alpha = 0.85f) else Color(0xFF0B2B3D).copy(alpha = 0.14f),
                                         tileShape,
                                     )
                                     .clickable(enabled = enabled && !lockedThis) {
-                                        selectedLetter = if (selected) null else letter
+                                        selectedLetter = if (selectedLetter == letter) null else letter
                                     }
                                     .onGloballyPositioned { coords ->
                                         val p = coords.positionInRoot()
@@ -237,7 +227,7 @@ fun MatchLetterToWordGame(
                                     },
                             contentAlignment = Alignment.Center,
                         ) {
-                            androidx.compose.material3.Text(
+                            Text(
                                 text = letter,
                                 fontSize = 46.sp,
                                 fontWeight = FontWeight.Black,
@@ -251,3 +241,76 @@ fun MatchLetterToWordGame(
     }
 }
 
+@Composable
+private fun MatchWordPicture(
+    choice: LessonChoice,
+    width: Dp,
+    height: Dp,
+    lockedThis: Boolean,
+) {
+    val density = LocalDensity.current
+    when {
+        choice.tileDrawable == R.drawable.lesson_word_tile -> {
+            Box(
+                modifier =
+                    Modifier
+                        .size(width = width, height = height)
+                        .clip(RoundedCornerShape(18.dp))
+                        .background(
+                            Color(
+                                red = ((choice.tintArgb shr 16) and 0xFF) / 255f,
+                                green = ((choice.tintArgb shr 8) and 0xFF) / 255f,
+                                blue = (choice.tintArgb and 0xFF) / 255f,
+                                alpha = 1f,
+                            ),
+                        ),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = choice.letter,
+                    fontSize = 54.sp,
+                    fontWeight = FontWeight.Black,
+                    color = Color(0xFF0B2B3D).copy(alpha = 0.92f),
+                    textAlign = TextAlign.Center,
+                    modifier =
+                        Modifier
+                            .background(Color.White.copy(alpha = 0.50f), RoundedCornerShape(18.dp))
+                            .padding(horizontal = 12.dp, vertical = 6.dp),
+                )
+            }
+        }
+        choice.tileDrawable == R.drawable.lesson_pic_placeholder -> {
+            val emoji = LessonWordIllustrations.emojiForWord(choice.word)
+            val emojiSp =
+                with(density) {
+                    (width.toPx() * 0.34f).coerceIn(40f * fontScale, 72f * fontScale).toSp()
+                }
+            Box(
+                modifier =
+                    Modifier
+                        .size(width = width, height = height)
+                        .clip(RoundedCornerShape(18.dp))
+                        .background(
+                            Color(
+                                red = ((choice.tintArgb shr 16) and 0xFF) / 255f,
+                                green = ((choice.tintArgb shr 8) and 0xFF) / 255f,
+                                blue = (choice.tintArgb and 0xFF) / 255f,
+                                alpha = 1f,
+                            ),
+                        ),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(text = emoji, fontSize = emojiSp, textAlign = TextAlign.Center, modifier = Modifier.alpha(if (lockedThis) 0.55f else 1f))
+            }
+        }
+        else -> {
+            Image(
+                painter = painterResource(id = choice.tileDrawable),
+                contentDescription = choice.word,
+                modifier = Modifier.size(width = width, height = height),
+                contentScale = ContentScale.Fit,
+                alpha = if (lockedThis) 0.55f else 1f,
+            )
+        }
+    }
+}

@@ -8,6 +8,8 @@ enum class StationQuizMode {
     FindLetterGrid,
     PickLetter,
     PopBalloons,
+    /** Picture + word; pick the first letter (chapter 1 station 4). */
+    PictureStartsWith,
     ImageMatch,
     FinaleSlot,
 }

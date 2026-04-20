@@ -8,6 +8,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -47,6 +48,7 @@ import androidx.compose.ui.unit.sp
 import com.tal.hebrewdino.R
 import com.tal.hebrewdino.ui.layout.ScreenFit
 import com.tal.hebrewdino.ui.domain.LessonChoice
+import com.tal.hebrewdino.ui.domain.LessonWordIllustrations
 import com.tal.hebrewdino.ui.domain.Question
 import kotlin.math.roundToInt
 import kotlinx.coroutines.launch
@@ -58,8 +60,10 @@ fun ImageMatchGame(
     enabled: Boolean,
     shakePx: Float,
     onAttempt: (String) -> Boolean,
-    /** When false, cards show only the picture (for pre-readers); header shows [Question.ImageMatchQuestion.targetLetter] only. */
+    /** When false, cards show only the picture (for pre-readers). */
     showWordCaptions: Boolean = true,
+    captionSizeMultiplier: Float = 1f,
+    pictureSizeMultiplier: Float = 1f,
     modifier: Modifier = Modifier,
 ) {
     val scope = rememberCoroutineScope()
@@ -67,80 +71,87 @@ fun ImageMatchGame(
     LaunchedEffect(contentKey) {
         successChoiceId = null
     }
-    Column(modifier = modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-        BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+    Box(modifier = modifier.fillMaxSize()) {
+        BoxWithConstraints(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.TopCenter),
+        ) {
+            val rowInnerWidth = maxWidth
             val choiceCount = question.choices.size.coerceAtLeast(1)
             val cardGap = 10.dp
-            val cardW =
+            var cardW =
                 ScreenFit.rowChildWidthDp(
-                    rowInnerWidth = maxWidth,
+                    rowInnerWidth = rowInnerWidth,
                     count = choiceCount,
                     gap = cardGap,
                     minEach = 72.dp,
                     maxEach = 168.dp,
                 )
+            cardW = (cardW * pictureSizeMultiplier).coerceAtMost((rowInnerWidth - cardGap * (choiceCount - 1)) / choiceCount)
             val cardH = cardW * (110f / 160f)
             val density = LocalDensity.current
-            // Target letter must always be visible, large, centered.
-            Text(
-                text = question.targetLetter,
-                style =
-                    if (maxWidth < 420.dp) {
-                        androidx.compose.material3.MaterialTheme.typography.displayMedium.copy(fontWeight = FontWeight.Black)
-                    } else {
-                        androidx.compose.material3.MaterialTheme.typography.displayLarge.copy(fontWeight = FontWeight.Black)
-                    },
-                color = Color(0xFF0B2B3D),
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 6.dp),
-                maxLines = 1,
-            )
-            if (showWordCaptions) {
-                Spacer(modifier = Modifier.height(4.dp))
+            val narrowRow = rowInnerWidth < 380.dp
+            Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+                // Large target letter, kept high so picture cards do not cover it.
                 Text(
-                    text = question.targetWord,
-                    style = androidx.compose.material3.MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                    color = Color(0xFF0B2B3D).copy(alpha = 0.92f),
+                    text = question.targetLetter,
+                    style =
+                        if (rowInnerWidth < 420.dp) {
+                            androidx.compose.material3.MaterialTheme.typography.displayMedium.copy(fontWeight = FontWeight.Black)
+                        } else {
+                            androidx.compose.material3.MaterialTheme.typography.displayLarge.copy(fontWeight = FontWeight.Black)
+                        },
+                    color = Color(0xFF0B2B3D),
                     textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 6.dp),
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 6.dp)
+                            .padding(top = 2.dp)
+                            .offset(y = (-22).dp),
                     maxLines = 1,
                 )
-            }
-            Spacer(modifier = Modifier.height(if (maxWidth < 380.dp) 10.dp else 14.dp))
-            Row(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .offset { IntOffset(shakePx.roundToInt(), 0) },
-                horizontalArrangement = Arrangement.spacedBy(cardGap, Alignment.CenterHorizontally),
-            ) {
-                question.choices.forEach { choice ->
-                    val scale = remember(choice.id, contentKey) { Animatable(1f) }
-                    val captionSp =
-                        with(density) {
-                            (cardW.toPx() * 0.11f).coerceIn(13f * fontScale, 21f * fontScale).toSp()
-                        }
-                    ImageMatchCard(
-                        choice = choice,
-                        enabled = enabled,
-                        scale = scale.value,
-                        showWordCaption = showWordCaptions,
-                        cardWidth = cardW,
-                        cardHeight = cardH,
-                        captionFontSize = captionSp,
-                        onClick = {
-                            val ok = onAttempt(choice.id)
-                            if (ok) {
-                                successChoiceId = choice.id
-                                scope.launch {
-                                    scale.snapTo(1f)
-                                    scale.animateTo(1.16f, tween(100))
-                                    scale.animateTo(1f, spring(dampingRatio = 0.52f, stiffness = 420f))
-                                }
+                Spacer(modifier = Modifier.height(if (narrowRow) 22.dp else 28.dp))
+                Row(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .offset { IntOffset(shakePx.roundToInt(), 0) },
+                    horizontalArrangement = Arrangement.spacedBy(cardGap, Alignment.CenterHorizontally),
+                ) {
+                    question.choices.forEach { choice ->
+                        val scale = remember(choice.id, contentKey) { Animatable(1f) }
+                        val captionSp =
+                            with(density) {
+                                (cardW.toPx() * 0.22f * captionSizeMultiplier).coerceIn(
+                                    22f * fontScale * captionSizeMultiplier,
+                                    40f * fontScale * captionSizeMultiplier,
+                                ).toSp()
                             }
-                        },
-                        isCorrectPick = choice.id == successChoiceId,
-                    )
+                        ImageMatchCard(
+                            choice = choice,
+                            enabled = enabled,
+                            scale = scale.value,
+                            showWordCaption = showWordCaptions,
+                            cardWidth = cardW,
+                            cardHeight = cardH,
+                            captionFontSize = captionSp,
+                            onClick = {
+                                val ok = onAttempt(choice.id)
+                                if (ok) {
+                                    successChoiceId = choice.id
+                                    scope.launch {
+                                        scale.snapTo(1f)
+                                        scale.animateTo(1.16f, tween(100))
+                                        scale.animateTo(1f, spring(dampingRatio = 0.52f, stiffness = 420f))
+                                    }
+                                }
+                            },
+                            isCorrectPick = choice.id == successChoiceId,
+                        )
+                    }
                 }
             }
         }
@@ -159,6 +170,7 @@ private fun ImageMatchCard(
     isCorrectPick: Boolean,
     onClick: () -> Unit,
 ) {
+    val density = LocalDensity.current
     val borderColor =
         if (isCorrectPick) {
             Color(0xFF2E7D32).copy(alpha = 0.95f)
@@ -208,6 +220,33 @@ private fun ImageMatchCard(
                         Modifier
                             .background(Color.White.copy(alpha = 0.50f), RoundedCornerShape(18.dp))
                             .padding(horizontal = 12.dp, vertical = 6.dp),
+                )
+            }
+        } else if (choice.tileDrawable == R.drawable.lesson_pic_placeholder) {
+            val emoji = LessonWordIllustrations.emojiForWord(choice.word)
+            val emojiSp =
+                with(density) {
+                    (cardWidth.toPx() * 0.34f).coerceIn(40f * fontScale, 72f * fontScale).toSp()
+                }
+            Box(
+                modifier =
+                    Modifier
+                        .size(width = cardWidth, height = cardHeight)
+                        .clip(RoundedCornerShape(18.dp))
+                        .background(
+                            Color(
+                                red = ((choice.tintArgb shr 16) and 0xFF) / 255f,
+                                green = ((choice.tintArgb shr 8) and 0xFF) / 255f,
+                                blue = (choice.tintArgb and 0xFF) / 255f,
+                                alpha = 1f,
+                            ),
+                        ),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = emoji,
+                    fontSize = emojiSp,
+                    textAlign = TextAlign.Center,
                 )
             }
         } else {

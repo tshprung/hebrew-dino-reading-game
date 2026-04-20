@@ -9,7 +9,7 @@ import kotlin.random.Random
  * Authoritative picture↔word↔letter rows for picture-first stations.
  * [letter] is the pedagogical first visible print letter taught for [word] (stored explicitly).
  *
- * [tintArgb] + [tileRes] drive card art; many rows still use [R.drawable.lesson_word_tile] as placeholder.
+ * [tintArgb] + [tileRes] drive card art; default [R.drawable.lesson_pic_placeholder] is replaced in UI by a word illustration.
  */
 data class LessonWordEntry(
     val id: String,
@@ -78,6 +78,13 @@ object LessonWordCatalog {
         val pool = entries.filter { it.letter == letter && it.id !in excludeIds }
         require(pool.isNotEmpty()) { "No catalog entry for letter=$letter" }
         return pool.random(rnd)
+    }
+
+    /** Image-match: cycle through different example words for the same letter before repeating. */
+    fun pickRandomForImageMatch(rnd: Random, letter: String, excludeIds: Set<String>): LessonWordEntry {
+        val pool = entries.filter { it.letter == letter && it.id !in excludeIds }
+        if (pool.isNotEmpty()) return pool.random(rnd)
+        return pickRandom(rnd, letter)
     }
 
     fun pickOtherLetterWord(rnd: Random, forbiddenLetter: String, excludeIds: Set<String> = emptySet()): LessonWordEntry {

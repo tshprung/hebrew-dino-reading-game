@@ -4,15 +4,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import com.tal.hebrewdino.ui.domain.Chapter1LetterPoolSpec
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.random.Random
 
 class LevelSession(
-    private val questionCount: Int,
-    initialGroupIndex: Int = 0,
-    private val quizMode: StationQuizMode,
+    private val plan: StationQuizPlan,
     private val letterPoolSpec: LetterPoolSpec = LetterPoolSpec.Default,
 ) {
     private val rnd = Random.Default
@@ -22,6 +19,10 @@ class LevelSession(
     private var lastCorrectAnswer: String? = null
     private var bag: MutableList<String> = mutableListOf()
     private val seenLetters: MutableSet<String> = mutableSetOf()
+    /** Correct catalog entry ids already used per letter (picture stations 4–5). */
+    private val lessonWordUsedCorrectIdsByLetter: MutableMap<String, MutableSet<String>> = mutableMapOf()
+
+    private val questionCount: Int = plan.questionCount
 
     var currentIndex by mutableIntStateOf(0)
         private set
@@ -41,7 +42,7 @@ class LevelSession(
     var difficultyLevel by mutableIntStateOf(0)
         private set
 
-    var groupIndex by mutableIntStateOf(initialGroupIndex.coerceIn(0, maxGroupIndex))
+    var groupIndex by mutableIntStateOf(plan.initialGroupIndex.coerceIn(0, maxGroupIndex))
         private set
 
     private var _currentQuestion: Question? by mutableStateOf(null)
@@ -51,6 +52,13 @@ class LevelSession(
         require(g.isNotEmpty()) { "Letter group empty for index $groupIndex" }
         return g
     }
+
+    private fun episodeOptionLetters(): List<String> =
+        if (letterPoolSpec === Chapter1LetterPoolSpec) {
+            Chapter1Config.letters
+        } else {
+            letterPoolSpec.groups.flatten().distinct()
+        }
 
     val totalQuestions: Int get() = questionCount
 
@@ -62,7 +70,7 @@ class LevelSession(
             if (_currentQuestion == null) {
                 val group = letterGroup()
                 _currentQuestion =
-                    when (quizMode) {
+                    when (plan.mode) {
                         StationQuizMode.FindLetterGrid -> {
                             val correct = nextBalancedCorrect(group)
                             FindLetterGridGenerator.generate(
@@ -90,9 +98,31 @@ class LevelSession(
                                 optionCount = 7,
                             )
                         }
+                        StationQuizMode.PictureStartsWith -> {
+                            val correct = nextBalancedCorrect(group)
+                            val used = lessonWordUsedCorrectIdsByLetter.getOrPut(correct) { mutableSetOf() }
+                            Chapter1LessonGenerators.pictureStartsWith(
+                                rnd = rnd,
+                                group = group,
+                                targetLetter = correct,
+                                excludeCorrectWordIds = used,
+                                optionLetters = episodeOptionLetters(),
+                            ).also { q ->
+                                used.add(q.catalogEntryId)
+                            }
+                        }
                         StationQuizMode.ImageMatch -> {
                             val correct = nextBalancedCorrect(group)
-                            Chapter1LessonGenerators.imageMatch(rnd, group, correct)
+                            val used = lessonWordUsedCorrectIdsByLetter.getOrPut(correct) { mutableSetOf() }
+                            Chapter1LessonGenerators.imageMatch(
+                                rnd = rnd,
+                                group = group,
+                                targetLetter = correct,
+                                excludeCorrectWordIds = used,
+                                alwaysThreeChoices = plan.imageMatchAlwaysThreeChoices,
+                            ).also { q ->
+                                used.add(q.correctChoiceId)
+                            }
                         }
                         StationQuizMode.FinaleSlot -> {
                             val (a, b) = nextTwoDistinctCorrect(group)
@@ -110,9 +140,10 @@ class LevelSession(
                 is Question.PopBalloonsQuestion -> answer == q.correctAnswer
                 is Question.FindLetterGridQuestion,
                 is Question.ImageMatchQuestion,
+                is Question.PictureStartsWithQuestion,
                 is Question.FinaleSlotQuestion,
                 ->
-                    error("Use grid / imageMatch / finale APIs")
+                    error("Use grid / imageMatch / pictureStartsWith / finale APIs")
             }
         return applyOutcome(correct)
     }
@@ -124,6 +155,12 @@ class LevelSession(
     fun submitImageMatch(choiceId: String): AnswerResult {
         val q = currentQuestion as? Question.ImageMatchQuestion ?: return AnswerResult.Finished
         val ok = choiceId == q.correctChoiceId
+        return applyOutcome(ok)
+    }
+
+    fun submitPictureStartsWith(letter: String): AnswerResult {
+        val q = currentQuestion as? Question.PictureStartsWithQuestion ?: return AnswerResult.Finished
+        val ok = letter == q.correctLetter
         return applyOutcome(ok)
     }
 

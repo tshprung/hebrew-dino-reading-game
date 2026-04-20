@@ -78,6 +78,7 @@ import com.tal.hebrewdino.ui.game.FindLetterGridGame
 import com.tal.hebrewdino.ui.game.FinaleGame
 import com.tal.hebrewdino.ui.game.ImageMatchGame
 import com.tal.hebrewdino.ui.game.MatchLetterToWordGame
+import com.tal.hebrewdino.ui.game.PictureStartsWithGame
 import androidx.compose.ui.platform.LocalContext
 import com.tal.hebrewdino.ui.components.AnimatedTalkingCharacter
 import kotlinx.coroutines.CoroutineScope
@@ -114,12 +115,7 @@ fun GameScreen(
 
     val session =
         remember(stationId, plan) {
-            LevelSession(
-                questionCount = plan.questionCount,
-                initialGroupIndex = plan.initialGroupIndex,
-                quizMode = plan.mode,
-                letterPoolSpec = letterPoolSpec,
-            )
+            LevelSession(plan = plan, letterPoolSpec = letterPoolSpec)
         }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
@@ -140,7 +136,6 @@ fun GameScreen(
     val dinoForward = remember(stationId) { Animatable(0f) }
     val dinoSlip = remember(stationId) { Animatable(0f) }
     val dinoTilt = remember(stationId) { Animatable(0f) }
-    val successGlow = remember(stationId) { Animatable(0f) }
 
     // UX: global tap cooldown to prevent fast-tap flow breaks.
     var lastTapMs by remember(stationId) { mutableLongStateOf(0L) }
@@ -221,10 +216,6 @@ fun GameScreen(
         if (audioEnabled) voice.playFirstAvailableBlocking(AudioClips.VoGoodJob1, AudioClips.VoGoodJob2)
         // Progress feel: small forward step after every success.
         dinoForward.animateTo(dinoForward.value + forwardDir * 12f, spring(dampingRatio = 0.75f, stiffness = 520f))
-        // Small glow pulse after correct action.
-        successGlow.snapTo(0f)
-        successGlow.animateTo(1f, tween(110))
-        successGlow.animateTo(0f, tween(220))
         playSuccessPulse(scope, dinoScale)
         // UX: short pause before transition.
         delay(400)
@@ -354,43 +345,6 @@ fun GameScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Top,
             ) {
-                val targetLetter: String? =
-                    when (current) {
-                        is Question.FindLetterGridQuestion -> current.targetLetter
-                        is Question.PopBalloonsQuestion -> current.correctAnswer
-                        is Question.ImageMatchQuestion -> current.targetLetter
-                        is Question.FinaleSlotQuestion -> null
-                    }
-                if (targetLetter != null) {
-                    Box(
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .padding(top = 6.dp, bottom = 10.dp)
-                                .background(Color.White.copy(alpha = 0.86f), RoundedCornerShape(20.dp))
-                                .border(2.dp, Color(0xFF0B2B3D).copy(alpha = 0.14f), RoundedCornerShape(20.dp))
-                                .padding(horizontal = 16.dp, vertical = 10.dp),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        // glow behind letter on success
-                        Box(
-                            modifier =
-                                Modifier
-                                    .matchParentSize()
-                                    .background(
-                                        Color(0xFFFFF59D).copy(alpha = 0.30f * successGlow.value),
-                                        RoundedCornerShape(20.dp),
-                                    ),
-                        )
-                        Text(
-                            text = targetLetter,
-                            fontSize = 54.sp,
-                            fontWeight = FontWeight.Black,
-                            color = Color(0xFF0B2B3D),
-                            textAlign = TextAlign.Center,
-                        )
-                    }
-                }
                 Box(
                     modifier =
                         Modifier
@@ -434,8 +388,14 @@ fun GameScreen(
                                 Column(
                                     modifier = Modifier.fillMaxSize(),
                                     horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.Top,
                                 ) {
+                                    TargetLetterHeaderChip(
+                                        letter = current.correctAnswer,
+                                        modifier = Modifier.padding(top = 4.dp),
+                                    )
                                     if (plan.mode == com.tal.hebrewdino.ui.domain.StationQuizMode.PickLetter) {
+                                        Spacer(modifier = Modifier.weight(1f))
                                         LetterOptions(
                                             options = current.options,
                                             enabled = !inputLocked,
@@ -458,45 +418,79 @@ fun GameScreen(
                                                 }
                                             },
                                         )
+                                        Spacer(modifier = Modifier.height(12.dp))
                                     } else {
-                                        PopBalloonsOptions(
-                                            options = current.options,
-                                            correctAnswer = current.correctAnswer,
-                                            enabled = !inputLocked,
-                                            shakePx = optionsShake.value,
-                                            onPopSfx = { isCorrect ->
-                                                // SFX only; no suspend call needed.
-                                                if (!audioEnabled) return@PopBalloonsOptions
-                                                scope.launch {
-                                                    sfx.playFirstAvailable(
-                                                        AudioClips.SfxBalloonPop,
-                                                        volume = if (isCorrect) 0.88f else 0.32f,
-                                                    )
-                                                }
-                                            },
-                                            onWrongPick = {
-                                                if (!consumeTapCooldown()) return@PopBalloonsOptions
-                                                // Wrong balloon: feedback only, stay on same question.
-                                                session.wrongTap()
-                                                shakeEpoch += 1
-                                                onWrongFeedback()
-                                            },
-                                            onAllCorrectPopped = {
-                                                if (!consumeTapCooldown()) return@PopBalloonsOptions
-                                                // Only advance when ALL correct-letter balloons are popped.
-                                                when (session.submitAnswer(current.correctAnswer)) {
-                                                    AnswerResult.Correct ->
-                                                        scope.launch {
-                                                            if (audioEnabled) ChildGameAudioHooks.onCorrect()
-                                                            val isLast = session.currentIndex >= session.totalQuestions - 1
-                                                            advanceAfterRound(isLast)
-                                                        }
-                                                    else -> {}
-                                                }
-                                            },
-                                        )
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                        Box(
+                                            modifier =
+                                                Modifier
+                                                    .fillMaxWidth()
+                                                    .weight(1f),
+                                            contentAlignment = Alignment.Center,
+                                        ) {
+                                            PopBalloonsOptions(
+                                                options = current.options,
+                                                correctAnswer = current.correctAnswer,
+                                                enabled = !inputLocked,
+                                                shakePx = optionsShake.value,
+                                                onPopSfx = { isCorrect ->
+                                                    // SFX only; no suspend call needed.
+                                                    if (!audioEnabled) return@PopBalloonsOptions
+                                                    scope.launch {
+                                                        sfx.playFirstAvailable(
+                                                            AudioClips.SfxBalloonPop,
+                                                            volume = if (isCorrect) 0.88f else 0.32f,
+                                                        )
+                                                    }
+                                                },
+                                                onWrongPick = {
+                                                    if (!consumeTapCooldown()) return@PopBalloonsOptions
+                                                    // Wrong balloon: feedback only, stay on same question.
+                                                    session.wrongTap()
+                                                    shakeEpoch += 1
+                                                    onWrongFeedback()
+                                                },
+                                                onAllCorrectPopped = {
+                                                    if (!consumeTapCooldown()) return@PopBalloonsOptions
+                                                    // Only advance when ALL correct-letter balloons are popped.
+                                                    when (session.submitAnswer(current.correctAnswer)) {
+                                                        AnswerResult.Correct ->
+                                                            scope.launch {
+                                                                if (audioEnabled) ChildGameAudioHooks.onCorrect()
+                                                                val isLast = session.currentIndex >= session.totalQuestions - 1
+                                                                advanceAfterRound(isLast)
+                                                            }
+                                                        else -> {}
+                                                    }
+                                                },
+                                            )
+                                        }
                                     }
                                 }
+                            is Question.PictureStartsWithQuestion ->
+                                PictureStartsWithGame(
+                                    question = current,
+                                    enabled = !inputLocked,
+                                    shakePx = optionsShake.value,
+                                    onPickLetter = { picked ->
+                                        if (!consumeTapCooldown()) return@PictureStartsWithGame
+                                        when (session.submitPictureStartsWith(picked)) {
+                                            AnswerResult.Correct -> {
+                                                if (audioEnabled) ChildGameAudioHooks.onCorrect()
+                                                scope.launch {
+                                                    val isLast = session.currentIndex >= session.totalQuestions - 1
+                                                    advanceAfterRound(isLast)
+                                                }
+                                            }
+                                            AnswerResult.Wrong -> {
+                                                if (audioEnabled) ChildGameAudioHooks.onWrong()
+                                                onWrongFeedback()
+                                            }
+                                            AnswerResult.Finished -> {}
+                                        }
+                                    },
+                                    modifier = Modifier.fillMaxSize(),
+                                )
                             is Question.ImageMatchQuestion ->
                                 if (stationId == 6) {
                                     val matchChoices =
@@ -518,6 +512,7 @@ fun GameScreen(
                                         }
                                     MatchLetterToWordGame(
                                         choices = matchChoices,
+                                        contentKey = session.currentIndex,
                                         enabled = !inputLocked,
                                         onSolved = {
                                             if (!consumeTapCooldown()) return@MatchLetterToWordGame
@@ -541,6 +536,8 @@ fun GameScreen(
                                         enabled = !inputLocked,
                                         shakePx = optionsShake.value,
                                         showWordCaptions = true,
+                                        captionSizeMultiplier = plan.imageMatchCaptionSizeMultiplier,
+                                        pictureSizeMultiplier = plan.imageMatchPictureSizeMultiplier,
                                         onAttempt = { choiceId ->
                                             if (!consumeTapCooldown()) return@ImageMatchGame false
                                             when (session.submitImageMatch(choiceId)) {
@@ -640,6 +637,7 @@ private fun IntroPulse(
         when (question) {
             is Question.FindLetterGridQuestion -> question.targetLetter
             is Question.PopBalloonsQuestion -> question.correctAnswer
+            is Question.PictureStartsWithQuestion -> question.word
             is Question.ImageMatchQuestion ->
                 if (stationId in 4..6) question.targetLetter else question.targetWord
             is Question.FinaleSlotQuestion -> "★"
@@ -652,6 +650,8 @@ private fun IntroPulse(
                 text = label,
                 fontSize =
                     when (question) {
+                        is Question.PictureStartsWithQuestion ->
+                            if (narrow) 40.sp else 48.sp
                         is Question.ImageMatchQuestion ->
                             when {
                                 stationId in 4..6 && narrow -> 52.sp
@@ -710,6 +710,7 @@ private suspend fun speakPromptForQuestion(
     when (q) {
         is Question.PopBalloonsQuestion -> speakLetterPrompt(voice, q.correctAnswer)
         is Question.FindLetterGridQuestion -> speakLetterPrompt(voice, q.targetLetter)
+        is Question.PictureStartsWithQuestion -> speakLetterPrompt(voice, q.correctLetter)
         is Question.ImageMatchQuestion -> speakLetterPrompt(voice, q.targetLetter)
         is Question.FinaleSlotQuestion -> voice.playBlocking(AudioClips.VoChooseLetter)
     }

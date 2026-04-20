@@ -7,17 +7,15 @@ class LevelSessionStation4PicturePickOneTest {
     @Test
     fun firstQuestionLoadsManyTimesWithoutThrowing() {
         val plan = Chapter1StationOrder.quizPlan(Chapter1StationOrder.PICTURE_PICK_ONE)
-        assertTrue(plan.mode == StationQuizMode.ImageMatch)
+        assertTrue(plan.mode == StationQuizMode.PictureStartsWith)
         repeat(20_000) {
             val session =
                 LevelSession(
-                    questionCount = plan.questionCount,
-                    initialGroupIndex = plan.initialGroupIndex,
-                    quizMode = plan.mode,
+                    plan = plan,
                     letterPoolSpec = LetterPoolSpec.Default,
                 )
             val q = session.currentQuestion
-            check(q is Question.ImageMatchQuestion) { "expected ImageMatch, got ${q?.javaClass}" }
+            check(q is Question.PictureStartsWithQuestion) { "expected PictureStartsWith, got ${q?.javaClass}" }
         }
     }
 }

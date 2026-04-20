@@ -36,6 +36,21 @@ sealed class Question {
         }
     }
 
+    /** Picture + word; tap the letter the word starts with (episode letters as options). */
+    data class PictureStartsWithQuestion(
+        val word: String,
+        val correctLetter: String,
+        val catalogEntryId: String,
+        val tileDrawable: Int,
+        @ColorInt val tintArgb: Int,
+        val optionLetters: List<String>,
+    ) : Question() {
+        init {
+            require(word.isNotEmpty() && correctLetter.length == 1)
+            require(correctLetter in optionLetters)
+        }
+    }
+
     /** Fill word slots by dragging / placing letters from the pool (two words). */
     data class FinaleSlotQuestion(
         val words: List<String>,

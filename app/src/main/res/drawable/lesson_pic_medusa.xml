@@ -1,25 +1,32 @@
 <?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="120dp"
-    android:height="96dp"
+    android:height="110dp"
     android:viewportWidth="120"
-    android:viewportHeight="96">
+    android:viewportHeight="110">
+    <!-- Jellyfish / medusa: bell + dangling tentacles -->
     <path
         android:fillColor="#B39DDB"
-        android:pathData="M60,26 C38,26 28,42 28,56 C28,70 42,76 60,76 C78,76 92,70 92,56 C92,42 82,26 60,26 Z" />
+        android:pathData="M60,22 C32,22 18,38 18,54 C18,66 36,74 60,74 C84,74 102,66 102,54 C102,38 88,22 60,22 Z" />
     <path
         android:fillColor="#9575CD"
-        android:pathData="M44,74 Q40,88 36,94 L42,94 Q46,86 50,74 Z" />
+        android:pathData="M38,70 Q34,92 30,108 L36,108 Q40,90 44,72 Z" />
     <path
         android:fillColor="#9575CD"
-        android:pathData="M54,76 Q52,90 50,95 L56,95 Q58,88 60,76 Z" />
+        android:pathData="M52,72 Q48,94 46,108 L52,108 Q54,92 58,74 Z" />
     <path
         android:fillColor="#9575CD"
-        android:pathData="M66,76 Q68,90 70,95 L64,95 Q62,88 60,76 Z" />
+        android:pathData="M68,72 Q72,94 74,108 L68,108 Q66,92 62,74 Z" />
     <path
         android:fillColor="#9575CD"
-        android:pathData="M76,74 Q80,88 84,94 L78,94 Q74,86 70,74 Z" />
+        android:pathData="M82,70 Q86,92 90,108 L84,108 Q80,90 76,72 Z" />
     <path
         android:fillColor="#E1BEE7"
-        android:pathData="M46,38 Q60,20 74,38 Q60,32 46,38 Z" />
+        android:pathData="M44,36 Q60,24 76,36 Q60,30 44,36 Z" />
+    <path
+        android:fillColor="#5E35B1"
+        android:pathData="M48,40 A4,4 0 1,1 48.01,40 Z" />
+    <path
+        android:fillColor="#5E35B1"
+        android:pathData="M72,40 A4,4 0 1,1 72.01,40 Z" />
 </vector>

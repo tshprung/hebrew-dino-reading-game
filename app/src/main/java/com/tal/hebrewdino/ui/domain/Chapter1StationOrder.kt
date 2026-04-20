@@ -7,9 +7,9 @@ package com.tal.hebrewdino.ui.domain
  * 1. Find all target letters — [StationQuizMode.FindLetterGrid] → [Question.FindLetterGridQuestion]
  * 2. Balloon pop — [StationQuizMode.PopBalloons] → [Question.PopBalloonsQuestion]
  * 3. Find letters (larger grid) — [StationQuizMode.FindLetterGrid]
- * 4. Image match — [StationQuizMode.ImageMatch] → [Question.ImageMatchQuestion]
- * 5. Image match — [StationQuizMode.ImageMatch]
- * 6. Image match (same as 4–5; finale word slots reserved for later chapters).
+ * 4. Picture → first letter — [StationQuizMode.PictureStartsWith] → [Question.PictureStartsWithQuestion]
+ * 5. Image match (three cards, larger captions/pictures) — [StationQuizMode.ImageMatch]
+ * 6. Picture–letter match summary — custom UI; session still uses [StationQuizMode.ImageMatch] for progression.
  *
  * Routing for level UI: [StationQuizPlans.chapter1] delegates here.
  */
@@ -26,8 +26,17 @@ object Chapter1StationOrder {
             TAP_LETTER -> StationQuizPlan(StationQuizMode.PickLetter, questionCount = 3, initialGroupIndex = 0)
             BALLOON_POP -> StationQuizPlan(StationQuizMode.PopBalloons, questionCount = 4, initialGroupIndex = 0)
             REVEAL_THEN_CHOOSE -> StationQuizPlan(StationQuizMode.FindLetterGrid, questionCount = 5, initialGroupIndex = 0)
-            PICTURE_PICK_ONE -> StationQuizPlan(StationQuizMode.ImageMatch, questionCount = 4, initialGroupIndex = 1)
-            PICTURE_PICK_ALL -> StationQuizPlan(StationQuizMode.ImageMatch, questionCount = 4, initialGroupIndex = 2)
+            PICTURE_PICK_ONE ->
+                StationQuizPlan(StationQuizMode.PictureStartsWith, questionCount = 4, initialGroupIndex = 1)
+            PICTURE_PICK_ALL ->
+                StationQuizPlan(
+                    mode = StationQuizMode.ImageMatch,
+                    questionCount = 4,
+                    initialGroupIndex = 2,
+                    imageMatchAlwaysThreeChoices = true,
+                    imageMatchCaptionSizeMultiplier = 1.5f,
+                    imageMatchPictureSizeMultiplier = 2f,
+                )
             FINALE_PICTURE_LETTER_MATCH ->
                 StationQuizPlan(StationQuizMode.ImageMatch, questionCount = 4, initialGroupIndex = 3)
             else ->
