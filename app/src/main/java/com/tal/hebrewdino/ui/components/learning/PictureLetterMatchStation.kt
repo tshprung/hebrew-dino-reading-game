@@ -11,10 +11,12 @@ import com.tal.hebrewdino.ui.screens.GameScreen
 @Composable
 fun PictureLetterMatchStation(
     stationId: Int,
+    chapterId: Int,
     chapterTitle: String,
     questionCount: Int,
     initialGroupIndex: Int,
     letterPoolSpec: LetterPoolSpec,
+    backgroundRes: Int,
     onBack: () -> Unit,
     onComplete: (stationId: Int, correctCount: Int, mistakeCount: Int) -> Unit,
     onLettersHelp: (() -> Unit)? = null,
@@ -23,6 +25,7 @@ fun PictureLetterMatchStation(
 ) {
     GameScreen(
         stationId = stationId,
+        chapterId = chapterId,
         chapterTitle = chapterTitle,
         stageLabel = "תחנה $stationId",
         plan =
@@ -32,6 +35,7 @@ fun PictureLetterMatchStation(
                 initialGroupIndex = initialGroupIndex,
             ),
         letterPoolSpec = letterPoolSpec,
+        backgroundRes = backgroundRes,
         onBack = onBack,
         onComplete = onComplete,
         onLettersHelp = onLettersHelp,

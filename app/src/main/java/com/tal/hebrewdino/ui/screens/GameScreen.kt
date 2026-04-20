@@ -37,9 +37,9 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -51,12 +51,15 @@ import androidx.compose.ui.zIndex
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.tal.hebrewdino.R
@@ -65,20 +68,24 @@ import com.tal.hebrewdino.ui.audio.SoundPoolPlayer
 import com.tal.hebrewdino.ui.audio.VoicePlayer
 import com.tal.hebrewdino.ui.domain.AnswerResult
 import com.tal.hebrewdino.ui.domain.LevelSession
+import com.tal.hebrewdino.ui.domain.LessonWordCatalog
 import com.tal.hebrewdino.ui.domain.Question
 import com.tal.hebrewdino.ui.domain.LetterPoolSpec
 import com.tal.hebrewdino.ui.domain.StationQuizPlan
-import com.tal.hebrewdino.ui.feedback.FeedbackSparkles
 import com.tal.hebrewdino.ui.feedback.GameFeedback
 import com.tal.hebrewdino.ui.game.ChildGameAudioHooks
 import com.tal.hebrewdino.ui.game.FindLetterGridGame
 import com.tal.hebrewdino.ui.game.FinaleGame
 import com.tal.hebrewdino.ui.game.ImageMatchGame
+import com.tal.hebrewdino.ui.game.MatchLetterToWordGame
 import androidx.compose.ui.platform.LocalContext
+import com.tal.hebrewdino.ui.components.AnimatedTalkingCharacter
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlin.random.Random
+import android.os.SystemClock
 
 private enum class GamePhase { Intro, Play }
 
@@ -90,16 +97,21 @@ private const val BetweenQuestionFadeMs = 130
 @Composable
 fun GameScreen(
     stationId: Int,
+    chapterId: Int,
     chapterTitle: String,
     stageLabel: String,
     plan: StationQuizPlan,
     letterPoolSpec: LetterPoolSpec,
+    backgroundRes: Int = R.drawable.forest_bg_level_overlay,
     onBack: () -> Unit,
     onComplete: (stationId: Int, correctCount: Int, mistakeCount: Int) -> Unit,
     onLettersHelp: (() -> Unit)? = null,
     onDebugStationAdvance: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
+    // UX: no audio for now (per request).
+    val audioEnabled = false
+
     val session =
         remember(stationId, plan) {
             LevelSession(
@@ -122,14 +134,28 @@ fun GameScreen(
     val optionsShake = remember(stationId) { Animatable(0f) }
     var dinoVisual by remember(stationId) { mutableStateOf(DinoVisual.Idle) }
     val dinoScale = remember(stationId) { Animatable(1f) }
-    var sparkBurst by remember(stationId) { mutableIntStateOf(0) }
+    // Removed short-lived particle feedback per UX request.
     var shakeEpoch by remember(stationId) { mutableIntStateOf(0) }
+    var dinoTalking by remember(stationId, session.currentIndex) { mutableStateOf(false) }
+    val dinoForward = remember(stationId) { Animatable(0f) }
+    val dinoSlip = remember(stationId) { Animatable(0f) }
+    val dinoTilt = remember(stationId) { Animatable(0f) }
+    val successGlow = remember(stationId) { Animatable(0f) }
+
+    // UX: global tap cooldown to prevent fast-tap flow breaks.
+    var lastTapMs by remember(stationId) { mutableLongStateOf(0L) }
+    fun consumeTapCooldown(): Boolean {
+        val now = SystemClock.elapsedRealtime()
+        if (now - lastTapMs < 180L) return false
+        lastTapMs = now
+        return true
+    }
     val jumpFrames =
         remember(stationId) {
             listOf(R.drawable.dino_jump_0, R.drawable.dino_jump_1, R.drawable.dino_jump_2)
         }
     var jumpFrameIndex by remember(stationId) { mutableIntStateOf(0) }
-    val showConfetti = remember(stationId) { mutableStateOf(false) }
+    val forwardDir = if (LocalLayoutDirection.current == LayoutDirection.Rtl) -1f else 1f
 
     DisposableEffect(Unit) {
         onDispose {
@@ -155,9 +181,18 @@ fun GameScreen(
     LaunchedEffect(stationId, session.currentIndex) {
         phase = GamePhase.Intro
         inputLocked = true
-        sfx.preload(AudioClips.SfxCorrect, AudioClips.SfxWrong, AudioClips.SfxBalloonPop)
+        if (audioEnabled) sfx.preload(AudioClips.SfxCorrect, AudioClips.SfxWrong, AudioClips.SfxBalloonPop)
         val q = session.currentQuestion ?: return@LaunchedEffect
-        launch { speakPromptForQuestion(voice, q) }
+        launch {
+            if (audioEnabled) {
+                dinoTalking = true
+                try {
+                    speakPromptForQuestion(voice, q)
+                } finally {
+                    dinoTalking = false
+                }
+            }
+        }
         delay(IntroDurationMs)
         phase = GamePhase.Play
         inputLocked = false
@@ -174,17 +209,25 @@ fun GameScreen(
 
     suspend fun advanceAfterRound(isLast: Boolean) {
         inputLocked = true
-        ChildGameAudioHooks.onLevelComplete()
-        if (isLast) {
-            gameFeedback.playSuccessBig()
-        } else {
-            gameFeedback.playCorrect()
-            sparkBurst += 1
+        if (audioEnabled) ChildGameAudioHooks.onLevelComplete()
+        if (audioEnabled) {
+            if (isLast) {
+                gameFeedback.playSuccessBig()
+            } else {
+                gameFeedback.playCorrect()
+            }
         }
         dinoVisual = DinoVisual.Jump
-        voice.playFirstAvailableBlocking(AudioClips.VoGoodJob1, AudioClips.VoGoodJob2)
-        playSuccessPulse(scope, dinoScale, showConfetti)
-        delay(220)
+        if (audioEnabled) voice.playFirstAvailableBlocking(AudioClips.VoGoodJob1, AudioClips.VoGoodJob2)
+        // Progress feel: small forward step after every success.
+        dinoForward.animateTo(dinoForward.value + forwardDir * 12f, spring(dampingRatio = 0.75f, stiffness = 520f))
+        // Small glow pulse after correct action.
+        successGlow.snapTo(0f)
+        successGlow.animateTo(1f, tween(110))
+        successGlow.animateTo(0f, tween(220))
+        playSuccessPulse(scope, dinoScale)
+        // UX: short pause before transition.
+        delay(400)
         contentAlpha.animateTo(0f, tween(BetweenQuestionFadeMs))
         delay(40)
         session.nextQuestion()
@@ -195,10 +238,23 @@ fun GameScreen(
         scope.launch {
             inputLocked = true
             dinoVisual = DinoVisual.TryAgain
+            if (chapterId == 2) {
+                // Tiny “slip” in the mountains: a playful stumble with no punishment.
+                dinoSlip.snapTo(0f)
+                dinoTilt.snapTo(0f)
+                dinoTilt.animateTo(-7f, tween(90))
+                dinoSlip.animateTo(10f, tween(90))
+                dinoTilt.animateTo(6f, tween(110))
+                dinoSlip.animateTo(-6f, tween(110))
+                dinoTilt.animateTo(0f, tween(140))
+                dinoSlip.animateTo(0f, tween(140))
+            }
             playShake(scope, optionsShake)
-            gameFeedback.playWrong()
-            ChildGameAudioHooks.onWrong()
-            voice.playFirstAvailableBlocking(AudioClips.VoTryAgain2, AudioClips.VoTryAgain1)
+            if (audioEnabled) {
+                gameFeedback.playWrong()
+                ChildGameAudioHooks.onWrong()
+                voice.playFirstAvailableBlocking(AudioClips.VoTryAgain2, AudioClips.VoTryAgain1)
+            }
             dinoVisual = DinoVisual.Idle
             inputLocked = false
         }
@@ -206,19 +262,28 @@ fun GameScreen(
 
     Box(modifier = modifier.fillMaxSize()) {
         Image(
-            painter = painterResource(id = R.drawable.forest_bg_level_overlay),
+            painter = painterResource(id = backgroundRes),
             contentDescription = null,
             modifier = Modifier.fillMaxSize(),
             contentScale = ContentScale.Crop,
         )
-        if (showConfetti.value) {
-            ConfettiOverlay(modifier = Modifier.fillMaxSize())
+        if (chapterId == 3) {
+            // Swamp: a small “friend” becomes more visible as the player progresses.
+            val p = (session.currentIndex.toFloat() / session.totalQuestions.coerceAtLeast(1)).coerceIn(0f, 1f)
+            Image(
+                painter = painterResource(id = R.drawable.dino_idle),
+                contentDescription = null,
+                modifier =
+                    Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(start = 18.dp, bottom = 96.dp)
+                        .size(66.dp)
+                        .alpha(0.10f + 0.70f * p),
+                contentScale = ContentScale.Fit,
+            )
         }
-        FeedbackSparkles(
-            burstKey = sparkBurst,
-            modifier = Modifier.fillMaxSize(),
-            seed = stationId,
-        )
+        // Removed “sparkle balls” feedback per UX request.
+        // Keep only dino + subtle motion feedback; no short-lived particle overlays.
 
         Row(
             modifier =
@@ -247,12 +312,6 @@ fun GameScreen(
                 modifier = Modifier.weight(1f).padding(horizontal = 8.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Text(
-                    text = "שאלה ${session.questionNumber} מתוך ${session.totalQuestions}",
-                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-                    color = Color(0xFF0B2B3D),
-                )
-                Spacer(modifier = Modifier.height(4.dp))
                 LinearProgressIndicator(
                     progress = {
                         (session.questionNumber.toFloat() / session.totalQuestions.coerceAtLeast(1))
@@ -295,6 +354,43 @@ fun GameScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Top,
             ) {
+                val targetLetter: String? =
+                    when (current) {
+                        is Question.FindLetterGridQuestion -> current.targetLetter
+                        is Question.PopBalloonsQuestion -> current.correctAnswer
+                        is Question.ImageMatchQuestion -> current.targetLetter
+                        is Question.FinaleSlotQuestion -> null
+                    }
+                if (targetLetter != null) {
+                    Box(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(top = 6.dp, bottom = 10.dp)
+                                .background(Color.White.copy(alpha = 0.86f), RoundedCornerShape(20.dp))
+                                .border(2.dp, Color(0xFF0B2B3D).copy(alpha = 0.14f), RoundedCornerShape(20.dp))
+                                .padding(horizontal = 16.dp, vertical = 10.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        // glow behind letter on success
+                        Box(
+                            modifier =
+                                Modifier
+                                    .matchParentSize()
+                                    .background(
+                                        Color(0xFFFFF59D).copy(alpha = 0.30f * successGlow.value),
+                                        RoundedCornerShape(20.dp),
+                                    ),
+                        )
+                        Text(
+                            text = targetLetter,
+                            fontSize = 54.sp,
+                            fontWeight = FontWeight.Black,
+                            color = Color(0xFF0B2B3D),
+                            textAlign = TextAlign.Center,
+                        )
+                    }
+                }
                 Box(
                     modifier =
                         Modifier
@@ -310,11 +406,13 @@ fun GameScreen(
                                 FindLetterGridGame(
                                     question = current,
                                     onCellTapped = { _ ->
+                                        if (!consumeTapCooldown()) return@FindLetterGridGame
                                         session.wrongTap()
                                         shakeEpoch += 1
                                         onWrongFeedback()
                                     },
                                     onCompleted = {
+                                        if (!consumeTapCooldown()) return@FindLetterGridGame
                                         scope.launch {
                                             when (session.completeCurrentRound()) {
                                                 AnswerResult.Correct -> {
@@ -337,44 +435,23 @@ fun GameScreen(
                                     modifier = Modifier.fillMaxSize(),
                                     horizontalAlignment = Alignment.CenterHorizontally,
                                 ) {
-                                    // Keep the target letter visible throughout.
-                                    Box(
-                                        modifier =
-                                            Modifier
-                                                .padding(top = 2.dp, bottom = 10.dp)
-                                                .background(Color.White.copy(alpha = 0.86f), RoundedCornerShape(18.dp))
-                                                .border(
-                                                    2.dp,
-                                                    Color(0xFF0B2B3D).copy(alpha = 0.18f),
-                                                    RoundedCornerShape(18.dp),
-                                                )
-                                                .padding(horizontal = 18.dp, vertical = 6.dp),
-                                    ) {
-                                        Text(
-                                            text = current.correctAnswer,
-                                            fontSize = 44.sp,
-                                            fontWeight = FontWeight.Black,
-                                            color = Color(0xFF0B2B3D),
-                                            textAlign = TextAlign.Center,
-                                        )
-                                    }
-
                                     if (plan.mode == com.tal.hebrewdino.ui.domain.StationQuizMode.PickLetter) {
                                         LetterOptions(
                                             options = current.options,
                                             enabled = !inputLocked,
                                             shakePx = optionsShake.value,
                                             onPick = { picked ->
+                                                if (!consumeTapCooldown()) return@LetterOptions
                                                 when (session.submitAnswer(picked)) {
                                                     AnswerResult.Correct -> {
-                                                        ChildGameAudioHooks.onCorrect()
+                                                        if (audioEnabled) ChildGameAudioHooks.onCorrect()
                                                         scope.launch {
                                                             val isLast = session.currentIndex >= session.totalQuestions - 1
                                                             advanceAfterRound(isLast)
                                                         }
                                                     }
                                                     AnswerResult.Wrong -> {
-                                                        ChildGameAudioHooks.onWrong()
+                                                        if (audioEnabled) ChildGameAudioHooks.onWrong()
                                                         onWrongFeedback()
                                                     }
                                                     AnswerResult.Finished -> {}
@@ -389,6 +466,7 @@ fun GameScreen(
                                             shakePx = optionsShake.value,
                                             onPopSfx = { isCorrect ->
                                                 // SFX only; no suspend call needed.
+                                                if (!audioEnabled) return@PopBalloonsOptions
                                                 scope.launch {
                                                     sfx.playFirstAvailable(
                                                         AudioClips.SfxBalloonPop,
@@ -397,17 +475,19 @@ fun GameScreen(
                                                 }
                                             },
                                             onWrongPick = {
+                                                if (!consumeTapCooldown()) return@PopBalloonsOptions
                                                 // Wrong balloon: feedback only, stay on same question.
                                                 session.wrongTap()
                                                 shakeEpoch += 1
                                                 onWrongFeedback()
                                             },
                                             onAllCorrectPopped = {
+                                                if (!consumeTapCooldown()) return@PopBalloonsOptions
                                                 // Only advance when ALL correct-letter balloons are popped.
                                                 when (session.submitAnswer(current.correctAnswer)) {
                                                     AnswerResult.Correct ->
                                                         scope.launch {
-                                                            ChildGameAudioHooks.onCorrect()
+                                                            if (audioEnabled) ChildGameAudioHooks.onCorrect()
                                                             val isLast = session.currentIndex >= session.totalQuestions - 1
                                                             advanceAfterRound(isLast)
                                                         }
@@ -418,31 +498,70 @@ fun GameScreen(
                                     }
                                 }
                             is Question.ImageMatchQuestion ->
-                                ImageMatchGame(
-                                    question = current,
-                                    contentKey = session.currentIndex,
-                                    enabled = !inputLocked,
-                                    shakePx = optionsShake.value,
-                                    showWordCaptions = true,
-                                    onAttempt = { choiceId ->
-                                        when (session.submitImageMatch(choiceId)) {
-                                            AnswerResult.Correct -> {
-                                                ChildGameAudioHooks.onCorrect()
-                                                scope.launch {
-                                                    val isLast = session.currentIndex >= session.totalQuestions - 1
-                                                    advanceAfterRound(isLast)
-                                                }
-                                                true
+                                if (stationId == 6) {
+                                    val matchChoices =
+                                        remember(session.currentIndex, chapterId, letterPoolSpec) {
+                                            // Summary station: include multiple letters (max 3 pairs).
+                                            val letters = letterPoolSpec.groups.flatten().distinct()
+                                            val r = Random(stationId * 7919L + chapterId * 3571L + session.currentIndex * 131L)
+                                            val picked = letters.shuffled(r).take(3)
+                                            picked.map { l ->
+                                                val e = LessonWordCatalog.pickRandom(r, l)
+                                                com.tal.hebrewdino.ui.domain.LessonChoice(
+                                                    id = e.id,
+                                                    letter = e.letter,
+                                                    word = e.word,
+                                                    tintArgb = e.tintArgb,
+                                                    tileDrawable = e.tileRes,
+                                                )
                                             }
-                                            AnswerResult.Wrong -> {
-                                                ChildGameAudioHooks.onWrong()
-                                                onWrongFeedback()
-                                                false
-                                            }
-                                            AnswerResult.Finished -> false
                                         }
-                                    },
-                                )
+                                    MatchLetterToWordGame(
+                                        choices = matchChoices,
+                                        enabled = !inputLocked,
+                                        onSolved = {
+                                            if (!consumeTapCooldown()) return@MatchLetterToWordGame
+                                            scope.launch {
+                                                when (session.completeCurrentRound()) {
+                                                    AnswerResult.Correct -> {
+                                                        if (audioEnabled) ChildGameAudioHooks.onCorrect()
+                                                        val isLast = session.currentIndex >= session.totalQuestions - 1
+                                                        advanceAfterRound(isLast)
+                                                    }
+                                                    else -> {}
+                                                }
+                                            }
+                                        },
+                                        modifier = Modifier.fillMaxSize(),
+                                    )
+                                } else {
+                                    ImageMatchGame(
+                                        question = current,
+                                        contentKey = session.currentIndex,
+                                        enabled = !inputLocked,
+                                        shakePx = optionsShake.value,
+                                        showWordCaptions = true,
+                                        onAttempt = { choiceId ->
+                                            if (!consumeTapCooldown()) return@ImageMatchGame false
+                                            when (session.submitImageMatch(choiceId)) {
+                                                AnswerResult.Correct -> {
+                                                    if (audioEnabled) ChildGameAudioHooks.onCorrect()
+                                                    scope.launch {
+                                                        val isLast = session.currentIndex >= session.totalQuestions - 1
+                                                        advanceAfterRound(isLast)
+                                                    }
+                                                    true
+                                                }
+                                                AnswerResult.Wrong -> {
+                                                    if (audioEnabled) ChildGameAudioHooks.onWrong()
+                                                    onWrongFeedback()
+                                                    false
+                                                }
+                                                AnswerResult.Finished -> false
+                                            }
+                                        },
+                                    )
+                                }
                             is Question.FinaleSlotQuestion ->
                                 FinaleGame(
                                     question = current,
@@ -458,7 +577,7 @@ fun GameScreen(
                                         scope.launch {
                                             when (session.submitFinaleWords(words)) {
                                                 AnswerResult.Correct -> {
-                                                    ChildGameAudioHooks.onCorrect()
+                                                    if (audioEnabled) ChildGameAudioHooks.onCorrect()
                                                     val isLast = session.currentIndex >= session.totalQuestions - 1
                                                     advanceAfterRound(isLast)
                                                 }
@@ -481,14 +600,24 @@ fun GameScreen(
                     DinoVisual.TryAgain -> R.drawable.dino_try_again
                     DinoVisual.Jump -> jumpFrames[jumpFrameIndex.coerceIn(0, jumpFrames.lastIndex)]
                 }
-            Image(
-                painter = painterResource(id = dinoDrawable),
-                contentDescription = null,
+            val talkFrames =
+                if (chapterId == 2) {
+                    // “Walk” feel in mountains between rounds.
+                    listOf(R.drawable.dino_walk_0, R.drawable.dino_walk_1, R.drawable.dino_walk_2, R.drawable.dino_walk_3)
+                } else {
+                    listOf(R.drawable.dino_talk_0, R.drawable.dino_talk_1, R.drawable.dino_talk_2, R.drawable.dino_talk_3)
+                }
+            AnimatedTalkingCharacter(
+                idleRes = dinoDrawable,
+                talkFrameResIds = talkFrames,
+                isTalking = dinoTalking || (chapterId == 2 && inputLocked && dinoVisual == DinoVisual.Jump),
                 modifier =
                     Modifier
+                        .offset { IntOffset((dinoForward.value + dinoSlip.value).toInt(), 0) }
+                        .graphicsLayer { rotationZ = dinoTilt.value }
                         .size(88.dp)
                         .scale(dinoScale.value),
-                contentScale = ContentScale.Fit,
+                contentDescription = "דינו",
             )
         }
     }
@@ -589,15 +718,11 @@ private suspend fun speakPromptForQuestion(
 private fun playSuccessPulse(
     scope: CoroutineScope,
     dinoScale: Animatable<Float, AnimationVector1D>,
-    showConfetti: MutableState<Boolean>,
 ): Job =
     scope.launch {
-        showConfetti.value = true
         dinoScale.snapTo(1f)
         dinoScale.animateTo(1.14f, tween(120))
         dinoScale.animateTo(1f, spring(dampingRatio = 0.48f, stiffness = 560f))
-        delay(380)
-        showConfetti.value = false
     }
 
 private fun playShake(

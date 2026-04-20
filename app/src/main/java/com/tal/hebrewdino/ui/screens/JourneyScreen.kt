@@ -45,6 +45,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -149,9 +150,13 @@ fun JourneyScreen(
         (1..playableLevels).firstOrNull { !completedLevels.contains(it) } ?: (playableLevels + 1)
     fun idleDinoProgressAlongRoad(): Float =
         if (nextPlayableSuggested <= playableLevels) {
-            // Stand near the *current* suggested station (not the previous one).
-            // This ensures that after returning from a station, the dino waits by the newly-unlocked station.
-            (nextPlayableSuggested - 1).toFloat().coerceIn(0f, (totalLevels - 1).toFloat())
+            // On first entry (or if state is lost), start from the previous completed station
+            // so the auto-walk has visible motion after a station finishes.
+            if (nextPlayableSuggested > 1) {
+                (nextPlayableSuggested - 2).toFloat().coerceIn(0f, (totalLevels - 1).toFloat())
+            } else {
+                0f
+            }
         } else {
             (roadFractions.lastIndex * 0.88f).coerceAtLeast((playableLevels - 1).coerceAtLeast(1) - 1f)
         }
@@ -165,13 +170,14 @@ fun JourneyScreen(
     val scope = rememberCoroutineScope()
     var walking by remember { mutableStateOf(false) }
     var walkFrame by remember { mutableIntStateOf(0) }
-    val dinoProgress = remember { Animatable(0f) }
-    LaunchedEffect(nextPlayableSuggested, playableLevels, totalLevels) {
-        // If we navigate back to the journey screen after completing a station, the suggested station changes.
-        // Snap the idle progress to that new suggested station unless we're currently walking.
-        if (!walking) {
-            dinoProgress.snapTo(idleDinoProgressAlongRoad())
-        }
+    // Persist dino position across navigating into/out of stations.
+    var savedProgress by rememberSaveable { mutableStateOf<Float?>(null) }
+    val dinoProgress = remember { Animatable(savedProgress ?: idleDinoProgressAlongRoad()) }
+    LaunchedEffect(Unit) {
+        if (savedProgress == null) savedProgress = dinoProgress.value
+    }
+    LaunchedEffect(dinoProgress.value) {
+        savedProgress = dinoProgress.value
     }
 
     LaunchedEffect(walking) {

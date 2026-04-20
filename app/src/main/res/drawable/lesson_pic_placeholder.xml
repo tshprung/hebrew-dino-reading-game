@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="160dp"
+    android:height="110dp"
+    android:viewportWidth="160"
+    android:viewportHeight="110">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M18,8h124a10,10 0 0 1 10,10v74a10,10 0 0 1 -10,10H18A10,10 0 0 1 8,92V18A10,10 0 0 1 18,8z" />
+    <path
+        android:fillColor="#FFE8F4F8"
+        android:pathData="M20,18h120v72H20z" />
+    <!-- Simple “mountain + sun” placeholder icon -->
+    <path
+        android:fillColor="#FFB0BEC5"
+        android:pathData="M34,86 L64,46 L86,72 L98,58 L128,86 Z" />
+    <path
+        android:fillColor="#FFFFD54F"
+        android:pathData="M42,34a10,10 0 1,0 0,0.1z" />
+    <path
+        android:fillColor="#FF0B2B3D"
+        android:fillAlpha="0.10"
+        android:pathData="M18,8h124a10,10 0 0 1 10,10v74a10,10 0 0 1 -10,10H18A10,10 0 0 1 8,92V18A10,10 0 0 1 18,8z" />
+</vector>

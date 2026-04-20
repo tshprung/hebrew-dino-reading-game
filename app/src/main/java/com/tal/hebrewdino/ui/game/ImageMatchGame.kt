@@ -81,28 +81,31 @@ fun ImageMatchGame(
                 )
             val cardH = cardW * (110f / 160f)
             val density = LocalDensity.current
-            val useCompactHeader = maxWidth < 400.dp || (showWordCaptions && maxWidth < 520.dp)
+            // Target letter must always be visible, large, centered.
             Text(
-                text = if (showWordCaptions) question.targetWord else question.targetLetter,
+                text = question.targetLetter,
                 style =
-                    if (showWordCaptions) {
-                        if (useCompactHeader) {
-                            androidx.compose.material3.MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.Black)
-                        } else {
-                            androidx.compose.material3.MaterialTheme.typography.displaySmall.copy(fontWeight = FontWeight.Black)
-                        }
+                    if (maxWidth < 420.dp) {
+                        androidx.compose.material3.MaterialTheme.typography.displayMedium.copy(fontWeight = FontWeight.Black)
                     } else {
-                        if (useCompactHeader) {
-                            androidx.compose.material3.MaterialTheme.typography.displaySmall.copy(fontWeight = FontWeight.Black)
-                        } else {
-                            androidx.compose.material3.MaterialTheme.typography.displayLarge.copy(fontWeight = FontWeight.Black)
-                        }
+                        androidx.compose.material3.MaterialTheme.typography.displayLarge.copy(fontWeight = FontWeight.Black)
                     },
                 color = Color(0xFF0B2B3D),
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 6.dp),
-                maxLines = 2,
+                maxLines = 1,
             )
+            if (showWordCaptions) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = question.targetWord,
+                    style = androidx.compose.material3.MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                    color = Color(0xFF0B2B3D).copy(alpha = 0.92f),
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 6.dp),
+                    maxLines = 1,
+                )
+            }
             Spacer(modifier = Modifier.height(if (maxWidth < 380.dp) 10.dp else 14.dp))
             Row(
                 modifier =

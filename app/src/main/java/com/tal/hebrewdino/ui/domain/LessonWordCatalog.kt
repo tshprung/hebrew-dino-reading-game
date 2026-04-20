@@ -16,7 +16,7 @@ data class LessonWordEntry(
     val letter: String,
     val word: String,
     @ColorInt val tintArgb: Int,
-    @DrawableRes val tileRes: Int = R.drawable.lesson_word_tile,
+    @DrawableRes val tileRes: Int = R.drawable.lesson_pic_placeholder,
 )
 
 /**

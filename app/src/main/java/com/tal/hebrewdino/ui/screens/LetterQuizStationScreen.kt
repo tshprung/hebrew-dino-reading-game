@@ -8,10 +8,12 @@ import com.tal.hebrewdino.ui.domain.StationQuizPlan
 @Composable
 fun LetterQuizStationScreen(
     stationId: Int,
+    chapterId: Int,
     chapterTitle: String,
     stageLabel: String,
     plan: StationQuizPlan,
     letterPoolSpec: LetterPoolSpec,
+    backgroundRes: Int,
     onBack: () -> Unit,
     onComplete: (stationId: Int, correctCount: Int, mistakeCount: Int) -> Unit,
     onLettersHelp: (() -> Unit)? = null,
@@ -20,10 +22,12 @@ fun LetterQuizStationScreen(
 ) {
     GameScreen(
         stationId = stationId,
+        chapterId = chapterId,
         chapterTitle = chapterTitle,
         stageLabel = stageLabel,
         plan = plan,
         letterPoolSpec = letterPoolSpec,
+        backgroundRes = backgroundRes,
         onBack = onBack,
         onComplete = onComplete,
         onLettersHelp = onLettersHelp,

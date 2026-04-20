@@ -58,6 +58,7 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.zIndex
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -108,10 +109,12 @@ fun LevelScreen(
     val chapterLevel = levelId.coerceIn(1, Chapter1Config.STATION_COUNT)
     LetterQuizStationScreen(
         stationId = chapterLevel,
+        chapterId = 1,
         chapterTitle = "פרק 1 - מצא את הביצה",
         stageLabel = "שלב $chapterLevel",
         plan = StationQuizPlans.chapter1(chapterLevel),
         letterPoolSpec = Chapter1LetterPoolSpec,
+        backgroundRes = R.drawable.forest_bg_level_overlay,
         onBack = onBack,
         onComplete = onComplete,
         onLettersHelp = onLettersHelp,
@@ -298,8 +301,39 @@ internal fun PopBalloonsOptions(
         fun remainingCorrectCount(): Int =
             options.indices.count { i -> i < alive.size && alive[i] && options[i] == correctAnswer }
 
-        val minSepPx = 86f // avoid complete overlap (balloon ~86dp wide)
-        val positions = remember(options, correctAnswer, wPx, hPx) { ArrayList<Pair<Float, Float>>(options.size) }
+        // Spawn anchors: random across full area with minimum distance (no overlap).
+        val minSepPx = 110f
+        val paddingPx = 18f
+        val anchors =
+            remember(options, correctAnswer, wPx, hPx) {
+                val r = Random(correctAnswer.hashCode().toLong() * 31L + options.hashCode().toLong())
+                val out = ArrayList<Pair<Float, Float>>(options.size)
+                val maxX = (wPx - 100f).coerceAtLeast(paddingPx)
+                val maxY = (hPx - 130f).coerceAtLeast(paddingPx)
+                for (i in options.indices) {
+                    var x = 0f
+                    var y = 0f
+                    var ok = false
+                    repeat(40) {
+                        x = (paddingPx + r.nextFloat() * (maxX - paddingPx))
+                        y = (paddingPx + r.nextFloat() * (maxY - paddingPx))
+                        ok = out.none { (px, py) ->
+                            val dx = px - x
+                            val dy = py - y
+                            (dx * dx + dy * dy) < (minSepPx * minSepPx)
+                        }
+                        if (ok) return@repeat
+                    }
+                    if (!ok && out.isNotEmpty()) {
+                        // fallback: place near previous with offset
+                        val (px, py) = out.last()
+                        x = (px + minSepPx * 0.7f).coerceIn(paddingPx, maxX)
+                        y = (py - minSepPx * 0.5f).coerceIn(paddingPx, maxY)
+                    }
+                    out.add(x to y)
+                }
+                out
+            }
 
         options.forEachIndexed { idx, letter ->
             if (idx >= alive.size || !alive[idx]) return@forEachIndexed
@@ -311,33 +345,17 @@ internal fun PopBalloonsOptions(
                     3 -> Color(0xFF4D96FF)
                     else -> Color(0xFFB983FF)
                 }
-            // Wider scatter using a 4×2 layout with per-balloon deterministic jitter.
-            val col = idx % 4
-            val row = (idx / 4) % 2
-            val r = Random(idx * 4241L + correctAnswer.hashCode() * 31L)
-            val jitterX = (r.nextFloat() - 0.5f) * 0.12f // ±6% of width
-            val jitterY = (r.nextFloat() - 0.5f) * 0.10f // ±5% of height
-            val baseXPx = wPx * (0.08f + col * 0.22f + jitterX).coerceIn(0.07f, 0.86f)
-            val baseYPx = hPx * (0.10f + row * 0.34f + jitterY).coerceIn(0.10f, 0.78f)
-            val ampXPx = 36f + (idx % 3) * 24f
-            val ampYPx = 28f + (idx % 2) * 20f
+            val (baseXPx, baseYPx) = anchors.getOrElse(idx) { paddingPx to paddingPx }
+            // Each balloon has a slightly different motion path.
+            val ampXPx = 18f + (idx % 4) * 10f
+            val ampYPx = 14f + (idx % 3) * 9f
             val ph = phases.getOrElse(idx) { 0f }
-            val t = driftPhase * 2f * PI.toFloat() + ph
-            val ox = sin(t.toDouble()).toFloat() * ampXPx
-            val oy = cos((t * 0.85f).toDouble()).toFloat() * ampYPx
-            val paddingPx = 10f
-            val rawXPx = baseXPx + ox
-            val rawYPx = baseYPx + oy
-            var xPx = rawXPx.coerceIn(paddingPx, (wPx - 100f).coerceAtLeast(paddingPx))
-            var yPx = rawYPx.coerceIn(paddingPx, (hPx - 130f).coerceAtLeast(paddingPx))
-
-            // Push balloons apart so they don't fully cover each other.
-            var guard = 0
-            while (positions.any { (px, py) -> (kotlin.math.abs(px - xPx) < minSepPx && kotlin.math.abs(py - yPx) < minSepPx) } && guard++ < 12) {
-                xPx = (xPx + minSepPx * if (guard % 2 == 0) 1f else -1f).coerceIn(paddingPx, (wPx - 100f).coerceAtLeast(paddingPx))
-                yPx = (yPx + (minSepPx * 0.6f) * if (guard % 3 == 0) 1f else -1f).coerceIn(paddingPx, (hPx - 130f).coerceAtLeast(paddingPx))
-            }
-            positions.add(xPx to yPx)
+            val f = (0.78f + (idx % 5) * 0.06f)
+            val t = driftPhase * 2f * PI.toFloat() * f + ph
+            val ox = sin(t.toDouble()).toFloat() * ampXPx + sin((t * 0.37f).toDouble()).toFloat() * 8f
+            val oy = cos((t * 0.92f).toDouble()).toFloat() * ampYPx
+            val xPx = (baseXPx + ox).coerceIn(paddingPx, (wPx - 100f).coerceAtLeast(paddingPx))
+            val yPx = (baseYPx + oy).coerceIn(paddingPx, (hPx - 130f).coerceAtLeast(paddingPx))
 
             key(idx, letter) {
                 PopBalloon(
@@ -349,6 +367,7 @@ internal fun PopBalloonsOptions(
                     bobPhaseMillis = idx * 220,
                     driftXPx = xPx,
                     driftYPx = yPx,
+                    modifier = Modifier.zIndex(yPx),
                     onPop = {
                         if (idx < alive.size) alive[idx] = false
                         scope.launch { onPopSfx(letter == correctAnswer) }
@@ -394,6 +413,7 @@ internal fun PopBalloon(
     bobPhaseMillis: Int,
     driftXPx: Float = 0f,
     driftYPx: Float = 0f,
+    modifier: Modifier = Modifier,
     onPop: () -> Unit,
     onPickWrong: (Animatable<Float, AnimationVector1D>) -> Unit,
 ) {
@@ -438,7 +458,7 @@ internal fun PopBalloon(
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier =
-            Modifier.offset {
+            modifier.offset {
                 IntOffset(
                     driftXPx.roundToInt(),
                     (bob.value + wrongFall.value + driftYPx).roundToInt(),

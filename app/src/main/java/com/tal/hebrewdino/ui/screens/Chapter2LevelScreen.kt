@@ -72,10 +72,12 @@ fun Chapter2LevelScreen(
         6 ->
             PictureLetterMatchStation(
                 stationId = station,
+                chapterId = 2,
                 chapterTitle = Ch2Title,
                 questionCount = 3,
                 initialGroupIndex = 0,
                 letterPoolSpec = Chapter2LetterPoolSpec,
+                backgroundRes = R.drawable.mountain_bg_chapter2,
                 onBack = onBack,
                 onComplete = onComplete,
                 onLettersHelp = onLettersHelp,
@@ -95,10 +97,12 @@ fun Chapter2LevelScreen(
                     ?: StationQuizPlans.chapter1(1)
             LetterQuizStationScreen(
                 stationId = station,
+                chapterId = 2,
                 chapterTitle = Ch2Title,
                 stageLabel = "תחנה $station",
                 plan = plan,
                 letterPoolSpec = Chapter2LetterPoolSpec,
+                backgroundRes = R.drawable.mountain_bg_chapter2,
                 onBack = onBack,
                 onComplete = onComplete,
                 onLettersHelp = onLettersHelp,

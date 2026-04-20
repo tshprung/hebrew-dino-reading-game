@@ -76,10 +76,12 @@ fun Chapter3LevelScreen(
         6 ->
             PictureLetterMatchStation(
                 stationId = station,
+                chapterId = 3,
                 chapterTitle = "פרק 3 - מצא את החבר",
                 questionCount = 3,
                 initialGroupIndex = 0,
                 letterPoolSpec = Chapter3LetterPoolSpec,
+                backgroundRes = R.drawable.swamp_bg_chapter3,
                 onBack = onBack,
                 onComplete = onComplete,
                 onLettersHelp = onLettersHelp,
@@ -106,10 +108,12 @@ fun Chapter3LevelScreen(
                     ?: StationQuizPlans.chapter1(1)
             LetterQuizStationScreen(
                 stationId = station,
+                chapterId = 3,
                 chapterTitle = "פרק 3 - מצא את החבר",
                 stageLabel = "תחנה $station",
                 plan = plan,
                 letterPoolSpec = Chapter3LetterPoolSpec,
+                backgroundRes = R.drawable.swamp_bg_chapter3,
                 onBack = onBack,
                 onComplete = onComplete,
                 onLettersHelp = onLettersHelp,
