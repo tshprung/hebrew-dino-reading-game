@@ -65,7 +65,7 @@ fun BeachOutroScreen(
     modifier: Modifier = Modifier,
 ) {
     StoryScreenScaffold(
-        backgroundRes = R.drawable.bg_reward,
+        backgroundRes = R.drawable.forest_bg_reward,
         character = character,
         title = "כל הכבוד!",
         body =
@@ -102,7 +102,8 @@ private fun StoryScreenScaffold(
         voice.playBlocking(voiceAssetPath)
     }
 
-    val dinoRes = if (character == DinoCharacter.Dina) R.drawable.dino_girl else R.drawable.dino_boy
+    // We currently ship a single kid dino sprite set. (Character selection can map to unique sprites later.)
+    val dinoRes = R.drawable.dino_idle
 
     Box(modifier = modifier.fillMaxSize()) {
         Image(
@@ -145,7 +146,7 @@ private fun StoryScreenScaffold(
                     Spacer(modifier = Modifier.height(14.dp))
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
                         Image(
-                            painter = painterResource(id = R.drawable.dino_mom),
+                            painter = painterResource(id = R.drawable.dino_talk_0),
                             contentDescription = null,
                             modifier = Modifier.size(92.dp),
                             contentScale = ContentScale.Fit,

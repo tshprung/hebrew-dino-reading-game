@@ -36,7 +36,7 @@ fun Chapter2IntroScreen(
 ) {
     Box(modifier = modifier.fillMaxSize()) {
         Image(
-            painter = painterResource(id = R.drawable.forest_bg_story_intro),
+            painter = painterResource(id = R.drawable.mountain_bg_chapter2),
             contentDescription = null,
             modifier = Modifier.fillMaxSize(),
             contentScale = ContentScale.Crop,

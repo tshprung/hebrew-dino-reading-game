@@ -254,6 +254,9 @@ fun AppNav() {
                 onDebugUnlockNext = {
                     scope.launch { progress.debugUnlockNextChapter1Station() }
                 },
+                onLettersHelp = {
+                    navController.navigate(NavRoutes.ChapterLettersIntro) { launchSingleTop = true }
+                },
             )
         }
 
@@ -325,9 +328,7 @@ fun AppNav() {
             LevelScreen(
                 levelId = levelId,
                 onBack = { navController.popBackStack() },
-                onLettersHelp = {
-                    navController.navigate(NavRoutes.ChapterLettersIntro) { launchSingleTop = true }
-                },
+                onLettersHelp = null,
                 onDebugStationAdvance =
                     if (isDebuggable) {
                         { scope.launch { progress.debugUnlockNextChapter1Station() } }

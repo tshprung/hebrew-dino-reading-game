@@ -9,6 +9,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -17,6 +18,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -30,16 +32,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.tal.hebrewdino.R
+import com.tal.hebrewdino.ui.layout.ScreenFit
 import com.tal.hebrewdino.ui.domain.LessonChoice
 import com.tal.hebrewdino.ui.domain.Question
 import kotlin.math.roundToInt
@@ -62,45 +68,77 @@ fun ImageMatchGame(
         successChoiceId = null
     }
     Column(modifier = modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(
-            text = if (showWordCaptions) question.targetWord else question.targetLetter,
-            style =
-                if (showWordCaptions) {
-                    androidx.compose.material3.MaterialTheme.typography.displaySmall.copy(fontWeight = FontWeight.Black)
-                } else {
-                    androidx.compose.material3.MaterialTheme.typography.displayLarge.copy(fontWeight = FontWeight.Black)
-                },
-            color = Color(0xFF0B2B3D),
-            textAlign = TextAlign.Center,
-        )
-        Spacer(modifier = Modifier.height(18.dp))
-        Row(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .offset { IntOffset(shakePx.roundToInt(), 0) },
-            horizontalArrangement = Arrangement.spacedBy(14.dp, Alignment.CenterHorizontally),
-        ) {
-            question.choices.forEach { choice ->
-                val scale = remember(choice.id, contentKey) { Animatable(1f) }
-                ImageMatchCard(
-                    choice = choice,
-                    enabled = enabled,
-                    scale = scale.value,
-                    showWordCaption = showWordCaptions,
-                    onClick = {
-                        val ok = onAttempt(choice.id)
-                        if (ok) {
-                            successChoiceId = choice.id
-                            scope.launch {
-                                scale.snapTo(1f)
-                                scale.animateTo(1.16f, tween(100))
-                                scale.animateTo(1f, spring(dampingRatio = 0.52f, stiffness = 420f))
-                            }
+        BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+            val choiceCount = question.choices.size.coerceAtLeast(1)
+            val cardGap = 10.dp
+            val cardW =
+                ScreenFit.rowChildWidthDp(
+                    rowInnerWidth = maxWidth,
+                    count = choiceCount,
+                    gap = cardGap,
+                    minEach = 72.dp,
+                    maxEach = 168.dp,
+                )
+            val cardH = cardW * (110f / 160f)
+            val density = LocalDensity.current
+            val useCompactHeader = maxWidth < 400.dp || (showWordCaptions && maxWidth < 520.dp)
+            Text(
+                text = if (showWordCaptions) question.targetWord else question.targetLetter,
+                style =
+                    if (showWordCaptions) {
+                        if (useCompactHeader) {
+                            androidx.compose.material3.MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.Black)
+                        } else {
+                            androidx.compose.material3.MaterialTheme.typography.displaySmall.copy(fontWeight = FontWeight.Black)
+                        }
+                    } else {
+                        if (useCompactHeader) {
+                            androidx.compose.material3.MaterialTheme.typography.displaySmall.copy(fontWeight = FontWeight.Black)
+                        } else {
+                            androidx.compose.material3.MaterialTheme.typography.displayLarge.copy(fontWeight = FontWeight.Black)
                         }
                     },
-                    isCorrectPick = choice.id == successChoiceId,
-                )
+                color = Color(0xFF0B2B3D),
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 6.dp),
+                maxLines = 2,
+            )
+            Spacer(modifier = Modifier.height(if (maxWidth < 380.dp) 10.dp else 14.dp))
+            Row(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .offset { IntOffset(shakePx.roundToInt(), 0) },
+                horizontalArrangement = Arrangement.spacedBy(cardGap, Alignment.CenterHorizontally),
+            ) {
+                question.choices.forEach { choice ->
+                    val scale = remember(choice.id, contentKey) { Animatable(1f) }
+                    val captionSp =
+                        with(density) {
+                            (cardW.toPx() * 0.11f).coerceIn(13f * fontScale, 21f * fontScale).toSp()
+                        }
+                    ImageMatchCard(
+                        choice = choice,
+                        enabled = enabled,
+                        scale = scale.value,
+                        showWordCaption = showWordCaptions,
+                        cardWidth = cardW,
+                        cardHeight = cardH,
+                        captionFontSize = captionSp,
+                        onClick = {
+                            val ok = onAttempt(choice.id)
+                            if (ok) {
+                                successChoiceId = choice.id
+                                scope.launch {
+                                    scale.snapTo(1f)
+                                    scale.animateTo(1.16f, tween(100))
+                                    scale.animateTo(1f, spring(dampingRatio = 0.52f, stiffness = 420f))
+                                }
+                            }
+                        },
+                        isCorrectPick = choice.id == successChoiceId,
+                    )
+                }
             }
         }
     }
@@ -112,6 +150,9 @@ private fun ImageMatchCard(
     enabled: Boolean,
     scale: Float,
     showWordCaption: Boolean,
+    cardWidth: Dp,
+    cardHeight: Dp,
+    captionFontSize: TextUnit,
     isCorrectPick: Boolean,
     onClick: () -> Unit,
 ) {
@@ -163,11 +204,12 @@ private fun ImageMatchCard(
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = choice.word,
-                fontSize = 22.sp,
+                fontSize = captionFontSize,
                 fontWeight = FontWeight.Bold,
                 color = Color(0xFF0B2B3D),
                 textAlign = TextAlign.Center,
                 maxLines = 2,
+                modifier = Modifier.widthIn(max = cardWidth + 8.dp),
             )
         }
     }

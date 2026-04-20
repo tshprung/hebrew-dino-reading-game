@@ -9,9 +9,12 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -24,6 +27,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -228,7 +232,16 @@ fun GameScreen(
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             IconButton(onClick = onBack, modifier = Modifier.padding(0.dp)) {
-                Text("←", fontSize = 28.sp, color = Color(0xFF0B2B3D), fontWeight = FontWeight.Black)
+                Box(
+                    modifier =
+                        Modifier
+                            .size(44.dp)
+                            .background(Color.White.copy(alpha = 0.88f), RoundedCornerShape(22.dp))
+                            .border(2.dp, Color(0xFF0B2B3D).copy(alpha = 0.12f), RoundedCornerShape(22.dp)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text("חזור", fontSize = 16.sp, color = Color(0xFF0B2B3D), fontWeight = FontWeight.Black)
+                }
             }
             Column(
                 modifier = Modifier.weight(1f).padding(horizontal = 8.dp),
@@ -272,7 +285,7 @@ fun GameScreen(
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .padding(start = 8.dp, end = 8.dp, top = 56.dp, bottom = 12.dp)
+                    .padding(start = 8.dp, end = 8.dp, top = 52.dp, bottom = 8.dp)
                     .alpha(contentAlpha.value),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.SpaceBetween,
@@ -280,123 +293,160 @@ fun GameScreen(
             Column(
                 modifier = Modifier.fillMaxWidth().fillMaxHeight().weight(1f),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center,
+                verticalArrangement = Arrangement.Top,
             ) {
-                if (phase == GamePhase.Intro) {
-                    IntroPulse(stationId = stationId, question = current, modifier = Modifier.fillMaxWidth())
-                } else {
-                    when (current) {
-                        is Question.FindLetterGridQuestion ->
-                            FindLetterGridGame(
-                                question = current,
-                                onCellTapped = { _ ->
-                                    session.wrongTap()
-                                    shakeEpoch += 1
-                                    onWrongFeedback()
-                                },
-                                onCompleted = {
-                                    scope.launch {
-                                        when (session.completeCurrentRound()) {
-                                            AnswerResult.Correct -> {
-                                                val isLast = session.currentIndex >= session.totalQuestions - 1
-                                                advanceAfterRound(isLast)
+                Box(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .weight(1f, fill = true),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    if (phase == GamePhase.Intro) {
+                        IntroPulse(stationId = stationId, question = current, modifier = Modifier.fillMaxWidth())
+                    } else {
+                        when (current) {
+                            is Question.FindLetterGridQuestion ->
+                                FindLetterGridGame(
+                                    question = current,
+                                    onCellTapped = { _ ->
+                                        session.wrongTap()
+                                        shakeEpoch += 1
+                                        onWrongFeedback()
+                                    },
+                                    onCompleted = {
+                                        scope.launch {
+                                            when (session.completeCurrentRound()) {
+                                                AnswerResult.Correct -> {
+                                                    val isLast = session.currentIndex >= session.totalQuestions - 1
+                                                    advanceAfterRound(isLast)
+                                                }
+                                                else -> {}
                                             }
-                                            else -> {}
                                         }
+                                    },
+                                    enabled = !inputLocked,
+                                    contentKey = session.currentIndex,
+                                    modifier =
+                                        Modifier
+                                            .fillMaxSize()
+                                            .offset { IntOffset(optionsShake.value.toInt(), 0) },
+                                )
+                            is Question.PopBalloonsQuestion ->
+                                Column(
+                                    modifier = Modifier.fillMaxSize(),
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                ) {
+                                    // Keep the target letter visible throughout the balloon station.
+                                    Box(
+                                        modifier =
+                                            Modifier
+                                                .padding(top = 2.dp, bottom = 10.dp)
+                                                .background(Color.White.copy(alpha = 0.86f), RoundedCornerShape(18.dp))
+                                                .border(
+                                                    2.dp,
+                                                    Color(0xFF0B2B3D).copy(alpha = 0.18f),
+                                                    RoundedCornerShape(18.dp),
+                                                )
+                                                .padding(horizontal = 18.dp, vertical = 6.dp),
+                                    ) {
+                                        Text(
+                                            text = current.correctAnswer,
+                                            fontSize = 44.sp,
+                                            fontWeight = FontWeight.Black,
+                                            color = Color(0xFF0B2B3D),
+                                            textAlign = TextAlign.Center,
+                                        )
                                     }
-                                },
-                                enabled = !inputLocked,
-                                contentKey = session.currentIndex,
-                                modifier =
-                                    Modifier
-                                        .fillMaxWidth()
-                                        .fillMaxHeight()
-                                        .weight(1f)
-                                        .offset { IntOffset(optionsShake.value.toInt(), 0) },
-                            )
-                        is Question.PopBalloonsQuestion ->
-                            PopBalloonsOptions(
-                                options = current.options,
-                                correctAnswer = current.correctAnswer,
-                                enabled = !inputLocked,
-                                shakePx = optionsShake.value,
-                                onPopSfx = { isCorrect ->
-                                    sfx.playFirstAvailable(
-                                        AudioClips.SfxBalloonPop,
-                                        volume = if (isCorrect) 0.88f else 0.32f,
-                                    )
-                                },
-                                onPick = { picked ->
-                                    when (session.submitAnswer(picked)) {
-                                        AnswerResult.Correct ->
+                                    PopBalloonsOptions(
+                                        options = current.options,
+                                        correctAnswer = current.correctAnswer,
+                                        enabled = !inputLocked,
+                                        shakePx = optionsShake.value,
+                                        onPopSfx = { isCorrect ->
+                                            // SFX only; no suspend call needed.
                                             scope.launch {
-                                                ChildGameAudioHooks.onCorrect()
-                                                val isLast = session.currentIndex >= session.totalQuestions - 1
-                                                advanceAfterRound(isLast)
+                                                sfx.playFirstAvailable(
+                                                    AudioClips.SfxBalloonPop,
+                                                    volume = if (isCorrect) 0.88f else 0.32f,
+                                                )
                                             }
-                                        AnswerResult.Wrong -> {
-                                            ChildGameAudioHooks.onWrong()
+                                        },
+                                        onWrongPick = {
+                                            // Wrong balloon: feedback only, stay on same question.
+                                            session.wrongTap()
                                             shakeEpoch += 1
                                             onWrongFeedback()
-                                        }
-                                        AnswerResult.Finished -> {}
-                                    }
-                                },
-                            )
-                        is Question.ImageMatchQuestion ->
-                            ImageMatchGame(
-                                question = current,
-                                contentKey = session.currentIndex,
-                                enabled = !inputLocked,
-                                shakePx = optionsShake.value,
-                                showWordCaptions = stationId !in 4..6,
-                                onAttempt = { choiceId ->
-                                    when (session.submitImageMatch(choiceId)) {
-                                        AnswerResult.Correct -> {
-                                            ChildGameAudioHooks.onCorrect()
-                                            scope.launch {
-                                                val isLast = session.currentIndex >= session.totalQuestions - 1
-                                                advanceAfterRound(isLast)
+                                        },
+                                        onAllCorrectPopped = {
+                                            // Only advance when ALL correct-letter balloons are popped.
+                                            when (session.submitAnswer(current.correctAnswer)) {
+                                                AnswerResult.Correct ->
+                                                    scope.launch {
+                                                        ChildGameAudioHooks.onCorrect()
+                                                        val isLast = session.currentIndex >= session.totalQuestions - 1
+                                                        advanceAfterRound(isLast)
+                                                    }
+                                                else -> {}
                                             }
-                                            true
-                                        }
-                                        AnswerResult.Wrong -> {
-                                            ChildGameAudioHooks.onWrong()
-                                            onWrongFeedback()
-                                            false
-                                        }
-                                        AnswerResult.Finished -> false
-                                    }
-                                },
-                            )
-                        is Question.FinaleSlotQuestion ->
-                            FinaleGame(
-                                question = current,
-                                contentKey = session.currentIndex,
-                                enabled = !inputLocked,
-                                shakeEpoch = shakeEpoch,
-                                onWrongPlacement = {
-                                    session.wrongTap()
-                                    shakeEpoch += 1
-                                    onWrongFeedback()
-                                },
-                                onSolved = { words ->
-                                    scope.launch {
-                                        when (session.submitFinaleWords(words)) {
+                                        },
+                                    )
+                                }
+                            is Question.ImageMatchQuestion ->
+                                ImageMatchGame(
+                                    question = current,
+                                    contentKey = session.currentIndex,
+                                    enabled = !inputLocked,
+                                    shakePx = optionsShake.value,
+                                    showWordCaptions = stationId !in 4..6,
+                                    onAttempt = { choiceId ->
+                                        when (session.submitImageMatch(choiceId)) {
                                             AnswerResult.Correct -> {
                                                 ChildGameAudioHooks.onCorrect()
-                                                val isLast = session.currentIndex >= session.totalQuestions - 1
-                                                advanceAfterRound(isLast)
+                                                scope.launch {
+                                                    val isLast = session.currentIndex >= session.totalQuestions - 1
+                                                    advanceAfterRound(isLast)
+                                                }
+                                                true
                                             }
-                                            else -> {}
+                                            AnswerResult.Wrong -> {
+                                                ChildGameAudioHooks.onWrong()
+                                                onWrongFeedback()
+                                                false
+                                            }
+                                            AnswerResult.Finished -> false
                                         }
-                                    }
-                                },
-                                modifier =
-                                    Modifier
-                                        .fillMaxWidth()
-                                        .offset { IntOffset(optionsShake.value.toInt(), 0) },
-                            )
+                                    },
+                                )
+                            is Question.FinaleSlotQuestion ->
+                                FinaleGame(
+                                    question = current,
+                                    contentKey = session.currentIndex,
+                                    enabled = !inputLocked,
+                                    shakeEpoch = shakeEpoch,
+                                    onWrongPlacement = {
+                                        session.wrongTap()
+                                        shakeEpoch += 1
+                                        onWrongFeedback()
+                                    },
+                                    onSolved = { words ->
+                                        scope.launch {
+                                            when (session.submitFinaleWords(words)) {
+                                                AnswerResult.Correct -> {
+                                                    ChildGameAudioHooks.onCorrect()
+                                                    val isLast = session.currentIndex >= session.totalQuestions - 1
+                                                    advanceAfterRound(isLast)
+                                                }
+                                                else -> {}
+                                            }
+                                        }
+                                    },
+                                    modifier =
+                                        Modifier
+                                            .fillMaxWidth()
+                                            .offset { IntOffset(optionsShake.value.toInt(), 0) },
+                                )
+                        }
                     }
                 }
             }
@@ -411,7 +461,7 @@ fun GameScreen(
                 contentDescription = null,
                 modifier =
                     Modifier
-                        .size(100.dp)
+                        .size(88.dp)
                         .scale(dinoScale.value),
                 contentScale = ContentScale.Fit,
             )
@@ -440,29 +490,49 @@ private fun IntroPulse(
                 if (stationId in 4..6) question.targetLetter else question.targetWord
             is Question.FinaleSlotQuestion -> "★"
         }
-    Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(
-            text = label,
-            fontSize =
-                when (question) {
-                    is Question.ImageMatchQuestion ->
-                        if (stationId in 4..6) 72.sp else 56.sp
-                    is Question.FinaleSlotQuestion -> 72.sp
-                    else -> 96.sp
-                },
-            fontWeight = FontWeight.Black,
-            color = Color(0xFF0B2B3D),
-            textAlign = TextAlign.Center,
-            modifier = Modifier.scale(pulse.value),
-        )
-        if (question is Question.FinaleSlotQuestion) {
-            Spacer(modifier = Modifier.height(12.dp))
+    BoxWithConstraints(modifier = modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+        val narrow = maxWidth < 380.dp
+        val medium = maxWidth < 520.dp
+        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(horizontal = 8.dp)) {
             Text(
-                text = "בנו את המילים",
-                style = MaterialTheme.typography.titleLarge,
-                color = Color(0xFF1565C0),
-                fontWeight = FontWeight.Bold,
+                text = label,
+                fontSize =
+                    when (question) {
+                        is Question.ImageMatchQuestion ->
+                            when {
+                                stationId in 4..6 && narrow -> 52.sp
+                                stationId in 4..6 -> 64.sp
+                                narrow -> 44.sp
+                                medium -> 48.sp
+                                else -> 56.sp
+                            }
+                        is Question.FinaleSlotQuestion ->
+                            if (narrow) 54.sp else 72.sp
+                        is Question.FindLetterGridQuestion ->
+                            if (narrow) 68.sp else 87.sp
+                        else ->
+                            if (narrow) 72.sp else 96.sp
+                    },
+                fontWeight = FontWeight.Black,
+                color = Color(0xFF0B2B3D),
+                textAlign = TextAlign.Center,
+                modifier = Modifier.scale(pulse.value),
+                maxLines = 2,
             )
+            if (question is Question.FinaleSlotQuestion) {
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = "בנו את המילים",
+                    style =
+                        if (narrow) {
+                            MaterialTheme.typography.titleMedium
+                        } else {
+                            MaterialTheme.typography.titleLarge
+                        },
+                    color = Color(0xFF1565C0),
+                    fontWeight = FontWeight.Bold,
+                )
+            }
         }
     }
 }

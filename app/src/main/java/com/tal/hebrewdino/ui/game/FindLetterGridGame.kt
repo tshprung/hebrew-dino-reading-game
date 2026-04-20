@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
@@ -37,6 +36,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -46,6 +46,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.tal.hebrewdino.ui.domain.Question
+import com.tal.hebrewdino.ui.layout.ScreenFit
 import kotlin.math.roundToInt
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.coroutineScope
@@ -104,22 +105,30 @@ fun FindLetterGridGame(
         onCompleted()
     }
 
-    val gap: Dp = if (question.columns >= 4) 12.dp else 16.dp
-    val gridHorizontalPadding = 18.dp
+    val gap: Dp = if (question.columns >= 4) 5.dp else 7.dp
+    val gridHorizontalPadding = 6.dp
+    val density = LocalDensity.current
+    val shortSideDp = ScreenFit.shortSideDp()
 
-    Column(
+    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
+        val headerBoxH = if (question.columns >= 4) 74.dp else 82.dp
+        val topPaddingH = 6.dp
+        val outerW = maxWidth
+        // Small safety margin so the last row never clips in landscape.
+        val availableForGrid = (maxHeight - headerBoxH - topPaddingH - 6.dp).coerceAtLeast(120.dp)
+
+        Column(
         modifier =
-            modifier
-                .fillMaxWidth()
-                .fillMaxHeight()
-                .padding(horizontal = 8.dp, vertical = 6.dp),
+            Modifier
+                .fillMaxSize()
+                .padding(horizontal = 4.dp, vertical = 2.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Box(
             modifier =
                 Modifier
                     .scale(headerScale.value)
-                    .clip(RoundedCornerShape(28.dp))
+                    .clip(RoundedCornerShape(18.dp))
                     .background(
                         brush =
                             Brush.verticalGradient(
@@ -129,44 +138,46 @@ fun FindLetterGridGame(
                                 ),
                             ),
                     )
-                    .border(3.dp, Color(0xFFFFA000).copy(alpha = 0.45f), RoundedCornerShape(28.dp))
-                    .padding(horizontal = 36.dp, vertical = 10.dp),
+                    .border(2.dp, Color(0xFFFFA000).copy(alpha = 0.45f), RoundedCornerShape(18.dp))
+                    .padding(horizontal = 20.dp, vertical = 5.dp),
             contentAlignment = Alignment.Center,
         ) {
             Text(
                 text = question.targetLetter,
-                fontSize = if (question.columns >= 4) 64.sp else 76.sp,
+                fontSize = if (question.columns >= 4) 52.sp else 60.sp,
                 fontWeight = FontWeight.Black,
                 color = Color(0xFF0B2B3D),
                 textAlign = TextAlign.Center,
             )
         }
-        Spacer(modifier = Modifier.height(20.dp))
-        BoxWithConstraints(
+        Spacer(modifier = Modifier.height(4.dp))
+        Box(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .fillMaxHeight()
+                    .height(availableForGrid)
                     .padding(horizontal = gridHorizontalPadding)
                     .scale(gridScale.value),
         ) {
             val cols = question.columns
             val rows = question.rows
-            val cellSideByWidth = (maxWidth - gap * (cols - 1)) / cols
-            val cellSideByHeight =
-                if (maxHeight in 1.dp..4096.dp) {
-                    (maxHeight - gap * (rows - 1)) / rows
-                } else {
-                    cellSideByWidth
-                }
-            val cellSide = minOf(cellSideByWidth, cellSideByHeight)
+            val safeMaxHeight = availableForGrid
+            val cellSideByWidth = (outerW - gridHorizontalPadding * 2 - gap * (cols - 1)) / cols
+            val cellSideByHeight = (safeMaxHeight - gap * (rows - 1)) / rows
+            val cellSide =
+                // Fill the shorter dimension (width/height) while staying symmetric.
+                minOf(cellSideByWidth, cellSideByHeight).coerceAtLeast(32.dp)
+            val gridW = cellSide * cols + gap * (cols - 1)
             val gridH = cellSide * rows + gap * (rows - 1)
+            // Keep letters readable; shrink the *squares* to fit landscape.
+            val letterSp = if (cols >= 4) 34.sp else 40.sp
 
             LazyVerticalGrid(
                 columns = GridCells.Fixed(cols),
-                horizontalArrangement = Arrangement.spacedBy(gap),
-                verticalArrangement = Arrangement.spacedBy(gap),
-                modifier = Modifier.fillMaxWidth().height(gridH),
+                horizontalArrangement = Arrangement.spacedBy(gap, Alignment.CenterHorizontally),
+                verticalArrangement = Arrangement.spacedBy(gap, Alignment.CenterVertically),
+                userScrollEnabled = false,
+                modifier = Modifier.align(Alignment.TopCenter).size(gridW, gridH),
             ) {
                 itemsIndexed(question.cells, key = { i, _ -> "${contentKey}_$i" }) { index, letter ->
                     val done = index in found
@@ -179,15 +190,15 @@ fun FindLetterGridGame(
                                 .aspectRatio(1f)
                                 .scale(scale.value)
                                 .offset { IntOffset(shake.value.roundToInt(), 0) }
-                                .clip(RoundedCornerShape(22.dp))
+                                .clip(RoundedCornerShape(16.dp))
                                 .border(
-                                    width = if (done) 5.dp else 2.5.dp,
+                                    width = if (done) 3.5.dp else 2.dp,
                                     color =
                                         when {
                                             done -> Color(0xFF2E7D32).copy(alpha = 0.95f)
                                             else -> Color(0xFFFF8A65).copy(alpha = 0.35f)
                                         },
-                                    shape = RoundedCornerShape(22.dp),
+                                    shape = RoundedCornerShape(16.dp),
                                 )
                                 .background(
                                     brush =
@@ -207,7 +218,7 @@ fun FindLetterGridGame(
                                                 ),
                                             )
                                         },
-                                    shape = RoundedCornerShape(22.dp),
+                                    shape = RoundedCornerShape(16.dp),
                                 )
                                 .clickable(enabled = enabled && !done) {
                                     if (letter == question.targetLetter) {
@@ -244,12 +255,12 @@ fun FindLetterGridGame(
                             Box(
                                 Modifier
                                     .fillMaxSize()
-                                    .background(Color(0xFFE53935).copy(alpha = 0.22f), RoundedCornerShape(22.dp)),
+                                    .background(Color(0xFFE53935).copy(alpha = 0.22f), RoundedCornerShape(16.dp)),
                             )
                         }
                         Text(
                             text = letter,
-                            fontSize = if (cols >= 4) 34.sp else 40.sp,
+                            fontSize = letterSp,
                             fontWeight = FontWeight.Black,
                             color =
                                 if (done) {
@@ -274,5 +285,6 @@ fun FindLetterGridGame(
                 }
             }
         }
+    }
     }
 }

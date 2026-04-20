@@ -39,6 +39,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -57,16 +58,20 @@ import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import com.tal.hebrewdino.R
 import com.tal.hebrewdino.ui.components.learning.DinoNestMark
 import com.tal.hebrewdino.ui.domain.Chapter1Config
 import com.tal.hebrewdino.ui.domain.JourneyMapLayout
 import androidx.compose.ui.draw.scale
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.ui.zIndex
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.abs
@@ -114,6 +119,8 @@ private fun xyAlongRoad(f: Float, points: List<Pair<Float, Float>>): Pair<Float,
     return (x0 + (x1 - x0) * t) to (y0 + (y1 - y0) * t)
 }
 
+private fun mirrorX(fx: Float, enabled: Boolean): Float = if (enabled) (1f - fx) else fx
+
 @Composable
 fun JourneyScreen(
     unlockedLevel: Int,
@@ -121,6 +128,7 @@ fun JourneyScreen(
     onPlayLevel: (Int) -> Unit,
     onBack: () -> Unit,
     onDebugUnlockNext: (() -> Unit)? = null,
+    onLettersHelp: (() -> Unit)? = null,
     totalLevels: Int = Chapter1Config.STATION_COUNT,
     /** Stations above this are shown locked until content ships (e.g. chapter 3). */
     playableLevels: Int = totalLevels,
@@ -133,7 +141,9 @@ fun JourneyScreen(
     endMarker: JourneyEndMarker = JourneyEndMarker.Egg,
     modifier: Modifier = Modifier,
 ) {
-    val resolvedSubtitle = headerSubtitle ?: "הדרך לביצה — $totalLevels תחנות"
+    // Chapter 1 road should run physically Right → Left.
+    val rtlRoad = true
+    val resolvedSubtitle = headerSubtitle // when null, hide subtitle (chapter 1 request)
     val nextPlayableSuggested =
         (1..playableLevels).firstOrNull { !completedLevels.contains(it) } ?: (playableLevels + 1)
     fun idleDinoProgressAlongRoad(): Float =
@@ -156,10 +166,10 @@ fun JourneyScreen(
     val scope = rememberCoroutineScope()
     var walking by remember { mutableStateOf(false) }
     var walkFrame by remember { mutableIntStateOf(0) }
-    val dinoProgress =
-        remember(completedLevels, unlockedLevel, playableLevels, totalLevels, nextPlayableSuggested) {
-            Animatable(idleDinoProgressAlongRoad())
-        }
+    val dinoProgress = remember { Animatable(0f) }
+    LaunchedEffect(Unit) {
+        dinoProgress.snapTo(idleDinoProgressAlongRoad())
+    }
 
     LaunchedEffect(walking) {
         while (walking) {
@@ -168,21 +178,24 @@ fun JourneyScreen(
         }
     }
 
-    fun launchWalkThenPlay(targetLevel: Int) {
-        if (walking) return
-        if (targetLevel > unlockedLevel) return
-        if (targetLevel > playableLevels) return
-        scope.launch {
-            walking = true
-            try {
-                val dest = (targetLevel - 1).toFloat().coerceIn(0f, (totalLevels - 1).toFloat())
-                val dist = abs(dinoProgress.value - dest)
-                val ms = (380 + dist * 420f).roundToInt().coerceIn(450, 2400)
-                dinoProgress.animateTo(dest, tween(ms, easing = LinearEasing))
-                onPlayLevel(targetLevel)
-            } finally {
-                walking = false
-            }
+    // Auto-walk after a station is completed: stand near the next station.
+    LaunchedEffect(nextPlayableSuggested, completedLevels, unlockedLevel, playableLevels) {
+        if (walking) return@LaunchedEffect
+        val target = nextPlayableSuggested
+        if (target !in 2..playableLevels) return@LaunchedEffect
+        if (target > unlockedLevel) return@LaunchedEffect
+        if (!completedLevels.contains(target - 1)) return@LaunchedEffect
+
+        val dest = (target - 1).toFloat().coerceIn(0f, (totalLevels - 1).toFloat())
+        val from = dinoProgress.value
+        if (abs(from - dest) < 0.01f) return@LaunchedEffect
+        walking = true
+        try {
+            val dist = abs(from - dest)
+            val ms = (320 + dist * 520f).roundToInt().coerceIn(420, 1700)
+            dinoProgress.animateTo(dest, tween(ms, easing = LinearEasing))
+        } finally {
+            walking = false
         }
     }
 
@@ -197,10 +210,57 @@ fun JourneyScreen(
             contentScale = ContentScale.Crop,
         )
 
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .statusBarsPadding()
+                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                    .zIndex(10f)
+                    .align(Alignment.TopCenter),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                OutlinedButton(
+                    onClick = onBack,
+                    enabled = true,
+                    colors =
+                        ButtonDefaults.outlinedButtonColors(
+                            containerColor = Color.White.copy(alpha = 0.86f),
+                            contentColor = Color(0xFF0B2B3D),
+                        ),
+                    modifier = Modifier.height(44.dp),
+                ) {
+                    Text(text = "חזור", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
+                }
+                if (onDebugUnlockNext != null) {
+                    OutlinedButton(
+                        onClick = onDebugUnlockNext,
+                        enabled = true,
+                        colors =
+                            ButtonDefaults.outlinedButtonColors(
+                                containerColor = Color.White.copy(alpha = 0.86f),
+                                contentColor = Color(0xFF0B2B3D),
+                            ),
+                        modifier = Modifier.height(40.dp),
+                    ) {
+                        Text("בדיקה")
+                    }
+                } else {
+                    Spacer(modifier = Modifier.width(1.dp))
+                }
+            }
+        }
+
         Column(
             modifier =
                 Modifier
                     .fillMaxSize()
+                    // Push scroll content *below* the top buttons so it doesn't intercept taps.
+                    .padding(top = 56.dp)
                     .verticalScroll(scroll)
                     .padding(horizontal = 16.dp, vertical = 12.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -210,54 +270,26 @@ fun JourneyScreen(
                 style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Black),
                 color = Color(0xFF0B2B3D),
             )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = resolvedSubtitle,
-                modifier = Modifier.fillMaxWidth(),
-                style =
-                    if (headerSubtitleCompact) {
-                        MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Medium)
-                    } else {
-                        MaterialTheme.typography.titleLarge
-                    },
-                color = Color(0xFF0B2B3D).copy(alpha = if (headerSubtitleCompact) 0.78f else 1f),
-                textAlign = TextAlign.Center,
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Start) {
-                OutlinedButton(
-                    onClick = onBack,
-                    enabled = !walking,
-                    colors =
-                        ButtonDefaults.outlinedButtonColors(
-                            containerColor = Color.White.copy(alpha = 0.86f),
-                            contentColor = Color(0xFF0B2B3D),
-                        ),
-                ) {
-                    Text(text = "חזור")
-                }
+            if (!resolvedSubtitle.isNullOrBlank()) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = resolvedSubtitle,
+                    modifier = Modifier.fillMaxWidth(),
+                    style =
+                        if (headerSubtitleCompact) {
+                            MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Medium)
+                        } else {
+                            MaterialTheme.typography.titleLarge
+                        },
+                    color = Color(0xFF0B2B3D).copy(alpha = if (headerSubtitleCompact) 0.78f else 1f),
+                    textAlign = TextAlign.Center,
+                )
             }
-            Spacer(modifier = Modifier.height(10.dp))
-
-            // Temporary dev helper: unlock next station for quick testing.
-            if (onDebugUnlockNext != null) {
-                OutlinedButton(
-                    onClick = onDebugUnlockNext,
-                    enabled = !walking,
-                    colors =
-                        ButtonDefaults.outlinedButtonColors(
-                            containerColor = Color.White.copy(alpha = 0.86f),
-                            contentColor = Color(0xFF0B2B3D),
-                        ),
-                ) {
-                    Text("בדיקה: פתח תחנה הבאה")
-                }
-                Spacer(modifier = Modifier.height(8.dp))
-            }
+            Spacer(modifier = Modifier.height(12.dp))
 
             Button(
-                onClick = { launchWalkThenPlay(quickPlayLevel) },
-                modifier = Modifier.width(280.dp),
+                onClick = { if (!walking) onPlayLevel(quickPlayLevel) },
+                modifier = Modifier.width(360.dp).height(84.dp),
                 enabled = !walking,
                 colors =
                     ButtonDefaults.buttonColors(
@@ -267,10 +299,25 @@ fun JourneyScreen(
             ) {
                 Text(
                     text = "שחק עכשיו (תחנה $quickPlayLevel)",
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black),
+                    style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Black),
                 )
             }
             Spacer(modifier = Modifier.height(12.dp))
+            if (onLettersHelp != null) {
+                OutlinedButton(
+                    onClick = onLettersHelp,
+                    enabled = !walking,
+                    colors =
+                        ButtonDefaults.outlinedButtonColors(
+                            containerColor = Color.White.copy(alpha = 0.86f),
+                            contentColor = Color(0xFF0B2B3D),
+                        ),
+                    modifier = Modifier.width(220.dp).height(52.dp),
+                ) {
+                    Text("אותיות", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
+                }
+                Spacer(modifier = Modifier.height(10.dp))
+            }
 
             JourneyRoadStrip(
                 totalLevels = totalLevels,
@@ -286,7 +333,8 @@ fun JourneyScreen(
                 companionImageRes = companionImageRes,
                 roadScrollState = roadScroll,
                 endMarker = endMarker,
-                onStationClick = { levelId -> launchWalkThenPlay(levelId) },
+                rtlRoad = rtlRoad,
+                onStationClick = { levelId -> if (!walking) onPlayLevel(levelId) },
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -310,33 +358,51 @@ private fun JourneyRoadStrip(
     companionImageRes: Int?,
     roadScrollState: ScrollState,
     endMarker: JourneyEndMarker,
+    rtlRoad: Boolean,
     onStationClick: (Int) -> Unit,
 ) {
     val density = LocalDensity.current
     val roadHeight = 300.dp
 
-    BoxWithConstraints(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .height(roadHeight + 36.dp)
-    ) {
-        val roadWidth = maxWidth
-        // Shift the whole road slightly left (~0.5cm).
-        Box(
+    // Use a physical LTR coordinate space for x-offset math, while the overall app stays RTL.
+    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+        BoxWithConstraints(
             modifier =
                 Modifier
-                    .width(roadWidth)
-                    .height(roadHeight)
-                    .offset(x = (-20).dp)
+                    .fillMaxWidth()
+                    .height(roadHeight + 36.dp),
         ) {
+            val roadWidth = maxWidth
+            // Shift the whole road left (~1cm).
+            Box(
+                modifier =
+                    Modifier
+                        .width(roadWidth)
+                        .height(roadHeight)
+                        .offset(x = (-38).dp),
+            ) {
+                val roadPts =
+                    if (rtlRoad) {
+                        roadFractions.map { (fx, fy) -> mirrorX(fx, true) to fy }
+                    } else {
+                        roadFractions
+                    }
+                val stationPts =
+                    if (rtlRoad) {
+                        stationFractions.map { (fx, fy) -> mirrorX(fx, true) to fy }
+                    } else {
+                        stationFractions
+                    }
             val wPx = with(density) { roadWidth.toPx() }
             val hPx = with(density) { roadHeight.toPx() }
+            val edgeMarginPx = with(density) { 38.dp.toPx() } // ~1cm
+            val markerHalfPx = with(density) { 40.dp.toPx() }
+            val maxCenterPx = (wPx - edgeMarginPx - markerHalfPx).coerceAtLeast(markerHalfPx)
 
             // Draw a visible zig-zag road under the stations.
             Canvas(modifier = Modifier.fillMaxSize()) {
                 val path = Path()
-                val pts = roadFractions.map { (fx, fy) -> Offset(fx * size.width, fy * size.height) }
+                val pts = roadPts.map { (fx, fy) -> Offset(fx * size.width, fy * size.height) }
                 if (pts.isNotEmpty()) path.moveTo(pts.first().x, pts.first().y)
                 // Smooth “snake” via quadratic segments.
                 for (i in 0 until pts.size - 1) {
@@ -377,7 +443,7 @@ private fun JourneyRoadStrip(
                         if (hasFutureTrack) 0.02f else 0f
                 for (i in 0 until dots) {
                     val t = i.toFloat() / (dots - 1).toFloat()
-                    val (px, py) = xyAlongRoad(t * (roadFractions.lastIndex.toFloat()), roadFractions)
+                    val (px, py) = xyAlongRoad(t * (roadPts.lastIndex.toFloat()), roadPts)
                     val x = px * size.width + (if (i % 2 == 0) 18f else -14f)
                     val y = py * size.height + (if (i % 3 == 0) 10f else -8f)
                     drawCircle(
@@ -392,7 +458,7 @@ private fun JourneyRoadStrip(
                 val sparkles = completedPlayableCount.coerceIn(0, sparkCap)
                 repeat(sparkles) { k ->
                     val t = 0.15f + k * 0.11f
-                    val (px, py) = xyAlongRoad(t * roadFractions.lastIndex.toFloat(), roadFractions)
+                    val (px, py) = xyAlongRoad(t * roadPts.lastIndex.toFloat(), roadPts)
                     drawCircle(
                         color = Color(0xFFFFF59D).copy(alpha = if (hasFutureTrack) 0.12f else 0.22f),
                         radius = if (hasFutureTrack) 3.5f else 5f,
@@ -401,8 +467,8 @@ private fun JourneyRoadStrip(
                 }
 
                 if (hasFutureTrack) {
-                    val anchorIdx = (playableLevels - 1).coerceIn(0, stationFractions.lastIndex)
-                    val (_, fy) = stationFractions[anchorIdx]
+                    val anchorIdx = (playableLevels - 1).coerceIn(0, stationPts.lastIndex)
+                    val (_, fy) = stationPts[anchorIdx]
                     val startY = (size.height * (fy + 0.05f)).coerceIn(0f, size.height * 0.88f)
                     drawRect(
                         brush =
@@ -421,7 +487,7 @@ private fun JourneyRoadStrip(
                 }
             }
 
-            val (gfx, gfy) = roadFractions.last()
+            val (gfx, gfy) = roadPts.last()
             val goalPulse by rememberInfiniteTransition(label = "goal").animateFloat(
                 initialValue = if (goalSegmentComplete) 0.94f else 0.98f,
                 targetValue = if (goalSegmentComplete) 1.08f else 1.04f,
@@ -466,19 +532,27 @@ private fun JourneyRoadStrip(
 
             for (levelId in 1..totalLevels) {
                 val idx = (levelId - 1).coerceIn(0, stationFractions.lastIndex)
-                val (fx, fy) = stationFractions[idx]
-                val xPx = fx * wPx
+                val (fx, fy) = stationPts[idx]
+                val xPxRaw = fx * wPx
+                val xPx = if (levelId == 1) xPxRaw.coerceAtMost(maxCenterPx) else xPxRaw
                 val yPx = fy * hPx
                 val playable = levelId <= playableLevels
-                val enabled = playable && levelId <= unlockedLevel && !walking
+                val interactive =
+                    playable && levelId <= unlockedLevel && !walking && levelId == nextSuggested
+                val lockedWaiting =
+                    playable &&
+                        levelId <= unlockedLevel &&
+                        !completedLevels.contains(levelId) &&
+                        levelId > nextSuggested
                 val completed = completedLevels.contains(levelId)
-                val suggested = enabled && !completed && levelId == nextSuggested
+                val suggested = interactive && !completed && levelId == nextSuggested
                 val isLast = levelId == totalLevels
 
                 JourneyStationMarker(
                     levelId = levelId,
                     playableLevels = playableLevels,
-                    enabled = enabled,
+                    interactive = interactive,
+                    lockedWaiting = lockedWaiting,
                     completed = completed,
                     suggested = suggested,
                     isLast = isLast,
@@ -494,19 +568,37 @@ private fun JourneyRoadStrip(
                                     )
                                 }
                             },
-                    onClick = { if (enabled) onStationClick(levelId) },
+                    onClick = { if (interactive) onStationClick(levelId) },
                 )
             }
 
-            val (dfx, dfy) = xyAlongRoad(dinoProgress, roadFractions)
+            val (dfx, dfy) =
+                if (walking) {
+                    xyAlongRoad(dinoProgress, roadPts)
+                } else if (nextSuggested in 1..totalLevels) {
+                    val si = (nextSuggested - 1).coerceIn(0, stationFractions.lastIndex)
+                    stationPts[si]
+                } else {
+                    xyAlongRoad(dinoProgress, roadPts)
+                }
             val dinoRes = if (walking) walkDrawable else R.drawable.dino_idle
             val dinoX =
                 with(density) {
-                    (dfx * wPx - 44.dp.toPx()).roundToInt()
+                    val dxRaw = dfx * wPx
+                    val dx = if (!walking && nextSuggested == 1) dxRaw.coerceAtMost(maxCenterPx) else dxRaw
+                    if (walking) {
+                        (dx - 44.dp.toPx()).roundToInt()
+                    } else {
+                        // Wait **physically to the right of the station** (screen-right), not on top of it.
+                        val waitOffsetPx = (92.dp).toPx()
+                        (dx - 44.dp.toPx() + waitOffsetPx).roundToInt()
+                    }
                 }
             val dinoY =
                 with(density) {
-                    (dfy * hPx - 70.dp.toPx()).roundToInt()
+                    val dy = dfy * hPx
+                    // Slightly lower so feet sit on the road while waiting.
+                    ((dy - 64.dp.toPx()) + if (walking) 0f else 26.dp.toPx()).roundToInt()
                 }
             if (companionImageRes != null) {
                 Image(
@@ -539,13 +631,15 @@ private fun JourneyRoadStrip(
             )
         }
     }
+    }
 }
 
 @Composable
 private fun JourneyStationMarker(
     levelId: Int,
     playableLevels: Int,
-    enabled: Boolean,
+    interactive: Boolean,
+    lockedWaiting: Boolean,
     completed: Boolean,
     suggested: Boolean,
     isLast: Boolean,
@@ -554,9 +648,10 @@ private fun JourneyStationMarker(
     modifier: Modifier = Modifier,
 ) {
     val isFutureTrack = levelId > playableLevels
+    val gatedOff = !interactive && !completed && !isFutureTrack
     val markerRes =
         when {
-            !enabled -> null
+            gatedOff || isFutureTrack -> null
             isLast && completed ->
                 when (endMarker) {
                     JourneyEndMarker.Egg -> R.drawable.finish_marker_egg
@@ -569,28 +664,31 @@ private fun JourneyStationMarker(
     val baseColor =
         when {
             isFutureTrack -> Color(0xFF5D6A73).copy(alpha = 0.19f)
-            !enabled -> Color(0xFF7E8A93).copy(alpha = 0.35f)
+            lockedWaiting -> Color(0xFF7E8A93).copy(alpha = 0.38f)
             completed -> Color(0xFF2E7D32).copy(alpha = 0.85f)
             suggested -> Color(0xFF2AA6C9).copy(alpha = 0.95f)
-            else -> Color(0xFF2AA6C9).copy(alpha = 0.80f)
+            interactive -> Color(0xFF2AA6C9).copy(alpha = 0.80f)
+            else -> Color(0xFF7E8A93).copy(alpha = 0.35f)
         }
     val borderColor =
         when {
             suggested -> Color(0xFFFFC400)
-            enabled -> Color.White.copy(alpha = 0.85f)
+            interactive -> Color.White.copy(alpha = 0.85f)
             else -> Color.Transparent
         }
     val label =
         when {
             isFutureTrack -> ""
-            !enabled -> "🔒"
             completed -> "✓"
+            lockedWaiting -> "🔒"
+            !interactive -> "🔒"
             else -> levelId.toString()
         }
     val subtitle =
         when {
             isFutureTrack -> "בהמשך"
-            !enabled -> "נעול"
+            lockedWaiting -> "עוד לא"
+            !interactive && !completed -> "נעול"
             completed -> "בוצע"
             else -> "תחנה $levelId"
         }
@@ -599,12 +697,12 @@ private fun JourneyStationMarker(
         Surface(
             color = baseColor,
             shape = CircleShape,
-            shadowElevation = if (enabled) 8.dp else 0.dp,
+            shadowElevation = if (interactive) 8.dp else 0.dp,
             modifier =
                 Modifier
                     .size(if (suggested) 88.dp else 80.dp)
                     .border(width = if (suggested) 4.dp else 2.dp, color = borderColor, shape = CircleShape)
-                    .clickable(enabled = enabled, onClick = onClick),
+                    .clickable(enabled = interactive, onClick = onClick),
         ) {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
                 if (markerRes != null) {
@@ -636,16 +734,17 @@ private fun JourneyStationMarker(
         }
         Spacer(modifier = Modifier.height(2.dp))
         Box(
-            modifier =
-                Modifier
-                    .width(88.dp)
-                    .background(
-                        when {
-                            isFutureTrack -> Color.White.copy(alpha = 0.36f)
-                            !enabled -> Color.White.copy(alpha = 0.60f)
-                            suggested -> Color(0xFFFFF3C4).copy(alpha = 0.95f)
-                            else -> Color.White.copy(alpha = 0.70f)
-                        },
+                    modifier =
+                        Modifier
+                            .width(88.dp)
+                            .background(
+                                when {
+                                    isFutureTrack -> Color.White.copy(alpha = 0.36f)
+                                    lockedWaiting -> Color.White.copy(alpha = 0.52f)
+                                    !interactive -> Color.White.copy(alpha = 0.60f)
+                                    suggested -> Color(0xFFFFF3C4).copy(alpha = 0.95f)
+                                    else -> Color.White.copy(alpha = 0.70f)
+                                },
                         shape = RoundedCornerShape(10.dp),
                     )
                     .padding(horizontal = 6.dp, vertical = 2.dp),

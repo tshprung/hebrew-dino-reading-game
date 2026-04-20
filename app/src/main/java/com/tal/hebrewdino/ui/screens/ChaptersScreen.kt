@@ -3,10 +3,13 @@ package com.tal.hebrewdino.ui.screens
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -18,6 +21,8 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.shape.RoundedCornerShape
+// (no lazy grid needed; honeycomb is manual rows)
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -48,6 +53,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
@@ -58,6 +64,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.compose.animation.core.Animatable
@@ -101,32 +108,31 @@ private val ChaptersMapPathHeight =
     200.dp + (ChaptersPathLayout.CHAPTER_COUNT * 210).dp + 160.dp
 
 /**
- * Natural **horizontal** egg: **width > height**, full rounded bottom (large y), slightly narrower top,
- * soft curves (not leaf / drop). Two asymmetric cubics from bottom center.
+ * Upright egg silhouette (close to a dinosaur egg photo): rounded bottom, narrower top, slight asymmetry.
  */
-private object EggShape : Shape {
+private object ChapterEggShape : Shape {
     override fun createOutline(size: Size, layoutDirection: LayoutDirection, density: Density): Outline {
         val w = size.width
         val h = size.height
         val cx = w * 0.5f
-        val bottomY = h * 0.90f
-        val topY = h * 0.12f
+        val bottomY = h * 0.94f
+        val topY = h * 0.06f
         val path =
             Path().apply {
                 moveTo(cx, bottomY)
                 cubicTo(
-                    w * 0.05f,
-                    h * 0.84f,
-                    w * 0.10f,
-                    h * 0.40f,
-                    w * 0.36f,
-                    topY,
+                    w * 0.06f,
+                    h * 0.88f,
+                    w * 0.06f,
+                    h * 0.38f,
+                    w * 0.42f,
+                    topY + h * 0.01f,
                 )
                 cubicTo(
-                    w * 0.76f,
-                    h * 0.34f,
-                    w * 0.96f,
-                    h * 0.72f,
+                    w * 0.86f,
+                    h * 0.30f,
+                    w * 0.95f,
+                    h * 0.74f,
                     cx,
                     bottomY,
                 )
@@ -136,9 +142,11 @@ private object EggShape : Shape {
     }
 }
 
-/** Landscape egg on map (reads as a lying egg / wide silhouette). */
-private val ChapterEggWidth = 136.dp
-private val ChapterEggHeight = 92.dp
+private val ChapterEggWidth = 190.dp
+private val ChapterEggHeight = 250.dp
+
+// Back-compat: legacy map egg used by old vertical path code.
+private val EggShape: Shape = ChapterEggShape
 
 /** Minimum clearance egg ↔ dino along path normal (no overlap). */
 private val DinoEggGap = 10.dp
@@ -153,30 +161,6 @@ fun ChaptersScreen(
     modifier: Modifier = Modifier,
 ) {
     val scroll = rememberScrollState()
-    val density = LocalDensity.current
-    val configuration = LocalConfiguration.current
-
-    LaunchedEffect(unlockedChapter) {
-        delay(48)
-        var guard = 0
-        while (scroll.maxValue == 0 && guard < 40) {
-            delay(24)
-            guard++
-        }
-        if (scroll.maxValue <= 0) return@LaunchedEffect
-
-        val idx = (unlockedChapter - 1).coerceIn(0, ChaptersPathLayout.CHAPTER_COUNT - 1)
-        val t = ChaptersPathLayout.tForChapterIndex(idx)
-        val pt = ChaptersPathLayout.pointOnPath(t)
-        val pathPx = with(density) { ChaptersMapPathHeight.toPx() }
-        val topPaddingPx = with(density) { 48.dp.toPx() }
-        val titleBlockPx = with(density) { 88.dp.toPx() }
-        val eggCenterY = topPaddingPx + titleBlockPx + pt.y * pathPx
-        val screenPx = with(density) { configuration.screenHeightDp.dp.toPx() }
-        // Chapter 1 lives at low t (top of path); bias scroll so that egg sits a bit below top bar.
-        val target = (eggCenterY - screenPx * 0.24f).roundToInt().coerceIn(0, scroll.maxValue)
-        scroll.scrollTo(target)
-    }
 
     val chapters =
         listOf(
@@ -200,23 +184,18 @@ fun ChaptersScreen(
                 Modifier
                     .fillMaxSize()
                     .verticalScroll(scroll)
-                    .padding(start = 12.dp, end = 12.dp, top = 28.dp, bottom = 24.dp),
+                    .padding(start = 12.dp, end = 12.dp, top = 16.dp, bottom = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Text(
-                text = "מפת הפרקים",
-                style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Black),
-                color = Color(0xFF1A3A4A),
-            )
             Spacer(modifier = Modifier.height(6.dp))
-
-            ChapterVerticalPath(
+            ChaptersHexHoneycomb(
                 chapters = chapters,
                 unlockedChapter = unlockedChapter,
                 chaptersProgress = chaptersProgress,
                 onOpenChapter = onOpenChapter,
                 modifier = Modifier.fillMaxWidth(),
             )
+            Spacer(modifier = Modifier.height(18.dp))
         }
 
         Box(
@@ -238,6 +217,144 @@ fun ChaptersScreen(
                 Text("הגדרות", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
             }
         }
+    }
+}
+
+private object ChapterHexShape : Shape {
+    override fun createOutline(size: Size, layoutDirection: LayoutDirection, density: Density): Outline {
+        val w = size.width
+        val h = size.height
+        val r = minOf(w, h) / 2f
+        val cx = w / 2f
+        val cy = h / 2f
+        val k = 0.86f // cos(30°)
+        val path =
+            Path().apply {
+                moveTo(cx, cy - r)
+                lineTo(cx + r * k, cy - r * 0.5f)
+                lineTo(cx + r * k, cy + r * 0.5f)
+                lineTo(cx, cy + r)
+                lineTo(cx - r * k, cy + r * 0.5f)
+                lineTo(cx - r * k, cy - r * 0.5f)
+                close()
+            }
+        return Outline.Generic(path)
+    }
+}
+
+@Composable
+private fun ChaptersHexHoneycomb(
+    chapters: List<ChapterCard>,
+    unlockedChapter: Int,
+    chaptersProgress: ChaptersProgress,
+    onOpenChapter: (Int) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    BoxWithConstraints(modifier = modifier) {
+        val tile = (maxWidth / 3.1f).coerceIn(128.dp, 190.dp)
+        val h = tile
+        val w = tile
+        val rowGap = (tile * 0.12f).coerceIn(10.dp, 22.dp)
+        val colGap = (tile * 0.08f).coerceIn(8.dp, 18.dp)
+
+        // 3-2-3 honeycomb like the reference screenshot.
+        val rows = listOf(3, 2, 3, 2)
+        val maxCount = rows.sum()
+        val shown = chapters.take(maxCount)
+
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            var idx = 0
+            rows.forEachIndexed { rowIdx, count ->
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(colGap),
+                    modifier =
+                        Modifier
+                            .padding(top = if (rowIdx == 0) 0.dp else rowGap)
+                            .offset(x = if (count == 2) (w * 0.52f) else 0.dp),
+                ) {
+                    repeat(count) {
+                        val ch = shown.getOrNull(idx++)
+                        if (ch == null) return@repeat
+                        val state =
+                            chapterEggState(
+                                chapterId = ch.id,
+                                unlockedChapter = unlockedChapter,
+                                progress = chaptersProgress,
+                            )
+                        val openable = state != ChapterEggState.Locked && ch.id <= 3
+                        ChapterHexTile(
+                            title = ch.title,
+                            imageRes =
+                                when (ch.id) {
+                                    2 -> R.drawable.mountain_bg_chapter2
+                                    3 -> R.drawable.swamp_bg_chapter3
+                                    4 -> R.drawable.mountain_bg_chapter4
+                                    else -> R.drawable.forest_bg_journey_road
+                                },
+                            state = state,
+                            enabled = openable,
+                            size = w,
+                            onClick = { if (openable) onOpenChapter(ch.id) },
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ChapterHexTile(
+    title: String,
+    imageRes: Int,
+    state: ChapterEggState,
+    enabled: Boolean,
+    size: Dp,
+    onClick: () -> Unit,
+) {
+    val locked = state == ChapterEggState.Locked
+    val overlay =
+        if (locked) {
+            Color(0xFFCFD8DC).copy(alpha = 0.82f)
+        } else {
+            Color.Transparent
+        }
+    Box(
+        modifier =
+            Modifier
+                .size(size)
+                .shadow(10.dp, ChapterHexShape)
+                .clip(ChapterHexShape)
+                .background(Color.White)
+                .border(10.dp, Color.White, ChapterHexShape)
+                .clickable(enabled = enabled, onClick = onClick),
+    ) {
+        Image(
+            painter = painterResource(id = imageRes),
+            contentDescription = null,
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Crop,
+            colorFilter =
+                if (locked) {
+                    ColorFilter.tint(Color(0xFFB0BEC5), blendMode = androidx.compose.ui.graphics.BlendMode.Saturation)
+                } else {
+                    null
+                },
+        )
+        if (overlay.alpha > 0f) Box(Modifier.fillMaxSize().background(overlay))
+        Text(
+            text = title,
+            modifier =
+                Modifier
+                    .align(Alignment.Center)
+                    .padding(horizontal = 14.dp)
+                    .background(Color.Black.copy(alpha = if (locked) 0.08f else 0.30f), RoundedCornerShape(14.dp))
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
+            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black),
+            color = if (locked) Color(0xFF263238) else Color.White,
+            textAlign = TextAlign.Center,
+            maxLines = 2,
+        )
     }
 }
 
