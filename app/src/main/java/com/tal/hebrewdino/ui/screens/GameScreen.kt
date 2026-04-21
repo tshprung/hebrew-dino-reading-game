@@ -67,6 +67,7 @@ import com.tal.hebrewdino.ui.audio.AudioClips
 import com.tal.hebrewdino.ui.audio.SoundPoolPlayer
 import com.tal.hebrewdino.ui.audio.VoicePlayer
 import com.tal.hebrewdino.ui.domain.AnswerResult
+import com.tal.hebrewdino.ui.domain.Chapter1Station4PictureInnerScale
 import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
 import com.tal.hebrewdino.ui.domain.LevelSession
 import com.tal.hebrewdino.ui.domain.LessonWordCatalog
@@ -536,21 +537,7 @@ fun GameScreen(
                                     // while emoji/placeholder art reads too small.
                                     pictureInnerScale = { word, tileDrawable ->
                                         if (chapterId == 1 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
-                                            // Station 4: ONLY the image grows; keep the rectangle untouched.
-                                            val isMedusa = word == "מדוזה" || tileDrawable == R.drawable.lesson_pic_medusa
-                                            val biggerWords30 =
-                                                setOf(
-                                                    // Requested: make ONLY these pictures 30% bigger.
-                                                    "למידה",
-                                                    "מכונית",
-                                                    "דחליל",
-                                                    "אבא",
-                                                )
-                                            when {
-                                                isMedusa -> 0.65f
-                                                word in biggerWords30 -> 1.3f * 1.3f
-                                                else -> 1.3f
-                                            }
+                                            Chapter1Station4PictureInnerScale.likeStation5(word, tileDrawable)
                                         } else {
                                             1f
                                         }
