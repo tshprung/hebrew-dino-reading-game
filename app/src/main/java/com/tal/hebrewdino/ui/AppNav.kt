@@ -247,6 +247,7 @@ fun AppNav() {
             JourneyScreen(
                 unlockedLevel = unlockedLevel,
                 completedLevels = completedLevels,
+                endMarkerReached = beachOutroSeen,
                 onPlayLevel = { levelId ->
                     navController.navigate("${NavRoutes.Level}/$levelId")
                 },
@@ -266,6 +267,7 @@ fun AppNav() {
             JourneyScreen(
                 unlockedLevel = unlockedLevel,
                 completedLevels = completedLevels,
+                endMarkerReached = false,
                 endWalkThenContinue = true,
                 onEndWalkComplete = {
                     // After Dino reaches the egg, show the finale story screen (then it returns to Chapters).

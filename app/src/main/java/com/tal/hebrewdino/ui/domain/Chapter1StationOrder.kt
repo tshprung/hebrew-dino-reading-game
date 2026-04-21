@@ -23,15 +23,19 @@ object Chapter1StationOrder {
 
     fun quizPlan(stationId: Int): StationQuizPlan {
         return when (stationId.coerceIn(1, Chapter1Config.STATION_COUNT)) {
-            TAP_LETTER -> StationQuizPlan(StationQuizMode.PickLetter, questionCount = 3, initialGroupIndex = 0)
-            BALLOON_POP -> StationQuizPlan(StationQuizMode.PopBalloons, questionCount = 4, initialGroupIndex = 0)
-            REVEAL_THEN_CHOOSE -> StationQuizPlan(StationQuizMode.FindLetterGrid, questionCount = 5, initialGroupIndex = 0)
+            // Station 1: give more rounds to practice.
+            TAP_LETTER -> StationQuizPlan(StationQuizMode.PickLetter, questionCount = 6, initialGroupIndex = 0)
+            // Station 2: a bit longer.
+            BALLOON_POP -> StationQuizPlan(StationQuizMode.PopBalloons, questionCount = 6, initialGroupIndex = 0)
+            // Station 3: a bit longer.
+            REVEAL_THEN_CHOOSE -> StationQuizPlan(StationQuizMode.FindLetterGrid, questionCount = 7, initialGroupIndex = 0)
             PICTURE_PICK_ONE ->
-                StationQuizPlan(StationQuizMode.PictureStartsWith, questionCount = 4, initialGroupIndex = 1)
+                StationQuizPlan(StationQuizMode.PictureStartsWith, questionCount = 8, initialGroupIndex = 1)
             PICTURE_PICK_ALL ->
                 StationQuizPlan(
                     mode = StationQuizMode.ImageMatch,
-                    questionCount = 4,
+                    // Station 5: add 2 more tries (again).
+                    questionCount = 8,
                     initialGroupIndex = 2,
                     imageMatchAlwaysThreeChoices = true,
                     // Station 5: keep the card (box) size stable; scale the picture *inside* the card in UI.
@@ -39,7 +43,7 @@ object Chapter1StationOrder {
                     imageMatchPictureSizeMultiplier = 1f,
                 )
             FINALE_PICTURE_LETTER_MATCH ->
-                StationQuizPlan(StationQuizMode.ImageMatch, questionCount = 4, initialGroupIndex = 3)
+                StationQuizPlan(StationQuizMode.ImageMatch, questionCount = 6, initialGroupIndex = 3)
             else ->
                 error(
                     "Chapter 1 station out of range 1..${Chapter1Config.STATION_COUNT} after coerce (raw=$stationId)",

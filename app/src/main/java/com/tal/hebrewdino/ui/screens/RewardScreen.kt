@@ -83,33 +83,17 @@ fun RewardScreen(
                     .padding(horizontal = 16.dp, vertical = 12.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            val chapterOneFinale = levelId == Chapter1Config.STATION_COUNT
-            if (chapterOneFinale) {
-                Text(
-                    text = rtl("מצאתם את הביצה!"),
-                    style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.Black),
-                    color = Color(0xFF0B2B3D),
-                    textAlign = TextAlign.Center,
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = rtl("כל הכבוד!"),
-                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                    color = Color(0xFF0B2B3D),
-                )
-            } else {
-                Text(
-                    text = rtl("כל הכבוד!"),
-                    style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Black),
-                    color = Color(0xFF0B2B3D),
-                )
-                Spacer(modifier = Modifier.height(6.dp))
-                Text(
-                    text = "שלב $levelId הסתיים",
-                    style = MaterialTheme.typography.titleLarge,
-                    color = Color(0xFF0B2B3D),
-                )
-            }
+            Text(
+                text = rtl("כל הכבוד!"),
+                style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Black),
+                color = Color(0xFF0B2B3D),
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                text = "שלב $levelId הסתיים",
+                style = MaterialTheme.typography.titleLarge,
+                color = Color(0xFF0B2B3D),
+            )
             Spacer(modifier = Modifier.height(8.dp))
             Spacer(modifier = Modifier.height(10.dp))
 

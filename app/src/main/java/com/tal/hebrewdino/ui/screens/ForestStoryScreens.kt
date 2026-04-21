@@ -44,7 +44,7 @@ private val momTalkFrames =
         R.drawable.mom_talk_0,
         R.drawable.mom_talk_1,
         R.drawable.mom_talk_2,
-        R.drawable.mom_talk_3,
+        R.drawable.mom_talk_3_flipped,
     )
 
 private val dinoTalkFrames =

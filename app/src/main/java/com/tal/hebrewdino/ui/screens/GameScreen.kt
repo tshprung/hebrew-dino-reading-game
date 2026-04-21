@@ -363,7 +363,10 @@ fun GameScreen(
                     contentAlignment = Alignment.Center,
                 ) {
                     if (phase == GamePhase.Intro) {
-                        IntroPulse(stationId = stationId, question = current, modifier = Modifier.fillMaxWidth())
+                        // Station 6: don't show the mid-screen intro pulse between rounds.
+                        if (!(stationId == 6 && current is Question.ImageMatchQuestion)) {
+                            IntroPulse(stationId = stationId, question = current, modifier = Modifier.fillMaxWidth())
+                        }
                     } else {
                         when (current) {
                             is Question.FindLetterGridQuestion ->
@@ -502,7 +505,8 @@ fun GameScreen(
                                     shakePx = optionsShake.value,
                                     pictureImageHeight =
                                         if (chapterId == 1 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
-                                            280.dp
+                                            // Station 4: keep the frame compact so the word + letters remain visible.
+                                            160.dp
                                         } else {
                                             140.dp
                                         },
@@ -516,13 +520,15 @@ fun GameScreen(
                                     // Station 4 screenshots: the outer card should be wider (more rectangle).
                                     pictureFrameMaxWidthFraction =
                                         if (chapterId == 1 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
-                                            0.31f
+                                            // Station 4: frame (box) ~20% smaller.
+                                            0.25f
                                         } else {
                                             null
                                         },
                                     pictureFrameMinWidth =
                                         if (chapterId == 1 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
-                                            140.dp
+                                            // Station 4: frame (box) ~20% smaller.
+                                            112.dp
                                         } else {
                                             200.dp
                                         },
@@ -530,8 +536,21 @@ fun GameScreen(
                                     // while emoji/placeholder art reads too small.
                                     pictureInnerScale = { word, tileDrawable ->
                                         if (chapterId == 1 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
-                                            // Station 4 request: all pictures should be the same perceived size as meduza.
-                                            0.72f
+                                            // Station 4: ONLY the image grows; keep the rectangle untouched.
+                                            val isMedusa = word == "מדוזה" || tileDrawable == R.drawable.lesson_pic_medusa
+                                            val biggerWords30 =
+                                                setOf(
+                                                    // Requested: make ONLY these pictures 30% bigger.
+                                                    "למידה",
+                                                    "מכונית",
+                                                    "דחליל",
+                                                    "אבא",
+                                                )
+                                            when {
+                                                isMedusa -> 0.65f
+                                                word in biggerWords30 -> 1.3f * 1.3f
+                                                else -> 1.3f
+                                            }
                                         } else {
                                             1f
                                         }
@@ -580,6 +599,22 @@ fun GameScreen(
                                         enabled = !inputLocked,
                                         compactWideSpread =
                                             chapterId == 1 && stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH,
+                                        innerPictureScaleForChoice = { choice ->
+                                            if (chapterId == 1 && stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH) {
+                                                val isHouse = choice.word == "בית" || choice.id == "w_ב_1"
+                                                val isMedusa = choice.word == "מדוזה" || choice.id == "w_מ_3"
+                                                when {
+                                                    isMedusa -> (2f / 3f)
+                                                    isHouse -> 1f
+                                                    else -> 2f
+                                                }
+                                            } else {
+                                                when {
+                                                    choice.word == "מדוזה" || choice.id == "w_מ_3" || choice.tileDrawable == R.drawable.lesson_pic_medusa -> 0.5f
+                                                    else -> 1f
+                                                }
+                                            }
+                                        },
                                         instructions = "חברו אות למילה ולתמונה",
                                         onSolved = {
                                             if (!consumeTapCooldown()) return@MatchLetterToWordGame
@@ -616,8 +651,14 @@ fun GameScreen(
                                             // Station 5 request: all pictures should look same-size as the heart.
                                             // Use Crop in the card and keep per-choice scaling at 1x.
                                             if (chapterId == 1 && stationId == Chapter1StationOrder.PICTURE_PICK_ALL) {
-                                                // Station 5: ALL pictures same perceived scale as the heart (including house/meduza).
-                                                2f
+                                                // Station 5: ONLY house should be half size.
+                                                val isHouse = choice.word == "בית" || choice.id == "w_ב_1"
+                                                val isMedusa = choice.word == "מדוזה" || choice.id == "w_מ_3"
+                                                when {
+                                                    isMedusa -> (2f / 3f)
+                                                    isHouse -> 1f
+                                                    else -> 2f
+                                                }
                                             } else {
                                                 1f
                                             }

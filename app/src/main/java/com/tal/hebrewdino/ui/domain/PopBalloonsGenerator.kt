@@ -25,7 +25,11 @@ class PopBalloonsGenerator(
                 addAll(base)
                 repeat(repeatsCorrect - 1) { add(correctAnswer) } // base already contains it
                 while (size < optionCount) add(base.random(rnd))
-            }.shuffled(rnd)
+            }
+                // Shuffle twice to reduce repeated ordering in small option sets (e.g. PickLetter with 3 options),
+                // so letter placement “feels” different between rounds.
+                .shuffled(rnd)
+                .shuffled(rnd)
         require(correctAnswer in options)
 
         return Question.PopBalloonsQuestion(correctAnswer = correctAnswer, options = options)

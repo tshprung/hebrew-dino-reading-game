@@ -1,6 +1,5 @@
 package com.tal.hebrewdino.ui.game
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -27,20 +26,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.TransformOrigin
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.tal.hebrewdino.R
-import com.tal.hebrewdino.ui.domain.LessonWordIllustrations
+import com.tal.hebrewdino.ui.components.learning.LessonChoiceCard
+import com.tal.hebrewdino.ui.domain.LessonChoice
 import com.tal.hebrewdino.ui.domain.Question
+import com.tal.hebrewdino.ui.layout.ScreenFit
 import kotlin.math.roundToInt
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -80,31 +77,56 @@ fun PictureStartsWithGame(
                 pictureFrameMaxWidthFraction?.let { f ->
                     (maxWidth * f.coerceIn(0.20f, 1f)).coerceAtLeast(pictureFrameMinWidth)
                 } ?: 280.dp
+            val availableW = maxWidth
+            val density = LocalDensity.current
             Column(
                 modifier =
                     Modifier
                         .widthIn(max = frameMaxW)
-                        .border(2.dp, Color(0xFF0B2B3D).copy(alpha = 0.18f), RoundedCornerShape(18.dp))
-                        .background(Color.White.copy(alpha = 0.92f), RoundedCornerShape(18.dp))
-                        .padding(horizontal = 10.dp, vertical = 10.dp),
+                        .padding(horizontal = 0.dp, vertical = 0.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                LessonWordPictureTile(
-                    word = question.word,
-                    tileDrawable = question.tileDrawable,
-                    tintArgb = question.tintArgb,
-                    imageHeight = pictureImageHeight,
-                    innerScale = pictureInnerScale(question.word, question.tileDrawable),
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = question.word,
-                    style =
-                        MaterialTheme.typography.headlineSmall
-                            .copy(fontWeight = FontWeight.Black)
-                            .copy(fontSize = MaterialTheme.typography.headlineSmall.fontSize * promptWordSizeMultiplier),
-                    color = Color(0xFF0B2B3D),
-                    textAlign = TextAlign.Center,
+                val choice =
+                    LessonChoice(
+                        id = question.catalogEntryId,
+                        letter = question.correctLetter,
+                        word = question.word,
+                        tintArgb = question.tintArgb,
+                        tileDrawable = question.tileDrawable,
+                    )
+
+                // Match Station 5 sizing rules (computed width/height + caption size from card width).
+                val cardGap = 0.dp
+                var cardW =
+                    ScreenFit.rowChildWidthDp(
+                        rowInnerWidth = availableW.coerceAtMost(frameMaxW),
+                        count = 1,
+                        gap = cardGap,
+                        minEach = 72.dp,
+                        maxEach = 168.dp,
+                    )
+                // Respect authored max width constraints.
+                cardW = cardW.coerceAtMost(frameMaxW).coerceAtMost(availableW)
+                val cardH = cardW * (110f / 160f)
+                val captionSp =
+                    with(density) {
+                        (cardW.toPx() * 0.22f * promptWordSizeMultiplier).coerceIn(
+                            22f * fontScale * promptWordSizeMultiplier,
+                            40f * fontScale * promptWordSizeMultiplier,
+                        ).toSp()
+                    }
+                LessonChoiceCard(
+                    choice = choice,
+                    enabled = false,
+                    scale = 1f,
+                    showWordCaption = true,
+                    cardWidth = cardW,
+                    // Use station-5 aspect ratio; this also fixes "too tall" without a custom frame.
+                    cardHeight = cardH,
+                    captionFontSize = captionSp,
+                    innerPictureScale = pictureInnerScale(question.word, question.tileDrawable),
+                    isCorrectPick = false,
+                    onClick = {},
                 )
             }
         }
@@ -127,93 +149,5 @@ fun PictureStartsWithGame(
     }
 }
 
-@Composable
-private fun LessonWordPictureTile(
-    word: String,
-    tileDrawable: Int,
-    tintArgb: Int,
-    imageHeight: Dp,
-    innerScale: Float,
-) {
-    val density = LocalDensity.current
-    BoxWithConstraints(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-        val tileW = maxWidth
-        if (tileDrawable == R.drawable.lesson_word_tile) {
-            Box(
-                modifier =
-                    Modifier
-                        .size(width = tileW, height = imageHeight)
-                        .clip(RoundedCornerShape(18.dp))
-                        .background(
-                            Color(
-                                red = ((tintArgb shr 16) and 0xFF) / 255f,
-                                green = ((tintArgb shr 8) and 0xFF) / 255f,
-                                blue = (tintArgb and 0xFF) / 255f,
-                                alpha = 1f,
-                            ),
-                        ),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = word.first().toString(),
-                    fontSize = 54.sp,
-                    fontWeight = FontWeight.Black,
-                    color = Color(0xFF0B2B3D).copy(alpha = 0.92f),
-                    textAlign = TextAlign.Center,
-                    modifier =
-                        Modifier
-                            .background(Color.White.copy(alpha = 0.50f), RoundedCornerShape(18.dp))
-                            .padding(horizontal = 12.dp, vertical = 6.dp),
-                )
-            }
-        } else if (tileDrawable == R.drawable.lesson_pic_placeholder) {
-            val emoji = LessonWordIllustrations.emojiForWord(word)
-            val emojiSp =
-                with(density) {
-                    ((tileW.toPx() * 0.34f) * innerScale.coerceIn(0.6f, 1.9f))
-                        .coerceIn(40f * fontScale, 120f * fontScale)
-                        .toSp()
-                }
-            Box(
-                modifier =
-                    Modifier
-                        .size(width = tileW, height = imageHeight)
-                        .clip(RoundedCornerShape(18.dp))
-                        .background(
-                            Color(
-                                red = ((tintArgb shr 16) and 0xFF) / 255f,
-                                green = ((tintArgb shr 8) and 0xFF) / 255f,
-                                blue = (tintArgb and 0xFF) / 255f,
-                                alpha = 1f,
-                            ),
-                        ),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(text = emoji, fontSize = emojiSp, textAlign = TextAlign.Center)
-            }
-        } else {
-            Box(
-                modifier =
-                    Modifier
-                        .size(width = tileW, height = imageHeight)
-                        .clip(RoundedCornerShape(18.dp)),
-                contentAlignment = Alignment.Center,
-            ) {
-                Image(
-                    painter = painterResource(id = tileDrawable),
-                    contentDescription = word,
-                    modifier =
-                        Modifier
-                            .fillMaxSize()
-                            .graphicsLayer {
-                                val s = innerScale.coerceIn(0.6f, 1.9f)
-                                scaleX = s
-                                scaleY = s
-                                transformOrigin = TransformOrigin(0.5f, 0.5f)
-                            },
-                    contentScale = ContentScale.Fit,
-                )
-            }
-        }
-    }
-}
+// Removed local picture-tile renderer in favor of [LessonChoiceCard] to keep picture formatting
+// identical across stations 4, 5, and 6.
