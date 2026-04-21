@@ -8,8 +8,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -33,6 +33,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -64,6 +66,8 @@ fun ImageMatchGame(
     showWordCaptions: Boolean = true,
     captionSizeMultiplier: Float = 1f,
     pictureSizeMultiplier: Float = 1f,
+    /** Scales only the illustration inside the card frame (card outer size unchanged). */
+    innerPictureScaleForChoice: (LessonChoice) -> Float = { 1f },
     modifier: Modifier = Modifier,
 ) {
     val scope = rememberCoroutineScope()
@@ -138,6 +142,7 @@ fun ImageMatchGame(
                             cardWidth = cardW,
                             cardHeight = cardH,
                             captionFontSize = captionSp,
+                            innerPictureScale = innerPictureScaleForChoice(choice),
                             onClick = {
                                 val ok = onAttempt(choice.id)
                                 if (ok) {
@@ -167,6 +172,7 @@ private fun ImageMatchCard(
     cardWidth: Dp,
     cardHeight: Dp,
     captionFontSize: TextUnit,
+    innerPictureScale: Float,
     isCorrectPick: Boolean,
     onClick: () -> Unit,
 ) {
@@ -218,6 +224,11 @@ private fun ImageMatchCard(
                     textAlign = TextAlign.Center,
                     modifier =
                         Modifier
+                            .graphicsLayer {
+                                scaleX = innerPictureScale
+                                scaleY = innerPictureScale
+                                transformOrigin = TransformOrigin(0.5f, 0.5f)
+                            }
                             .background(Color.White.copy(alpha = 0.50f), RoundedCornerShape(18.dp))
                             .padding(horizontal = 12.dp, vertical = 6.dp),
                 )
@@ -247,15 +258,37 @@ private fun ImageMatchCard(
                     text = emoji,
                     fontSize = emojiSp,
                     textAlign = TextAlign.Center,
+                    modifier =
+                        Modifier.graphicsLayer {
+                            scaleX = innerPictureScale
+                            scaleY = innerPictureScale
+                            transformOrigin = TransformOrigin(0.5f, 0.5f)
+                        },
                 )
             }
         } else {
-            Image(
-                painter = painterResource(id = choice.tileDrawable),
-                contentDescription = choice.word,
-                modifier = Modifier.size(width = cardWidth, height = cardHeight),
-                contentScale = ContentScale.Fit,
-            )
+            Box(
+                modifier =
+                    Modifier
+                        .size(width = cardWidth, height = cardHeight)
+                        .clip(RoundedCornerShape(18.dp)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Image(
+                    painter = painterResource(id = choice.tileDrawable),
+                    contentDescription = choice.word,
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .graphicsLayer {
+                                scaleX = innerPictureScale
+                                scaleY = innerPictureScale
+                                transformOrigin = TransformOrigin(0.5f, 0.5f)
+                            },
+                    // Normalize perceived picture size across assets that have different padding.
+                    contentScale = ContentScale.Crop,
+                )
+            }
         }
         if (showWordCaption) {
             Spacer(modifier = Modifier.height(8.dp))

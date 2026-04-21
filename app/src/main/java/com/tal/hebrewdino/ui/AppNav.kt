@@ -262,6 +262,32 @@ fun AppNav() {
             )
         }
 
+        composable(NavRoutes.JourneyEndWalk) {
+            JourneyScreen(
+                unlockedLevel = unlockedLevel,
+                completedLevels = completedLevels,
+                endWalkThenContinue = true,
+                onEndWalkComplete = {
+                    // After Dino reaches the egg, show the finale story screen (then it returns to Chapters).
+                    navController.navigate(NavRoutes.StoryOutro) {
+                        popUpTo(NavRoutes.JourneyEndWalk) { inclusive = true }
+                    }
+                },
+                onPlayLevel = { levelId ->
+                    navController.navigate("${NavRoutes.Level}/$levelId")
+                },
+                onBack = {
+                    navController.navigate(NavRoutes.Chapters) { popUpTo(NavRoutes.JourneyEndWalk) { inclusive = true } }
+                },
+                onDebugUnlockNext = {
+                    scope.launch { progress.debugUnlockNextChapter1Station() }
+                },
+                onLettersHelp = {
+                    navController.navigate(NavRoutes.ChapterLettersIntro) { launchSingleTop = true }
+                },
+            )
+        }
+
         composable(
             route = "${NavRoutes.Ch2Level}/{stationId}",
             arguments = listOf(navArgument("stationId") { type = NavType.IntType }),
@@ -279,6 +305,7 @@ fun AppNav() {
                     } else {
                         null
                     },
+                suppressInGameDinoProgress = chapter2CompletedStations.contains(stationId),
                 onComplete = { completedStationId, correctCount, mistakeCount ->
                     scope.launch {
                         progress.markChapter2CompletedStation(completedStationId)
@@ -308,6 +335,7 @@ fun AppNav() {
                         navController.navigate(NavRoutes.Ch3Letters) { launchSingleTop = true }
                     },
                     onDebugStationAdvance = null,
+                    suppressInGameDinoProgress = chapter3CompletedStations.contains(rawId),
                     onComplete = { completedStationId, correctCount, mistakeCount ->
                         scope.launch {
                             progress.markChapter3CompletedStation(completedStationId)
@@ -337,14 +365,23 @@ fun AppNav() {
                     } else {
                         null
                     },
+                suppressInGameDinoProgress = completedLevels.contains(levelId),
                 onComplete = { completedLevelId, correctCount, mistakeCount ->
+                    val firstTime = !completedLevels.contains(completedLevelId)
                     scope.launch {
                         progress.markCompleted(completedLevelId)
                         progress.unlockAtLeast(
                             (completedLevelId + 1).coerceAtMost(Chapter1Config.STATION_COUNT),
                         )
                     }
-                    navController.navigate("${NavRoutes.Reward}/$completedLevelId/$correctCount/$mistakeCount")
+                    if (completedLevelId >= Chapter1Config.STATION_COUNT && firstTime) {
+                        // Episode 1 finale: go back to journey, walk to egg, then show outro.
+                        navController.navigate(NavRoutes.JourneyEndWalk) {
+                            popUpTo(NavRoutes.Journey) { inclusive = true }
+                        }
+                    } else {
+                        navController.navigate("${NavRoutes.Reward}/$completedLevelId/$correctCount/$mistakeCount")
+                    }
                 },
             )
         }

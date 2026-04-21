@@ -69,6 +69,7 @@ fun Chapter3LevelScreen(
     onComplete: (stationId: Int, correctCount: Int, mistakeCount: Int) -> Unit,
     onLettersHelp: (() -> Unit)? = null,
     onDebugStationAdvance: (() -> Unit)? = null,
+    suppressInGameDinoProgress: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     val station = stationId.coerceIn(1, Chapter3Config.STATION_COUNT)
@@ -86,6 +87,7 @@ fun Chapter3LevelScreen(
                 onComplete = onComplete,
                 onLettersHelp = onLettersHelp,
                 onDebugStationAdvance = onDebugStationAdvance,
+                suppressInGameDinoProgress = suppressInGameDinoProgress,
                 modifier = modifier,
             )
         4 ->
@@ -118,6 +120,7 @@ fun Chapter3LevelScreen(
                 onComplete = onComplete,
                 onLettersHelp = onLettersHelp,
                 onDebugStationAdvance = onDebugStationAdvance,
+                suppressInGameDinoProgress = suppressInGameDinoProgress,
                 modifier = modifier,
             )
         }

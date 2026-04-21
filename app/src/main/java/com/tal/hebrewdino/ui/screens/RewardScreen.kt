@@ -83,27 +83,6 @@ fun RewardScreen(
                     .padding(horizontal = 16.dp, vertical = 12.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End,
-            ) {
-                OutlinedButton(
-                    onClick = {
-                        if (!navigatedAway) {
-                            navigatedAway = true
-                            onBackToMap()
-                        }
-                    },
-                    modifier = Modifier.width(140.dp),
-                    colors =
-                        androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
-                            containerColor = Color.White.copy(alpha = 0.86f),
-                            contentColor = Color(0xFF0B2B3D),
-                        ),
-                ) {
-                    Text("חזור")
-                }
-            }
             val chapterOneFinale = levelId == Chapter1Config.STATION_COUNT
             if (chapterOneFinale) {
                 Text(
@@ -132,11 +111,6 @@ fun RewardScreen(
                 )
             }
             Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = rtl("זיקוקים בשמיים — כל הכבוד!"),
-                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                color = Color(0xFF0B2B3D),
-            )
             Spacer(modifier = Modifier.height(10.dp))
 
             Box(

@@ -21,6 +21,7 @@ fun PictureLetterMatchStation(
     onComplete: (stationId: Int, correctCount: Int, mistakeCount: Int) -> Unit,
     onLettersHelp: (() -> Unit)? = null,
     onDebugStationAdvance: (() -> Unit)? = null,
+    suppressInGameDinoProgress: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     GameScreen(
@@ -40,6 +41,7 @@ fun PictureLetterMatchStation(
         onComplete = onComplete,
         onLettersHelp = onLettersHelp,
         onDebugStationAdvance = onDebugStationAdvance,
+        suppressInGameDinoProgress = suppressInGameDinoProgress,
         modifier = modifier,
     )
 }

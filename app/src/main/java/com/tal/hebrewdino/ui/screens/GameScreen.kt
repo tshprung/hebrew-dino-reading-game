@@ -67,6 +67,7 @@ import com.tal.hebrewdino.ui.audio.AudioClips
 import com.tal.hebrewdino.ui.audio.SoundPoolPlayer
 import com.tal.hebrewdino.ui.audio.VoicePlayer
 import com.tal.hebrewdino.ui.domain.AnswerResult
+import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
 import com.tal.hebrewdino.ui.domain.LevelSession
 import com.tal.hebrewdino.ui.domain.LessonWordCatalog
 import com.tal.hebrewdino.ui.domain.Question
@@ -108,6 +109,8 @@ fun GameScreen(
     onComplete: (stationId: Int, correctCount: Int, mistakeCount: Int) -> Unit,
     onLettersHelp: (() -> Unit)? = null,
     onDebugStationAdvance: (() -> Unit)? = null,
+    /** Replay of an already-completed station: no extra in-game dino motion after correct answers. */
+    suppressInGameDinoProgress: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     // UX: no audio for now (per request).
@@ -180,11 +183,15 @@ fun GameScreen(
         val q = session.currentQuestion ?: return@LaunchedEffect
         launch {
             if (audioEnabled) {
-                dinoTalking = true
-                try {
-                    speakPromptForQuestion(voice, q)
-                } finally {
-                    dinoTalking = false
+                // Episode 1 station 6: do not introduce a target letter (this station is a picture↔word match).
+                val skipLetterPrompt = (stationId == 6 && q is Question.ImageMatchQuestion)
+                if (!skipLetterPrompt) {
+                    dinoTalking = true
+                    try {
+                        speakPromptForQuestion(voice, q)
+                    } finally {
+                        dinoTalking = false
+                    }
                 }
             }
         }
@@ -212,10 +219,13 @@ fun GameScreen(
                 gameFeedback.playCorrect()
             }
         }
-        dinoVisual = DinoVisual.Jump
+        if (!suppressInGameDinoProgress) {
+            dinoVisual = DinoVisual.Jump
+        }
         if (audioEnabled) voice.playFirstAvailableBlocking(AudioClips.VoGoodJob1, AudioClips.VoGoodJob2)
-        // Progress feel: small forward step after every success.
-        dinoForward.animateTo(dinoForward.value + forwardDir * 12f, spring(dampingRatio = 0.75f, stiffness = 520f))
+        if (!suppressInGameDinoProgress) {
+            dinoForward.animateTo(dinoForward.value + forwardDir * 12f, spring(dampingRatio = 0.75f, stiffness = 520f))
+        }
         playSuccessPulse(scope, dinoScale)
         // UX: short pause before transition.
         delay(400)
@@ -359,6 +369,8 @@ fun GameScreen(
                             is Question.FindLetterGridQuestion ->
                                 FindLetterGridGame(
                                     question = current,
+                                    // Episode 1 station 3: bigger letters inside same boxes.
+                                    gridLetterSizeMultiplier = if (stationId == 3) 1.5f else 1f,
                                     onCellTapped = { _ ->
                                         if (!consumeTapCooldown()) return@FindLetterGridGame
                                         session.wrongTap()
@@ -390,35 +402,51 @@ fun GameScreen(
                                     horizontalAlignment = Alignment.CenterHorizontally,
                                     verticalArrangement = Arrangement.Top,
                                 ) {
-                                    TargetLetterHeaderChip(
-                                        letter = current.correctAnswer,
-                                        modifier = Modifier.padding(top = 4.dp),
-                                    )
-                                    if (plan.mode == com.tal.hebrewdino.ui.domain.StationQuizMode.PickLetter) {
-                                        Spacer(modifier = Modifier.weight(1f))
-                                        LetterOptions(
-                                            options = current.options,
-                                            enabled = !inputLocked,
-                                            shakePx = optionsShake.value,
-                                            onPick = { picked ->
-                                                if (!consumeTapCooldown()) return@LetterOptions
-                                                when (session.submitAnswer(picked)) {
-                                                    AnswerResult.Correct -> {
-                                                        if (audioEnabled) ChildGameAudioHooks.onCorrect()
-                                                        scope.launch {
-                                                            val isLast = session.currentIndex >= session.totalQuestions - 1
-                                                            advanceAfterRound(isLast)
-                                                        }
-                                                    }
-                                                    AnswerResult.Wrong -> {
-                                                        if (audioEnabled) ChildGameAudioHooks.onWrong()
-                                                        onWrongFeedback()
-                                                    }
-                                                    AnswerResult.Finished -> {}
-                                                }
-                                            },
+                                    if (plan.mode != com.tal.hebrewdino.ui.domain.StationQuizMode.PickLetter) {
+                                        TargetLetterHeaderChip(
+                                            letter = current.correctAnswer,
+                                            modifier = Modifier.padding(top = 4.dp),
                                         )
-                                        Spacer(modifier = Modifier.height(12.dp))
+                                    }
+                                    if (plan.mode == com.tal.hebrewdino.ui.domain.StationQuizMode.PickLetter) {
+                                        Box(
+                                            modifier =
+                                                Modifier
+                                                    .fillMaxWidth()
+                                                    .weight(1f, fill = true),
+                                            contentAlignment = Alignment.Center,
+                                        ) {
+                                            TargetLetterHeaderChip(
+                                                letter = current.correctAnswer,
+                                                modifier =
+                                                    Modifier
+                                                        .align(Alignment.TopCenter)
+                                                        .padding(top = 4.dp),
+                                            )
+                                            LetterOptions(
+                                                options = current.options,
+                                                enabled = !inputLocked,
+                                                shakePx = optionsShake.value,
+                                                onPick = { picked ->
+                                                    if (!consumeTapCooldown()) return@LetterOptions
+                                                    when (session.submitAnswer(picked)) {
+                                                        AnswerResult.Correct -> {
+                                                            if (audioEnabled) ChildGameAudioHooks.onCorrect()
+                                                            scope.launch {
+                                                                val isLast = session.currentIndex >= session.totalQuestions - 1
+                                                                advanceAfterRound(isLast)
+                                                            }
+                                                        }
+                                                        AnswerResult.Wrong -> {
+                                                            if (audioEnabled) ChildGameAudioHooks.onWrong()
+                                                            onWrongFeedback()
+                                                        }
+                                                        AnswerResult.Finished -> {}
+                                                    }
+                                                },
+                                                modifier = Modifier.fillMaxWidth(),
+                                            )
+                                        }
                                     } else {
                                         Spacer(modifier = Modifier.height(8.dp))
                                         Box(
@@ -472,6 +500,46 @@ fun GameScreen(
                                     question = current,
                                     enabled = !inputLocked,
                                     shakePx = optionsShake.value,
+                                    pictureImageHeight =
+                                        if (chapterId == 1 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
+                                            280.dp
+                                        } else {
+                                            140.dp
+                                        },
+                                    // Station 4 request: word + image doubled, frame (box) slightly smaller.
+                                    promptWordSizeMultiplier =
+                                        if (chapterId == 1 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
+                                            2f
+                                        } else {
+                                            1f
+                                        },
+                                    // Station 4 screenshots: the outer card should be wider (more rectangle).
+                                    pictureFrameMaxWidthFraction =
+                                        if (chapterId == 1 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
+                                            0.31f
+                                        } else {
+                                            null
+                                        },
+                                    pictureFrameMinWidth =
+                                        if (chapterId == 1 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
+                                            140.dp
+                                        } else {
+                                            200.dp
+                                        },
+                                    // Normalize “perceived” picture size: some assets (medusa/house) read too large,
+                                    // while emoji/placeholder art reads too small.
+                                    pictureInnerScale = { word, tileDrawable ->
+                                        if (chapterId == 1 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
+                                            when {
+                                                word == "מדוזה" || tileDrawable == R.drawable.lesson_pic_medusa -> 0.72f
+                                                word == "בית" || tileDrawable == R.drawable.lesson_pic_bait -> 0.76f
+                                                tileDrawable == R.drawable.lesson_pic_placeholder -> 1.45f
+                                                else -> 1f
+                                            }
+                                        } else {
+                                            1f
+                                        }
+                                    },
                                     onPickLetter = { picked ->
                                         if (!consumeTapCooldown()) return@PictureStartsWithGame
                                         when (session.submitPictureStartsWith(picked)) {
@@ -514,6 +582,8 @@ fun GameScreen(
                                         choices = matchChoices,
                                         contentKey = session.currentIndex,
                                         enabled = !inputLocked,
+                                        compactWideSpread =
+                                            chapterId == 1 && stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH,
                                         onSolved = {
                                             if (!consumeTapCooldown()) return@MatchLetterToWordGame
                                             scope.launch {
@@ -536,8 +606,32 @@ fun GameScreen(
                                         enabled = !inputLocked,
                                         shakePx = optionsShake.value,
                                         showWordCaptions = true,
-                                        captionSizeMultiplier = plan.imageMatchCaptionSizeMultiplier,
+                                        // Episode 1 station 5: caption text +20%.
+                                        captionSizeMultiplier =
+                                            plan.imageMatchCaptionSizeMultiplier *
+                                                if (chapterId == 1 && stationId == Chapter1StationOrder.PICTURE_PICK_ALL) {
+                                                    1.2f
+                                                } else {
+                                                    1f
+                                                },
                                         pictureSizeMultiplier = plan.imageMatchPictureSizeMultiplier,
+                                        innerPictureScaleForChoice = { choice ->
+                                            // Station 5 request: all pictures should look same-size as the heart.
+                                            // Use Crop in the card and keep per-choice scaling at 1x.
+                                            if (chapterId == 1 && stationId == Chapter1StationOrder.PICTURE_PICK_ALL) {
+                                                val isHouse = choice.word == "בית" || choice.id == "w_ב_1"
+                                                val isMedusa = choice.word == "מדוזה" || choice.id == "w_מ_3"
+                                                when {
+                                                    // Station 5 followup: these two assets read visually larger after Crop.
+                                                    isMedusa -> 0.425f
+                                                    isHouse -> 0.44f
+                                                    // Station 5: everything else 2× bigger inside same card.
+                                                    else -> 2f
+                                                }
+                                            } else {
+                                                1f
+                                            }
+                                        },
                                         onAttempt = { choiceId ->
                                             if (!consumeTapCooldown()) return@ImageMatchGame false
                                             when (session.submitImageMatch(choiceId)) {
@@ -639,7 +733,11 @@ private fun IntroPulse(
             is Question.PopBalloonsQuestion -> question.correctAnswer
             is Question.PictureStartsWithQuestion -> question.word
             is Question.ImageMatchQuestion ->
-                if (stationId in 4..6) question.targetLetter else question.targetWord
+                when {
+                    stationId == 6 -> "חברו מילה לתמונה"
+                    stationId in 4..6 -> question.targetLetter
+                    else -> question.targetWord
+                }
             is Question.FinaleSlotQuestion -> "★"
         }
     BoxWithConstraints(modifier = modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {

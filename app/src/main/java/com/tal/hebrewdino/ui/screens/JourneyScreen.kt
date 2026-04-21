@@ -120,6 +120,23 @@ private fun xyAlongRoad(f: Float, points: List<Pair<Float, Float>>): Pair<Float,
     return (x0 + (x1 - x0) * t) to (y0 + (y1 - y0) * t)
 }
 
+/**
+ * Dino progress lives on **segments between station chips** (same fractions as markers), not on the
+ * decorative road polyline (which uses a different curve), so walks always end at each station.
+ * [f] is in 0..[stationPts.lastIndex]; integer values sit on each station.
+ */
+private fun xyAlongStationChain(f: Float, stationPts: List<Pair<Float, Float>>): Pair<Float, Float> {
+    if (stationPts.isEmpty()) return 0f to 0f
+    if (stationPts.size == 1) return stationPts[0]
+    val maxF = (stationPts.size - 1).toFloat()
+    val ff = f.coerceIn(0f, maxF)
+    val i = floor(ff.toDouble()).toInt().coerceAtMost(stationPts.size - 2)
+    val t = ff - i
+    val (x0, y0) = stationPts[i]
+    val (x1, y1) = stationPts[i + 1]
+    return (x0 + (x1 - x0) * t) to (y0 + (y1 - y0) * t)
+}
+
 private fun mirrorX(fx: Float, enabled: Boolean): Float = if (enabled) (1f - fx) else fx
 
 @Composable
@@ -128,6 +145,10 @@ fun JourneyScreen(
     completedLevels: Set<Int>,
     onPlayLevel: (Int) -> Unit,
     onBack: () -> Unit,
+    /** When true (episode finale), navigate only after Dino reaches the end marker. */
+    endWalkThenContinue: Boolean = false,
+    /** Called once after the end-walk completes (only when [endWalkThenContinue] is true). */
+    onEndWalkComplete: (() -> Unit)? = null,
     onDebugUnlockNext: (() -> Unit)? = null,
     onLettersHelp: (() -> Unit)? = null,
     totalLevels: Int = Chapter1Config.STATION_COUNT,
@@ -148,36 +169,47 @@ fun JourneyScreen(
     val resolvedSubtitle = headerSubtitle // when null, hide subtitle (chapter 1 request)
     val nextPlayableSuggested =
         (1..playableLevels).firstOrNull { !completedLevels.contains(it) } ?: (playableLevels + 1)
+    val allPlayableComplete = (1..playableLevels).all { level -> completedLevels.contains(level) }
+    // Only add an “end marker walk” when this journey is fully playable (chapter end).
+    val canWalkToEndMarker = (playableLevels == totalLevels) && allPlayableComplete
+    val baseMaxDinoF = (minOf(totalLevels, stationFractions.size) - 1).coerceAtLeast(0).toFloat()
+    val maxDinoF = baseMaxDinoF + if (canWalkToEndMarker) 1f else 0f
     fun idleDinoProgressAlongRoad(): Float =
         if (nextPlayableSuggested <= playableLevels) {
             // On first entry (or if state is lost), start from the previous completed station
             // so the auto-walk has visible motion after a station finishes.
             if (nextPlayableSuggested > 1) {
-                (nextPlayableSuggested - 2).toFloat().coerceIn(0f, (totalLevels - 1).toFloat())
+                (nextPlayableSuggested - 2).toFloat().coerceIn(0f, maxDinoF)
             } else {
                 0f
             }
         } else {
-            (roadFractions.lastIndex * 0.88f).coerceAtLeast((playableLevels - 1).coerceAtLeast(1) - 1f)
+            // After all playable stations are done, stand at the last station first.
+            baseMaxDinoF.coerceIn(0f, maxDinoF)
         }
     val quickPlayLevel =
         nextPlayableSuggested.coerceAtMost(unlockedLevel).coerceAtMost(playableLevels)
     val completedPlayableCount = completedLevels.count { it in 1..playableLevels }
     val goalSegmentComplete =
         playableLevels < totalLevels &&
-            (1..playableLevels).all { level -> completedLevels.contains(level) }
+            allPlayableComplete
 
     val scope = rememberCoroutineScope()
     var walking by remember { mutableStateOf(false) }
     var walkFrame by remember { mutableIntStateOf(0) }
     // Persist dino position across navigating into/out of stations.
     var savedProgress by rememberSaveable { mutableStateOf<Float?>(null) }
-    val dinoProgress = remember { Animatable(savedProgress ?: idleDinoProgressAlongRoad()) }
+    val dinoProgress = remember(maxDinoF) {
+        val raw = savedProgress
+        val idle = idleDinoProgressAlongRoad()
+        Animatable((raw ?: idle).coerceIn(0f, maxDinoF))
+    }
+    var endWalkFired by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(Unit) {
-        if (savedProgress == null) savedProgress = dinoProgress.value
+        if (savedProgress == null) savedProgress = dinoProgress.value.coerceIn(0f, maxDinoF)
     }
     LaunchedEffect(dinoProgress.value) {
-        savedProgress = dinoProgress.value
+        savedProgress = dinoProgress.value.coerceIn(0f, maxDinoF)
     }
 
     LaunchedEffect(walking) {
@@ -187,17 +219,24 @@ fun JourneyScreen(
         }
     }
 
-    // Auto-walk after a station is completed: stand near the next station.
-    LaunchedEffect(nextPlayableSuggested, completedLevels, unlockedLevel, playableLevels) {
+    // Auto-walk after a station is completed: stand near the next station (and after station 6, walk to the end marker).
+    LaunchedEffect(nextPlayableSuggested, completedLevels, unlockedLevel, playableLevels, maxDinoF, canWalkToEndMarker, baseMaxDinoF) {
         if (walking) return@LaunchedEffect
         val target = nextPlayableSuggested
-        if (target !in 2..playableLevels) return@LaunchedEffect
-        if (target > unlockedLevel) return@LaunchedEffect
-        if (!completedLevels.contains(target - 1)) return@LaunchedEffect
-
-        val dest = (target - 1).toFloat().coerceIn(0f, (totalLevels - 1).toFloat())
+        val dest =
+            when {
+                // Normal station-to-station walk
+                target in 2..playableLevels &&
+                    target <= unlockedLevel &&
+                    completedLevels.contains(target - 1) -> (target - 1).toFloat().coerceIn(0f, maxDinoF)
+                // Chapter end: after finishing the last station, walk to the end marker (egg / cave).
+                canWalkToEndMarker &&
+                    target == (playableLevels + 1) &&
+                    completedLevels.contains(playableLevels) -> maxDinoF
+                else -> return@LaunchedEffect
+            }
         val from = dinoProgress.value
-        if (abs(from - dest) < 0.01f) return@LaunchedEffect
+        if (abs(from - dest) < 0.03f) return@LaunchedEffect
         walking = true
         try {
             val dist = abs(from - dest)
@@ -206,6 +245,18 @@ fun JourneyScreen(
         } finally {
             walking = false
         }
+    }
+
+    // Finale flow: once Dino finishes walking to the end marker, advance to the outro screen.
+    LaunchedEffect(endWalkThenContinue, canWalkToEndMarker, walking, dinoProgress.value, maxDinoF) {
+        if (!endWalkThenContinue) return@LaunchedEffect
+        if (endWalkFired) return@LaunchedEffect
+        if (!canWalkToEndMarker) return@LaunchedEffect
+        if (walking) return@LaunchedEffect
+        if (abs(dinoProgress.value - maxDinoF) > 0.05f) return@LaunchedEffect
+        endWalkFired = true
+        delay(450)
+        onEndWalkComplete?.invoke()
     }
 
     val scroll = rememberScrollState()
@@ -576,26 +627,36 @@ private fun JourneyRoadStrip(
                 )
             }
 
-            // Always place the dino on the road curve itself, using the persisted progress.
-            val (dfx, dfy) = xyAlongRoad(dinoProgress, roadPts)
+            // Dino follows segments between station chips; after the last station is completed, add one extra
+            // “goal” point so he can walk to the end marker (egg / cave) and stand there.
+            val allPlayableCompleteLocal = (1..playableLevels).all { level -> completedLevels.contains(level) }
+            val canWalkToEndMarkerLocal = (playableLevels == totalLevels) && allPlayableCompleteLocal
+            val chainPts =
+                if (canWalkToEndMarkerLocal && roadPts.isNotEmpty()) {
+                    stationPts.take(totalLevels).plus(roadPts.last())
+                } else {
+                    stationPts.take(totalLevels)
+                }
+            val dinoFMax = (chainPts.size - 1).coerceAtLeast(0).toFloat()
+            val (dfx, dfy) = xyAlongStationChain(dinoProgress.coerceIn(0f, dinoFMax), chainPts)
             val dinoRes = if (walking) walkDrawable else R.drawable.dino_idle
+            // Keep the same screen offset while walking and while idle. Previously walking used the
+            // path centerline but idle added an extra X/Y offset, so when the walk finished the dino
+            // snapped “back” toward station 1 (road runs toward decreasing x; +X is that direction).
             val dinoX =
                 with(density) {
+                    // Match station-1 chip clamp even while walking, so idle → walk does not jump right.
                     val dxRaw = dfx * wPx
-                    val dx = if (!walking && nextSuggested == 1) dxRaw.coerceAtMost(maxCenterPx) else dxRaw
-                    if (walking) {
-                        (dx - 44.dp.toPx()).roundToInt()
-                    } else {
-                        // Wait **physically to the right of the station** (screen-right), not on top of it.
-                        val waitOffsetPx = (92.dp).toPx()
-                        (dx - 44.dp.toPx() + waitOffsetPx).roundToInt()
-                    }
+                    val dx = dxRaw.coerceAtMost(maxCenterPx)
+                    // How far to the right of the station chip Dino should wait.
+                    val waitOffsetPx = 66.dp.toPx()
+                    (dx - 44.dp.toPx() + waitOffsetPx).roundToInt()
                 }
             val dinoY =
                 with(density) {
                     val dy = dfy * hPx
-                    // Slightly lower so feet sit on the road while waiting.
-                    ((dy - 64.dp.toPx()) + if (walking) 0f else 26.dp.toPx()).roundToInt()
+                    // Slightly lower so feet sit on the road (same offset while walking so no end snap).
+                    (dy - 64.dp.toPx() + 26.dp.toPx()).roundToInt()
                 }
             if (companionImageRes != null) {
                 Image(

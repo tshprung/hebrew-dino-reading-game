@@ -34,8 +34,9 @@ object Chapter1StationOrder {
                     questionCount = 4,
                     initialGroupIndex = 2,
                     imageMatchAlwaysThreeChoices = true,
+                    // Station 5: keep the card (box) size stable; scale the picture *inside* the card in UI.
                     imageMatchCaptionSizeMultiplier = 1.5f,
-                    imageMatchPictureSizeMultiplier = 2f,
+                    imageMatchPictureSizeMultiplier = 1f,
                 )
             FINALE_PICTURE_LETTER_MATCH ->
                 StationQuizPlan(StationQuizMode.ImageMatch, questionCount = 4, initialGroupIndex = 3)

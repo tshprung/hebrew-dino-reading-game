@@ -6,6 +6,8 @@ object NavRoutes {
     const val StoryIntro = "story_intro"
     const val ChapterLettersIntro = "chapter_letters_intro"
     const val Journey = "journey"
+    /** Episode 1 finale: return to journey, walk to egg, then show outro. */
+    const val JourneyEndWalk = "journey_end_walk"
     const val Level = "level"
     const val Ch2Intro = "ch2_intro"
     const val Ch2Letters = "ch2_letters"

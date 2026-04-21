@@ -30,6 +30,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
@@ -42,9 +43,11 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -62,6 +65,8 @@ fun MatchLetterToWordGame(
     choices: List<LessonChoice>,
     contentKey: Int = 0,
     enabled: Boolean,
+    /** Narrower tiles with more horizontal space between the two columns. */
+    compactWideSpread: Boolean = false,
     onSolved: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -97,20 +102,47 @@ fun MatchLetterToWordGame(
     fun isLockedLetter(letter: String): Boolean = locked.containsKey(letter)
     fun isLockedChoice(choiceId: String): Boolean = locked.values.contains(choiceId)
 
+    // This station is Hebrew-first; enforce RTL so “start/end” and column sides are unambiguous.
+    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
     BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
         val innerW = maxWidth
         val gap = 12.dp
-        val colW = ((innerW - gap) / 2f).coerceAtLeast(140.dp)
+        val baseHalf = (innerW - gap) / 2f
+        // Station 6 request: use screen percent (not cm) for offsets/padding.
+        // Roughly matches "2cm" on phones/tablets without hardcoding physical units.
+        val layoutInset = if (compactWideSpread) innerW * 0.12f else 0.dp
+        val layoutInsetEnd = if (compactWideSpread) innerW * 0.10f else 0.dp
+        val wordColW =
+            if (compactWideSpread) {
+                (baseHalf * 0.5f).coerceAtLeast(56.dp)
+            } else {
+                baseHalf.coerceAtLeast(140.dp)
+            }
+        val letterColW =
+            if (compactWideSpread) {
+                // Station 6 followup: make the letter boxes even narrower.
+                (baseHalf * 0.25f).coerceAtLeast(44.dp)
+            } else {
+                wordColW
+            }
         val tileH = 88.dp
         val tileShape = RoundedCornerShape(22.dp)
+        val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
 
         Box(modifier = Modifier.fillMaxWidth()) {
             Canvas(modifier = Modifier.fillMaxSize()) {
                 locked.forEach { (letter, choiceId) ->
                     val lr = letterRects[letter]
                     val ir = itemRects[choiceId]
-                    val a = lr?.center
-                    val b = ir?.center
+                    // Connect from the “inside edges” (between columns).
+                    val a =
+                        lr?.let {
+                            Offset(if (isRtl) it.left else it.right, it.center.y)
+                        }
+                    val b =
+                        ir?.let {
+                            Offset(if (isRtl) it.right else it.left, it.center.y)
+                        }
                     if (a != null && b != null) {
                         drawLine(
                             color = Color(0xFF2E7D32).copy(alpha = 0.92f),
@@ -136,70 +168,18 @@ fun MatchLetterToWordGame(
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 10.dp)
+                        .padding(
+                            start = (if (compactWideSpread) 4.dp else 10.dp) + layoutInset,
+                            end = (if (compactWideSpread) 4.dp else 10.dp) + layoutInsetEnd,
+                        )
                         .offset { IntOffset(shake.value.roundToInt(), 0) },
-                horizontalArrangement = Arrangement.spacedBy(gap),
+                horizontalArrangement = if (compactWideSpread) Arrangement.SpaceBetween else Arrangement.spacedBy(gap),
                 verticalAlignment = Alignment.Top,
             ) {
+                // Station 6: in RTL, letters appear on the right and words on the left.
                 Column(
-                    modifier = Modifier.width(colW),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    wordColumn.forEach { ch ->
-                        val lockedThis = isLockedChoice(ch.id)
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            modifier =
-                                Modifier
-                                    .width(colW)
-                                    .background(Color.White.copy(alpha = 0.86f), tileShape)
-                                    .border(1.5.dp, Color(0xFF0B2B3D).copy(alpha = if (lockedThis) 0.10f else 0.18f), tileShape)
-                                    .clickable(enabled = enabled && !lockedThis && selectedLetter != null) {
-                                        val picked = selectedLetter ?: return@clickable
-                                        if (picked == ch.letter && !isLockedLetter(picked)) {
-                                            locked[picked] = ch.id
-                                            selectedLetter = null
-                                        } else {
-                                            selectedLetter = null
-                                            scope.launch {
-                                                shake.snapTo(0f)
-                                                shake.animateTo(16f, tween(55))
-                                                shake.animateTo(-12f, tween(55))
-                                                shake.animateTo(8f, tween(55))
-                                                shake.animateTo(0f, tween(80))
-                                            }
-                                        }
-                                    }
-                                    .padding(8.dp)
-                                    .onGloballyPositioned { coords ->
-                                        val p = coords.positionInRoot()
-                                        itemRects[ch.id] = Rect(p, Size(coords.size.width.toFloat(), coords.size.height.toFloat()))
-                                    },
-                        ) {
-                            MatchWordPicture(
-                                choice = ch,
-                                width = colW * 0.86f,
-                                height = 110.dp,
-                                lockedThis = lockedThis,
-                            )
-                            Spacer(modifier = Modifier.height(6.dp))
-                            Text(
-                                text = ch.word,
-                                fontSize = 20.sp,
-                                fontWeight = FontWeight.Black,
-                                color = Color(0xFF0B2B3D),
-                                textAlign = TextAlign.Center,
-                                maxLines = 1,
-                                modifier = Modifier.fillMaxWidth(),
-                            )
-                        }
-                    }
-                }
-
-                Column(
-                    modifier = Modifier.width(colW),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier.width(letterColW),
+                    verticalArrangement = Arrangement.spacedBy(if (compactWideSpread) 60.dp else 12.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     letterColumn.forEach { letter ->
@@ -207,7 +187,7 @@ fun MatchLetterToWordGame(
                         Box(
                             modifier =
                                 Modifier
-                                    .width(colW)
+                                    .width(letterColW)
                                     .height(tileH)
                                     .background(
                                         if (lockedThis) Color(0xFF2E7D32).copy(alpha = 0.22f) else Color.White.copy(alpha = 0.88f),
@@ -236,8 +216,65 @@ fun MatchLetterToWordGame(
                         }
                     }
                 }
+
+                Column(
+                    modifier = Modifier.width(wordColW),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    wordColumn.forEach { ch ->
+                        val lockedThis = isLockedChoice(ch.id)
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier =
+                                Modifier
+                                    .width(wordColW)
+                                    .background(Color.White.copy(alpha = 0.86f), tileShape)
+                                    .border(1.5.dp, Color(0xFF0B2B3D).copy(alpha = if (lockedThis) 0.10f else 0.18f), tileShape)
+                                    .clickable(enabled = enabled && !lockedThis && selectedLetter != null) {
+                                        val picked = selectedLetter ?: return@clickable
+                                        if (picked == ch.letter && !isLockedLetter(picked)) {
+                                            locked[picked] = ch.id
+                                            selectedLetter = null
+                                        } else {
+                                            selectedLetter = null
+                                            scope.launch {
+                                                shake.snapTo(0f)
+                                                shake.animateTo(16f, tween(55))
+                                                shake.animateTo(-12f, tween(55))
+                                                shake.animateTo(8f, tween(55))
+                                                shake.animateTo(0f, tween(80))
+                                            }
+                                        }
+                                    }
+                                    .padding(8.dp)
+                                    .onGloballyPositioned { coords ->
+                                        val p = coords.positionInRoot()
+                                        itemRects[ch.id] = Rect(p, Size(coords.size.width.toFloat(), coords.size.height.toFloat()))
+                                    },
+                        ) {
+                            MatchWordPicture(
+                                choice = ch,
+                                width = wordColW * 0.86f,
+                                height = 110.dp,
+                                lockedThis = lockedThis,
+                            )
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Text(
+                                text = ch.word,
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.Black,
+                                color = Color(0xFF0B2B3D),
+                                textAlign = TextAlign.Center,
+                                maxLines = 1,
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                        }
+                    }
+                }
             }
         }
+    }
     }
 }
 

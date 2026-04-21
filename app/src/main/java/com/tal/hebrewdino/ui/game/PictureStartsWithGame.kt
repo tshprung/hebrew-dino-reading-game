@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
@@ -26,6 +27,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
@@ -46,6 +49,15 @@ fun PictureStartsWithGame(
     question: Question.PictureStartsWithQuestion,
     enabled: Boolean,
     shakePx: Float,
+    pictureImageHeight: Dp = 140.dp,
+    /** Scales only the prompt word text (under the picture). */
+    promptWordSizeMultiplier: Float = 1f,
+    /** Max width for the picture card. If null, uses a reasonable default. */
+    pictureFrameMaxWidthFraction: Float? = null,
+    /** Minimum width for the picture card (so very small screens don't collapse it). */
+    pictureFrameMinWidth: Dp = 200.dp,
+    /** Scales picture/emoji inside the frame, not the frame itself. */
+    pictureInnerScale: (word: String, tileDrawable: Int) -> Float = { _, _ -> 1f },
     onPickLetter: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -63,32 +75,43 @@ fun PictureStartsWithGame(
             textAlign = TextAlign.Center,
         )
         Spacer(modifier = Modifier.height(12.dp))
-        Column(
-            modifier =
-                Modifier
-                    .widthIn(max = 280.dp)
-                    .border(2.dp, Color(0xFF0B2B3D).copy(alpha = 0.18f), RoundedCornerShape(18.dp))
-                    .background(Color.White.copy(alpha = 0.92f), RoundedCornerShape(18.dp))
-                    .padding(horizontal = 10.dp, vertical = 10.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            LessonWordPictureTile(
-                word = question.word,
-                tileDrawable = question.tileDrawable,
-                tintArgb = question.tintArgb,
-                imageHeight = 140.dp,
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = question.word,
-                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Black),
-                color = Color(0xFF0B2B3D),
-                textAlign = TextAlign.Center,
-            )
+        BoxWithConstraints(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+            val frameMaxW =
+                pictureFrameMaxWidthFraction?.let { f ->
+                    (maxWidth * f.coerceIn(0.20f, 1f)).coerceAtLeast(pictureFrameMinWidth)
+                } ?: 280.dp
+            Column(
+                modifier =
+                    Modifier
+                        .widthIn(max = frameMaxW)
+                        .border(2.dp, Color(0xFF0B2B3D).copy(alpha = 0.18f), RoundedCornerShape(18.dp))
+                        .background(Color.White.copy(alpha = 0.92f), RoundedCornerShape(18.dp))
+                        .padding(horizontal = 10.dp, vertical = 10.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                LessonWordPictureTile(
+                    word = question.word,
+                    tileDrawable = question.tileDrawable,
+                    tintArgb = question.tintArgb,
+                    imageHeight = pictureImageHeight,
+                    innerScale = pictureInnerScale(question.word, question.tileDrawable),
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = question.word,
+                    style =
+                        MaterialTheme.typography.headlineSmall
+                            .copy(fontWeight = FontWeight.Black)
+                            .copy(fontSize = MaterialTheme.typography.headlineSmall.fontSize * promptWordSizeMultiplier),
+                    color = Color(0xFF0B2B3D),
+                    textAlign = TextAlign.Center,
+                )
+            }
         }
         Spacer(modifier = Modifier.height(16.dp))
         FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally),
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(20.dp, Alignment.CenterHorizontally),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             question.optionLetters.forEach { letter ->
@@ -110,10 +133,11 @@ private fun LessonWordPictureTile(
     tileDrawable: Int,
     tintArgb: Int,
     imageHeight: Dp,
+    innerScale: Float,
 ) {
     val density = LocalDensity.current
     BoxWithConstraints(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-        val tileW = maxWidth.coerceAtMost(220.dp)
+        val tileW = maxWidth
         if (tileDrawable == R.drawable.lesson_word_tile) {
             Box(
                 modifier =
@@ -146,7 +170,9 @@ private fun LessonWordPictureTile(
             val emoji = LessonWordIllustrations.emojiForWord(word)
             val emojiSp =
                 with(density) {
-                    (tileW.toPx() * 0.34f).coerceIn(40f * fontScale, 72f * fontScale).toSp()
+                    ((tileW.toPx() * 0.34f) * innerScale.coerceIn(0.6f, 1.9f))
+                        .coerceIn(40f * fontScale, 120f * fontScale)
+                        .toSp()
                 }
             Box(
                 modifier =
@@ -166,12 +192,28 @@ private fun LessonWordPictureTile(
                 Text(text = emoji, fontSize = emojiSp, textAlign = TextAlign.Center)
             }
         } else {
-            Image(
-                painter = painterResource(id = tileDrawable),
-                contentDescription = word,
-                modifier = Modifier.size(width = tileW, height = imageHeight),
-                contentScale = ContentScale.Fit,
-            )
+            Box(
+                modifier =
+                    Modifier
+                        .size(width = tileW, height = imageHeight)
+                        .clip(RoundedCornerShape(18.dp)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Image(
+                    painter = painterResource(id = tileDrawable),
+                    contentDescription = word,
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .graphicsLayer {
+                                val s = innerScale.coerceIn(0.6f, 1.9f)
+                                scaleX = s
+                                scaleY = s
+                                transformOrigin = TransformOrigin(0.5f, 0.5f)
+                            },
+                    contentScale = ContentScale.Fit,
+                )
+            }
         }
     }
 }

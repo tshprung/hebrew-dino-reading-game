@@ -63,6 +63,8 @@ fun FindLetterGridGame(
     onCompleted: () -> Unit,
     enabled: Boolean = true,
     contentKey: Int = 0,
+    /** Scales only the letter glyphs inside grid cells, not cell size or the header chip. */
+    gridLetterSizeMultiplier: Float = 1f,
     modifier: Modifier = Modifier,
 ) {
     val scope = rememberCoroutineScope()
@@ -169,8 +171,9 @@ fun FindLetterGridGame(
                 minOf(cellSideByWidth, cellSideByHeight).coerceAtLeast(32.dp)
             val gridW = cellSide * cols + gap * (cols - 1)
             val gridH = cellSide * rows + gap * (rows - 1)
-            // Keep letters readable; shrink the *squares* to fit landscape.
-            val letterSp = if (cols >= 4) 34.sp else 40.sp
+            // Keep letters readable; shrink the *squares* to fit landscape. Scale glyphs only via [gridLetterSizeMultiplier].
+            val letterSp =
+                ((if (cols >= 4) 34f else 40f) * gridLetterSizeMultiplier.coerceIn(0.75f, 1.75f)).sp
 
             LazyVerticalGrid(
                 columns = GridCells.Fixed(cols),

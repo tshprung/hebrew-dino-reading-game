@@ -165,19 +165,19 @@ private fun ForestStoryScreen(
                     Spacer(modifier = Modifier.height(14.dp))
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
                         AnimatedTalkingCharacter(
-                            idleRes = R.drawable.mom_idle,
-                            talkFrameResIds = momTalkFrames,
-                            isTalking = narrationPlaying,
-                            modifier = Modifier.size(92.dp),
-                            contentDescription = "אמא דינוזאור",
-                        )
-                        Spacer(modifier = Modifier.width(14.dp))
-                        AnimatedTalkingCharacter(
                             idleRes = R.drawable.dino_idle,
                             talkFrameResIds = dinoTalkFrames,
                             isTalking = narrationPlaying,
                             modifier = Modifier.size(92.dp),
                             contentDescription = dinoContentDescription,
+                        )
+                        Spacer(modifier = Modifier.width(14.dp))
+                        AnimatedTalkingCharacter(
+                            idleRes = R.drawable.mom_idle,
+                            talkFrameResIds = momTalkFrames,
+                            isTalking = narrationPlaying,
+                            modifier = Modifier.size(92.dp),
+                            contentDescription = "אמא דינוזאור",
                         )
                     }
                 }
