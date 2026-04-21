@@ -68,6 +68,7 @@ import com.tal.hebrewdino.ui.audio.SoundPoolPlayer
 import com.tal.hebrewdino.ui.audio.VoicePlayer
 import com.tal.hebrewdino.ui.domain.AnswerResult
 import com.tal.hebrewdino.ui.domain.Chapter1Station4PictureInnerScale
+import com.tal.hebrewdino.ui.domain.Chapter1Station5And6ImageMatchInnerScale
 import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
 import com.tal.hebrewdino.ui.domain.LevelSession
 import com.tal.hebrewdino.ui.domain.LessonWordCatalog
@@ -588,13 +589,7 @@ fun GameScreen(
                                             chapterId == 1 && stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH,
                                         innerPictureScaleForChoice = { choice ->
                                             if (chapterId == 1 && stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH) {
-                                                val isHouse = choice.word == "בית" || choice.id == "w_ב_1"
-                                                val isMedusa = choice.word == "מדוזה" || choice.id == "w_מ_3"
-                                                when {
-                                                    isMedusa -> (2f / 3f)
-                                                    isHouse -> 1f
-                                                    else -> 2f
-                                                }
+                                                Chapter1Station5And6ImageMatchInnerScale.innerScale(choice)
                                             } else {
                                                 when {
                                                     choice.word == "מדוזה" || choice.id == "w_מ_3" || choice.tileDrawable == R.drawable.lesson_pic_medusa -> 0.5f
@@ -638,14 +633,7 @@ fun GameScreen(
                                             // Station 5 request: all pictures should look same-size as the heart.
                                             // Use Crop in the card and keep per-choice scaling at 1x.
                                             if (chapterId == 1 && stationId == Chapter1StationOrder.PICTURE_PICK_ALL) {
-                                                // Station 5: ONLY house should be half size.
-                                                val isHouse = choice.word == "בית" || choice.id == "w_ב_1"
-                                                val isMedusa = choice.word == "מדוזה" || choice.id == "w_מ_3"
-                                                when {
-                                                    isMedusa -> (2f / 3f)
-                                                    isHouse -> 1f
-                                                    else -> 2f
-                                                }
+                                                Chapter1Station5And6ImageMatchInnerScale.innerScale(choice)
                                             } else {
                                                 1f
                                             }

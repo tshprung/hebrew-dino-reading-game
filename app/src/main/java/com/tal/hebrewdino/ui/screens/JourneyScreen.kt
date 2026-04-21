@@ -70,6 +70,7 @@ import androidx.compose.ui.unit.dp
 import com.tal.hebrewdino.R
 import com.tal.hebrewdino.ui.components.learning.DinoNestMark
 import com.tal.hebrewdino.ui.domain.Chapter1Config
+import com.tal.hebrewdino.ui.domain.JourneyEndMarkerIdle
 import com.tal.hebrewdino.ui.domain.JourneyMapLayout
 import androidx.compose.ui.draw.scale
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -185,13 +186,12 @@ fun JourneyScreen(
                 0f
             }
         } else {
-            // After all playable stations are done, either stand at the last station (before finale walk),
-            // or stay parked at the end marker (egg/cave) once it's been reached.
-            if (canWalkToEndMarker && endMarkerReached) {
-                maxDinoF
-            } else {
-                baseMaxDinoF.coerceIn(0f, maxDinoF)
-            }
+            JourneyEndMarkerIdle.idleProgressAfterAllPlayableStationsComplete(
+                canWalkToEndMarker = canWalkToEndMarker,
+                endMarkerReached = endMarkerReached,
+                baseMaxDinoF = baseMaxDinoF,
+                maxDinoF = maxDinoF,
+            )
         }
     val quickPlayLevel =
         nextPlayableSuggested.coerceAtMost(unlockedLevel).coerceAtMost(playableLevels)
@@ -229,7 +229,7 @@ fun JourneyScreen(
     // Auto-walk after a station is completed: stand near the next station (and after station 6, walk to the end marker).
     LaunchedEffect(nextPlayableSuggested, completedLevels, unlockedLevel, playableLevels, maxDinoF, canWalkToEndMarker, baseMaxDinoF, endMarkerReached) {
         if (walking) return@LaunchedEffect
-        if (endMarkerReached && canWalkToEndMarker) return@LaunchedEffect
+        if (JourneyEndMarkerIdle.suppressRepeatEndMarkerAutoWalk(endMarkerReached, canWalkToEndMarker)) return@LaunchedEffect
         val target = nextPlayableSuggested
         val dest =
             when {
