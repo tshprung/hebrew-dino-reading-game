@@ -111,6 +111,10 @@ private val stationFractions = JourneyMapLayout.stationFractions
 enum class JourneyEndMarker {
     Egg,
     HomeCave,
+    PinkEgg,
+    PurpleEgg,
+    /** Chapter 4: distinct goal after all six stations (smart reinforcement arc). */
+    BigEgg,
 }
 
 private fun xyAlongRoad(f: Float, points: List<Pair<Float, Float>>): Pair<Float, Float> {
@@ -589,6 +593,27 @@ private fun JourneyRoadStrip(
                                 DinoNestMark()
                             }
                         }
+                    JourneyEndMarker.PinkEgg ->
+                        Image(
+                            painter = painterResource(id = R.drawable.egg_pink),
+                            contentDescription = null,
+                            modifier = Modifier.size(110.dp).scale(goalPulse),
+                            contentScale = ContentScale.Fit,
+                        )
+                    JourneyEndMarker.PurpleEgg ->
+                        Image(
+                            painter = painterResource(id = R.drawable.egg_purple),
+                            contentDescription = null,
+                            modifier = Modifier.size(110.dp).scale(goalPulse),
+                            contentScale = ContentScale.Fit,
+                        )
+                    JourneyEndMarker.BigEgg ->
+                        Image(
+                            painter = painterResource(id = R.drawable.finish_marker_big_egg),
+                            contentDescription = null,
+                            modifier = Modifier.size(118.dp).scale(goalPulse),
+                            contentScale = ContentScale.Fit,
+                        )
                 }
             }
 
@@ -724,6 +749,9 @@ private fun JourneyStationMarker(
                 when (endMarker) {
                     JourneyEndMarker.Egg -> R.drawable.finish_marker_egg
                     JourneyEndMarker.HomeCave -> R.drawable.egg_found
+                    JourneyEndMarker.PinkEgg -> R.drawable.egg_pink
+                    JourneyEndMarker.PurpleEgg -> R.drawable.egg_purple
+                    JourneyEndMarker.BigEgg -> R.drawable.finish_marker_big_egg
                 }
             completed -> R.drawable.egg_found
             else -> R.drawable.stop_marker

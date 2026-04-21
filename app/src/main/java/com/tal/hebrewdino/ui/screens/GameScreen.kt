@@ -241,7 +241,7 @@ fun GameScreen(
         scope.launch {
             inputLocked = true
             dinoVisual = DinoVisual.TryAgain
-            if (chapterId == 2) {
+            if (chapterId == 2 || chapterId == 4) {
                 // Tiny “slip” in the mountains: a playful stumble with no punishment.
                 dinoSlip.snapTo(0f)
                 dinoTilt.snapTo(0f)
@@ -506,7 +506,7 @@ fun GameScreen(
                                     enabled = !inputLocked,
                                     shakePx = optionsShake.value,
                                     pictureImageHeight =
-                                        if (chapterId == 1 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
+                                        if (chapterId in 1..4 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
                                             // Station 4: keep the frame compact so the word + letters remain visible.
                                             160.dp
                                         } else {
@@ -514,21 +514,21 @@ fun GameScreen(
                                         },
                                     // Station 4 request: word + image doubled, frame (box) slightly smaller.
                                     promptWordSizeMultiplier =
-                                        if (chapterId == 1 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
+                                        if (chapterId in 1..4 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
                                             2f
                                         } else {
                                             1f
                                         },
                                     // Station 4 screenshots: the outer card should be wider (more rectangle).
                                     pictureFrameMaxWidthFraction =
-                                        if (chapterId == 1 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
+                                        if (chapterId in 1..4 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
                                             // Station 4: frame (box) ~20% smaller.
                                             0.25f
                                         } else {
                                             null
                                         },
                                     pictureFrameMinWidth =
-                                        if (chapterId == 1 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
+                                        if (chapterId in 1..4 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
                                             // Station 4: frame (box) ~20% smaller.
                                             112.dp
                                         } else {
@@ -537,7 +537,7 @@ fun GameScreen(
                                     // Normalize “perceived” picture size: some assets (medusa/house) read too large,
                                     // while emoji/placeholder art reads too small.
                                     pictureInnerScale = { word, tileDrawable ->
-                                        if (chapterId == 1 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
+                                        if (chapterId in 1..4 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
                                             Chapter1Station4PictureInnerScale.likeStation5(word, tileDrawable)
                                         } else {
                                             1f
@@ -586,9 +586,9 @@ fun GameScreen(
                                         contentKey = session.currentIndex,
                                         enabled = !inputLocked,
                                         compactWideSpread =
-                                            chapterId == 1 && stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH,
+                                            chapterId in 1..4 && stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH,
                                         innerPictureScaleForChoice = { choice ->
-                                            if (chapterId == 1 && stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH) {
+                                            if (chapterId in 1..4 && stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH) {
                                                 Chapter1Station5And6ImageMatchInnerScale.innerScale(choice)
                                             } else {
                                                 when {
@@ -623,7 +623,7 @@ fun GameScreen(
                                         // Episode 1 station 5: caption text +20%.
                                         captionSizeMultiplier =
                                             plan.imageMatchCaptionSizeMultiplier *
-                                                if (chapterId == 1 && stationId == Chapter1StationOrder.PICTURE_PICK_ALL) {
+                                                if (chapterId in 1..4 && stationId == Chapter1StationOrder.PICTURE_PICK_ALL) {
                                                     1.2f
                                                 } else {
                                                     1f
@@ -632,7 +632,7 @@ fun GameScreen(
                                         innerPictureScaleForChoice = { choice ->
                                             // Station 5 request: all pictures should look same-size as the heart.
                                             // Use Crop in the card and keep per-choice scaling at 1x.
-                                            if (chapterId == 1 && stationId == Chapter1StationOrder.PICTURE_PICK_ALL) {
+                                            if (chapterId in 1..4 && stationId == Chapter1StationOrder.PICTURE_PICK_ALL) {
                                                 Chapter1Station5And6ImageMatchInnerScale.innerScale(choice)
                                             } else {
                                                 1f
@@ -698,8 +698,8 @@ fun GameScreen(
                     DinoVisual.Jump -> jumpFrames[jumpFrameIndex.coerceIn(0, jumpFrames.lastIndex)]
                 }
             val talkFrames =
-                if (chapterId == 2) {
-                    // “Walk” feel in mountains between rounds.
+                if (chapterId in 2..4) {
+                    // “Walk” feel on chapter roads between rounds.
                     listOf(R.drawable.dino_walk_0, R.drawable.dino_walk_1, R.drawable.dino_walk_2, R.drawable.dino_walk_3)
                 } else {
                     listOf(R.drawable.dino_talk_0, R.drawable.dino_talk_1, R.drawable.dino_talk_2, R.drawable.dino_talk_3)
@@ -707,7 +707,7 @@ fun GameScreen(
             AnimatedTalkingCharacter(
                 idleRes = dinoDrawable,
                 talkFrameResIds = talkFrames,
-                isTalking = dinoTalking || (chapterId == 2 && inputLocked && dinoVisual == DinoVisual.Jump),
+                isTalking = dinoTalking || (chapterId in 2..4 && inputLocked && dinoVisual == DinoVisual.Jump),
                 modifier =
                     Modifier
                         .offset { IntOffset((dinoForward.value + dinoSlip.value).toInt(), 0) }

@@ -54,10 +54,12 @@ class LevelSession(
     }
 
     private fun episodeOptionLetters(): List<String> =
-        if (letterPoolSpec === Chapter1LetterPoolSpec) {
-            Chapter1Config.letters
-        } else {
-            letterPoolSpec.groups.flatten().distinct()
+        when (letterPoolSpec) {
+            Chapter1LetterPoolSpec -> Chapter1Config.letters
+            Chapter2LetterPoolSpec -> Chapter2Config.letters
+            Chapter3LetterPoolSpec -> Chapter3Config.letters
+            Chapter4LetterPoolSpec -> Chapter4Config.letters
+            else -> letterPoolSpec.groups.flatten().distinct()
         }
 
     val totalQuestions: Int get() = questionCount

@@ -19,8 +19,8 @@ object ChapterStartsWithPrompts {
             StartsWithPrompt(R.drawable.finish_marker_egg, "מסע", "מ"),
             StartsWithPrompt(R.drawable.stop_marker, "לב", "ל"),
             StartsWithPrompt(R.drawable.egg_found, "קוף", "ק"),
-            StartsWithPrompt(R.drawable.stop_marker, "טבע", "ט"),
-            StartsWithPrompt(R.drawable.finish_marker_egg, "נמל", "נ"),
+            StartsWithPrompt(R.drawable.stop_marker, "טוסט", "ט"),
+            StartsWithPrompt(R.drawable.finish_marker_egg, "נמלה", "נ"),
             StartsWithPrompt(R.drawable.egg_found, "הר", "ה"),
             StartsWithPrompt(R.drawable.stop_marker, "רכב", "ר"),
         )

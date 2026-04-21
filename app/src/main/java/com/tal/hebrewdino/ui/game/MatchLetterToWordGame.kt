@@ -292,6 +292,7 @@ fun MatchLetterToWordGame(
                     ) {
                         wordColumn.forEach { ch ->
                             val lockedThis = isLockedChoice(ch.id)
+                            val selectedThis = selectedChoiceId == ch.id
                             LessonChoiceCard(
                                 choice = ch,
                                 enabled = enabled && !lockedThis,
@@ -302,6 +303,7 @@ fun MatchLetterToWordGame(
                                 captionFontSize = captionSp,
                                 innerPictureScale = innerPictureScaleForChoice(ch),
                                 isCorrectPick = lockedThis,
+                                isSelected = !lockedThis && selectedThis,
                                 onClick = {
                                     if (!enabled || lockedThis) return@LessonChoiceCard
                                     val picked = selectedLetter
@@ -335,7 +337,8 @@ fun MatchLetterToWordGame(
                                         .height(tileH)
                                         .background(
                                             when {
-                                                lockedThis -> Color(0xFF2E7D32).copy(alpha = 0.22f)
+                                                // Keep a solid light face after match; thin green tint reads as “done” without losing the tile.
+                                                lockedThis -> Color(0xFFE8F5E9).copy(alpha = 0.98f)
                                                 selected -> Color(0xFFC8E6C9).copy(alpha = 0.95f)
                                                 else -> Color.White.copy(alpha = 0.88f)
                                             },
@@ -416,7 +419,7 @@ fun MatchLetterToWordGame(
                                         .height(tileH)
                                         .background(
                                             when {
-                                                lockedThis -> Color(0xFF2E7D32).copy(alpha = 0.22f)
+                                                lockedThis -> Color(0xFFE8F5E9).copy(alpha = 0.98f)
                                                 selected -> Color(0xFFC8E6C9).copy(alpha = 0.95f)
                                                 else -> Color.White.copy(alpha = 0.88f)
                                             },
@@ -462,6 +465,7 @@ fun MatchLetterToWordGame(
                     ) {
                         wordColumn.forEach { ch ->
                             val lockedThis = isLockedChoice(ch.id)
+                            val selectedThis = selectedChoiceId == ch.id
                             // Match station 5 sizing for the card inside the word column.
                             val cardW = (wordColW * 0.86f).coerceAtMost(168.dp).coerceAtLeast(72.dp)
                             val cardH = cardW * (110f / 160f)
@@ -478,6 +482,7 @@ fun MatchLetterToWordGame(
                                 captionFontSize = captionSp,
                                 innerPictureScale = innerPictureScaleForChoice(ch),
                                 isCorrectPick = lockedThis,
+                                isSelected = !lockedThis && selectedThis,
                                 onClick = {
                                     if (!enabled || lockedThis) return@LessonChoiceCard
                                     val picked = selectedLetter
