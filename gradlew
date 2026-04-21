@@ -13,6 +13,9 @@
 APP_NAME="Gradle"
 APP_BASE_NAME=`basename "$0"`
 
+# Resolve the directory of this script (works on Linux/macOS; ignored on Windows where gradlew.bat is used).
+APP_HOME=$(cd "$(dirname "$0")" && pwd)
+
 MAX_FD="maximum"
 
 warn () {
@@ -37,7 +40,7 @@ case "`uname`" in
   NONSTOP* ) nonstop=true ;;
 esac
 
-CLASSPATH=$APP_HOME/gradle/wrapper/gradle-wrapper.jar
+CLASSPATH="$APP_HOME/gradle/wrapper/gradle-wrapper.jar"
 
 if [ -n "$JAVA_HOME" ] ; then
     if [ -x "$JAVA_HOME/jre/sh/java" ] ; then
