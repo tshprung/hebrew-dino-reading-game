@@ -67,6 +67,8 @@ fun MatchLetterToWordGame(
     enabled: Boolean,
     /** Narrower tiles with more horizontal space between the two columns. */
     compactWideSpread: Boolean = false,
+    /** Persistent instructions shown at the top (RTL). */
+    instructions: String = "חברו מילה לתמונה",
     onSolved: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -80,13 +82,22 @@ fun MatchLetterToWordGame(
     val letterRects = remember { mutableStateMapOf<String, Rect>() }
     val itemRects = remember { mutableStateMapOf<String, Rect>() } // choiceId -> rect
 
-    val wordColumn =
+    val (wordColumn, letterColumn) =
         remember(maxPairs, contentKey) {
-            maxPairs.shuffled(Random(contentKey * 7919L + maxPairs.hashCode()))
-        }
-    val letterColumn =
-        remember(maxPairs, contentKey) {
-            maxPairs.map { it.letter }.distinct().shuffled(Random(contentKey * 3571L + 17))
+            val words = maxPairs.shuffled(Random(contentKey * 7919L + maxPairs.hashCode()))
+            val baseLetters = maxPairs.map { it.letter }.distinct()
+            // Avoid accidental “same index” alignment between letter i and word i (feels patterned).
+            var letters = baseLetters.shuffled(Random(contentKey * 3571L + 17))
+            repeat(12) { k ->
+                val aligned =
+                    letters.indices.any { i ->
+                        val w = words.getOrNull(i) ?: return@any false
+                        letters[i] == w.letter
+                    }
+                if (!aligned) return@repeat
+                letters = baseLetters.shuffled(Random(contentKey * 3571L + 17 + k * 31))
+            }
+            words to letters
         }
 
     LaunchedEffect(locked.size) {
@@ -104,7 +115,17 @@ fun MatchLetterToWordGame(
 
     // This station is Hebrew-first; enforce RTL so “start/end” and column sides are unambiguous.
     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
-    BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
+    Column(modifier = modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(
+            text = instructions,
+            fontSize = if (compactWideSpread) 22.sp else 26.sp,
+            fontWeight = FontWeight.Black,
+            color = Color(0xFF0B2B3D),
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(top = 6.dp, bottom = 10.dp, start = 12.dp, end = 12.dp),
+        )
+
+    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
         val innerW = maxWidth
         val gap = 12.dp
         val baseHalf = (innerW - gap) / 2f
@@ -145,7 +166,7 @@ fun MatchLetterToWordGame(
                         }
                     if (a != null && b != null) {
                         drawLine(
-                            color = Color(0xFF2E7D32).copy(alpha = 0.92f),
+                            color = Color(0xFF7E57C2).copy(alpha = 0.95f),
                             start = a,
                             end = b,
                             strokeWidth = 10f,
@@ -153,7 +174,7 @@ fun MatchLetterToWordGame(
                         )
                         if (glow.value > 0f) {
                             drawLine(
-                                color = Color(0xFFFFD54F).copy(alpha = 0.55f * glow.value),
+                                color = Color(0xFFB39DDB).copy(alpha = 0.70f * glow.value),
                                 start = a,
                                 end = b,
                                 strokeWidth = 18f,
@@ -184,18 +205,27 @@ fun MatchLetterToWordGame(
                 ) {
                     letterColumn.forEach { letter ->
                         val lockedThis = isLockedLetter(letter)
+                        val selected = selectedLetter == letter
                         Box(
                             modifier =
                                 Modifier
                                     .width(letterColW)
                                     .height(tileH)
                                     .background(
-                                        if (lockedThis) Color(0xFF2E7D32).copy(alpha = 0.22f) else Color.White.copy(alpha = 0.88f),
+                                        when {
+                                            lockedThis -> Color(0xFF2E7D32).copy(alpha = 0.22f)
+                                            selected -> Color(0xFFC8E6C9).copy(alpha = 0.95f)
+                                            else -> Color.White.copy(alpha = 0.88f)
+                                        },
                                         tileShape,
                                     )
                                     .border(
                                         2.dp,
-                                        if (lockedThis) Color(0xFF2E7D32).copy(alpha = 0.85f) else Color(0xFF0B2B3D).copy(alpha = 0.14f),
+                                        when {
+                                            lockedThis -> Color(0xFF2E7D32).copy(alpha = 0.85f)
+                                            selected -> Color(0xFF2E7D32).copy(alpha = 0.70f)
+                                            else -> Color(0xFF0B2B3D).copy(alpha = 0.14f)
+                                        },
                                         tileShape,
                                     )
                                     .clickable(enabled = enabled && !lockedThis) {
@@ -224,12 +254,16 @@ fun MatchLetterToWordGame(
                 ) {
                     wordColumn.forEach { ch ->
                         val lockedThis = isLockedChoice(ch.id)
+                        val selectableNow = selectedLetter != null && enabled && !lockedThis
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             modifier =
                                 Modifier
                                     .width(wordColW)
-                                    .background(Color.White.copy(alpha = 0.86f), tileShape)
+                                    .background(
+                                        if (selectableNow) Color(0xFFEDE7F6).copy(alpha = 0.95f) else Color.White.copy(alpha = 0.86f),
+                                        tileShape,
+                                    )
                                     .border(1.5.dp, Color(0xFF0B2B3D).copy(alpha = if (lockedThis) 0.10f else 0.18f), tileShape)
                                     .clickable(enabled = enabled && !lockedThis && selectedLetter != null) {
                                         val picked = selectedLetter ?: return@clickable
@@ -276,6 +310,7 @@ fun MatchLetterToWordGame(
         }
     }
     }
+    }
 }
 
 @Composable
@@ -320,7 +355,7 @@ private fun MatchWordPicture(
             val emoji = LessonWordIllustrations.emojiForWord(choice.word)
             val emojiSp =
                 with(density) {
-                    (width.toPx() * 0.34f).coerceIn(40f * fontScale, 72f * fontScale).toSp()
+                    (height.toPx() * 0.55f).coerceIn(40f * fontScale, 72f * fontScale).toSp()
                 }
             Box(
                 modifier =
@@ -341,11 +376,15 @@ private fun MatchWordPicture(
             }
         }
         else -> {
+            // Use Crop to normalize padding differences between assets (so all pictures read the same size).
             Image(
                 painter = painterResource(id = choice.tileDrawable),
                 contentDescription = choice.word,
-                modifier = Modifier.size(width = width, height = height),
-                contentScale = ContentScale.Fit,
+                modifier =
+                    Modifier
+                        .size(width = width, height = height)
+                        .clip(RoundedCornerShape(18.dp)),
+                contentScale = ContentScale.Crop,
                 alpha = if (lockedThis) 0.55f else 1f,
             )
         }

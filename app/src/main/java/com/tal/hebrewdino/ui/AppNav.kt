@@ -367,21 +367,14 @@ fun AppNav() {
                     },
                 suppressInGameDinoProgress = completedLevels.contains(levelId),
                 onComplete = { completedLevelId, correctCount, mistakeCount ->
-                    val firstTime = !completedLevels.contains(completedLevelId)
                     scope.launch {
                         progress.markCompleted(completedLevelId)
                         progress.unlockAtLeast(
                             (completedLevelId + 1).coerceAtMost(Chapter1Config.STATION_COUNT),
                         )
                     }
-                    if (completedLevelId >= Chapter1Config.STATION_COUNT && firstTime) {
-                        // Episode 1 finale: go back to journey, walk to egg, then show outro.
-                        navController.navigate(NavRoutes.JourneyEndWalk) {
-                            popUpTo(NavRoutes.Journey) { inclusive = true }
-                        }
-                    } else {
-                        navController.navigate("${NavRoutes.Reward}/$completedLevelId/$correctCount/$mistakeCount")
-                    }
+                    // Always show the reward screen; finale flow continues after reward.
+                    navController.navigate("${NavRoutes.Reward}/$completedLevelId/$correctCount/$mistakeCount")
                 },
             )
         }
@@ -404,7 +397,9 @@ fun AppNav() {
                 onBackToMap = {
                     val isChapterEnd = levelId >= Chapter1Config.STATION_COUNT
                     if (isChapterEnd && !beachOutroSeen) {
-                        navController.navigate(NavRoutes.StoryOutro) {
+                        // Episode 1 finale: after reward, return to journey to watch Dino walk to the egg,
+                        // then JourneyEndWalk will show the outro summary screen.
+                        navController.navigate(NavRoutes.JourneyEndWalk) {
                             popUpTo(NavRoutes.Journey) { inclusive = true }
                         }
                     } else {

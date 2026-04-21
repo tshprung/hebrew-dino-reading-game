@@ -530,12 +530,8 @@ fun GameScreen(
                                     // while emoji/placeholder art reads too small.
                                     pictureInnerScale = { word, tileDrawable ->
                                         if (chapterId == 1 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
-                                            when {
-                                                word == "מדוזה" || tileDrawable == R.drawable.lesson_pic_medusa -> 0.72f
-                                                word == "בית" || tileDrawable == R.drawable.lesson_pic_bait -> 0.76f
-                                                tileDrawable == R.drawable.lesson_pic_placeholder -> 1.45f
-                                                else -> 1f
-                                            }
+                                            // Station 4 request: all pictures should be the same perceived size as meduza.
+                                            0.72f
                                         } else {
                                             1f
                                         }
@@ -584,6 +580,7 @@ fun GameScreen(
                                         enabled = !inputLocked,
                                         compactWideSpread =
                                             chapterId == 1 && stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH,
+                                        instructions = "חברו אות למילה ולתמונה",
                                         onSolved = {
                                             if (!consumeTapCooldown()) return@MatchLetterToWordGame
                                             scope.launch {
@@ -619,15 +616,8 @@ fun GameScreen(
                                             // Station 5 request: all pictures should look same-size as the heart.
                                             // Use Crop in the card and keep per-choice scaling at 1x.
                                             if (chapterId == 1 && stationId == Chapter1StationOrder.PICTURE_PICK_ALL) {
-                                                val isHouse = choice.word == "בית" || choice.id == "w_ב_1"
-                                                val isMedusa = choice.word == "מדוזה" || choice.id == "w_מ_3"
-                                                when {
-                                                    // Station 5 followup: these two assets read visually larger after Crop.
-                                                    isMedusa -> 0.425f
-                                                    isHouse -> 0.44f
-                                                    // Station 5: everything else 2× bigger inside same card.
-                                                    else -> 2f
-                                                }
+                                                // Station 5: ALL pictures same perceived scale as the heart (including house/meduza).
+                                                2f
                                             } else {
                                                 1f
                                             }
