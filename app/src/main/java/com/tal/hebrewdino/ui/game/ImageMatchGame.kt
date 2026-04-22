@@ -53,6 +53,9 @@ fun ImageMatchGame(
     contentKey: Int,
     enabled: Boolean,
     shakePx: Float,
+    /** After 2 wrong taps, pulse the correct answer (subtle hint). */
+    hintCorrectChoiceId: String? = null,
+    hintPulseEpoch: Int = 0,
     onAttempt: (String) -> Boolean,
     /** When false, cards show only the picture (for pre-readers). */
     showWordCaptions: Boolean = true,
@@ -119,6 +122,12 @@ fun ImageMatchGame(
                 ) {
                     question.choices.forEach { choice ->
                         val scale = remember(choice.id, contentKey) { Animatable(1f) }
+                        LaunchedEffect(hintPulseEpoch, hintCorrectChoiceId, choice.id, contentKey) {
+                            if (hintPulseEpoch <= 0 || hintCorrectChoiceId != choice.id) return@LaunchedEffect
+                            scale.snapTo(1f)
+                            scale.animateTo(1.14f, tween(120))
+                            scale.animateTo(1f, spring(dampingRatio = 0.55f, stiffness = 420f))
+                        }
                         val captionSp =
                             with(density) {
                                 (cardW.toPx() * 0.22f * captionSizeMultiplier).coerceIn(

@@ -21,6 +21,8 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -38,6 +40,10 @@ import com.tal.hebrewdino.ui.components.learning.LessonChoiceCard
 import com.tal.hebrewdino.ui.domain.LessonChoice
 import com.tal.hebrewdino.ui.domain.Question
 import com.tal.hebrewdino.ui.layout.ScreenFit
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.ui.draw.scale
 import kotlin.math.roundToInt
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -55,6 +61,12 @@ fun PictureStartsWithGame(
     pictureFrameMinWidth: Dp = 200.dp,
     /** Scales picture/emoji inside the frame, not the frame itself. */
     pictureInnerScale: (word: String, tileDrawable: Int) -> Float = { _, _ -> 1f },
+    /** After 2 wrong taps, pulse the correct answer (subtle hint). */
+    hintCorrectLetter: String? = null,
+    hintPulseEpoch: Int = 0,
+    /** Pulse the tapped correct letter (tiny positive bounce). */
+    correctPulseLetter: String? = null,
+    correctPulseEpoch: Int = 0,
     onPickLetter: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -137,10 +149,21 @@ fun PictureStartsWithGame(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             question.optionLetters.forEach { letter ->
+                val pop = remember(letter, question) { Animatable(1f) }
+                LaunchedEffect(hintPulseEpoch, hintCorrectLetter, correctPulseEpoch, correctPulseLetter, question) {
+                    val shouldPulse =
+                        (hintPulseEpoch > 0 && hintCorrectLetter == letter) ||
+                            (correctPulseEpoch > 0 && correctPulseLetter == letter)
+                    if (!shouldPulse) return@LaunchedEffect
+                    pop.snapTo(1f)
+                    pop.animateTo(0.90f, tween(70))
+                    pop.animateTo(1.16f, tween(120))
+                    pop.animateTo(1f, spring(dampingRatio = 0.55f, stiffness = 520f))
+                }
                 Button(
                     onClick = { onPickLetter(letter) },
                     enabled = enabled,
-                    modifier = Modifier.widthIn(min = 64.dp, max = 84.dp),
+                    modifier = Modifier.widthIn(min = 64.dp, max = 84.dp).scale(pop.value),
                 ) {
                     Text(text = letter, fontSize = 38.sp, fontWeight = FontWeight.Black)
                 }

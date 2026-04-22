@@ -11,10 +11,9 @@ object AudioClips {
     const val VoGoodJob2 = "audio/vo_good_job_2.wav"
     const val VoTryAgain1 = "audio/vo_try_again_1.wav"
     const val VoTryAgain2 = "audio/vo_try_again_2.wav"
+    /** Short praise (optional): e.g. "יפה!". */
+    const val VoNice1 = "audio/vo_nice_1.wav"
     const val VoLevelDone = "audio/vo_level_done.wav"
-
-    /** Prefix prompt recorded once: "מצאו את האות". */
-    const val FindTheLetter = "audio/find_the_letter.wav"
 
     /** Episode 1 station 5 prefix: "איזו מילה מתחילה באות". */
     const val WhichWordStartsWithLetter = "audio/which_word_starts_with_letter.wav"
@@ -25,8 +24,15 @@ object AudioClips {
     /** Episode 1 station 2 prefix: "פוצץ את הבלונים עם האות". */
     const val PopBalloonsWithLetter = "audio/pop_balloons_with_letter.wav"
 
+    /** Wrong-tap prefix: "זה". Played before the tapped letter name. */
+    const val ThisIsPrefix = "audio/this_is.wav"
+
     // SFX (optional). If missing from assets, playback will be skipped.
     const val SfxBalloonPop = "audio/sfx_pop.wav"
+    /** Softer balloon pop/plop for kids (optional). */
+    const val SfxBalloonPopSoft = "audio/sfx_pop_soft.wav"
+    /** Funny wrong-pop sound for balloons (optional). */
+    const val SfxBalloonPopWrongFunny = "audio/sfx_pop_wrong_funny.wav"
     const val SfxCorrect = "audio/sfx_correct.wav"
     const val SfxWrong = "audio/sfx_wrong.wav"
 
@@ -128,6 +134,50 @@ object AudioClips {
             "ר" -> "audio/letter_reish.wav"
             "ש" -> "audio/letter_shin.wav"
             "ת" -> "audio/letter_taf.wav"
+            else -> null
+        }
+
+    /** Optional combined sentence for wrong taps: "זה <letter>, נסה שוב". */
+    fun wrongSentenceClip(letter: String): String? =
+        when (letter) {
+            "א" -> "audio/wrong_sentence_alef.wav"
+            "ב" -> "audio/wrong_sentence_bet.wav"
+            "ג" -> "audio/wrong_sentence_gimel.wav"
+            "ד" -> "audio/wrong_sentence_dalet.wav"
+            "ה" -> "audio/wrong_sentence_heh.wav"
+            "ל" -> "audio/wrong_sentence_lamed.wav"
+            "מ" -> "audio/wrong_sentence_mem.wav"
+            else -> null
+        }
+
+    /**
+     * Station 1 (episode 1) ultra-fast combined feedback.
+     * These are OPTIONAL, but they are the only way to guarantee truly gapless playback.
+     *
+     * Wrong: "<letter name>, נסה שוב"
+     * Correct: "<letter name>, יפה מאוד"
+     */
+    fun station1WrongCombined(letter: String): String? =
+        when (letter) {
+            "א" -> "audio/st1_wrong_alef.wav"
+            "ב" -> "audio/st1_wrong_bet.wav"
+            "ג" -> "audio/st1_wrong_gimel.wav"
+            "ד" -> "audio/st1_wrong_dalet.wav"
+            "ה" -> "audio/st1_wrong_heh.wav"
+            "ל" -> "audio/st1_wrong_lamed.wav"
+            "מ" -> "audio/st1_wrong_mem.wav"
+            else -> null
+        }
+
+    fun station1CorrectCombined(letter: String): String? =
+        when (letter) {
+            "א" -> "audio/st1_correct_alef.wav"
+            "ב" -> "audio/st1_correct_bet.wav"
+            "ג" -> "audio/st1_correct_gimel.wav"
+            "ד" -> "audio/st1_correct_dalet.wav"
+            "ה" -> "audio/st1_correct_heh.wav"
+            "ל" -> "audio/st1_correct_lamed.wav"
+            "מ" -> "audio/st1_correct_mem.wav"
             else -> null
         }
 }

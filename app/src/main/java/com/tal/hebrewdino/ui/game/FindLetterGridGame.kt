@@ -61,6 +61,8 @@ fun FindLetterGridGame(
     question: Question.FindLetterGridQuestion,
     /** Called for any tap (correct or wrong) with the tapped letter. */
     onLetterTapped: ((letter: String) -> Unit)? = null,
+    /** When incremented, triggers a subtle pulse hint on the header chip. */
+    hintPulseEpoch: Int = 0,
     onCellTapped: (index: Int) -> Unit,
     onCompleted: () -> Unit,
     enabled: Boolean = true,
@@ -92,6 +94,13 @@ fun FindLetterGridGame(
         completionFired = false
     }
 
+    LaunchedEffect(hintPulseEpoch, question, contentKey) {
+        if (hintPulseEpoch <= 0 || completionFired) return@LaunchedEffect
+        headerScale.snapTo(1f)
+        headerScale.animateTo(1.12f, tween(120))
+        headerScale.animateTo(1f, spring(dampingRatio = 0.55f, stiffness = 420f))
+    }
+
     LaunchedEffect(found, question, contentKey) {
         if (found.isEmpty() || found != targetIndices || completionFired) return@LaunchedEffect
         completionFired = true
@@ -105,7 +114,8 @@ fun FindLetterGridGame(
                 gridScale.animateTo(1f, spring(dampingRatio = 0.58f, stiffness = 450f))
             }
         }
-        delay(260)
+        // UX: slightly faster completion transition (kids lose attention fast).
+        delay(210)
         onCompleted()
     }
 
