@@ -137,7 +137,10 @@ object AudioClips {
             else -> null
         }
 
-    /** Optional combined sentence for wrong taps: "זה <letter>, נסה שוב". */
+    /**
+     * Optional single clip: wrong balloon / wrong tap sentence (e.g. letter name + "נסה שוב").
+     * Used for Episode 1 station 2 wrong balloons when present.
+     */
     fun wrongSentenceClip(letter: String): String? =
         when (letter) {
             "א" -> "audio/wrong_sentence_alef.wav"

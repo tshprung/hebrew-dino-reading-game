@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.border
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -64,6 +65,7 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.zIndex
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.graphics.Color
@@ -165,6 +167,53 @@ internal fun TargetLetterHeaderChip(
             fontWeight = FontWeight.Black,
             color = Color(0xFF0B2B3D),
             textAlign = TextAlign.Center,
+        )
+    }
+}
+
+/**
+ * Episode 1 station 2: small “last popped” balloon next to the main target chip (not a second letter chip).
+ */
+@Composable
+internal fun Station2PinnedBalloonMini(
+    letter: String,
+    balloonColor: Color,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
+        Box(
+            modifier =
+                Modifier
+                    .size(52.dp)
+                    .clip(CircleShape)
+                    .background(
+                        brush =
+                            Brush.verticalGradient(
+                                listOf(
+                                    Color.White.copy(alpha = 0.12f),
+                                    balloonColor,
+                                    Color(0xFF000000).copy(alpha = 0.08f),
+                                ),
+                            ),
+                    )
+                    .border(2.dp, Color(0xFF0B2B3D).copy(alpha = 0.2f), CircleShape),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text = letter,
+                fontSize = 28.sp,
+                fontWeight = FontWeight.Black,
+                color = Color(0xFF0B2B3D),
+                textAlign = TextAlign.Center,
+            )
+        }
+        Spacer(modifier = Modifier.height(2.dp))
+        Box(
+            modifier =
+                Modifier
+                    .size(width = 8.dp, height = 5.dp)
+                    .clip(RoundedCornerShape(2.dp))
+                    .background(Color(0xFF0B2B3D).copy(alpha = 0.22f)),
         )
     }
 }
@@ -457,7 +506,8 @@ internal fun PopBalloonsOptions(
     onBalloonPressed: ((letter: String) -> Unit)? = null,
     onPopSfx: suspend (letter: String, isCorrect: Boolean) -> Unit,
     onWrongPick: () -> Unit,
-    onAllCorrectPopped: () -> Unit,
+    /** Invoked when every correct-letter balloon is popped; [poppedBalloonColor] is the last balloon’s fill. */
+    onAllCorrectPopped: (correctLetter: String, poppedBalloonColor: Color) -> Unit,
 ) {
     val alive =
         remember(options, correctAnswer) {
@@ -624,11 +674,12 @@ internal fun PopBalloonsOptions(
                     driftYPx = yPx,
                     modifier = Modifier.zIndex(yPx * 1000f + xPx),
                     onPop = {
+                        val poppedColor = balloonColors.getOrElse(idx) { Color(0xFFFF6B6B) }
                         if (idx < alive.size) alive[idx] = false
                         scope.launch { onPopSfx(letter, letter == correctAnswer) }
                         if (letter == correctAnswer) {
                             if (remainingCorrectCount() <= 0) {
-                                onAllCorrectPopped()
+                                onAllCorrectPopped(letter, poppedColor)
                             }
                         } else {
                             onWrongPick()
