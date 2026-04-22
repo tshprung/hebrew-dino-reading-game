@@ -62,8 +62,8 @@ fun Chapter2LettersIntroScreen(
     modifier: Modifier = Modifier,
 ) {
     ChapterLettersIntroScreen(
-        chapterTitle = "פרק 2 - חוזרים הביתה",
-        letters = listOf("ב", "מ", "ל", "ק", "ט"),
+        chapterTitle = "פרק 2 - מצא את הביצה הורודה",
+        letters = listOf("ש", "נ", "פ", "ג", "ק"),
         backgroundRes = R.drawable.mountain_bg_chapter2,
         onContinue = onContinue,
         onBack = onBack,
@@ -78,9 +78,25 @@ fun Chapter3LettersIntroScreen(
     modifier: Modifier = Modifier,
 ) {
     ChapterLettersIntroScreen(
-        chapterTitle = "פרק 3 - מצא את החבר",
-        letters = listOf("ק", "ט", "נ", "ה", "ר"),
-        backgroundRes = R.drawable.swamp_bg_chapter3,
+        chapterTitle = "פרק 3 - מצא את הביצה הסגולה",
+        letters = listOf("ר", "ת", "צ", "ח", "ט"),
+        backgroundRes = R.drawable.mountain_bg_chapter3,
+        onContinue = onContinue,
+        onBack = onBack,
+        modifier = modifier,
+    )
+}
+
+@Composable
+fun Chapter4LettersIntroScreen(
+    onContinue: () -> Unit,
+    onBack: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    ChapterLettersIntroScreen(
+        chapterTitle = "פרק 4 - חיזוק חכם",
+        letters = listOf("א", "מ", "ש", "ר", "ת"),
+        backgroundRes = R.drawable.mountain_bg_chapter4,
         onContinue = onContinue,
         onBack = onBack,
         modifier = modifier,

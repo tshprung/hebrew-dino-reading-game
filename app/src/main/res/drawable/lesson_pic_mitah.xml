@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="120dp"
+    android:height="96dp"
+    android:viewportWidth="120"
+    android:viewportHeight="96">
+    <!-- Simple bed: headboard, mattress, pillow -->
+    <path
+        android:fillColor="#5D4037"
+        android:pathData="M16,28 L16,88 L104,88 L104,28 C104,18 96,12 86,12 L34,12 C24,12 16,18 16,28 Z" />
+    <path
+        android:fillColor="#8D6E63"
+        android:pathData="M20,44 L100,44 L100,84 L20,84 Z" />
+    <path
+        android:fillColor="#D7CCC8"
+        android:pathData="M24,48 L52,48 L52,72 L24,72 Z" />
+    <path
+        android:fillColor="#A1887F"
+        android:pathData="M20,40 L100,40 L100,44 L20,44 Z" />
+    <path
+        android:fillColor="#4E342E"
+        android:pathData="M12,84 L108,84 L108,92 L12,92 Z" />
+</vector>

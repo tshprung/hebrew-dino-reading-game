@@ -25,6 +25,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -82,6 +83,12 @@ fun MatchLetterToWordGame(
     },
     /** Persistent instructions shown at the top (RTL). */
     instructions: String = "חברו מילה לתמונה",
+    /** Called whenever the player taps a word card (choice id). */
+    onWordPressed: ((choiceId: String) -> Unit)? = null,
+    /** Called whenever the player taps a letter tile. */
+    onLetterPressed: ((letter: String) -> Unit)? = null,
+    /** Called when the player attempts a match (true=correct, false=wrong). */
+    onMatchAttempt: ((correct: Boolean) -> Unit)? = null,
     onSolved: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -92,6 +99,10 @@ fun MatchLetterToWordGame(
     val shake = remember { Animatable(0f) }
     val glow = remember { Animatable(0f) }
     val scope = androidx.compose.runtime.rememberCoroutineScope()
+    var wrongAttemptsThisRound by remember(contentKey) { mutableIntStateOf(0) }
+    var hintEpoch by remember(contentKey) { mutableIntStateOf(0) }
+    var hintLetter by remember(contentKey) { mutableStateOf<String?>(null) }
+    var hintChoiceId by remember(contentKey) { mutableStateOf<String?>(null) }
 
     val letterRects = remember { mutableStateMapOf<String, Rect>() }
     val itemRects = remember { mutableStateMapOf<String, Rect>() } // choiceId -> rect
@@ -143,10 +154,19 @@ fun MatchLetterToWordGame(
     fun tryLockMatch(letter: String, choice: LessonChoice) {
         if (isLockedLetter(letter) || isLockedChoice(choice.id)) return
         if (choice.letter == letter) {
+            onMatchAttempt?.invoke(true)
             locked[letter] = choice.id
             selectedLetter = null
             selectedChoiceId = null
         } else {
+            onMatchAttempt?.invoke(false)
+            wrongAttemptsThisRound += 1
+            if (wrongAttemptsThisRound >= 2) {
+                // Hint: pulse the correct pair for the tapped word (word + its real starting letter).
+                hintLetter = choice.letter
+                hintChoiceId = choice.id
+                hintEpoch += 1
+            }
             shakeWrongAndClear()
         }
     }
@@ -292,18 +312,28 @@ fun MatchLetterToWordGame(
                     ) {
                         wordColumn.forEach { ch ->
                             val lockedThis = isLockedChoice(ch.id)
+                            val selectedThis = selectedChoiceId == ch.id
+                            val pop = remember(ch.id, contentKey) { Animatable(1f) }
+                            LaunchedEffect(hintEpoch, hintChoiceId, ch.id, contentKey) {
+                                if (hintEpoch <= 0 || hintChoiceId != ch.id) return@LaunchedEffect
+                                pop.snapTo(1f)
+                                pop.animateTo(1.12f, tween(120))
+                                pop.animateTo(1f, tween(160))
+                            }
                             LessonChoiceCard(
                                 choice = ch,
                                 enabled = enabled && !lockedThis,
-                                scale = 1f,
+                                scale = pop.value,
                                 showWordCaption = true,
                                 cardWidth = cardW,
                                 cardHeight = cardH,
                                 captionFontSize = captionSp,
                                 innerPictureScale = innerPictureScaleForChoice(ch),
                                 isCorrectPick = lockedThis,
+                                isSelected = !lockedThis && selectedThis,
                                 onClick = {
                                     if (!enabled || lockedThis) return@LessonChoiceCard
+                                    onWordPressed?.invoke(ch.id)
                                     val picked = selectedLetter
                                     if (picked != null) {
                                         tryLockMatch(picked, ch)
@@ -328,14 +358,23 @@ fun MatchLetterToWordGame(
                         letterColumn.forEach { letter ->
                             val lockedThis = isLockedLetter(letter)
                             val selected = selectedLetter == letter
+                            val pop = remember(letter, contentKey) { Animatable(1f) }
+                            LaunchedEffect(hintEpoch, hintLetter, letter, contentKey) {
+                                if (hintEpoch <= 0 || hintLetter != letter) return@LaunchedEffect
+                                pop.snapTo(1f)
+                                pop.animateTo(1.14f, tween(120))
+                                pop.animateTo(1f, tween(160))
+                            }
                             Box(
                                 modifier =
                                     Modifier
                                         .width(cardW)
                                         .height(tileH)
+                                        .scale(pop.value)
                                         .background(
                                             when {
-                                                lockedThis -> Color(0xFF2E7D32).copy(alpha = 0.22f)
+                                                // Keep a solid light face after match; thin green tint reads as “done” without losing the tile.
+                                                lockedThis -> Color(0xFFE8F5E9).copy(alpha = 0.98f)
                                                 selected -> Color(0xFFC8E6C9).copy(alpha = 0.95f)
                                                 else -> Color.White.copy(alpha = 0.88f)
                                             },
@@ -351,6 +390,7 @@ fun MatchLetterToWordGame(
                                             tileShape,
                                         )
                                         .clickable(enabled = enabled && !lockedThis) {
+                                            onLetterPressed?.invoke(letter)
                                             val nowSelected = if (selectedLetter == letter) null else letter
                                             selectedLetter = nowSelected
                                             val pickedChoiceId = selectedChoiceId
@@ -409,14 +449,22 @@ fun MatchLetterToWordGame(
                         letterColumn.forEach { letter ->
                             val lockedThis = isLockedLetter(letter)
                             val selected = selectedLetter == letter
+                            val pop = remember(letter, contentKey) { Animatable(1f) }
+                            LaunchedEffect(hintEpoch, hintLetter, letter, contentKey) {
+                                if (hintEpoch <= 0 || hintLetter != letter) return@LaunchedEffect
+                                pop.snapTo(1f)
+                                pop.animateTo(1.14f, tween(120))
+                                pop.animateTo(1f, tween(160))
+                            }
                             Box(
                                 modifier =
                                     Modifier
                                         .width(letterColW)
                                         .height(tileH)
+                                        .scale(pop.value)
                                         .background(
                                             when {
-                                                lockedThis -> Color(0xFF2E7D32).copy(alpha = 0.22f)
+                                                lockedThis -> Color(0xFFE8F5E9).copy(alpha = 0.98f)
                                                 selected -> Color(0xFFC8E6C9).copy(alpha = 0.95f)
                                                 else -> Color.White.copy(alpha = 0.88f)
                                             },
@@ -432,6 +480,7 @@ fun MatchLetterToWordGame(
                                             tileShape,
                                         )
                                         .clickable(enabled = enabled && !lockedThis) {
+                                            onLetterPressed?.invoke(letter)
                                             val nowSelected = if (selectedLetter == letter) null else letter
                                             selectedLetter = nowSelected
                                             val pickedChoiceId = selectedChoiceId
@@ -462,6 +511,7 @@ fun MatchLetterToWordGame(
                     ) {
                         wordColumn.forEach { ch ->
                             val lockedThis = isLockedChoice(ch.id)
+                            val selectedThis = selectedChoiceId == ch.id
                             // Match station 5 sizing for the card inside the word column.
                             val cardW = (wordColW * 0.86f).coerceAtMost(168.dp).coerceAtLeast(72.dp)
                             val cardH = cardW * (110f / 160f)
@@ -469,17 +519,27 @@ fun MatchLetterToWordGame(
                                 with(density) {
                                     (cardW.toPx() * 0.22f).coerceIn(22f * fontScale, 40f * fontScale).toSp()
                                 }
+                            val pop = remember(ch.id, contentKey) { Animatable(1f) }
+                            LaunchedEffect(hintEpoch, hintChoiceId, ch.id, contentKey) {
+                                if (hintEpoch <= 0 || hintChoiceId != ch.id) return@LaunchedEffect
+                                pop.snapTo(1f)
+                                pop.animateTo(1.12f, tween(120))
+                                pop.animateTo(1f, tween(160))
+                            }
                             LessonChoiceCard(
                                 choice = ch,
                                 enabled = enabled && !lockedThis,
                                 showWordCaption = true,
+                                scale = pop.value,
                                 cardWidth = cardW,
                                 cardHeight = cardH,
                                 captionFontSize = captionSp,
                                 innerPictureScale = innerPictureScaleForChoice(ch),
                                 isCorrectPick = lockedThis,
+                                isSelected = !lockedThis && selectedThis,
                                 onClick = {
                                     if (!enabled || lockedThis) return@LessonChoiceCard
+                                    onWordPressed?.invoke(ch.id)
                                     val picked = selectedLetter
                                     if (picked != null) {
                                         tryLockMatch(picked, ch)

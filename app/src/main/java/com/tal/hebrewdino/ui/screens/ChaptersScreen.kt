@@ -100,6 +100,7 @@ data class ChaptersProgress(
     val chapter1Completed: Boolean,
     val chapter2Completed: Boolean,
     val chapter3Completed: Boolean,
+    val chapter4Completed: Boolean = false,
 )
 
 /** Must match [ChapterVerticalPath] map height for initial scroll math. */
@@ -154,6 +155,8 @@ private val DinoEggGap = 10.dp
 fun ChaptersScreen(
     unlockedChapter: Int,
     chapter4ComingSoon: Boolean = false,
+    /** Highest chapter tile (1–10) that can be opened from the map when unlocked. */
+    maxSelectableChapterId: Int = 3,
     chaptersProgress: ChaptersProgress,
     onOpenSettings: () -> Unit,
     onOpenChapter: (Int) -> Unit,
@@ -164,9 +167,13 @@ fun ChaptersScreen(
     val chapters =
         listOf(
             ChapterCard(1, "פרק 1 - מצא את הביצה", "היער: תחנות בדרך + אותיות"),
-            ChapterCard(2, "פרק 2 - חוזרים הביתה", "הדרך חזרה לקן — אותיות בדרך"),
-            ChapterCard(3, "פרק 3 - מצא את החבר", "מי קרא? אותיות כרמזים"),
-            ChapterCard(4, "פרק 4", if (chapter4ComingSoon) "בקרוב" else ""),
+            ChapterCard(2, "פרק 2 - מצא את הביצה הורודה", "בדרך לביצה הורודה — אותיות בדרך"),
+            ChapterCard(3, "פרק 3 - מצא את הביצה הסגולה", "בדרך לביצה הסגולה — תחנות כמו בפרק 1"),
+            ChapterCard(
+                4,
+                "פרק 4 - חיזוק חכם",
+                if (chapter4ComingSoon) "בקרוב" else "תחנות כמו בפרק 1 — אותיות חוזרות בחוכמה",
+            ),
             ChapterCard(5, "פרק 5", ""),
             ChapterCard(6, "פרק 6", ""),
             ChapterCard(7, "פרק 7", ""),
@@ -191,6 +198,7 @@ fun ChaptersScreen(
                 chapters = chapters,
                 unlockedChapter = unlockedChapter,
                 chaptersProgress = chaptersProgress,
+                maxSelectableChapterId = maxSelectableChapterId,
                 onOpenChapter = onOpenChapter,
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -246,6 +254,7 @@ private fun ChaptersHexHoneycomb(
     chapters: List<ChapterCard>,
     unlockedChapter: Int,
     chaptersProgress: ChaptersProgress,
+    maxSelectableChapterId: Int,
     onOpenChapter: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -280,13 +289,13 @@ private fun ChaptersHexHoneycomb(
                                 unlockedChapter = unlockedChapter,
                                 progress = chaptersProgress,
                             )
-                        val openable = state != ChapterEggState.Locked && ch.id <= 3
+                        val openable = state != ChapterEggState.Locked && ch.id <= maxSelectableChapterId
                         ChapterHexTile(
                             title = ch.title,
                             imageRes =
                                 when (ch.id) {
                                     2 -> R.drawable.mountain_bg_chapter2
-                                    3 -> R.drawable.swamp_bg_chapter3
+                                    3 -> R.drawable.mountain_bg_chapter3
                                     4 -> R.drawable.mountain_bg_chapter4
                                     else -> R.drawable.forest_bg_journey_road
                                 },
@@ -435,6 +444,7 @@ private fun ChapterVerticalPath(
     chapters: List<ChapterCard>,
     unlockedChapter: Int,
     chaptersProgress: ChaptersProgress,
+    maxSelectableChapterId: Int,
     onOpenChapter: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -445,10 +455,12 @@ private fun ChapterVerticalPath(
     val bump1 = remember { mutableIntStateOf(0) }
     val bump2 = remember { mutableIntStateOf(0) }
     val bump3 = remember { mutableIntStateOf(0) }
+    val bump4 = remember { mutableIntStateOf(0) }
     LaunchedEffect(chaptersProgress) {
         if (!prevProgress.chapter1Completed && chaptersProgress.chapter1Completed) bump1.intValue++
         if (!prevProgress.chapter2Completed && chaptersProgress.chapter2Completed) bump2.intValue++
         if (!prevProgress.chapter3Completed && chaptersProgress.chapter3Completed) bump3.intValue++
+        if (!prevProgress.chapter4Completed && chaptersProgress.chapter4Completed) bump4.intValue++
         prevProgress = chaptersProgress
     }
 
@@ -517,10 +529,10 @@ private fun ChapterVerticalPath(
                         unlockedChapter = unlockedChapter,
                         progress = chaptersProgress,
                     )
-                val openable = state != ChapterEggState.Locked && ch.id <= 3
+                val openable = state != ChapterEggState.Locked && ch.id <= maxSelectableChapterId
                 val isCurrent = ch.id == unlockedChapter && state == ChapterEggState.Unlocked
                 val showSubtitle =
-                    ch.id <= 3 &&
+                    ch.id <= maxSelectableChapterId &&
                         ch.subtitle.isNotBlank() &&
                         ch.subtitle.length <= 42
                 val completionBump =
@@ -528,6 +540,7 @@ private fun ChapterVerticalPath(
                         1 -> bump1.intValue
                         2 -> bump2.intValue
                         3 -> bump3.intValue
+                        4 -> bump4.intValue
                         else -> 0
                     }
 
@@ -1050,7 +1063,12 @@ private fun chapterEggState(
     unlockedChapter: Int,
     progress: ChaptersProgress,
 ): ChapterEggState {
-    if (chapterId >= 4) return ChapterEggState.Locked
+    if (chapterId >= 5) return ChapterEggState.Locked
+    if (chapterId == 4) {
+        if (!progress.chapter3Completed) return ChapterEggState.Locked
+        if (progress.chapter4Completed) return ChapterEggState.Completed
+        return ChapterEggState.Unlocked
+    }
     val done =
         when (chapterId) {
             1 -> progress.chapter1Completed

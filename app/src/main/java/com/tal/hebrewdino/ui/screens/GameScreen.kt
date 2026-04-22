@@ -68,6 +68,7 @@ import com.tal.hebrewdino.ui.audio.SoundPoolPlayer
 import com.tal.hebrewdino.ui.audio.VoicePlayer
 import com.tal.hebrewdino.ui.domain.AnswerResult
 import com.tal.hebrewdino.ui.domain.Chapter1Station4PictureInnerScale
+import com.tal.hebrewdino.ui.domain.Chapter1Station5And6ImageMatchInnerScale
 import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
 import com.tal.hebrewdino.ui.domain.LevelSession
 import com.tal.hebrewdino.ui.domain.LessonWordCatalog
@@ -87,6 +88,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.random.Random
 import android.os.SystemClock
 
@@ -94,8 +96,8 @@ private enum class GamePhase { Intro, Play }
 
 private enum class DinoVisual { Idle, TryAgain, Jump }
 
-private const val IntroDurationMs = 1_000L
-private const val BetweenQuestionFadeMs = 130
+private const val IntroDurationMs = 450L
+private const val BetweenQuestionFadeMs = 80
 
 @Composable
 fun GameScreen(
@@ -115,7 +117,7 @@ fun GameScreen(
     modifier: Modifier = Modifier,
 ) {
     // UX: no audio for now (per request).
-    val audioEnabled = false
+    val audioEnabled = true
 
     val session =
         remember(stationId, plan) {
@@ -127,6 +129,7 @@ fun GameScreen(
     val voice = remember { VoicePlayer(context = context) }
     val sfx = remember { SoundPoolPlayer(context = context) }
     val gameFeedback = remember(stationId, sfx, view) { GameFeedback(scope, sfx, view) }
+    var completionCallbackFired by remember(stationId) { mutableStateOf(false) }
 
     var phase by remember(stationId) { mutableStateOf(GamePhase.Intro) }
     var inputLocked by remember(stationId) { mutableStateOf(true) }
@@ -140,12 +143,35 @@ fun GameScreen(
     val dinoForward = remember(stationId) { Animatable(0f) }
     val dinoSlip = remember(stationId) { Animatable(0f) }
     val dinoTilt = remember(stationId) { Animatable(0f) }
+    var wrongTapsThisQuestion by remember(stationId) { mutableIntStateOf(0) }
+    var hintPulseEpoch by remember(stationId) { mutableIntStateOf(0) }
+    val hintHeaderScale = remember(stationId) { Animatable(1f) }
+    var entryPulseEpoch by remember(stationId) { mutableIntStateOf(0) }
+    val entryPulseScale = remember(stationId) { Animatable(1f) }
+    var correctTapPulseEpoch by remember(stationId) { mutableIntStateOf(0) }
+    var correctTapPulseLetter by remember(stationId) { mutableStateOf<String?>(null) }
+    var feedbackVoiceJob by remember(stationId) { mutableStateOf<Job?>(null) }
+    var promptVoiceJob by remember(stationId) { mutableStateOf<Job?>(null) }
+    var station1VoiceStreamId by remember(stationId) { mutableIntStateOf(0) }
+    var station1PinnedCorrectLetter by remember(stationId) { mutableStateOf<String?>(null) }
+
+    fun cancelFeedbackVoice() {
+        feedbackVoiceJob?.cancel()
+        feedbackVoiceJob = null
+        promptVoiceJob?.cancel()
+        promptVoiceJob = null
+        voice.stopNow()
+        if (chapterId == 1 && stationId == 1) {
+            sfx.stopStream(station1VoiceStreamId)
+            station1VoiceStreamId = 0
+        }
+    }
 
     // UX: global tap cooldown to prevent fast-tap flow breaks.
     var lastTapMs by remember(stationId) { mutableLongStateOf(0L) }
     fun consumeTapCooldown(): Boolean {
         val now = SystemClock.elapsedRealtime()
-        if (now - lastTapMs < 180L) return false
+        if (now - lastTapMs < 130L) return false
         lastTapMs = now
         return true
     }
@@ -163,16 +189,58 @@ fun GameScreen(
         }
     }
 
+    // Station 1: preload ALL voice clips as early as possible (screen entry),
+    // so instruction playback has near-zero latency when the first question appears.
+    LaunchedEffect(stationId, chapterId) {
+        if (!(audioEnabled && chapterId == 1 && stationId == 1)) return@LaunchedEffect
+        sfx.preload(
+            // Instruction clips (choose_<letter>)
+            AudioClips.chooseLetterClip("א") ?: "",
+            AudioClips.chooseLetterClip("ב") ?: "",
+            AudioClips.chooseLetterClip("ג") ?: "",
+            AudioClips.chooseLetterClip("ד") ?: "",
+            AudioClips.chooseLetterClip("ה") ?: "",
+            AudioClips.chooseLetterClip("ל") ?: "",
+            AudioClips.chooseLetterClip("מ") ?: "",
+            // Combined feedback clips (st1_wrong/st1_correct)
+            AudioClips.station1WrongCombined("א") ?: "",
+            AudioClips.station1WrongCombined("ב") ?: "",
+            AudioClips.station1WrongCombined("ג") ?: "",
+            AudioClips.station1WrongCombined("ד") ?: "",
+            AudioClips.station1WrongCombined("ה") ?: "",
+            AudioClips.station1WrongCombined("ל") ?: "",
+            AudioClips.station1WrongCombined("מ") ?: "",
+            AudioClips.station1CorrectCombined("א") ?: "",
+            AudioClips.station1CorrectCombined("ב") ?: "",
+            AudioClips.station1CorrectCombined("ג") ?: "",
+            AudioClips.station1CorrectCombined("ד") ?: "",
+            AudioClips.station1CorrectCombined("ה") ?: "",
+            AudioClips.station1CorrectCombined("ל") ?: "",
+            AudioClips.station1CorrectCombined("מ") ?: "",
+        )
+    }
+
     LaunchedEffect(stationId) {
         snapshotFlow { session.currentIndex >= session.totalQuestions }.collect { exhausted ->
             if (exhausted && session.totalQuestions > 0) {
-                onComplete(stationId, session.correctCount, session.mistakeCount)
+                if (!completionCallbackFired) {
+                    completionCallbackFired = true
+                    onComplete(stationId, session.correctCount, session.mistakeCount)
+                }
             }
         }
     }
 
     val current = session.currentQuestion
     if (current == null) {
+        // Safety: if we reached the end and for some reason the snapshotFlow completion path didn't navigate yet,
+        // fire completion once so we never get "blank screen stuck".
+        LaunchedEffect(stationId, session.currentIndex) {
+            if (!completionCallbackFired) {
+                completionCallbackFired = true
+                onComplete(stationId, session.correctCount, session.mistakeCount)
+            }
+        }
         Box(modifier = modifier.fillMaxSize())
         return
     }
@@ -180,25 +248,66 @@ fun GameScreen(
     LaunchedEffect(stationId, session.currentIndex) {
         phase = GamePhase.Intro
         inputLocked = true
-        if (audioEnabled) sfx.preload(AudioClips.SfxCorrect, AudioClips.SfxWrong, AudioClips.SfxBalloonPop)
+        wrongTapsThisQuestion = 0
+        correctTapPulseLetter = null
+        station1PinnedCorrectLetter = null
+        // Cancel any in-flight feedback/instructions from the previous question.
+        cancelFeedbackVoice()
         val q = session.currentQuestion ?: return@LaunchedEffect
-        launch {
+
+        // CRITICAL: start instruction voice as early as possible (especially Station 1).
+        promptVoiceJob =
+            launch {
             if (audioEnabled) {
                 // Episode 1 station 6: do not introduce a target letter (this station is a picture↔word match).
                 val skipLetterPrompt = (stationId == 6 && q is Question.ImageMatchQuestion)
                 if (!skipLetterPrompt) {
                     dinoTalking = true
                     try {
-                        speakPromptForQuestion(voice, q)
+                        // No artificial delay before instruction voice.
+                        // Station 1: use SoundPool for ultra-low-latency voice.
+                        if (chapterId == 1 && stationId == 1) {
+                            val target =
+                                when (q) {
+                                    is Question.PopBalloonsQuestion -> q.correctAnswer
+                                    is Question.FindLetterGridQuestion -> q.targetLetter
+                                    is Question.PictureStartsWithQuestion -> q.correctLetter
+                                    is Question.ImageMatchQuestion -> q.targetLetter
+                                    is Question.FinaleSlotQuestion -> null
+                                }
+                            if (target != null) {
+                                val clip = AudioClips.chooseLetterClip(target)
+                                if (clip != null) {
+                                    sfx.stopStream(station1VoiceStreamId)
+                                    station1VoiceStreamId = sfx.playReturningStreamId(clip, volume = 1f) ?: 0
+                                }
+                            }
+                        } else {
+                            speakPromptForQuestion(voice, stationId = stationId, chapterId = chapterId, q = q)
+                        }
                     } finally {
                         dinoTalking = false
                     }
                 }
             }
         }
+
+        // Preload SFX after prompt kickoff (never block instruction start).
+        launch {
+            if (audioEnabled) {
+                sfx.preload(
+                    AudioClips.SfxCorrect,
+                    AudioClips.SfxWrong,
+                    AudioClips.SfxBalloonPopSoft,
+                    AudioClips.SfxBalloonPop,
+                    AudioClips.SfxBalloonPopWrongFunny,
+                )
+            }
+        }
         delay(IntroDurationMs)
         phase = GamePhase.Play
         inputLocked = false
+        entryPulseEpoch += 1
     }
 
     LaunchedEffect(dinoVisual) {
@@ -210,12 +319,32 @@ fun GameScreen(
         dinoVisual = DinoVisual.Idle
     }
 
+    LaunchedEffect(hintPulseEpoch, stationId) {
+        if (hintPulseEpoch <= 0) return@LaunchedEffect
+        hintHeaderScale.snapTo(1f)
+        hintHeaderScale.animateTo(1.10f, tween(120))
+        hintHeaderScale.animateTo(1f, spring(dampingRatio = 0.56f, stiffness = 420f))
+    }
+
+    LaunchedEffect(entryPulseEpoch, stationId) {
+        if (entryPulseEpoch <= 0) return@LaunchedEffect
+        entryPulseScale.snapTo(1f)
+        entryPulseScale.animateTo(1.04f, tween(130))
+        entryPulseScale.animateTo(1f, spring(dampingRatio = 0.62f, stiffness = 420f))
+    }
+
     suspend fun advanceAfterRound(isLast: Boolean) {
         inputLocked = true
         if (audioEnabled) ChildGameAudioHooks.onLevelComplete()
+        // CRITICAL UX: do not block visuals/transitions on voice playback.
         if (audioEnabled) {
             if (isLast) {
-                gameFeedback.playSuccessBig()
+                // Station 1: the "big" success SFX is a double pip; keep it single.
+                if (chapterId == 1 && stationId == 1) {
+                    gameFeedback.playCorrect()
+                } else {
+                    gameFeedback.playSuccessBig()
+                }
             } else {
                 gameFeedback.playCorrect()
             }
@@ -223,24 +352,37 @@ fun GameScreen(
         if (!suppressInGameDinoProgress) {
             dinoVisual = DinoVisual.Jump
         }
-        if (audioEnabled) voice.playFirstAvailableBlocking(AudioClips.VoGoodJob1, AudioClips.VoGoodJob2)
+        // Station 6 (episode 1): "kol hakavod" is played per correct match; avoid double-speaking here.
+        if (audioEnabled && !(chapterId == 1 && stationId == 6) && !(chapterId == 1 && stationId == 1)) {
+            // No fallbacks: use a single intended clip.
+            cancelFeedbackVoice()
+            feedbackVoiceJob = scope.launch { voice.playBlocking(AudioClips.VoGoodJob1) }
+        }
         if (!suppressInGameDinoProgress) {
             dinoForward.animateTo(dinoForward.value + forwardDir * 12f, spring(dampingRatio = 0.75f, stiffness = 520f))
         }
         playSuccessPulse(scope, dinoScale)
         // UX: short pause before transition.
-        delay(400)
+        delay(170)
         contentAlpha.animateTo(0f, tween(BetweenQuestionFadeMs))
-        delay(40)
+        // Don't advance to next question until praise voice is finished (unless the user taps again on the next screen).
+        // Safety: never get stuck on a blank screen if a voice job hangs.
+        withTimeoutOrNull(2500) { feedbackVoiceJob?.join() }
+        delay(5)
         session.nextQuestion()
         contentAlpha.animateTo(1f, tween(BetweenQuestionFadeMs))
     }
 
-    fun onWrongFeedback() {
+    fun onWrongFeedback(
+        wrongPickedLetter: String? = null,
+        wrongWordCatalogId: String? = null,
+        wrongPickedLetterAlreadySpoken: Boolean = false,
+        wrongWordAlreadySpoken: Boolean = false,
+    ) {
         scope.launch {
             inputLocked = true
             dinoVisual = DinoVisual.TryAgain
-            if (chapterId == 2) {
+            if (chapterId == 2 || chapterId == 4) {
                 // Tiny “slip” in the mountains: a playful stumble with no punishment.
                 dinoSlip.snapTo(0f)
                 dinoTilt.snapTo(0f)
@@ -253,11 +395,69 @@ fun GameScreen(
             }
             playShake(scope, optionsShake)
             if (audioEnabled) {
-                gameFeedback.playWrong()
-                ChildGameAudioHooks.onWrong()
-                voice.playFirstAvailableBlocking(AudioClips.VoTryAgain2, AudioClips.VoTryAgain1)
+                // Station 1: no SFX; voice only.
+                if (!(chapterId == 1 && stationId == 1)) {
+                    gameFeedback.playWrong()
+                    ChildGameAudioHooks.onWrong()
+                }
+                // Station 1: wrong tap should be just "LETTER NAME" + "try again", as fast as possible.
+                if (chapterId == 1 && stationId == 1 && wrongPickedLetter != null) {
+                    cancelFeedbackVoice()
+                    val combined = AudioClips.station1WrongCombined(wrongPickedLetter)
+                    val letterClip = AudioClips.letterNameClip(wrongPickedLetter)
+                    feedbackVoiceJob =
+                        scope.launch {
+                            if (combined != null) {
+                                station1VoiceStreamId = sfx.playReturningStreamId(combined, volume = 1f) ?: 0
+                                return@launch
+                            }
+                            if (letterClip != null) {
+                                station1VoiceStreamId = sfx.playReturningStreamId(letterClip, volume = 1f) ?: 0
+                            }
+                        }
+                    dinoVisual = DinoVisual.Idle
+                    inputLocked = false
+                    return@launch
+                }
+                cancelFeedbackVoice()
+                feedbackVoiceJob =
+                    scope.launch {
+                        delay(110)
+                        if (wrongWordCatalogId != null && !wrongWordAlreadySpoken) {
+                            voice.playSequenceBlocking(
+                                AudioClips.ThisIsPrefix,
+                                AudioClips.wordClipByCatalogId(wrongWordCatalogId),
+                                AudioClips.VoTryAgain2,
+                                AudioClips.VoTryAgain1,
+                            )
+                            return@launch
+                        }
+
+                        if (wrongPickedLetter != null) {
+                            // Prefer a single combined clip: "זה <letter>, נסה שוב" (sounds most connected).
+                            val combined = AudioClips.wrongSentenceClip(wrongPickedLetter)
+                            if (combined != null && !wrongPickedLetterAlreadySpoken) {
+                                voice.playSequenceBlocking(combined)
+                                return@launch
+                            }
+
+                            val letterName =
+                                if (!wrongPickedLetterAlreadySpoken) AudioClips.letterNameClip(wrongPickedLetter) else null
+                            // Fallback: atomic sequence "זה" + (letter) + "נסה שוב"
+                            voice.playSequenceBlocking(
+                                AudioClips.ThisIsPrefix,
+                                letterName ?: "",
+                                AudioClips.VoTryAgain2,
+                                AudioClips.VoTryAgain1,
+                            )
+                            return@launch
+                        }
+
+                        voice.playFirstAvailableBlocking(AudioClips.VoTryAgain2, AudioClips.VoTryAgain1)
+                    }
             }
             dinoVisual = DinoVisual.Idle
+            // Allow immediate retry; new taps cancel the previous feedback voice.
             inputLocked = false
         }
     }
@@ -365,7 +565,10 @@ fun GameScreen(
                 ) {
                     if (phase == GamePhase.Intro) {
                         // Station 6: don't show the mid-screen intro pulse between rounds.
-                        if (!(stationId == 6 && current is Question.ImageMatchQuestion)) {
+                        if (!(stationId == 6 && current is Question.ImageMatchQuestion) &&
+                            // Station 1: don't show blinking letter between rounds.
+                            !(chapterId == 1 && stationId == 1)
+                        ) {
                             IntroPulse(stationId = stationId, question = current, modifier = Modifier.fillMaxWidth())
                         }
                     } else {
@@ -373,13 +576,23 @@ fun GameScreen(
                             is Question.FindLetterGridQuestion ->
                                 FindLetterGridGame(
                                     question = current,
+                                    // CRITICAL UX: do not speak on tap (voice must never delay visuals/SFX).
+                                    onLetterTapped = null,
+                                    hintPulseEpoch = hintPulseEpoch,
                                     // Episode 1 station 3: bigger letters inside same boxes.
                                     gridLetterSizeMultiplier = if (stationId == 3) 1.5f else 1f,
-                                    onCellTapped = { _ ->
+                                    onCellTapped = { index ->
                                         if (!consumeTapCooldown()) return@FindLetterGridGame
+                                        cancelFeedbackVoice()
                                         session.wrongTap()
                                         shakeEpoch += 1
-                                        onWrongFeedback()
+                                        wrongTapsThisQuestion += 1
+                                        if (wrongTapsThisQuestion >= 2) hintPulseEpoch += 1
+                                        val tappedLetter = current.cells.getOrNull(index)
+                                        onWrongFeedback(
+                                            wrongPickedLetter = tappedLetter,
+                                            wrongPickedLetterAlreadySpoken = (chapterId == 1 && stationId == 3),
+                                        )
                                     },
                                     onCompleted = {
                                         if (!consumeTapCooldown()) return@FindLetterGridGame
@@ -398,18 +611,22 @@ fun GameScreen(
                                     modifier =
                                         Modifier
                                             .fillMaxSize()
+                                            .scale(entryPulseScale.value)
                                             .offset { IntOffset(optionsShake.value.toInt(), 0) },
                                 )
                             is Question.PopBalloonsQuestion ->
                                 Column(
-                                    modifier = Modifier.fillMaxSize(),
+                                    modifier = Modifier.fillMaxSize().scale(entryPulseScale.value),
                                     horizontalAlignment = Alignment.CenterHorizontally,
                                     verticalArrangement = Arrangement.Top,
                                 ) {
                                     if (plan.mode != com.tal.hebrewdino.ui.domain.StationQuizMode.PickLetter) {
                                         TargetLetterHeaderChip(
                                             letter = current.correctAnswer,
-                                            modifier = Modifier.padding(top = 4.dp),
+                                            modifier =
+                                                Modifier
+                                                    .padding(top = 4.dp)
+                                                    .scale(hintHeaderScale.value),
                                         )
                                     }
                                     if (plan.mode == com.tal.hebrewdino.ui.domain.StationQuizMode.PickLetter) {
@@ -428,22 +645,60 @@ fun GameScreen(
                                                         .padding(top = 4.dp),
                                             )
                                             LetterOptions(
-                                                options = current.options,
+                                                options =
+                                                    if (chapterId == 1 && stationId == 1 && station1PinnedCorrectLetter != null) {
+                                                        listOf(station1PinnedCorrectLetter!!)
+                                                    } else {
+                                                        current.options
+                                                    },
                                                 enabled = !inputLocked,
                                                 shakePx = optionsShake.value,
+                                                correctPulseLetter =
+                                                    correctTapPulseLetter
+                                                        ?: current.correctAnswer.takeIf { wrongTapsThisQuestion >= 2 },
+                                                correctPulseEpoch = hintPulseEpoch + correctTapPulseEpoch,
                                                 onPick = { picked ->
+                                                    // UX: any tap should immediately cancel currently playing voice,
+                                                    // even if we ignore the tap due to cooldown.
+                                                    cancelFeedbackVoice()
                                                     if (!consumeTapCooldown()) return@LetterOptions
+                                                    // CRITICAL UX: visuals/SFX are immediate; voice is scheduled later.
                                                     when (session.submitAnswer(picked)) {
                                                         AnswerResult.Correct -> {
-                                                            if (audioEnabled) ChildGameAudioHooks.onCorrect()
-                                                            scope.launch {
-                                                                val isLast = session.currentIndex >= session.totalQuestions - 1
-                                                                advanceAfterRound(isLast)
+                                                            // Station 1: no SFX before speaking the letter name.
+                                                            if (audioEnabled && !(chapterId == 1 && stationId == 1)) {
+                                                                ChildGameAudioHooks.onCorrect()
+                                                            }
+                                                            correctTapPulseLetter = picked
+                                                            correctTapPulseEpoch += 1
+                                                            // Station 1: play the combined positive clip and ONLY THEN advance.
+                                                            if (audioEnabled && chapterId == 1 && stationId == 1) {
+                                                                scope.launch {
+                                                                    cancelFeedbackVoice()
+                                                                    station1PinnedCorrectLetter = picked
+                                                                    val combined = AudioClips.station1CorrectCombined(picked) ?: return@launch
+                                                                    val ms = sfx.durationMs(combined) ?: 0L
+                                                                    station1VoiceStreamId = sfx.playReturningStreamId(combined, volume = 1f) ?: 0
+                                                                    if (ms > 0) delay(ms)
+                                                                    val isLast = session.currentIndex >= session.totalQuestions - 1
+                                                                    advanceAfterRound(isLast)
+                                                                }
+                                                            } else {
+                                                                scope.launch {
+                                                                    val isLast = session.currentIndex >= session.totalQuestions - 1
+                                                                    advanceAfterRound(isLast)
+                                                                }
                                                             }
                                                         }
                                                         AnswerResult.Wrong -> {
-                                                            if (audioEnabled) ChildGameAudioHooks.onWrong()
-                                                            onWrongFeedback()
+                                                            // Station 1: no SFX before speaking the letter name.
+                                                            if (audioEnabled && !(chapterId == 1 && stationId == 1)) {
+                                                                ChildGameAudioHooks.onWrong()
+                                                            }
+                                                            shakeEpoch += 1
+                                                            wrongTapsThisQuestion += 1
+                                                            if (wrongTapsThisQuestion >= 2) hintPulseEpoch += 1
+                                                            onWrongFeedback(wrongPickedLetter = picked)
                                                         }
                                                         AnswerResult.Finished -> {}
                                                     }
@@ -465,25 +720,42 @@ fun GameScreen(
                                                 correctAnswer = current.correctAnswer,
                                                 enabled = !inputLocked,
                                                 shakePx = optionsShake.value,
-                                                onPopSfx = { isCorrect ->
-                                                    // SFX only; no suspend call needed.
+                                                onBalloonPressed = { _ ->
+                                                    // Voice is triggered after pop SFX (see onPopSfx) so it feels connected.
+                                                },
+                                                onPopSfx = { letter, isCorrect ->
+                                                    // CRITICAL UX: pop SFX first, then say the balloon letter.
                                                     if (!audioEnabled) return@PopBalloonsOptions
+                                                    cancelFeedbackVoice()
                                                     scope.launch {
                                                         sfx.playFirstAvailable(
+                                                            if (isCorrect) AudioClips.SfxBalloonPopSoft else AudioClips.SfxBalloonPopWrongFunny,
+                                                            AudioClips.SfxBalloonPopSoft,
                                                             AudioClips.SfxBalloonPop,
                                                             volume = if (isCorrect) 0.88f else 0.32f,
                                                         )
                                                     }
+                                                    val clip = AudioClips.letterNameClip(letter)
+                                                    if (clip != null) {
+                                                        feedbackVoiceJob =
+                                                            scope.launch {
+                                                                delay(90)
+                                                                voice.playSequenceBlocking(clip)
+                                                            }
+                                                    }
                                                 },
                                                 onWrongPick = {
                                                     if (!consumeTapCooldown()) return@PopBalloonsOptions
+                                                    cancelFeedbackVoice()
                                                     // Wrong balloon: feedback only, stay on same question.
                                                     session.wrongTap()
                                                     shakeEpoch += 1
+                                                    wrongTapsThisQuestion += 1
+                                                    if (wrongTapsThisQuestion >= 2) hintPulseEpoch += 1
                                                     onWrongFeedback()
                                                 },
                                                 onAllCorrectPopped = {
-                                                    if (!consumeTapCooldown()) return@PopBalloonsOptions
+                                                    cancelFeedbackVoice()
                                                     // Only advance when ALL correct-letter balloons are popped.
                                                     when (session.submitAnswer(current.correctAnswer)) {
                                                         AnswerResult.Correct ->
@@ -505,7 +777,7 @@ fun GameScreen(
                                     enabled = !inputLocked,
                                     shakePx = optionsShake.value,
                                     pictureImageHeight =
-                                        if (chapterId == 1 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
+                                        if (chapterId in 1..4 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
                                             // Station 4: keep the frame compact so the word + letters remain visible.
                                             160.dp
                                         } else {
@@ -513,21 +785,21 @@ fun GameScreen(
                                         },
                                     // Station 4 request: word + image doubled, frame (box) slightly smaller.
                                     promptWordSizeMultiplier =
-                                        if (chapterId == 1 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
+                                        if (chapterId in 1..4 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
                                             2f
                                         } else {
                                             1f
                                         },
                                     // Station 4 screenshots: the outer card should be wider (more rectangle).
                                     pictureFrameMaxWidthFraction =
-                                        if (chapterId == 1 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
+                                        if (chapterId in 1..4 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
                                             // Station 4: frame (box) ~20% smaller.
                                             0.25f
                                         } else {
                                             null
                                         },
                                     pictureFrameMinWidth =
-                                        if (chapterId == 1 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
+                                        if (chapterId in 1..4 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
                                             // Station 4: frame (box) ~20% smaller.
                                             112.dp
                                         } else {
@@ -536,30 +808,47 @@ fun GameScreen(
                                     // Normalize “perceived” picture size: some assets (medusa/house) read too large,
                                     // while emoji/placeholder art reads too small.
                                     pictureInnerScale = { word, tileDrawable ->
-                                        if (chapterId == 1 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
+                                        if (chapterId in 1..4 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
                                             Chapter1Station4PictureInnerScale.likeStation5(word, tileDrawable)
                                         } else {
                                             1f
                                         }
                                     },
+                                    hintCorrectLetter = current.correctLetter.takeIf { wrongTapsThisQuestion >= 2 },
+                                    hintPulseEpoch = hintPulseEpoch,
+                                    correctPulseLetter = correctTapPulseLetter,
+                                    correctPulseEpoch = correctTapPulseEpoch,
                                     onPickLetter = { picked ->
                                         if (!consumeTapCooldown()) return@PictureStartsWithGame
+                                            cancelFeedbackVoice()
                                         when (session.submitPictureStartsWith(picked)) {
                                             AnswerResult.Correct -> {
                                                 if (audioEnabled) ChildGameAudioHooks.onCorrect()
                                                 scope.launch {
+                                                    correctTapPulseLetter = picked
+                                                    correctTapPulseEpoch += 1
+                                                    if (chapterId == 1 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
+                                                        val letterName = AudioClips.letterNameClip(picked)
+                                                        if (letterName != null) voice.playBlocking(letterName)
+                                                    }
                                                     val isLast = session.currentIndex >= session.totalQuestions - 1
                                                     advanceAfterRound(isLast)
                                                 }
                                             }
                                             AnswerResult.Wrong -> {
                                                 if (audioEnabled) ChildGameAudioHooks.onWrong()
-                                                onWrongFeedback()
+                                                wrongTapsThisQuestion += 1
+                                                if (wrongTapsThisQuestion >= 2) hintPulseEpoch += 1
+                                                if (chapterId == 1 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
+                                                    onWrongFeedback(wrongPickedLetter = picked)
+                                                } else {
+                                                    onWrongFeedback()
+                                                }
                                             }
                                             AnswerResult.Finished -> {}
                                         }
                                     },
-                                    modifier = Modifier.fillMaxSize(),
+                                    modifier = Modifier.fillMaxSize().scale(entryPulseScale.value),
                                 )
                             is Question.ImageMatchQuestion ->
                                 if (stationId == 6) {
@@ -585,16 +874,35 @@ fun GameScreen(
                                         contentKey = session.currentIndex,
                                         enabled = !inputLocked,
                                         compactWideSpread =
-                                            chapterId == 1 && stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH,
-                                        innerPictureScaleForChoice = { choice ->
-                                            if (chapterId == 1 && stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH) {
-                                                val isHouse = choice.word == "בית" || choice.id == "w_ב_1"
-                                                val isMedusa = choice.word == "מדוזה" || choice.id == "w_מ_3"
-                                                when {
-                                                    isMedusa -> (2f / 3f)
-                                                    isHouse -> 1f
-                                                    else -> 2f
+                                            chapterId in 1..4 && stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH,
+                                        onWordPressed = { choiceId ->
+                                            if (!audioEnabled) return@MatchLetterToWordGame
+                                            scope.launch {
+                                                voice.playBlocking(AudioClips.wordClipByCatalogId(choiceId))
+                                            }
+                                        },
+                                        onLetterPressed = { letter ->
+                                            if (!audioEnabled) return@MatchLetterToWordGame
+                                            val clip = AudioClips.letterNameClip(letter) ?: return@MatchLetterToWordGame
+                                            scope.launch { voice.playBlocking(clip) }
+                                        },
+                                        onMatchAttempt = { correct ->
+                                            if (!audioEnabled) return@MatchLetterToWordGame
+                                            scope.launch {
+                                                if (correct) {
+                                                    voice.playFirstAvailableBlocking(
+                                                        AudioClips.VoNice1,
+                                                        AudioClips.VoGoodJob1,
+                                                        AudioClips.VoGoodJob2,
+                                                    )
+                                                } else {
+                                                    voice.playFirstAvailableBlocking(AudioClips.VoTryAgain2, AudioClips.VoTryAgain1)
                                                 }
+                                            }
+                                        },
+                                        innerPictureScaleForChoice = { choice ->
+                                            if (chapterId in 1..4 && stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH) {
+                                                Chapter1Station5And6ImageMatchInnerScale.innerScale(choice)
                                             } else {
                                                 when {
                                                     choice.word == "מדוזה" || choice.id == "w_מ_3" || choice.tileDrawable == R.drawable.lesson_pic_medusa -> 0.5f
@@ -602,7 +910,7 @@ fun GameScreen(
                                                 }
                                             }
                                         },
-                                        instructions = "חברו אות למילה ולתמונה",
+                                        instructions = "חברו בין  אות למילה המתאימה",
                                         onSolved = {
                                             if (!consumeTapCooldown()) return@MatchLetterToWordGame
                                             scope.launch {
@@ -616,7 +924,7 @@ fun GameScreen(
                                                 }
                                             }
                                         },
-                                        modifier = Modifier.fillMaxSize(),
+                                        modifier = Modifier.fillMaxSize().scale(entryPulseScale.value),
                                     )
                                 } else {
                                     ImageMatchGame(
@@ -624,11 +932,13 @@ fun GameScreen(
                                         contentKey = session.currentIndex,
                                         enabled = !inputLocked,
                                         shakePx = optionsShake.value,
+                                        hintCorrectChoiceId = current.correctChoiceId.takeIf { wrongTapsThisQuestion >= 2 },
+                                        hintPulseEpoch = hintPulseEpoch,
                                         showWordCaptions = true,
                                         // Episode 1 station 5: caption text +20%.
                                         captionSizeMultiplier =
                                             plan.imageMatchCaptionSizeMultiplier *
-                                                if (chapterId == 1 && stationId == Chapter1StationOrder.PICTURE_PICK_ALL) {
+                                                if (chapterId in 1..4 && stationId == Chapter1StationOrder.PICTURE_PICK_ALL) {
                                                     1.2f
                                                 } else {
                                                     1f
@@ -637,25 +947,23 @@ fun GameScreen(
                                         innerPictureScaleForChoice = { choice ->
                                             // Station 5 request: all pictures should look same-size as the heart.
                                             // Use Crop in the card and keep per-choice scaling at 1x.
-                                            if (chapterId == 1 && stationId == Chapter1StationOrder.PICTURE_PICK_ALL) {
-                                                // Station 5: ONLY house should be half size.
-                                                val isHouse = choice.word == "בית" || choice.id == "w_ב_1"
-                                                val isMedusa = choice.word == "מדוזה" || choice.id == "w_מ_3"
-                                                when {
-                                                    isMedusa -> (2f / 3f)
-                                                    isHouse -> 1f
-                                                    else -> 2f
-                                                }
+                                            if (chapterId in 1..4 && stationId == Chapter1StationOrder.PICTURE_PICK_ALL) {
+                                                Chapter1Station5And6ImageMatchInnerScale.innerScale(choice)
                                             } else {
                                                 1f
                                             }
                                         },
                                         onAttempt = { choiceId ->
                                             if (!consumeTapCooldown()) return@ImageMatchGame false
+                                            cancelFeedbackVoice()
                                             when (session.submitImageMatch(choiceId)) {
                                                 AnswerResult.Correct -> {
                                                     if (audioEnabled) ChildGameAudioHooks.onCorrect()
                                                     scope.launch {
+                                                        if (chapterId == 1 && stationId == Chapter1StationOrder.PICTURE_PICK_ALL) {
+                                                            // Station 5 request: say the tapped WORD, then the existing "good job" flow will run.
+                                                            voice.playBlocking(AudioClips.wordClipByCatalogId(choiceId))
+                                                        }
                                                         val isLast = session.currentIndex >= session.totalQuestions - 1
                                                         advanceAfterRound(isLast)
                                                     }
@@ -663,12 +971,19 @@ fun GameScreen(
                                                 }
                                                 AnswerResult.Wrong -> {
                                                     if (audioEnabled) ChildGameAudioHooks.onWrong()
-                                                    onWrongFeedback()
+                                                    wrongTapsThisQuestion += 1
+                                                    if (wrongTapsThisQuestion >= 2) hintPulseEpoch += 1
+                                                    if (chapterId == 1 && stationId == Chapter1StationOrder.PICTURE_PICK_ALL) {
+                                                        onWrongFeedback(wrongWordCatalogId = choiceId)
+                                                    } else {
+                                                        onWrongFeedback()
+                                                    }
                                                     false
                                                 }
                                                 AnswerResult.Finished -> false
                                             }
                                         },
+                                        modifier = Modifier.fillMaxSize().scale(entryPulseScale.value),
                                     )
                                 }
                             is Question.FinaleSlotQuestion ->
@@ -710,8 +1025,8 @@ fun GameScreen(
                     DinoVisual.Jump -> jumpFrames[jumpFrameIndex.coerceIn(0, jumpFrames.lastIndex)]
                 }
             val talkFrames =
-                if (chapterId == 2) {
-                    // “Walk” feel in mountains between rounds.
+                if (chapterId in 2..4) {
+                    // “Walk” feel on chapter roads between rounds.
                     listOf(R.drawable.dino_walk_0, R.drawable.dino_walk_1, R.drawable.dino_walk_2, R.drawable.dino_walk_3)
                 } else {
                     listOf(R.drawable.dino_talk_0, R.drawable.dino_talk_1, R.drawable.dino_talk_2, R.drawable.dino_talk_3)
@@ -719,7 +1034,7 @@ fun GameScreen(
             AnimatedTalkingCharacter(
                 idleRes = dinoDrawable,
                 talkFrameResIds = talkFrames,
-                isTalking = dinoTalking || (chapterId == 2 && inputLocked && dinoVisual == DinoVisual.Jump),
+                isTalking = dinoTalking || (chapterId in 2..4 && inputLocked && dinoVisual == DinoVisual.Jump),
                 modifier =
                     Modifier
                         .offset { IntOffset((dinoForward.value + dinoSlip.value).toInt(), 0) }
@@ -811,23 +1126,58 @@ private suspend fun speakLetterPrompt(
     voice: VoicePlayer,
     letter: String,
 ) {
+    // Prefer per-letter recorded prompt (e.g. "בחר את האות אלף") when available.
     val chooseSpecific = AudioClips.chooseLetterClip(letter)
     if (chooseSpecific != null) {
         voice.playBlocking(chooseSpecific)
-    } else {
-        voice.playBlocking(AudioClips.VoChooseLetter)
+        return
     }
+
+    // Otherwise use the generic "בחר את האות" + letter name (requires both clips recorded).
+    voice.playBlocking(AudioClips.VoChooseLetter)
+    val letterName = AudioClips.letterNameClip(letter) ?: return
+    voice.playSequenceBlocking(letterName)
 }
 
-private suspend fun speakPromptForQuestion(
-    voice: VoicePlayer,
-    q: Question,
-) {
+    private suspend fun speakPromptForQuestion(
+        voice: VoicePlayer,
+        stationId: Int,
+        chapterId: Int,
+        q: Question,
+    ) {
     when (q) {
-        is Question.PopBalloonsQuestion -> speakLetterPrompt(voice, q.correctAnswer)
+        is Question.PopBalloonsQuestion -> {
+            // Episode 1 station 2: custom prompt "פוצץ את הבלונים עם האות" + letter name.
+            if (chapterId == 1 && stationId == 2) {
+                voice.playSequenceBlocking(AudioClips.PopBalloonsWithLetter)
+                val letterName = AudioClips.letterNameClip(q.correctAnswer)
+                if (letterName != null) voice.playSequenceBlocking(letterName)
+            } else {
+                speakLetterPrompt(voice, q.correctAnswer)
+            }
+        }
         is Question.FindLetterGridQuestion -> speakLetterPrompt(voice, q.targetLetter)
-        is Question.PictureStartsWithQuestion -> speakLetterPrompt(voice, q.correctLetter)
-        is Question.ImageMatchQuestion -> speakLetterPrompt(voice, q.targetLetter)
+            is Question.PictureStartsWithQuestion -> {
+                // Episode 1 station 4: say the WORD shown first (if recorded), then fall back to the usual letter prompt.
+                if (chapterId == 1 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
+                    voice.playBlocking(AudioClips.wordClipByCatalogId(q.catalogEntryId))
+                } else {
+                    speakLetterPrompt(voice, q.correctLetter)
+                }
+            }
+            is Question.ImageMatchQuestion -> {
+                // Episode 1 station 5: "איזו מילה מתחילה באות" + letter name.
+                if (chapterId == 1 && stationId == Chapter1StationOrder.PICTURE_PICK_ALL) {
+                    voice.playBlocking(AudioClips.WhichWordStartsWithLetter)
+                    val letterName = AudioClips.letterNameClip(q.targetLetter)
+                    if (letterName != null) voice.playBlocking(letterName)
+                } else if (chapterId == 1 && stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH) {
+                    // Episode 1 station 6: instructions.
+                    voice.playBlocking(AudioClips.MatchLetterToWordInstructions)
+                } else {
+                    speakLetterPrompt(voice, q.targetLetter)
+                }
+            }
         is Question.FinaleSlotQuestion -> voice.playBlocking(AudioClips.VoChooseLetter)
     }
 }

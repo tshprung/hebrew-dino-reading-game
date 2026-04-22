@@ -50,7 +50,7 @@ fun BeachIntroScreen(
             "אוי לא! הביצה של אמא נעלמה.\n" +
                 "בוא/י נעזור למצוא אותה.\n" +
                 "כדי להתקדם, נבחר אותיות נכון.",
-        voiceAssetPath = AudioClips.StoryBeachIntro,
+        voiceAssetPath = AudioClips.StoryForestIntro,
         onContinue = onContinue,
         onSkip = onSkip,
         modifier = modifier,
@@ -72,7 +72,7 @@ fun BeachOutroScreen(
             "סיימת את פרק החוף!\n" +
                 "אמא ממש גאה בך.\n" +
                 "בקרוב נמשיך להרפתקה הבאה…",
-        voiceAssetPath = AudioClips.StoryBeachOutro,
+        voiceAssetPath = AudioClips.StoryEggOutro,
         onContinue = onContinue,
         onSkip = onSkip,
         modifier = modifier,

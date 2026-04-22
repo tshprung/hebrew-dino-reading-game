@@ -453,7 +453,9 @@ internal fun PopBalloonsOptions(
     correctAnswer: String,
     enabled: Boolean,
     shakePx: Float,
-    onPopSfx: suspend (isCorrect: Boolean) -> Unit,
+    /** Called whenever a balloon is pressed (letter in balloon). */
+    onBalloonPressed: ((letter: String) -> Unit)? = null,
+    onPopSfx: suspend (letter: String, isCorrect: Boolean) -> Unit,
     onWrongPick: () -> Unit,
     onAllCorrectPopped: () -> Unit,
 ) {
@@ -623,7 +625,7 @@ internal fun PopBalloonsOptions(
                     modifier = Modifier.zIndex(yPx * 1000f + xPx),
                     onPop = {
                         if (idx < alive.size) alive[idx] = false
-                        scope.launch { onPopSfx(letter == correctAnswer) }
+                        scope.launch { onPopSfx(letter, letter == correctAnswer) }
                         if (letter == correctAnswer) {
                             if (remainingCorrectCount() <= 0) {
                                 onAllCorrectPopped()
@@ -634,12 +636,15 @@ internal fun PopBalloonsOptions(
                     },
                     onPickWrong = { fall ->
                         scope.launch {
+                            // UX: play a pop/plop even for wrong balloons (kids expect a sound).
+                            onPopSfx(letter, false)
                             wrongRecoverRunning = true
                             runWrongBalloonVerticalRecover(fall)
                             onWrongPick()
                             wrongRecoverRunning = false
                         }
                     },
+                    onPressed = { onBalloonPressed?.invoke(letter) },
                 )
             }
         }
@@ -670,6 +675,7 @@ internal fun PopBalloon(
     modifier: Modifier = Modifier,
     onPop: () -> Unit,
     onPickWrong: (Animatable<Float, AnimationVector1D>) -> Unit,
+    onPressed: () -> Unit = {},
 ) {
     var popping by remember(instanceKey) { mutableStateOf(false) }
     var visible by remember(instanceKey) { mutableStateOf(true) }
@@ -745,6 +751,7 @@ internal fun PopBalloon(
                         indication = null,
                         enabled = enabled && !popping,
                         onClick = {
+                            onPressed()
                             if (shouldPop) {
                                 popping = true
                             } else {

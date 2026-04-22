@@ -18,6 +18,7 @@ import androidx.navigation.navArgument
 import com.tal.hebrewdino.ui.domain.Chapter1Config
 import com.tal.hebrewdino.ui.domain.Chapter2Config
 import com.tal.hebrewdino.ui.domain.Chapter3Config
+import com.tal.hebrewdino.ui.domain.Chapter4Config
 import com.tal.hebrewdino.ui.data.CharacterPrefs
 import com.tal.hebrewdino.ui.data.DinoCharacter
 import com.tal.hebrewdino.ui.data.ProgressPrefs
@@ -26,9 +27,15 @@ import com.tal.hebrewdino.ui.screens.Chapter2LettersIntroScreen
 import com.tal.hebrewdino.ui.screens.Chapter3IntroScreen
 import com.tal.hebrewdino.ui.screens.Chapter3LettersIntroScreen
 import com.tal.hebrewdino.ui.screens.Chapter3LevelScreen
+import com.tal.hebrewdino.ui.screens.Chapter4LettersIntroScreen
+import com.tal.hebrewdino.ui.screens.Chapter4LevelScreen
 import com.tal.hebrewdino.ui.screens.ChaptersProgress
 import com.tal.hebrewdino.ui.screens.ChaptersScreen
 import com.tal.hebrewdino.ui.screens.Chapter2IntroScreen
+import com.tal.hebrewdino.ui.screens.Chapter2OutroScreen
+import com.tal.hebrewdino.ui.screens.Chapter3OutroScreen
+import com.tal.hebrewdino.ui.screens.Chapter4IntroScreen
+import com.tal.hebrewdino.ui.screens.Chapter4OutroScreen
 import com.tal.hebrewdino.ui.screens.ForestIntroScreen
 import com.tal.hebrewdino.ui.screens.ForestOutroScreen
 import com.tal.hebrewdino.ui.screens.JourneyEndMarker
@@ -62,23 +69,32 @@ fun AppNav() {
     val chapter3UnlockedStation by progress.chapter3UnlockedStationFlow.collectAsState(initial = 1)
     val chapter3CompletedStations by progress.chapter3CompletedStationsFlow.collectAsState(initial = emptySet())
     val chapter3Completed by progress.chapter3CompletedFlow.collectAsState(initial = false)
+    val chapter4IntroSeen by progress.chapter4IntroSeenFlow.collectAsState(initial = false)
+    val chapter4LettersIntroSeen by progress.chapter4LettersIntroSeenFlow.collectAsState(initial = false)
+    val chapter4UnlockedStation by progress.chapter4UnlockedStationFlow.collectAsState(initial = 1)
+    val chapter4CompletedStations by progress.chapter4CompletedStationsFlow.collectAsState(initial = emptySet())
+    val chapter4Completed by progress.chapter4CompletedFlow.collectAsState(initial = false)
     val unlockedLevel by progress.unlockedLevelFlow.collectAsState(initial = 1)
     val completedLevels by progress.completedLevelsFlow.collectAsState(initial = emptySet())
 
     val unlockedChapter =
         when {
-            chapter3Completed -> 3
+            chapter4Completed -> 4
+            chapter3Completed -> 4
             chapter2Completed -> 3
             beachOutroSeen -> 2
             else -> 1
         }
-    val chapter4ComingSoon = chapter3Completed
+    /** Chapter 4 story unlocks after chapter 3 is finished; “בקרוב” shows until then. */
+    val chapter4ComingSoon = !chapter3Completed
+    val maxSelectableChapterId = if (chapter3Completed) 4 else 3
 
     val startDestination = NavRoutes.Chapters
 
     LaunchedEffect(Unit) {
         progress.repairChapter2ProgressIfNeeded()
         progress.repairChapter3ProgressIfNeeded()
+        progress.repairChapter4ProgressIfNeeded()
         prefs.setCharacter(DinoCharacter.Dino)
     }
 
@@ -87,11 +103,13 @@ fun AppNav() {
             ChaptersScreen(
                 unlockedChapter = unlockedChapter,
                 chapter4ComingSoon = chapter4ComingSoon,
+                maxSelectableChapterId = maxSelectableChapterId,
                 chaptersProgress =
                     ChaptersProgress(
                         chapter1Completed = beachOutroSeen,
                         chapter2Completed = chapter2Completed,
                         chapter3Completed = chapter3Completed,
+                        chapter4Completed = chapter4Completed,
                     ),
                 onOpenSettings = { navController.navigate(NavRoutes.Settings) },
                 onOpenChapter = { chapterId ->
@@ -125,7 +143,18 @@ fun AppNav() {
                                 }
                             if (next != NavRoutes.Chapters) navController.navigate(next)
                         }
-                        in 4..10 -> Unit
+                        4 -> {
+                            if (chapter3Completed) {
+                                val next =
+                                    when {
+                                        !chapter4IntroSeen -> NavRoutes.Ch4Intro
+                                        !chapter4LettersIntroSeen -> NavRoutes.Ch4Letters
+                                        else -> NavRoutes.Ch4Journey
+                                    }
+                                navController.navigate(next)
+                            }
+                        }
+                        in 5..10 -> Unit
                     }
                 },
             )
@@ -185,10 +214,9 @@ fun AppNav() {
                 unlockedLevel = chapter2UnlockedStation,
                 completedLevels = chapter2CompletedStations,
                 totalLevels = Chapter2Config.STATION_COUNT,
-                headerTitle = "פרק 2 - חוזרים הביתה",
-                headerSubtitle = "הדרך חזרה לקן — ${Chapter2Config.STATION_COUNT} תחנות",
-                endMarker = JourneyEndMarker.HomeCave,
-                companionImageRes = R.drawable.mom_idle,
+                headerTitle = "פרק 2 - מצא את הביצה הורודה",
+                headerSubtitle = "בדרך לביצה הורודה — ${Chapter2Config.STATION_COUNT} תחנות",
+                endMarker = JourneyEndMarker.PinkEgg,
                 backgroundRes = R.drawable.mountain_bg_chapter2,
                 onPlayLevel = { stationId ->
                     navController.navigate("${NavRoutes.Ch2Level}/$stationId")
@@ -229,17 +257,18 @@ fun AppNav() {
                 unlockedLevel = chapter3UnlockedStation,
                 completedLevels = chapter3CompletedStations,
                 totalLevels = Chapter3Config.STATION_COUNT,
-                playableLevels = Chapter3Config.MAX_PLAYABLE_STATION,
-                headerTitle = "פרק 3 - מצא את החבר",
-                headerSubtitle = "בדרך עם דינו — ${Chapter3Config.STATION_COUNT} תחנות",
+                headerTitle = "פרק 3 - מצא את הביצה הסגולה",
+                headerSubtitle = "בדרך לביצה הסגולה — ${Chapter3Config.STATION_COUNT} תחנות",
                 headerSubtitleCompact = true,
-                endMarker = JourneyEndMarker.HomeCave,
-                backgroundRes = R.drawable.swamp_bg_chapter3,
+                endMarker = JourneyEndMarker.PurpleEgg,
+                backgroundRes = R.drawable.mountain_bg_chapter3,
                 onPlayLevel = { stationId ->
                     navController.navigate("${NavRoutes.Ch3Level}/$stationId")
                 },
                 onBack = { navController.navigate(NavRoutes.Chapters) { popUpTo(NavRoutes.Ch3Journey) { inclusive = true } } },
-                onDebugUnlockNext = null,
+                onDebugUnlockNext = {
+                    scope.launch { progress.debugUnlockNextChapter3Station() }
+                },
             )
         }
 
@@ -323,33 +352,26 @@ fun AppNav() {
             route = "${NavRoutes.Ch3Level}/{stationId}",
             arguments = listOf(navArgument("stationId") { type = NavType.IntType }),
         ) { backStackEntry ->
-            val rawId = backStackEntry.arguments?.getInt("stationId") ?: 1
-            if (rawId > Chapter3Config.MAX_PLAYABLE_STATION) {
-                LaunchedEffect(Unit) {
-                    navController.popBackStack()
-                }
-                Spacer(modifier = Modifier.size(0.dp))
-            } else {
-                Chapter3LevelScreen(
-                    stationId = rawId,
-                    onBack = { navController.popBackStack() },
-                    onLettersHelp = {
-                        navController.navigate(NavRoutes.Ch3Letters) { launchSingleTop = true }
-                    },
-                    onDebugStationAdvance = null,
-                    suppressInGameDinoProgress = chapter3CompletedStations.contains(rawId),
-                    onComplete = { completedStationId, correctCount, mistakeCount ->
-                        scope.launch {
-                            progress.markChapter3CompletedStation(completedStationId)
-                            progress.unlockChapter3AtLeast(completedStationId + 1)
-                            if (completedStationId >= Chapter3Config.STATION_COUNT) {
-                                progress.markChapter3Completed()
-                            }
+            val stationId = backStackEntry.arguments?.getInt("stationId") ?: 1
+            Chapter3LevelScreen(
+                stationId = stationId,
+                onBack = { navController.popBackStack() },
+                onLettersHelp = {
+                    navController.navigate(NavRoutes.Ch3Letters) { launchSingleTop = true }
+                },
+                onDebugStationAdvance = null,
+                suppressInGameDinoProgress = chapter3CompletedStations.contains(stationId),
+                onComplete = { completedStationId, correctCount, mistakeCount ->
+                    scope.launch {
+                        progress.markChapter3CompletedStation(completedStationId)
+                        progress.unlockChapter3AtLeast(completedStationId + 1)
+                        if (completedStationId >= Chapter3Config.STATION_COUNT) {
+                            progress.markChapter3Completed()
                         }
-                        navController.navigate("${NavRoutes.Ch3Reward}/$completedStationId/$correctCount/$mistakeCount")
-                    },
-                )
-            }
+                    }
+                    navController.navigate("${NavRoutes.Ch3Reward}/$completedStationId/$correctCount/$mistakeCount")
+                },
+            )
         }
 
         composable(
@@ -430,7 +452,7 @@ fun AppNav() {
                 mistakes = mistakes,
                 onBackToMap = {
                     if (stationId >= Chapter2Config.STATION_COUNT) {
-                        navController.navigate(NavRoutes.Chapters) {
+                        navController.navigate(NavRoutes.Ch2StoryOutro) {
                             popUpTo(NavRoutes.Ch2Journey) { inclusive = true }
                         }
                     } else {
@@ -439,6 +461,17 @@ fun AppNav() {
                         }
                     }
                 },
+            )
+        }
+
+        composable(NavRoutes.Ch2StoryOutro) {
+            Chapter2OutroScreen(
+                onContinue = {
+                    navController.navigate(NavRoutes.Chapters) {
+                        popUpTo(NavRoutes.Ch2StoryOutro) { inclusive = true }
+                    }
+                },
+                onBack = { navController.popBackStack() },
             )
         }
 
@@ -459,7 +492,7 @@ fun AppNav() {
                 mistakes = mistakes,
                 onBackToMap = {
                     if (stationId >= Chapter3Config.STATION_COUNT) {
-                        navController.navigate(NavRoutes.Chapters) {
+                        navController.navigate(NavRoutes.Ch3StoryOutro) {
                             popUpTo(NavRoutes.Ch3Journey) { inclusive = true }
                         }
                     } else {
@@ -468,6 +501,135 @@ fun AppNav() {
                         }
                     }
                 },
+            )
+        }
+
+        composable(NavRoutes.Ch3StoryOutro) {
+            Chapter3OutroScreen(
+                onContinue = {
+                    navController.navigate(NavRoutes.Chapters) {
+                        popUpTo(NavRoutes.Ch3StoryOutro) { inclusive = true }
+                    }
+                },
+                onBack = { navController.popBackStack() },
+            )
+        }
+
+        composable(NavRoutes.Ch4Intro) {
+            Chapter4IntroScreen(
+                onContinue = {
+                    scope.launch { progress.markChapter4IntroSeen() }
+                    navController.navigate(NavRoutes.Ch4Letters) {
+                        popUpTo(NavRoutes.Ch4Intro) { inclusive = true }
+                    }
+                },
+                onBack = { navController.popBackStack() },
+            )
+        }
+
+        composable(NavRoutes.Ch4Letters) {
+            Chapter4LettersIntroScreen(
+                onContinue = {
+                    scope.launch { progress.markChapter4LettersIntroSeen() }
+                    navController.navigate(NavRoutes.Ch4Journey) {
+                        popUpTo(NavRoutes.Ch4Letters) { inclusive = true }
+                    }
+                },
+                onBack = { navController.popBackStack() },
+            )
+        }
+
+        composable(NavRoutes.Ch4Journey) {
+            JourneyScreen(
+                unlockedLevel = chapter4UnlockedStation,
+                completedLevels = chapter4CompletedStations,
+                totalLevels = Chapter4Config.STATION_COUNT,
+                headerTitle = "פרק 4 - חיזוק חכם",
+                headerSubtitle = "אותיות ומילים — ${Chapter4Config.STATION_COUNT} תחנות",
+                headerSubtitleCompact = true,
+                endMarker = JourneyEndMarker.BigEgg,
+                backgroundRes = R.drawable.mountain_bg_chapter4,
+                onPlayLevel = { stationId ->
+                    navController.navigate("${NavRoutes.Ch4Level}/$stationId")
+                },
+                onBack = { navController.navigate(NavRoutes.Chapters) { popUpTo(NavRoutes.Ch4Journey) { inclusive = true } } },
+                onDebugUnlockNext =
+                    if (isDebuggable) {
+                        { scope.launch { progress.debugUnlockNextChapter4Station() } }
+                    } else {
+                        null
+                    },
+            )
+        }
+
+        composable(
+            route = "${NavRoutes.Ch4Level}/{stationId}",
+            arguments = listOf(navArgument("stationId") { type = NavType.IntType }),
+        ) { backStackEntry ->
+            val stationId = backStackEntry.arguments?.getInt("stationId") ?: 1
+            Chapter4LevelScreen(
+                stationId = stationId,
+                onBack = { navController.popBackStack() },
+                onLettersHelp = {
+                    navController.navigate(NavRoutes.Ch4Letters) { launchSingleTop = true }
+                },
+                onDebugStationAdvance =
+                    if (isDebuggable) {
+                        { scope.launch { progress.debugUnlockNextChapter4Station() } }
+                    } else {
+                        null
+                    },
+                suppressInGameDinoProgress = chapter4CompletedStations.contains(stationId),
+                onComplete = { completedStationId, correctCount, mistakeCount ->
+                    scope.launch {
+                        progress.markChapter4CompletedStation(completedStationId)
+                        progress.unlockChapter4AtLeast(completedStationId + 1)
+                        if (completedStationId >= Chapter4Config.STATION_COUNT) {
+                            progress.markChapter4Completed()
+                        }
+                    }
+                    navController.navigate("${NavRoutes.Ch4Reward}/$completedStationId/$correctCount/$mistakeCount")
+                },
+            )
+        }
+
+        composable(
+            route = "${NavRoutes.Ch4Reward}/{stationId}/{correct}/{mistakes}",
+            arguments = listOf(
+                navArgument("stationId") { type = NavType.IntType },
+                navArgument("correct") { type = NavType.IntType },
+                navArgument("mistakes") { type = NavType.IntType },
+            ),
+        ) { backStackEntry ->
+            val stationId = backStackEntry.arguments?.getInt("stationId") ?: 1
+            val correct = backStackEntry.arguments?.getInt("correct") ?: 0
+            val mistakes = backStackEntry.arguments?.getInt("mistakes") ?: 0
+            RewardScreen(
+                levelId = stationId,
+                correct = correct,
+                mistakes = mistakes,
+                onBackToMap = {
+                    if (stationId >= Chapter4Config.STATION_COUNT) {
+                        navController.navigate(NavRoutes.Ch4Outro) {
+                            popUpTo(NavRoutes.Ch4Journey) { inclusive = true }
+                        }
+                    } else {
+                        navController.navigate(NavRoutes.Ch4Journey) {
+                            popUpTo(NavRoutes.Ch4Journey) { inclusive = true }
+                        }
+                    }
+                },
+            )
+        }
+
+        composable(NavRoutes.Ch4Outro) {
+            Chapter4OutroScreen(
+                onContinue = {
+                    navController.navigate(NavRoutes.Chapters) {
+                        popUpTo(NavRoutes.Ch4Outro) { inclusive = true }
+                    }
+                },
+                onBack = { navController.popBackStack() },
             )
         }
 

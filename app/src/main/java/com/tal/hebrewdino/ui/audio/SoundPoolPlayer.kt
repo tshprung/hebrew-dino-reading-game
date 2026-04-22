@@ -7,6 +7,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import java.io.IOException
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.coroutines.resume
 
@@ -43,6 +45,7 @@ class SoundPoolPlayer(context: Context) {
     private val loadedSoundIdByPath = ConcurrentHashMap<String, Int>()
     private val readySoundIds = ConcurrentHashMap<Int, Boolean>()
     private val pendingLoads = ConcurrentHashMap<Int, MutableList<(Boolean) -> Unit>>()
+    private val durationMsByPath = ConcurrentHashMap<String, Long>()
 
     init {
         soundPool?.setOnLoadCompleteListener { _, sampleId, status ->
@@ -59,6 +62,18 @@ class SoundPoolPlayer(context: Context) {
         pool.play(soundId, volume, volume, 1, 0, 1f)
     }
 
+    /**
+     * Plays and returns the active stream id so callers can stop it immediately.
+     * Returns null if the asset couldn't be loaded/played.
+     */
+    suspend fun playReturningStreamId(assetPath: String, volume: Float = 1f): Int? {
+        if (!ENABLED) return null
+        val pool = soundPool ?: return null
+        val soundId = loadIfNeeded(pool, assetPath) ?: return null
+        val streamId = pool.play(soundId, volume, volume, 1, 0, 1f)
+        return if (streamId != 0) streamId else null
+    }
+
     suspend fun playFirstAvailable(vararg assetPaths: String, volume: Float = 1f) {
         if (!ENABLED) return
         val pool = soundPool ?: return
@@ -68,6 +83,14 @@ class SoundPoolPlayer(context: Context) {
             pool.play(soundId, volume, volume, 1, 0, 1f)
             return
         }
+    }
+
+    fun stopStream(streamId: Int?) {
+        if (!ENABLED) return
+        val pool = soundPool ?: return
+        val id = streamId ?: return
+        if (id == 0) return
+        pool.stop(id)
     }
 
     fun release() {
@@ -120,5 +143,60 @@ class SoundPoolPlayer(context: Context) {
             if (p.isBlank()) continue
             loadIfNeeded(pool, p)
         }
+    }
+
+    /**
+     * Best-effort duration for PCM WAV assets, based on header parse.
+     * Cached per asset path.
+     */
+    suspend fun durationMs(assetPath: String): Long? {
+        if (assetPath.isBlank()) return null
+        durationMsByPath[assetPath]?.let { return it }
+        val ms =
+            withContext(Dispatchers.IO) {
+                try {
+                    appContext.assets.open(assetPath).use { input ->
+                        val header = ByteArray(64)
+                        val n = input.read(header)
+                        if (n < 44) return@use null
+                        // Very small RIFF/WAV parser: find "fmt " and "data" chunks in the first 64 bytes.
+                        fun leInt(off: Int): Int =
+                            ByteBuffer.wrap(header, off, 4).order(ByteOrder.LITTLE_ENDIAN).int
+                        fun leShort(off: Int): Int =
+                            ByteBuffer.wrap(header, off, 2).order(ByteOrder.LITTLE_ENDIAN).short.toInt() and 0xFFFF
+
+                        // Validate RIFF/WAVE
+                        val riff = String(header, 0, 4)
+                        val wave = String(header, 8, 4)
+                        if (riff != "RIFF" || wave != "WAVE") return@use null
+
+                        // Assume standard layout: fmt at 12, data later. (Our recorded clips follow this.)
+                        val fmtId = String(header, 12, 4)
+                        if (fmtId != "fmt ") return@use null
+                        val fmtSize = leInt(16)
+                        val audioFormat = leShort(20)
+                        val numChannels = leShort(22)
+                        val sampleRate = leInt(24)
+                        val bitsPerSample = leShort(34)
+                        if (audioFormat != 1) return@use null // PCM only
+                        if (sampleRate <= 0 || numChannels <= 0 || bitsPerSample <= 0) return@use null
+                        // data chunk header expected at 20 + fmtSize (commonly 36) + 8
+                        val dataOff = 20 + fmtSize
+                        if (dataOff + 8 > n) return@use null
+                        val dataId = String(header, dataOff, 4)
+                        if (dataId != "data") return@use null
+                        val dataSize = leInt(dataOff + 4).toLong().coerceAtLeast(0L)
+
+                        val bytesPerSample = (bitsPerSample / 8).coerceAtLeast(1)
+                        val byteRate = sampleRate.toLong() * numChannels.toLong() * bytesPerSample.toLong()
+                        if (byteRate <= 0) return@use null
+                        ((dataSize * 1000L) / byteRate).coerceAtMost(15_000L)
+                    }
+                } catch (_: Throwable) {
+                    null
+                }
+            }
+        if (ms != null) durationMsByPath[assetPath] = ms
+        return ms
     }
 }

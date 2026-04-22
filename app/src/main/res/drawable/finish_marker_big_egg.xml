@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="120dp"
+    android:height="140dp"
+    android:viewportWidth="120"
+    android:viewportHeight="140">
+    <!-- Large egg at journey end (chapter 4 “smart reinforcement”). -->
+    <path
+        android:fillColor="#FFCE93D8"
+        android:pathData="M60,22c-24,0 -42,26 -42,54c0,30 20,54 42,54s42,-24 42,-54c0,-28 -18,-54 -42,-54z" />
+    <path
+        android:fillColor="#FF7B1FA2"
+        android:fillAlpha="0.4"
+        android:pathData="M34,58c10,-14 28,-20 46,-14c8,3 16,9 20,18c-12,-6 -28,-6 -40,2c-10,6 -18,18 -20,30c-6,-10 -8,-22 -6,-36z" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:fillAlpha="0.35"
+        android:pathData="M44,40a8,8 0 1,0 0,0.1z" />
+</vector>

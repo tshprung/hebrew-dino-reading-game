@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="120dp"
+    android:height="96dp"
+    android:viewportWidth="120"
+    android:viewportHeight="96">
+    <!-- Pacifier: ring + shield + nipple -->
+    <path
+        android:fillColor="#90CAF9"
+        android:pathData="M28,52 A20,20 0 1,1 28.01,52 Z" />
+    <path
+        android:fillColor="#E1F5FE"
+        android:pathData="M52,40 C40,40 32,50 32,62 C32,74 44,84 60,84 C76,84 88,74 88,62 C88,50 80,40 68,40 Z" />
+    <path
+        android:fillColor="#FFB74D"
+        android:pathData="M60,56 C54,56 50,60 50,66 C50,72 54,76 60,76 C66,76 70,72 70,66 C70,60 66,56 60,56 Z" />
+    <path
+        android:fillColor="#FFCC80"
+        android:pathData="M58,62 L62,62 L62,78 L58,78 Z" />
+</vector>

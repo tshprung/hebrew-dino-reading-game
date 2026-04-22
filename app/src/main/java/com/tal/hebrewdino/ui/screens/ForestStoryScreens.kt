@@ -37,6 +37,7 @@ import com.tal.hebrewdino.R
 import com.tal.hebrewdino.ui.audio.AudioClips
 import com.tal.hebrewdino.ui.audio.VoicePlayer
 import com.tal.hebrewdino.ui.components.AnimatedTalkingCharacter
+import com.tal.hebrewdino.ui.components.learning.StoryEggStrip
 import com.tal.hebrewdino.ui.data.DinoCharacter
 
 private val momTalkFrames =
@@ -67,11 +68,18 @@ fun ForestIntroScreen(
         dinoContentDescription = if (character == DinoCharacter.Dina) "דינה" else "דינו",
         title = "פרק 1 - מצא את הביצה",
         body =
-            "אמא דינוזאור מחכה לביצה שלה.\n" +
-                "רוח טובה נשבה ביער — והביצה נעלמה.\n" +
-                "בוא/י נצעד בדרך, נאסוף אותיות,\n" +
-                "ונחזיר את הביצה הביתה.",
-        voiceAssetPath = AudioClips.StoryBeachIntro,
+            "אמא דינוזאור שמרה על הביצים שלה…\n" +
+                "\n" +
+                "אבל פתאום — הן נעלמו!\n" +
+                "\n" +
+                "\"אוי לא! איפה הביצים שלי?\", אמרה אמא דינוזאור\n" +
+                "\n" +
+                "בואו נעזור לה!\n" +
+                "\n" +
+                "נצא לדרך ונפתור משימות.",
+        voiceAssetPath = AudioClips.StoryForestIntro,
+        eggStripCount = 0,
+        showMomCharacter = true,
         onContinue = onContinue,
         onBack = onBack,
         modifier = modifier,
@@ -88,11 +96,18 @@ fun ForestOutroScreen(
     ForestStoryScreen(
         backgroundRes = R.drawable.forest_bg_story_outro_egg,
         dinoContentDescription = if (character == DinoCharacter.Dina) "דינה" else "דינו",
-        title = "מצאתם את הביצה!",
+        title = "יש!",
         body =
-            "אמא מחבקת חזק, והיער שקט שוב.\n" +
-                "מחר נמשיך להרפתקה חדשה…",
-        voiceAssetPath = AudioClips.StoryBeachOutro,
+            "מצאנו את הביצה הראשונה!\n" +
+                "\n" +
+                "אמא תשמח!\n" +
+                "\n" +
+                "אבל נשארו עוד 2 ביצים למצוא!\n" +
+                "\n" +
+                "בואו נמשיך!",
+        voiceAssetPath = AudioClips.StoryEggOutro,
+        eggStripCount = 1,
+        showMomCharacter = false,
         onContinue = onContinue,
         onBack = onBack,
         modifier = modifier,
@@ -106,6 +121,8 @@ private fun ForestStoryScreen(
     title: String,
     body: String,
     voiceAssetPath: String,
+    eggStripCount: Int,
+    showMomCharacter: Boolean,
     onContinue: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
@@ -137,53 +154,65 @@ private fun ForestStoryScreen(
                 Modifier
                     .fillMaxSize()
                     .padding(24.dp),
-            verticalArrangement = Arrangement.Center,
+            verticalArrangement = Arrangement.SpaceBetween,
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Box(
-                modifier =
-                    Modifier
-                        .clip(RoundedCornerShape(24.dp))
-                        .background(Color.White.copy(alpha = 0.86f))
-                        .padding(18.dp)
-                        .width(520.dp),
+            if (eggStripCount > 0) {
+                StoryEggStrip(foundCount = eggStripCount, modifier = Modifier.align(Alignment.CenterHorizontally))
+            } else {
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        text = title,
-                        style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Black),
-                        color = Color(0xFF0B2B3D),
-                        textAlign = TextAlign.Center,
-                    )
-                    Spacer(modifier = Modifier.height(10.dp))
-                    Text(
-                        text = body,
-                        style = MaterialTheme.typography.titleLarge,
-                        color = Color(0xFF0B2B3D),
-                        textAlign = TextAlign.Center,
-                    )
-                    Spacer(modifier = Modifier.height(14.dp))
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
-                        AnimatedTalkingCharacter(
-                            idleRes = R.drawable.dino_idle,
-                            talkFrameResIds = dinoTalkFrames,
-                            isTalking = narrationPlaying,
-                            modifier = Modifier.size(92.dp),
-                            contentDescription = dinoContentDescription,
+                Box(
+                    modifier =
+                        Modifier
+                            .clip(RoundedCornerShape(24.dp))
+                            .background(Color.White.copy(alpha = 0.86f))
+                            .padding(18.dp)
+                            .width(520.dp),
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = title,
+                            style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Black),
+                            color = Color(0xFF0B2B3D),
+                            textAlign = TextAlign.Center,
                         )
-                        Spacer(modifier = Modifier.width(14.dp))
-                        AnimatedTalkingCharacter(
-                            idleRes = R.drawable.mom_idle,
-                            talkFrameResIds = momTalkFrames,
-                            isTalking = narrationPlaying,
-                            modifier = Modifier.size(92.dp),
-                            contentDescription = "אמא דינוזאור",
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Text(
+                            text = body,
+                            style = MaterialTheme.typography.titleLarge,
+                            color = Color(0xFF0B2B3D),
+                            textAlign = TextAlign.Center,
                         )
+                        Spacer(modifier = Modifier.height(14.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
+                            AnimatedTalkingCharacter(
+                                idleRes = R.drawable.dino_idle,
+                                talkFrameResIds = dinoTalkFrames,
+                                isTalking = narrationPlaying,
+                                modifier = Modifier.size(92.dp),
+                                contentDescription = dinoContentDescription,
+                            )
+                            if (showMomCharacter) {
+                                Spacer(modifier = Modifier.width(14.dp))
+                                AnimatedTalkingCharacter(
+                                    idleRes = R.drawable.mom_idle,
+                                    talkFrameResIds = momTalkFrames,
+                                    isTalking = narrationPlaying,
+                                    modifier = Modifier.size(92.dp),
+                                    contentDescription = "אמא דינוזאור",
+                                )
+                            }
+                        }
                     }
                 }
             }
-
-            Spacer(modifier = Modifier.height(18.dp))
 
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 OutlinedButton(

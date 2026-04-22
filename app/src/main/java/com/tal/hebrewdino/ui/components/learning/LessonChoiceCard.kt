@@ -47,6 +47,7 @@ fun LessonChoiceCard(
     captionFontSize: TextUnit = 24.sp,
     innerPictureScale: Float = 1f,
     isCorrectPick: Boolean = false,
+    isSelected: Boolean = false,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -54,8 +55,34 @@ fun LessonChoiceCard(
     val borderColor =
         if (isCorrectPick) {
             Color(0xFF2E7D32).copy(alpha = 0.95f)
+        } else if (isSelected) {
+            Color(0xFF2E7D32).copy(alpha = 0.70f)
         } else {
             Color(0xFF0B2B3D).copy(alpha = 0.15f)
+        }
+    val bgBrush =
+        when {
+            isCorrectPick ->
+                Brush.verticalGradient(
+                    listOf(
+                        Color(0xFFC8E6C9).copy(alpha = 0.96f),
+                        Color(0xFFA5D6A7).copy(alpha = 0.86f),
+                    ),
+                )
+            isSelected ->
+                Brush.verticalGradient(
+                    listOf(
+                        Color(0xFFE8F5E9).copy(alpha = 0.98f),
+                        Color(0xFFC8E6C9).copy(alpha = 0.80f),
+                    ),
+                )
+            else ->
+                Brush.verticalGradient(
+                    listOf(
+                        Color.White.copy(alpha = 0.95f),
+                        Color(0xFFE8F5E9).copy(alpha = 0.45f),
+                    ),
+                )
         }
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -64,9 +91,7 @@ fun LessonChoiceCard(
                 .scale(scale)
                 .border(4.dp, borderColor, RoundedCornerShape(22.dp))
                 .background(
-                    Brush.verticalGradient(
-                        listOf(Color.White.copy(alpha = 0.95f), Color(0xFFE8F5E9).copy(alpha = 0.45f)),
-                    ),
+                    bgBrush,
                     RoundedCornerShape(22.dp),
                 )
                 .clickable(enabled = enabled, onClick = onClick)

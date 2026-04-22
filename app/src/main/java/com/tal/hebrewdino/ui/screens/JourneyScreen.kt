@@ -70,6 +70,7 @@ import androidx.compose.ui.unit.dp
 import com.tal.hebrewdino.R
 import com.tal.hebrewdino.ui.components.learning.DinoNestMark
 import com.tal.hebrewdino.ui.domain.Chapter1Config
+import com.tal.hebrewdino.ui.domain.JourneyEndMarkerIdle
 import com.tal.hebrewdino.ui.domain.JourneyMapLayout
 import androidx.compose.ui.draw.scale
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -110,6 +111,10 @@ private val stationFractions = JourneyMapLayout.stationFractions
 enum class JourneyEndMarker {
     Egg,
     HomeCave,
+    PinkEgg,
+    PurpleEgg,
+    /** Chapter 4: distinct goal after all six stations (smart reinforcement arc). */
+    BigEgg,
 }
 
 private fun xyAlongRoad(f: Float, points: List<Pair<Float, Float>>): Pair<Float, Float> {
@@ -185,13 +190,12 @@ fun JourneyScreen(
                 0f
             }
         } else {
-            // After all playable stations are done, either stand at the last station (before finale walk),
-            // or stay parked at the end marker (egg/cave) once it's been reached.
-            if (canWalkToEndMarker && endMarkerReached) {
-                maxDinoF
-            } else {
-                baseMaxDinoF.coerceIn(0f, maxDinoF)
-            }
+            JourneyEndMarkerIdle.idleProgressAfterAllPlayableStationsComplete(
+                canWalkToEndMarker = canWalkToEndMarker,
+                endMarkerReached = endMarkerReached,
+                baseMaxDinoF = baseMaxDinoF,
+                maxDinoF = maxDinoF,
+            )
         }
     val quickPlayLevel =
         nextPlayableSuggested.coerceAtMost(unlockedLevel).coerceAtMost(playableLevels)
@@ -229,7 +233,7 @@ fun JourneyScreen(
     // Auto-walk after a station is completed: stand near the next station (and after station 6, walk to the end marker).
     LaunchedEffect(nextPlayableSuggested, completedLevels, unlockedLevel, playableLevels, maxDinoF, canWalkToEndMarker, baseMaxDinoF, endMarkerReached) {
         if (walking) return@LaunchedEffect
-        if (endMarkerReached && canWalkToEndMarker) return@LaunchedEffect
+        if (JourneyEndMarkerIdle.suppressRepeatEndMarkerAutoWalk(endMarkerReached, canWalkToEndMarker)) return@LaunchedEffect
         val target = nextPlayableSuggested
         val dest =
             when {
@@ -589,6 +593,27 @@ private fun JourneyRoadStrip(
                                 DinoNestMark()
                             }
                         }
+                    JourneyEndMarker.PinkEgg ->
+                        Image(
+                            painter = painterResource(id = R.drawable.egg_pink),
+                            contentDescription = null,
+                            modifier = Modifier.size(110.dp).scale(goalPulse),
+                            contentScale = ContentScale.Fit,
+                        )
+                    JourneyEndMarker.PurpleEgg ->
+                        Image(
+                            painter = painterResource(id = R.drawable.egg_purple),
+                            contentDescription = null,
+                            modifier = Modifier.size(110.dp).scale(goalPulse),
+                            contentScale = ContentScale.Fit,
+                        )
+                    JourneyEndMarker.BigEgg ->
+                        Image(
+                            painter = painterResource(id = R.drawable.finish_marker_big_egg),
+                            contentDescription = null,
+                            modifier = Modifier.size(118.dp).scale(goalPulse),
+                            contentScale = ContentScale.Fit,
+                        )
                 }
             }
 
@@ -724,6 +749,9 @@ private fun JourneyStationMarker(
                 when (endMarker) {
                     JourneyEndMarker.Egg -> R.drawable.finish_marker_egg
                     JourneyEndMarker.HomeCave -> R.drawable.egg_found
+                    JourneyEndMarker.PinkEgg -> R.drawable.egg_pink
+                    JourneyEndMarker.PurpleEgg -> R.drawable.egg_purple
+                    JourneyEndMarker.BigEgg -> R.drawable.finish_marker_big_egg
                 }
             completed -> R.drawable.egg_found
             else -> R.drawable.stop_marker
