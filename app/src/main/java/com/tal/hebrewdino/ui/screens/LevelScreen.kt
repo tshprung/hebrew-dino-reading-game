@@ -453,6 +453,8 @@ internal fun PopBalloonsOptions(
     correctAnswer: String,
     enabled: Boolean,
     shakePx: Float,
+    /** Called whenever a balloon is pressed (letter in balloon). */
+    onBalloonPressed: ((letter: String) -> Unit)? = null,
     onPopSfx: suspend (isCorrect: Boolean) -> Unit,
     onWrongPick: () -> Unit,
     onAllCorrectPopped: () -> Unit,
@@ -640,6 +642,7 @@ internal fun PopBalloonsOptions(
                             wrongRecoverRunning = false
                         }
                     },
+                    onPressed = { onBalloonPressed?.invoke(letter) },
                 )
             }
         }
@@ -670,6 +673,7 @@ internal fun PopBalloon(
     modifier: Modifier = Modifier,
     onPop: () -> Unit,
     onPickWrong: (Animatable<Float, AnimationVector1D>) -> Unit,
+    onPressed: () -> Unit = {},
 ) {
     var popping by remember(instanceKey) { mutableStateOf(false) }
     var visible by remember(instanceKey) { mutableStateOf(true) }
@@ -745,6 +749,7 @@ internal fun PopBalloon(
                         indication = null,
                         enabled = enabled && !popping,
                         onClick = {
+                            onPressed()
                             if (shouldPop) {
                                 popping = true
                             } else {

@@ -22,6 +22,9 @@ object AudioClips {
     /** Episode 1 station 6: "חברו בין אות למילה המתאימה". */
     const val MatchLetterToWordInstructions = "audio/match_letter_to_word_instructions.wav"
 
+    /** Episode 1 station 2 prefix: "פוצץ את הבלונים עם האות". */
+    const val PopBalloonsWithLetter = "audio/pop_balloons_with_letter.wav"
+
     // SFX (optional). If missing from assets, playback will be skipped.
     const val SfxBalloonPop = "audio/sfx_pop.wav"
     const val SfxCorrect = "audio/sfx_correct.wav"
@@ -39,8 +42,47 @@ object AudioClips {
     const val StoryCh4Intro = "audio/story_ch4_intro.wav"
     const val StoryCh4HomeOutro = "audio/story_ch4_home_outro.wav"
 
-    /** Optional per-word voice lines, keyed by catalog entry id (e.g. `w_ב_1`). */
-    fun wordClipByCatalogId(catalogEntryId: String): String = "audio/word_${catalogEntryId}.wav"
+    /**
+     * Optional per-word voice lines, keyed by catalog entry id (e.g. `w_ב_1`).
+     *
+     * Filename convention we use on disk (ASCII-only to avoid Windows/encoding issues):
+     * `audio/word_w_<letterName>_<number>.wav`, e.g. `audio/word_w_alef_1.wav`.
+     */
+    fun wordClipByCatalogId(catalogEntryId: String): String {
+        // Expected ids: w_<HEBREW_LETTER>_<N>
+        val parts = catalogEntryId.split("_")
+        if (parts.size == 3 && parts[0] == "w") {
+            val heb = parts[1]
+            val n = parts[2]
+            val name =
+                when (heb) {
+                    "א" -> "alef"
+                    "ב" -> "bet"
+                    "ג" -> "gimel"
+                    "ד" -> "dalet"
+                    "ה" -> "heh"
+                    "ח" -> "chet"
+                    "ט" -> "tet"
+                    "י" -> "yod"
+                    "כ" -> "kaf"
+                    "ל" -> "lamed"
+                    "מ" -> "mem"
+                    "נ" -> "nun"
+                    "פ" -> "peh"
+                    "צ" -> "tsadi"
+                    "ק" -> "kuf"
+                    "ר" -> "reish"
+                    "ש" -> "shin"
+                    "ת" -> "taf"
+                    else -> null
+                }
+            if (name != null && n.isNotBlank()) {
+                return "audio/word_w_${name}_${n}.wav"
+            }
+        }
+        // Fallback: legacy / direct-id naming.
+        return "audio/word_${catalogEntryId}.wav"
+    }
 
     // Letter-specific
     fun chooseLetterClip(letter: String): String? =

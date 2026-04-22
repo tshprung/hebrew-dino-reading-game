@@ -12,8 +12,8 @@ import kotlin.coroutines.resume
 
 class VoicePlayer(context: Context) {
     companion object {
-        /** Temporarily disable all voice playback (we’ll re-enable later). */
-        const val ENABLED: Boolean = false
+        /** Enable voice playback (assets under `audio/`). */
+        const val ENABLED: Boolean = true
     }
 
     private val appContext = context.applicationContext

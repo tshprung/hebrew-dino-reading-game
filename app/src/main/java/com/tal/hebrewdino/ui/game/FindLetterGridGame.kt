@@ -59,6 +59,8 @@ import kotlinx.coroutines.launch
 @Composable
 fun FindLetterGridGame(
     question: Question.FindLetterGridQuestion,
+    /** Called for any tap (correct or wrong) with the tapped letter. */
+    onLetterTapped: ((letter: String) -> Unit)? = null,
     onCellTapped: (index: Int) -> Unit,
     onCompleted: () -> Unit,
     enabled: Boolean = true,
@@ -224,6 +226,7 @@ fun FindLetterGridGame(
                                     shape = RoundedCornerShape(16.dp),
                                 )
                                 .clickable(enabled = enabled && !done) {
+                                    onLetterTapped?.invoke(letter)
                                     if (letter == question.targetLetter) {
                                         found = found + index
                                         ChildGameAudioHooks.onCorrect()

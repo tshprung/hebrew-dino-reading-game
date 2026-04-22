@@ -116,7 +116,7 @@ fun GameScreen(
     modifier: Modifier = Modifier,
 ) {
     // UX: no audio for now (per request).
-    val audioEnabled = false
+    val audioEnabled = true
 
     val session =
         remember(stationId, plan) {
@@ -388,6 +388,14 @@ fun GameScreen(
                             is Question.FindLetterGridQuestion ->
                                 FindLetterGridGame(
                                     question = current,
+                                    onLetterTapped = { tapped ->
+                                        // Episode 1 station 3: say the tapped letter name before other feedback.
+                                        if (!audioEnabled) return@FindLetterGridGame
+                                        if (chapterId == 1 && stationId == 3) {
+                                            val clip = AudioClips.letterNameClip(tapped) ?: return@FindLetterGridGame
+                                            scope.launch { voice.playBlocking(clip) }
+                                        }
+                                    },
                                     // Episode 1 station 3: bigger letters inside same boxes.
                                     gridLetterSizeMultiplier = if (stationId == 3) 1.5f else 1f,
                                     onCellTapped = { _ ->
@@ -448,19 +456,41 @@ fun GameScreen(
                                                 shakePx = optionsShake.value,
                                                 onPick = { picked ->
                                                     if (!consumeTapCooldown()) return@LetterOptions
-                                                    when (session.submitAnswer(picked)) {
-                                                        AnswerResult.Correct -> {
-                                                            if (audioEnabled) ChildGameAudioHooks.onCorrect()
-                                                            scope.launch {
-                                                                val isLast = session.currentIndex >= session.totalQuestions - 1
-                                                                advanceAfterRound(isLast)
+                                                    // Episode 1 stations 1 and 3: say tapped letter name BEFORE any other feedback.
+                                                    if (audioEnabled && chapterId == 1 && (stationId == 1 || stationId == 3)) {
+                                                        inputLocked = true
+                                                        scope.launch {
+                                                            val clip = AudioClips.letterNameClip(picked)
+                                                            if (clip != null) voice.playBlocking(clip)
+                                                            // Now run the normal correctness flow.
+                                                            when (session.submitAnswer(picked)) {
+                                                                AnswerResult.Correct -> {
+                                                                    ChildGameAudioHooks.onCorrect()
+                                                                    val isLast = session.currentIndex >= session.totalQuestions - 1
+                                                                    advanceAfterRound(isLast)
+                                                                }
+                                                                AnswerResult.Wrong -> {
+                                                                    ChildGameAudioHooks.onWrong()
+                                                                    onWrongFeedback()
+                                                                }
+                                                                AnswerResult.Finished -> {}
                                                             }
                                                         }
-                                                        AnswerResult.Wrong -> {
-                                                            if (audioEnabled) ChildGameAudioHooks.onWrong()
-                                                            onWrongFeedback()
+                                                    } else {
+                                                        when (session.submitAnswer(picked)) {
+                                                            AnswerResult.Correct -> {
+                                                                if (audioEnabled) ChildGameAudioHooks.onCorrect()
+                                                                scope.launch {
+                                                                    val isLast = session.currentIndex >= session.totalQuestions - 1
+                                                                    advanceAfterRound(isLast)
+                                                                }
+                                                            }
+                                                            AnswerResult.Wrong -> {
+                                                                if (audioEnabled) ChildGameAudioHooks.onWrong()
+                                                                onWrongFeedback()
+                                                            }
+                                                            AnswerResult.Finished -> {}
                                                         }
-                                                        AnswerResult.Finished -> {}
                                                     }
                                                 },
                                                 modifier = Modifier.fillMaxWidth(),
@@ -480,6 +510,14 @@ fun GameScreen(
                                                 correctAnswer = current.correctAnswer,
                                                 enabled = !inputLocked,
                                                 shakePx = optionsShake.value,
+                                                onBalloonPressed = { tapped ->
+                                                    // Episode 1 station 2: say the balloon letter BEFORE other feedback.
+                                                    if (!audioEnabled) return@PopBalloonsOptions
+                                                    if (chapterId == 1 && stationId == 2) {
+                                                        val clip = AudioClips.letterNameClip(tapped) ?: return@PopBalloonsOptions
+                                                        scope.launch { voice.playBlocking(clip) }
+                                                    }
+                                                },
                                                 onPopSfx = { isCorrect ->
                                                     // SFX only; no suspend call needed.
                                                     if (!audioEnabled) return@PopBalloonsOptions
@@ -865,7 +903,16 @@ private suspend fun speakLetterPrompt(
         q: Question,
     ) {
     when (q) {
-        is Question.PopBalloonsQuestion -> speakLetterPrompt(voice, q.correctAnswer)
+        is Question.PopBalloonsQuestion -> {
+            // Episode 1 station 2: custom prompt "פוצץ את הבלונים עם האות" + letter name.
+            if (chapterId == 1 && stationId == 2) {
+                voice.playBlocking(AudioClips.PopBalloonsWithLetter)
+                val letterName = AudioClips.letterNameClip(q.correctAnswer)
+                if (letterName != null) voice.playBlocking(letterName)
+            } else {
+                speakLetterPrompt(voice, q.correctAnswer)
+            }
+        }
         is Question.FindLetterGridQuestion -> speakLetterPrompt(voice, q.targetLetter)
             is Question.PictureStartsWithQuestion -> {
                 // Episode 1 station 4: say the WORD shown first (if recorded), then fall back to the usual letter prompt.

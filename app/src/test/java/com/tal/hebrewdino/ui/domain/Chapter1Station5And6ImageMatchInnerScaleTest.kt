@@ -26,4 +26,10 @@ class Chapter1Station5And6ImageMatchInnerScaleTest {
         assertEquals(0.5f, Chapter1Station5And6ImageMatchInnerScale.innerScale(LessonChoice("w_מ_4", "מ", "מיטה", 0)), 0f)
         assertEquals(0.5f, Chapter1Station5And6ImageMatchInnerScale.innerScale(LessonChoice("x", "מ", "מיטה", 0)), 0f)
     }
+
+    @Test
+    fun pacifierIsThirdScale() {
+        assertEquals(2f / 3f, Chapter1Station5And6ImageMatchInnerScale.innerScale(LessonChoice("w_מ_5", "מ", "מוצץ", 0)), 0f)
+        assertEquals(2f / 3f, Chapter1Station5And6ImageMatchInnerScale.innerScale(LessonChoice("x", "מ", "מוצץ", 0)), 0f)
+    }
 }

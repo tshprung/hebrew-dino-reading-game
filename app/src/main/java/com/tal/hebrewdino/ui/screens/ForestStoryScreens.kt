@@ -72,9 +72,9 @@ fun ForestIntroScreen(
                 "\n" +
                 "אבל פתאום — הן נעלמו!\n" +
                 "\n" +
-                "\"אוי לא! איפה הביצים שלי?\"\n" +
+                "\"אוי לא! איפה הביצים שלי?\", אמרה אמא דינוזאור\n" +
                 "\n" +
-                "בוא/י נעזור לה!\n" +
+                "בואו נעזור לה!\n" +
                 "\n" +
                 "נצא לדרך ונפתור משימות.",
         voiceAssetPath = AudioClips.StoryForestIntro,
@@ -104,7 +104,7 @@ fun ForestOutroScreen(
                 "\n" +
                 "אבל נשארו עוד 2 ביצים למצוא!\n" +
                 "\n" +
-                "בוא/י נמשיך!",
+                "בואו נמשיך!",
         voiceAssetPath = AudioClips.StoryEggOutro,
         eggStripCount = 1,
         showMomCharacter = false,
