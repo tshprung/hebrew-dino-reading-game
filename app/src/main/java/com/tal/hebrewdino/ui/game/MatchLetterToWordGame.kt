@@ -82,6 +82,12 @@ fun MatchLetterToWordGame(
     },
     /** Persistent instructions shown at the top (RTL). */
     instructions: String = "חברו מילה לתמונה",
+    /** Called whenever the player taps a word card (choice id). */
+    onWordPressed: ((choiceId: String) -> Unit)? = null,
+    /** Called whenever the player taps a letter tile. */
+    onLetterPressed: ((letter: String) -> Unit)? = null,
+    /** Called when the player attempts a match (true=correct, false=wrong). */
+    onMatchAttempt: ((correct: Boolean) -> Unit)? = null,
     onSolved: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -143,10 +149,12 @@ fun MatchLetterToWordGame(
     fun tryLockMatch(letter: String, choice: LessonChoice) {
         if (isLockedLetter(letter) || isLockedChoice(choice.id)) return
         if (choice.letter == letter) {
+            onMatchAttempt?.invoke(true)
             locked[letter] = choice.id
             selectedLetter = null
             selectedChoiceId = null
         } else {
+            onMatchAttempt?.invoke(false)
             shakeWrongAndClear()
         }
     }
@@ -306,6 +314,7 @@ fun MatchLetterToWordGame(
                                 isSelected = !lockedThis && selectedThis,
                                 onClick = {
                                     if (!enabled || lockedThis) return@LessonChoiceCard
+                                    onWordPressed?.invoke(ch.id)
                                     val picked = selectedLetter
                                     if (picked != null) {
                                         tryLockMatch(picked, ch)
@@ -354,6 +363,7 @@ fun MatchLetterToWordGame(
                                             tileShape,
                                         )
                                         .clickable(enabled = enabled && !lockedThis) {
+                                            onLetterPressed?.invoke(letter)
                                             val nowSelected = if (selectedLetter == letter) null else letter
                                             selectedLetter = nowSelected
                                             val pickedChoiceId = selectedChoiceId
@@ -435,6 +445,7 @@ fun MatchLetterToWordGame(
                                             tileShape,
                                         )
                                         .clickable(enabled = enabled && !lockedThis) {
+                                            onLetterPressed?.invoke(letter)
                                             val nowSelected = if (selectedLetter == letter) null else letter
                                             selectedLetter = nowSelected
                                             val pickedChoiceId = selectedChoiceId
@@ -485,6 +496,7 @@ fun MatchLetterToWordGame(
                                 isSelected = !lockedThis && selectedThis,
                                 onClick = {
                                     if (!enabled || lockedThis) return@LessonChoiceCard
+                                    onWordPressed?.invoke(ch.id)
                                     val picked = selectedLetter
                                     if (picked != null) {
                                         tryLockMatch(picked, ch)

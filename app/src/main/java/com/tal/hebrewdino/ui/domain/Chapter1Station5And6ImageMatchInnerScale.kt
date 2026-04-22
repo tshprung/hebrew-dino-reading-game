@@ -8,9 +8,12 @@ object Chapter1Station5And6ImageMatchInnerScale {
     fun innerScale(choice: LessonChoice): Float {
         val isHouse = choice.word == "בית" || choice.id == "w_ב_1"
         val isMedusa = choice.word == "מדוזה" || choice.id == "w_מ_3"
+        val isBed = choice.word == "מיטה" || choice.id == "w_מ_4"
         return when {
             isMedusa -> (2f / 3f)
             isHouse -> 1f
+            // Episode 1 station 5 feedback: bed reads huge; make it 1/4 of the default (2x) scale.
+            isBed -> 0.5f
             else -> 2f
         }
     }

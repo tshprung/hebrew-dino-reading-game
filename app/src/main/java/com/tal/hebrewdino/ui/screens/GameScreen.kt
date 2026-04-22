@@ -190,7 +190,7 @@ fun GameScreen(
                 if (!skipLetterPrompt) {
                     dinoTalking = true
                     try {
-                        speakPromptForQuestion(voice, q)
+                        speakPromptForQuestion(voice, stationId = stationId, chapterId = chapterId, q = q)
                     } finally {
                         dinoTalking = false
                     }
@@ -224,7 +224,10 @@ fun GameScreen(
         if (!suppressInGameDinoProgress) {
             dinoVisual = DinoVisual.Jump
         }
-        if (audioEnabled) voice.playFirstAvailableBlocking(AudioClips.VoGoodJob1, AudioClips.VoGoodJob2)
+        // Station 6 (episode 1): "kol hakavod" is played per correct match; avoid double-speaking here.
+        if (audioEnabled && !(chapterId == 1 && stationId == 6)) {
+            voice.playFirstAvailableBlocking(AudioClips.VoGoodJob1, AudioClips.VoGoodJob2)
+        }
         if (!suppressInGameDinoProgress) {
             dinoForward.animateTo(dinoForward.value + forwardDir * 12f, spring(dampingRatio = 0.75f, stiffness = 520f))
         }
@@ -237,7 +240,10 @@ fun GameScreen(
         contentAlpha.animateTo(1f, tween(BetweenQuestionFadeMs))
     }
 
-    fun onWrongFeedback() {
+    fun onWrongFeedback(
+        wrongPickedLetter: String? = null,
+        wrongWordCatalogId: String? = null,
+    ) {
         scope.launch {
             inputLocked = true
             dinoVisual = DinoVisual.TryAgain
@@ -256,6 +262,14 @@ fun GameScreen(
             if (audioEnabled) {
                 gameFeedback.playWrong()
                 ChildGameAudioHooks.onWrong()
+                if (wrongWordCatalogId != null) {
+                    // Station 5 request: say the tapped WORD first (if recorded).
+                    voice.playBlocking(AudioClips.wordClipByCatalogId(wrongWordCatalogId))
+                }
+                if (wrongPickedLetter != null) {
+                    val letterName = AudioClips.letterNameClip(wrongPickedLetter)
+                    if (letterName != null) voice.playBlocking(letterName)
+                }
                 voice.playFirstAvailableBlocking(AudioClips.VoTryAgain2, AudioClips.VoTryAgain1)
             }
             dinoVisual = DinoVisual.Idle
@@ -549,13 +563,21 @@ fun GameScreen(
                                             AnswerResult.Correct -> {
                                                 if (audioEnabled) ChildGameAudioHooks.onCorrect()
                                                 scope.launch {
+                                                    if (chapterId == 1 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
+                                                        val letterName = AudioClips.letterNameClip(picked)
+                                                        if (letterName != null) voice.playBlocking(letterName)
+                                                    }
                                                     val isLast = session.currentIndex >= session.totalQuestions - 1
                                                     advanceAfterRound(isLast)
                                                 }
                                             }
                                             AnswerResult.Wrong -> {
                                                 if (audioEnabled) ChildGameAudioHooks.onWrong()
-                                                onWrongFeedback()
+                                                if (chapterId == 1 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
+                                                    onWrongFeedback(wrongPickedLetter = picked)
+                                                } else {
+                                                    onWrongFeedback()
+                                                }
                                             }
                                             AnswerResult.Finished -> {}
                                         }
@@ -587,6 +609,27 @@ fun GameScreen(
                                         enabled = !inputLocked,
                                         compactWideSpread =
                                             chapterId in 1..4 && stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH,
+                                        onWordPressed = { choiceId ->
+                                            if (!audioEnabled) return@MatchLetterToWordGame
+                                            scope.launch {
+                                                voice.playBlocking(AudioClips.wordClipByCatalogId(choiceId))
+                                            }
+                                        },
+                                        onLetterPressed = { letter ->
+                                            if (!audioEnabled) return@MatchLetterToWordGame
+                                            val clip = AudioClips.letterNameClip(letter) ?: return@MatchLetterToWordGame
+                                            scope.launch { voice.playBlocking(clip) }
+                                        },
+                                        onMatchAttempt = { correct ->
+                                            if (!audioEnabled) return@MatchLetterToWordGame
+                                            scope.launch {
+                                                if (correct) {
+                                                    voice.playFirstAvailableBlocking(AudioClips.VoGoodJob1, AudioClips.VoGoodJob2)
+                                                } else {
+                                                    voice.playFirstAvailableBlocking(AudioClips.VoTryAgain2, AudioClips.VoTryAgain1)
+                                                }
+                                            }
+                                        },
                                         innerPictureScaleForChoice = { choice ->
                                             if (chapterId in 1..4 && stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH) {
                                                 Chapter1Station5And6ImageMatchInnerScale.innerScale(choice)
@@ -597,7 +640,7 @@ fun GameScreen(
                                                 }
                                             }
                                         },
-                                        instructions = "חברו אות למילה ולתמונה",
+                                        instructions = "חברו בין  אות למילה המתאימה",
                                         onSolved = {
                                             if (!consumeTapCooldown()) return@MatchLetterToWordGame
                                             scope.launch {
@@ -644,6 +687,10 @@ fun GameScreen(
                                                 AnswerResult.Correct -> {
                                                     if (audioEnabled) ChildGameAudioHooks.onCorrect()
                                                     scope.launch {
+                                                        if (chapterId == 1 && stationId == Chapter1StationOrder.PICTURE_PICK_ALL) {
+                                                            // Station 5 request: say the tapped WORD, then the existing "good job" flow will run.
+                                                            voice.playBlocking(AudioClips.wordClipByCatalogId(choiceId))
+                                                        }
                                                         val isLast = session.currentIndex >= session.totalQuestions - 1
                                                         advanceAfterRound(isLast)
                                                     }
@@ -651,7 +698,11 @@ fun GameScreen(
                                                 }
                                                 AnswerResult.Wrong -> {
                                                     if (audioEnabled) ChildGameAudioHooks.onWrong()
-                                                    onWrongFeedback()
+                                                    if (chapterId == 1 && stationId == Chapter1StationOrder.PICTURE_PICK_ALL) {
+                                                        onWrongFeedback(wrongWordCatalogId = choiceId)
+                                                    } else {
+                                                        onWrongFeedback()
+                                                    }
                                                     false
                                                 }
                                                 AnswerResult.Finished -> false
@@ -807,15 +858,36 @@ private suspend fun speakLetterPrompt(
     }
 }
 
-private suspend fun speakPromptForQuestion(
-    voice: VoicePlayer,
-    q: Question,
-) {
+    private suspend fun speakPromptForQuestion(
+        voice: VoicePlayer,
+        stationId: Int,
+        chapterId: Int,
+        q: Question,
+    ) {
     when (q) {
         is Question.PopBalloonsQuestion -> speakLetterPrompt(voice, q.correctAnswer)
         is Question.FindLetterGridQuestion -> speakLetterPrompt(voice, q.targetLetter)
-        is Question.PictureStartsWithQuestion -> speakLetterPrompt(voice, q.correctLetter)
-        is Question.ImageMatchQuestion -> speakLetterPrompt(voice, q.targetLetter)
+            is Question.PictureStartsWithQuestion -> {
+                // Episode 1 station 4: say the WORD shown first (if recorded), then fall back to the usual letter prompt.
+                if (chapterId == 1 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
+                    voice.playBlocking(AudioClips.wordClipByCatalogId(q.catalogEntryId))
+                } else {
+                    speakLetterPrompt(voice, q.correctLetter)
+                }
+            }
+            is Question.ImageMatchQuestion -> {
+                // Episode 1 station 5: "איזו מילה מתחילה באות" + letter name.
+                if (chapterId == 1 && stationId == Chapter1StationOrder.PICTURE_PICK_ALL) {
+                    voice.playBlocking(AudioClips.WhichWordStartsWithLetter)
+                    val letterName = AudioClips.letterNameClip(q.targetLetter)
+                    if (letterName != null) voice.playBlocking(letterName)
+                } else if (chapterId == 1 && stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH) {
+                    // Episode 1 station 6: instructions.
+                    voice.playBlocking(AudioClips.MatchLetterToWordInstructions)
+                } else {
+                    speakLetterPrompt(voice, q.targetLetter)
+                }
+            }
         is Question.FinaleSlotQuestion -> voice.playBlocking(AudioClips.VoChooseLetter)
     }
 }

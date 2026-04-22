@@ -77,7 +77,7 @@ fun ForestIntroScreen(
                 "בוא/י נעזור לה!\n" +
                 "\n" +
                 "נצא לדרך ונפתור משימות.",
-        voiceAssetPath = AudioClips.StoryBeachIntro,
+        voiceAssetPath = AudioClips.StoryForestIntro,
         eggStripCount = 0,
         showMomCharacter = true,
         onContinue = onContinue,
@@ -105,7 +105,7 @@ fun ForestOutroScreen(
                 "אבל נשארו עוד 2 ביצים למצוא!\n" +
                 "\n" +
                 "בוא/י נמשיך!",
-        voiceAssetPath = AudioClips.StoryBeachOutro,
+        voiceAssetPath = AudioClips.StoryEggOutro,
         eggStripCount = 1,
         showMomCharacter = false,
         onContinue = onContinue,
