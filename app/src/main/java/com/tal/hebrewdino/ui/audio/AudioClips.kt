@@ -33,6 +33,35 @@ object AudioClips {
     const val SfxBalloonPopSoft = "audio/sfx_pop_soft.wav"
     /** Funny wrong-pop sound for balloons (optional). */
     const val SfxBalloonPopWrongFunny = "audio/sfx_pop_wrong_funny.wav"
+
+    /**
+     * Episode 1 station 2 (preferred natural pops — provide these assets).
+     * Keep to 2–3 variants total so the feel stays consistent.
+     */
+    const val SfxStation2PopSoft1 = "audio/sfx_st2_pop_soft_1.wav"
+    const val SfxStation2PopSoft2 = "audio/sfx_st2_pop_soft_2.wav"
+    const val SfxStation2PopPlop = "audio/sfx_st2_pop_plop.wav"
+    /** Optional: slightly “special” last-balloon pop (still soft). */
+    const val SfxStation2PopFinale = "audio/sfx_st2_pop_finale.wav"
+
+    /**
+     * Correct balloon pop playlist for Episode 1 station 2.
+     * We prefer the “natural” Station 2 assets above; if they are missing, we fall back to the existing generic pops.
+     */
+    fun station2CorrectPopPlaylist(variant: Int, finale: Boolean): Array<String> {
+        if (finale) {
+            return arrayOf(SfxStation2PopFinale, SfxStation2PopPlop, SfxStation2PopSoft1, SfxBalloonPopSoft)
+        }
+        return when (variant % 2) {
+            0 -> arrayOf(SfxStation2PopSoft1, SfxBalloonPopSoft, SfxBalloonPop)
+            else -> arrayOf(SfxStation2PopSoft2, SfxBalloonPopSoft, SfxBalloonPop)
+        }
+    }
+
+    /** Wrong balloon: plop first, then funny (no fallback). */
+    fun station2WrongPopPlaylist(balloonIndex: Int): Array<String> {
+        return arrayOf(SfxStation2PopPlop, SfxBalloonPopWrongFunny)
+    }
     const val SfxCorrect = "audio/sfx_correct.wav"
     const val SfxWrong = "audio/sfx_wrong.wav"
 
@@ -137,7 +166,10 @@ object AudioClips {
             else -> null
         }
 
-    /** Optional combined sentence for wrong taps: "זה <letter>, נסה שוב". */
+    /**
+     * Optional single clip: wrong balloon / wrong tap sentence (e.g. letter name + "נסה שוב").
+     * Used for Episode 1 station 2 wrong balloons when present.
+     */
     fun wrongSentenceClip(letter: String): String? =
         when (letter) {
             "א" -> "audio/wrong_sentence_alef.wav"

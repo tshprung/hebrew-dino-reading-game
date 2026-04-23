@@ -36,6 +36,7 @@ import com.tal.hebrewdino.ui.audio.VoicePlayer
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 
 @Composable
 fun RewardScreen(
@@ -59,8 +60,17 @@ fun RewardScreen(
 
     LaunchedEffect(levelId) {
         coroutineScope {
-            launch { voice.playBlocking(AudioClips.VoLevelDone) }
-            delay(4800)
+            // Level complete: say "finished level" then "כל הכבוד".
+            // Use a sequence so the second line never overlaps the first.
+            val voiceJob =
+                launch {
+                    voice.playSequenceBlocking(
+                        AudioClips.VoLevelDone,
+                        AudioClips.VoGoodJob2,
+                    )
+                }
+            // Safety: always navigate back even if audio hangs.
+            withTimeoutOrNull(9000) { voiceJob.join() }
             if (!navigatedAway) {
                 navigatedAway = true
                 onBackToMap()

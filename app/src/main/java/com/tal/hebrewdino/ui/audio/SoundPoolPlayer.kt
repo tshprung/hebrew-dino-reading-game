@@ -55,32 +55,32 @@ class SoundPoolPlayer(context: Context) {
         }
     }
 
-    suspend fun play(assetPath: String, volume: Float = 1f) {
+    suspend fun play(assetPath: String, volume: Float = 1f, rate: Float = 1f) {
         if (!ENABLED) return
         val pool = soundPool ?: return
         val soundId = loadIfNeeded(pool, assetPath) ?: return
-        pool.play(soundId, volume, volume, 1, 0, 1f)
+        pool.play(soundId, volume, volume, 1, 0, rate.coerceIn(0.8f, 1.25f))
     }
 
     /**
      * Plays and returns the active stream id so callers can stop it immediately.
      * Returns null if the asset couldn't be loaded/played.
      */
-    suspend fun playReturningStreamId(assetPath: String, volume: Float = 1f): Int? {
+    suspend fun playReturningStreamId(assetPath: String, volume: Float = 1f, rate: Float = 1f): Int? {
         if (!ENABLED) return null
         val pool = soundPool ?: return null
         val soundId = loadIfNeeded(pool, assetPath) ?: return null
-        val streamId = pool.play(soundId, volume, volume, 1, 0, 1f)
+        val streamId = pool.play(soundId, volume, volume, 1, 0, rate.coerceIn(0.8f, 1.25f))
         return if (streamId != 0) streamId else null
     }
 
-    suspend fun playFirstAvailable(vararg assetPaths: String, volume: Float = 1f) {
+    suspend fun playFirstAvailable(vararg assetPaths: String, volume: Float = 1f, rate: Float = 1f) {
         if (!ENABLED) return
         val pool = soundPool ?: return
         for (p in assetPaths) {
             if (p.isBlank()) continue
             val soundId = loadIfNeeded(pool, p) ?: continue
-            pool.play(soundId, volume, volume, 1, 0, 1f)
+            pool.play(soundId, volume, volume, 1, 0, rate.coerceIn(0.8f, 1.25f))
             return
         }
     }

@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.border
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -64,6 +65,7 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.zIndex
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.graphics.Color
@@ -165,6 +167,53 @@ internal fun TargetLetterHeaderChip(
             fontWeight = FontWeight.Black,
             color = Color(0xFF0B2B3D),
             textAlign = TextAlign.Center,
+        )
+    }
+}
+
+/**
+ * Episode 1 station 2: small “last popped” balloon next to the main target chip (not a second letter chip).
+ */
+@Composable
+internal fun Station2PinnedBalloonMini(
+    letter: String,
+    balloonColor: Color,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
+        Box(
+            modifier =
+                Modifier
+                    .size(52.dp)
+                    .clip(CircleShape)
+                    .background(
+                        brush =
+                            Brush.verticalGradient(
+                                listOf(
+                                    Color.White.copy(alpha = 0.12f),
+                                    balloonColor,
+                                    Color(0xFF000000).copy(alpha = 0.08f),
+                                ),
+                            ),
+                    )
+                    .border(2.dp, Color(0xFF0B2B3D).copy(alpha = 0.2f), CircleShape),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text = letter,
+                fontSize = 28.sp,
+                fontWeight = FontWeight.Black,
+                color = Color(0xFF0B2B3D),
+                textAlign = TextAlign.Center,
+            )
+        }
+        Spacer(modifier = Modifier.height(2.dp))
+        Box(
+            modifier =
+                Modifier
+                    .size(width = 8.dp, height = 5.dp)
+                    .clip(RoundedCornerShape(2.dp))
+                    .background(Color(0xFF0B2B3D).copy(alpha = 0.22f)),
         )
     }
 }
@@ -453,11 +502,15 @@ internal fun PopBalloonsOptions(
     correctAnswer: String,
     enabled: Boolean,
     shakePx: Float,
+    /** Mixes balloon palette between questions (Episode 1 station 2). */
+    visualRoundSeed: Int = 0,
     /** Called whenever a balloon is pressed (letter in balloon). */
     onBalloonPressed: ((letter: String) -> Unit)? = null,
-    onPopSfx: suspend (letter: String, isCorrect: Boolean) -> Unit,
+    /** [finalCorrectBalloon] is true for the last required correct balloon in this round; [balloonIndex] is option index. */
+    onPopSfx: suspend (letter: String, isCorrect: Boolean, finalCorrectBalloon: Boolean, balloonIndex: Int) -> Unit,
     onWrongPick: () -> Unit,
-    onAllCorrectPopped: () -> Unit,
+    /** Invoked when every correct-letter balloon is popped; [poppedBalloonColor] is the last balloon’s fill. */
+    onAllCorrectPopped: (correctLetter: String, poppedBalloonColor: Color) -> Unit,
 ) {
     val alive =
         remember(options, correctAnswer) {
@@ -486,9 +539,11 @@ internal fun PopBalloonsOptions(
         }
     }
     val balloonColors =
-        remember(options, correctAnswer) {
+        remember(options, correctAnswer, visualRoundSeed) {
             val seed =
-                options.fold(0L) { acc, s -> acc * 131L + s.hashCode() } * 131L + correctAnswer.hashCode()
+                options.fold(0L) { acc, s -> acc * 131L + s.hashCode() } * 131L +
+                    correctAnswer.hashCode() +
+                    visualRoundSeed.toLong() * 999_983L
             val rnd = Random(seed)
             val palette =
                 listOf(
@@ -610,6 +665,9 @@ internal fun PopBalloonsOptions(
             val color = balloonColors.getOrElse(idx) { Color(0xFFFF6B6B) }
             val xPx = xBuf[idx]
             val yPx = yBuf[idx]
+            val aliveCorrectBeforeTap =
+                options.indices.count { i -> i < alive.size && alive[i] && options[i] == correctAnswer }
+            val isPotentialFinaleCorrect = letter == correctAnswer && aliveCorrectBeforeTap == 1
 
             key(idx) {
                 PopBalloon(
@@ -620,24 +678,34 @@ internal fun PopBalloonsOptions(
                     enabled = enabled && !wrongRecoverRunning,
                     shouldPop = letter == correctAnswer,
                     bobPhaseMillis = idx * 220,
+                    popJuiceIndex = idx,
+                    finaleCorrectPop = isPotentialFinaleCorrect,
                     driftXPx = xPx,
                     driftYPx = yPx,
                     modifier = Modifier.zIndex(yPx * 1000f + xPx),
-                    onPop = {
+                    onTapCorrect = {
+                        // Make the pop feel connected: start SFX/voice immediately on tap (not after animation).
+                        // Keep visual pop (onPop) responsible for removing the balloon.
+                        val poppedColor = balloonColors.getOrElse(idx) { Color(0xFFFF6B6B) }
                         if (idx < alive.size) alive[idx] = false
-                        scope.launch { onPopSfx(letter, letter == correctAnswer) }
-                        if (letter == correctAnswer) {
-                            if (remainingCorrectCount() <= 0) {
-                                onAllCorrectPopped()
-                            }
-                        } else {
+                        scope.launch {
+                            onPopSfx(letter, true, isPotentialFinaleCorrect, idx)
+                        }
+                        // If this is the last required correct balloon, pin the header immediately (reward starts now).
+                        if (remainingCorrectCount() <= 0) {
+                            onAllCorrectPopped(letter, poppedColor)
+                        }
+                    },
+                    onPop = {
+                        val poppedColor = balloonColors.getOrElse(idx) { Color(0xFFFF6B6B) }
+                        if (letter != correctAnswer) {
                             onWrongPick()
                         }
                     },
                     onPickWrong = { fall ->
                         scope.launch {
                             // UX: play a pop/plop even for wrong balloons (kids expect a sound).
-                            onPopSfx(letter, false)
+                            onPopSfx(letter, false, false, idx)
                             wrongRecoverRunning = true
                             runWrongBalloonVerticalRecover(fall)
                             onWrongPick()
@@ -670,9 +738,15 @@ internal fun PopBalloon(
     enabled: Boolean,
     shouldPop: Boolean,
     bobPhaseMillis: Int,
+    /** Episode 1 station 2: small variation in pop animation timing / peak. */
+    popJuiceIndex: Int = 0,
+    /** Episode 1 station 2: last required correct balloon — bigger, juicier pop. */
+    finaleCorrectPop: Boolean = false,
     driftXPx: Float = 0f,
     driftYPx: Float = 0f,
     modifier: Modifier = Modifier,
+    /** Called immediately when tapping a correct balloon (before pop animation). */
+    onTapCorrect: () -> Unit = {},
     onPop: () -> Unit,
     onPickWrong: (Animatable<Float, AnimationVector1D>) -> Unit,
     onPressed: () -> Unit = {},
@@ -699,10 +773,27 @@ internal fun PopBalloon(
         if (!popping || !shouldPop) return@LaunchedEffect
         scale.snapTo(1f)
         fade.snapTo(1f)
-        scale.animateTo(1.38f, tween(durationMillis = 85))
-        scale.animateTo(1.62f, tween(durationMillis = 95))
-        scale.animateTo(1.48f, tween(durationMillis = 55))
-        fade.animateTo(0f, tween(durationMillis = 200))
+        val ring = popJuiceIndex % 3
+        val ms1 =
+            when (ring) {
+                0 -> 78
+                1 -> 68
+                else -> 88
+            }
+        val peak =
+            if (finaleCorrectPop) {
+                1.76f
+            } else {
+                when (ring) {
+                    0 -> 1.62f
+                    1 -> 1.56f
+                    else -> 1.68f
+                }
+            }
+        scale.animateTo(peak * 0.88f, tween(durationMillis = ms1))
+        scale.animateTo(peak, tween(durationMillis = if (finaleCorrectPop) 118 else 92))
+        scale.animateTo(peak * (if (finaleCorrectPop) 0.74f else 0.88f), tween(durationMillis = if (finaleCorrectPop) 92 else 52))
+        fade.animateTo(0f, tween(durationMillis = if (finaleCorrectPop) 230 else 200))
         onPop()
         visible = false
     }
@@ -753,6 +844,7 @@ internal fun PopBalloon(
                         onClick = {
                             onPressed()
                             if (shouldPop) {
+                                onTapCorrect()
                                 popping = true
                             } else {
                                 scope.launch {
@@ -813,6 +905,23 @@ internal fun PopBalloon(
                 if (popping) {
                     val flash = ((scale.value - 1f) / 0.62f).coerceIn(0f, 1f)
                     if (flash > 0.02f) {
+                        if (finaleCorrectPop) {
+                            drawCircle(
+                                brush =
+                                    Brush.radialGradient(
+                                        colors =
+                                            listOf(
+                                                Color(0xFFFFF59D).copy(alpha = 0.45f * flash),
+                                                Color(0xFFFFB74D).copy(alpha = 0.22f * flash),
+                                                Color.Transparent,
+                                            ),
+                                        center = center,
+                                        radius = r * (1.35f + flash * 1.15f),
+                                    ),
+                                radius = r * (1.35f + flash * 1.15f),
+                                center = center,
+                            )
+                        }
                         drawCircle(
                             brush =
                                 Brush.radialGradient(
@@ -855,6 +964,7 @@ internal fun PopBalloon(
                                 }
                             }
                         }
+                        // Keep finale a small upgrade: no extra “sparkle dots” (the halo above is enough).
                     }
                 }
             }
