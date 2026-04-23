@@ -36,6 +36,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -207,6 +208,11 @@ fun FindLetterGridGame(
                         modifier =
                             Modifier
                                 .aspectRatio(1f)
+                                .shadow(
+                                    elevation = if (done) 8.dp else 6.dp,
+                                    shape = RoundedCornerShape(16.dp),
+                                    clip = false,
+                                )
                                 .scale(scale.value)
                                 .offset { IntOffset(shake.value.roundToInt(), 0) }
                                 .clip(RoundedCornerShape(16.dp))

@@ -45,6 +45,9 @@ class Chapter1StationOrderTest {
         assertEquals(StationQuizMode.ImageMatch, s6.mode)
         assertEquals(6, s6.questionCount)
         assertEquals(3, s6.initialGroupIndex)
+        assertTrue(s6.imageMatchAlwaysThreeChoices)
+        assertEquals(1.5f, s6.imageMatchCaptionSizeMultiplier, 0f)
+        assertEquals(1f, s6.imageMatchPictureSizeMultiplier, 0f)
     }
 
     @Test

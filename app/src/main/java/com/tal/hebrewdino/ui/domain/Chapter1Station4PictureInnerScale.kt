@@ -11,11 +11,14 @@ object Chapter1Station4PictureInnerScale {
         val isMedusa = word == "מדוזה" || tileDrawable == R.drawable.lesson_pic_medusa
         val isHouse = word == "בית"
         val isBed = word == "מיטה" || tileDrawable == R.drawable.lesson_pic_mitah
+        val isPacifier = word == "מוצץ" || tileDrawable == R.drawable.lesson_pic_motzetz
         return when {
             isMedusa -> (2f / 3f)
             isHouse -> 1f
             // UX: "מיטה" was too large; shrink to match station 5 perception (1/3 of previous 2f).
             isBed -> (2f / 3f)
+            // Same drawable as station 5 (`lesson_pic_motzetz`); match [Chapter1Station5And6ImageMatchInnerScale] pacifier scale.
+            isPacifier -> (2f / 3f)
             else -> 2f
         }
     }

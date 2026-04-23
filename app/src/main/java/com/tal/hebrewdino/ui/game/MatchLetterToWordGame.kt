@@ -81,6 +81,8 @@ fun MatchLetterToWordGame(
             else -> 1f
         }
     },
+    /** Same caption sizing as [ImageMatchGame] (`cardW * 0.22f * multiplier`, bounds scaled). */
+    captionSizeMultiplier: Float = 1f,
     /** Persistent instructions shown at the top (RTL). */
     instructions: String = "חברו מילה לתמונה",
     /** Called whenever the player taps a word card (choice id). */
@@ -304,7 +306,10 @@ fun MatchLetterToWordGame(
                     val cardH = cardW * (110f / 160f)
                     val captionSp =
                         with(density) {
-                            (cardW.toPx() * 0.22f).coerceIn(22f * fontScale, 40f * fontScale).toSp()
+                            (cardW.toPx() * 0.22f * captionSizeMultiplier).coerceIn(
+                                22f * fontScale * captionSizeMultiplier,
+                                40f * fontScale * captionSizeMultiplier,
+                            ).toSp()
                         }
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -517,7 +522,10 @@ fun MatchLetterToWordGame(
                             val cardH = cardW * (110f / 160f)
                             val captionSp =
                                 with(density) {
-                                    (cardW.toPx() * 0.22f).coerceIn(22f * fontScale, 40f * fontScale).toSp()
+                                    (cardW.toPx() * 0.22f * captionSizeMultiplier).coerceIn(
+                                        22f * fontScale * captionSizeMultiplier,
+                                        40f * fontScale * captionSizeMultiplier,
+                                    ).toSp()
                                 }
                             val pop = remember(ch.id, contentKey) { Animatable(1f) }
                             LaunchedEffect(hintEpoch, hintChoiceId, ch.id, contentKey) {

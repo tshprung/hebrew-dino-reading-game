@@ -45,6 +45,9 @@ class VoicePlayer(context: Context) {
         for (p in assetPaths) warmUp(p)
     }
 
+    /** True if [assetPath] exists under `assets/` (e.g. `audio/vo_choose_letter.wav`). */
+    fun hasAsset(assetPath: String): Boolean = exists(assetPath)
+
     /**
      * Immediately stop any current voice playback.
      *

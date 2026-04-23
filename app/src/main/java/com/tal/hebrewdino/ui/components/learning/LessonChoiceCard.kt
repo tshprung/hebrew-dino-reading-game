@@ -19,6 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
@@ -89,6 +90,11 @@ fun LessonChoiceCard(
         modifier =
             modifier
                 .scale(scale)
+                .shadow(
+                    elevation = 10.dp,
+                    shape = RoundedCornerShape(22.dp),
+                    clip = false,
+                )
                 .border(4.dp, borderColor, RoundedCornerShape(22.dp))
                 .background(
                     bgBrush,

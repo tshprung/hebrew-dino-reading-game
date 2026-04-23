@@ -9,6 +9,7 @@ import kotlinx.coroutines.withContext
 import java.io.IOException
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
+import java.nio.charset.StandardCharsets
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.coroutines.resume
 
@@ -46,6 +47,7 @@ class SoundPoolPlayer(context: Context) {
     private val readySoundIds = ConcurrentHashMap<Int, Boolean>()
     private val pendingLoads = ConcurrentHashMap<Int, MutableList<(Boolean) -> Unit>>()
     private val durationMsByPath = ConcurrentHashMap<String, Long>()
+    private val activeStreamIds = ConcurrentHashMap<Int, Boolean>()
 
     init {
         soundPool?.setOnLoadCompleteListener { _, sampleId, status ->
@@ -59,7 +61,8 @@ class SoundPoolPlayer(context: Context) {
         if (!ENABLED) return
         val pool = soundPool ?: return
         val soundId = loadIfNeeded(pool, assetPath) ?: return
-        pool.play(soundId, volume, volume, 1, 0, rate.coerceIn(0.8f, 1.25f))
+        val streamId = pool.play(soundId, volume, volume, 1, 0, rate.coerceIn(0.8f, 1.25f))
+        if (streamId != 0) activeStreamIds[streamId] = true
     }
 
     /**
@@ -71,18 +74,56 @@ class SoundPoolPlayer(context: Context) {
         val pool = soundPool ?: return null
         val soundId = loadIfNeeded(pool, assetPath) ?: return null
         val streamId = pool.play(soundId, volume, volume, 1, 0, rate.coerceIn(0.8f, 1.25f))
+        if (streamId != 0) activeStreamIds[streamId] = true
         return if (streamId != 0) streamId else null
     }
 
     suspend fun playFirstAvailable(vararg assetPaths: String, volume: Float = 1f, rate: Float = 1f) {
-        if (!ENABLED) return
-        val pool = soundPool ?: return
+        playFirstAvailableReturningPath(*assetPaths, volume = volume, rate = rate)
+    }
+
+    /**
+     * Like [playFirstAvailable], but returns the asset path that was actually started (first loadable), or null.
+     */
+    suspend fun playFirstAvailableReturningPath(
+        vararg assetPaths: String,
+        volume: Float = 1f,
+        rate: Float = 1f,
+    ): String? {
+        if (!ENABLED) return null
+        val pool = soundPool ?: return null
+        val r = rate.coerceIn(0.8f, 1.25f)
         for (p in assetPaths) {
             if (p.isBlank()) continue
             val soundId = loadIfNeeded(pool, p) ?: continue
-            pool.play(soundId, volume, volume, 1, 0, rate.coerceIn(0.8f, 1.25f))
-            return
+            val streamId = pool.play(soundId, volume, volume, 1, 0, r)
+            if (streamId != 0) activeStreamIds[streamId] = true
+            return p
         }
+        return null
+    }
+
+    /**
+     * Like [playFirstAvailableReturningPath], but also returns the stream id so callers can stop/sequence reliably.
+     */
+    suspend fun playFirstAvailableReturningPathAndStreamId(
+        vararg assetPaths: String,
+        volume: Float = 1f,
+        rate: Float = 1f,
+    ): Pair<String, Int>? {
+        if (!ENABLED) return null
+        val pool = soundPool ?: return null
+        val r = rate.coerceIn(0.8f, 1.25f)
+        for (p in assetPaths) {
+            if (p.isBlank()) continue
+            val soundId = loadIfNeeded(pool, p) ?: continue
+            val streamId = pool.play(soundId, volume, volume, 1, 0, r)
+            if (streamId != 0) {
+                activeStreamIds[streamId] = true
+                return p to streamId
+            }
+        }
+        return null
     }
 
     fun stopStream(streamId: Int?) {
@@ -91,13 +132,31 @@ class SoundPoolPlayer(context: Context) {
         val id = streamId ?: return
         if (id == 0) return
         pool.stop(id)
+        activeStreamIds.remove(id)
+    }
+
+    /**
+     * Best-effort: stop every stream we've started since init. Useful when sequencing voice/SFX and we must
+     * guarantee no overlap even if durations are slightly off.
+     */
+    fun stopAllStreams() {
+        if (!ENABLED) return
+        val pool = soundPool ?: return
+        val ids = activeStreamIds.keys.toList()
+        for (id in ids) {
+            if (id == 0) continue
+            runCatching { pool.stop(id) }
+        }
+        activeStreamIds.clear()
     }
 
     fun release() {
+        stopAllStreams()
         soundPool?.release()
         loadedSoundIdByPath.clear()
         readySoundIds.clear()
         pendingLoads.clear()
+        activeStreamIds.clear()
     }
 
     private suspend fun loadIfNeeded(pool: SoundPool, assetPath: String): Int? {
@@ -156,40 +215,53 @@ class SoundPoolPlayer(context: Context) {
             withContext(Dispatchers.IO) {
                 try {
                     appContext.assets.open(assetPath).use { input ->
-                        val header = ByteArray(64)
-                        val n = input.read(header)
-                        if (n < 44) return@use null
-                        // Very small RIFF/WAV parser: find "fmt " and "data" chunks in the first 64 bytes.
+                        val bytes = input.readBytes()
+                        if (bytes.size < 44) return@use null
                         fun leInt(off: Int): Int =
-                            ByteBuffer.wrap(header, off, 4).order(ByteOrder.LITTLE_ENDIAN).int
+                            ByteBuffer.wrap(bytes, off, 4).order(ByteOrder.LITTLE_ENDIAN).int
                         fun leShort(off: Int): Int =
-                            ByteBuffer.wrap(header, off, 2).order(ByteOrder.LITTLE_ENDIAN).short.toInt() and 0xFFFF
+                            ByteBuffer.wrap(bytes, off, 2).order(ByteOrder.LITTLE_ENDIAN).short.toInt() and 0xFFFF
 
-                        // Validate RIFF/WAVE
-                        val riff = String(header, 0, 4)
-                        val wave = String(header, 8, 4)
-                        if (riff != "RIFF" || wave != "WAVE") return@use null
+                        if (String(bytes, 0, 4, StandardCharsets.US_ASCII) != "RIFF") return@use null
+                        if (String(bytes, 8, 4, StandardCharsets.US_ASCII) != "WAVE") return@use null
 
-                        // Assume standard layout: fmt at 12, data later. (Our recorded clips follow this.)
-                        val fmtId = String(header, 12, 4)
-                        if (fmtId != "fmt ") return@use null
-                        val fmtSize = leInt(16)
-                        val audioFormat = leShort(20)
-                        val numChannels = leShort(22)
-                        val sampleRate = leInt(24)
-                        val bitsPerSample = leShort(34)
-                        if (audioFormat != 1) return@use null // PCM only
-                        if (sampleRate <= 0 || numChannels <= 0 || bitsPerSample <= 0) return@use null
-                        // data chunk header expected at 20 + fmtSize (commonly 36) + 8
-                        val dataOff = 20 + fmtSize
-                        if (dataOff + 8 > n) return@use null
-                        val dataId = String(header, dataOff, 4)
-                        if (dataId != "data") return@use null
-                        val dataSize = leInt(dataOff + 4).toLong().coerceAtLeast(0L)
+                        var pos = 12
+                        var sampleRate = 0
+                        var numChannels = 0
+                        var bitsPerSample = 0
+                        var dataSize: Long = -1L
 
+                        while (pos + 8 <= bytes.size) {
+                            val chunkId = String(bytes, pos, 4, StandardCharsets.US_ASCII)
+                            val chunkSize = leInt(pos + 4)
+                            if (chunkSize < 0) return@use null
+                            val payloadStart = pos + 8
+                            val payloadEnd = payloadStart + chunkSize
+                            if (payloadEnd > bytes.size) return@use null
+
+                            when (chunkId) {
+                                "fmt " -> {
+                                    if (chunkSize < 16) return@use null
+                                    val audioFormat = leShort(payloadStart)
+                                    if (audioFormat != 1) return@use null // PCM only
+                                    numChannels = leShort(payloadStart + 2)
+                                    sampleRate = leInt(payloadStart + 4)
+                                    bitsPerSample = leShort(payloadStart + 14)
+                                }
+                                "data" -> {
+                                    dataSize = chunkSize.toLong() and 0xFFFF_FFFFL
+                                }
+                            }
+
+                            pos = payloadEnd + (chunkSize and 1)
+                        }
+
+                        if (sampleRate <= 0 || numChannels <= 0 || bitsPerSample <= 0 || dataSize < 0L) {
+                            return@use null
+                        }
                         val bytesPerSample = (bitsPerSample / 8).coerceAtLeast(1)
                         val byteRate = sampleRate.toLong() * numChannels.toLong() * bytesPerSample.toLong()
-                        if (byteRate <= 0) return@use null
+                        if (byteRate <= 0L) return@use null
                         ((dataSize * 1000L) / byteRate).coerceAtMost(15_000L)
                     }
                 } catch (_: Throwable) {
