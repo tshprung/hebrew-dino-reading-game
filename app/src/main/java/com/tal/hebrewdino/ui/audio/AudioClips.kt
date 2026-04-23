@@ -13,6 +13,10 @@ object AudioClips {
     const val VoTryAgain2 = "audio/vo_try_again_2.wav"
     /** Short praise (optional): e.g. "יפה!". */
     const val VoNice1 = "audio/vo_nice_1.wav"
+    // Optional extra short praise clips (record to add variety)
+    const val VoPraiseMetzuyan = "audio/vo_praise_metzuyan.wav" // "מצוין!"
+    const val VoPraiseYofi = "audio/vo_praise_yofi.wav" // "יופי!"
+    const val VoPraiseHitzlacht = "audio/vo_praise_hitzlacht.wav" // "הצלחת!"
     const val VoLevelDone = "audio/vo_level_done.wav"
 
     /** Episode 1 station 5 prefix: "איזו מילה מתחילה באות". */

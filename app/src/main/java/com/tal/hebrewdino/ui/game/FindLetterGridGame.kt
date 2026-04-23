@@ -63,12 +63,16 @@ fun FindLetterGridGame(
     onLetterTapped: ((letter: String) -> Unit)? = null,
     /** When incremented, triggers a subtle pulse hint on the header chip. */
     hintPulseEpoch: Int = 0,
+    /** Header hint peak scale (2nd wrong hint). */
+    hintHeaderPeakScale: Float = 1.12f,
     onCellTapped: (index: Int) -> Unit,
     onCompleted: () -> Unit,
     enabled: Boolean = true,
     contentKey: Int = 0,
     /** Scales only the letter glyphs inside grid cells, not cell size or the header chip. */
     gridLetterSizeMultiplier: Float = 1f,
+    /** Correct cell “pop” peak scale. */
+    correctCellPeakScale: Float = 1.12f,
     modifier: Modifier = Modifier,
 ) {
     val scope = rememberCoroutineScope()
@@ -97,7 +101,7 @@ fun FindLetterGridGame(
     LaunchedEffect(hintPulseEpoch, question, contentKey) {
         if (hintPulseEpoch <= 0 || completionFired) return@LaunchedEffect
         headerScale.snapTo(1f)
-        headerScale.animateTo(1.12f, tween(120))
+        headerScale.animateTo(hintHeaderPeakScale, tween(120))
         headerScale.animateTo(1f, spring(dampingRatio = 0.55f, stiffness = 420f))
     }
 
@@ -242,7 +246,7 @@ fun FindLetterGridGame(
                                         ChildGameAudioHooks.onCorrect()
                                         scope.launch {
                                             scale.snapTo(1f)
-                                            scale.animateTo(1.12f, tween(100))
+                                            scale.animateTo(correctCellPeakScale, tween(100))
                                             scale.animateTo(1f, spring(dampingRatio = 0.5f, stiffness = 400f))
                                         }
                                     } else {

@@ -60,13 +60,15 @@ fun RewardScreen(
 
     LaunchedEffect(levelId) {
         coroutineScope {
-            // Level complete: say "finished level" then "כל הכבוד".
+            // Level complete: say "finished level" then short praise ("יפה מאוד").
             // Use a sequence so the second line never overlaps the first.
             val voiceJob =
                 launch {
+                    // Warm-up reduces the tiny prepare gap between clips.
+                    voice.warmUp(AudioClips.VoLevelDone, AudioClips.VoNice1)
                     voice.playSequenceBlocking(
                         AudioClips.VoLevelDone,
-                        AudioClips.VoGoodJob2,
+                        AudioClips.VoNice1,
                     )
                 }
             // Safety: always navigate back even if audio hangs.
