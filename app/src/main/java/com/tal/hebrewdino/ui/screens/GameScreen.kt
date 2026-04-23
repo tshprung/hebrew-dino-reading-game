@@ -164,6 +164,8 @@ fun GameScreen(
      */
     var station2PinnedBalloonLetter by remember(stationId) { mutableStateOf<String?>(null) }
     var station2PinnedBalloonColor by remember(stationId) { mutableStateOf<Color?>(null) }
+    /** Episode 1 station 2: counts correct pops within the current question (for pop SFX variety). */
+    var station2CorrectPopCount by remember(stationId, session.currentIndex) { mutableIntStateOf(0) }
     var station1PinnedCorrectLetter by remember(stationId) { mutableStateOf<String?>(null) }
 
     fun cancelFeedbackVoice() {
@@ -246,6 +248,11 @@ fun GameScreen(
         paths.add(AudioClips.SfxBalloonPopSoft)
         paths.add(AudioClips.SfxBalloonPopWrongFunny)
         paths.add(AudioClips.SfxBalloonPop)
+        // Preferred natural Station 2 pops (may be missing until provided).
+        paths.add(AudioClips.SfxStation2PopSoft1)
+        paths.add(AudioClips.SfxStation2PopSoft2)
+        paths.add(AudioClips.SfxStation2PopPlop)
+        paths.add(AudioClips.SfxStation2PopFinale)
         for (letter in letters) {
             AudioClips.letterNameClip(letter)?.let(paths::add)
             AudioClips.wrongSentenceClip(letter)?.let(paths::add)
@@ -391,16 +398,13 @@ fun GameScreen(
         inputLocked = true
         if (audioEnabled) ChildGameAudioHooks.onLevelComplete()
         // CRITICAL UX: do not block visuals/transitions on voice playback.
+        // Episode 1 station 2: keep end-of-round clean (no extra "success big" stack; last balloon already feels special).
         if (audioEnabled) {
-            if (isLast) {
-                // Station 1: the "big" success SFX is a double pip; keep it single.
-                if (chapterId == 1 && stationId == 1) {
-                    gameFeedback.playCorrect()
-                } else {
-                    gameFeedback.playSuccessBig()
-                }
-            } else {
-                gameFeedback.playCorrect()
+            when {
+                chapterId == 1 && stationId == 1 && isLast -> gameFeedback.playCorrect()
+                chapterId == 1 && stationId == 2 -> Unit
+                isLast -> gameFeedback.playSuccessBig()
+                else -> gameFeedback.playCorrect()
             }
         }
         if (!suppressInGameDinoProgress) {
@@ -412,7 +416,7 @@ fun GameScreen(
             // Episode 1 station 2: round-end praise is "כל הכבוד" (vo_good_job_2); other stations keep vo_good_job_1.
             val praiseClip =
                 if (chapterId == 1 && stationId == 2) {
-                    AudioClips.VoGoodJob2
+                    AudioClips.VoNice1
                 } else {
                     AudioClips.VoGoodJob1
                 }
@@ -811,10 +815,16 @@ fun GameScreen(
                                                 correctAnswer = current.correctAnswer,
                                                 enabled = !inputLocked,
                                                 shakePx = optionsShake.value,
+                                                visualRoundSeed =
+                                                    if (chapterId == 1 && stationId == 2) {
+                                                        session.currentIndex
+                                                    } else {
+                                                        0
+                                                    },
                                                 onBalloonPressed = { _ ->
                                                     // Voice is triggered after pop SFX (see onPopSfx) so it feels connected.
                                                 },
-                                                onPopSfx = { letter, isCorrect ->
+                                                onPopSfx = { letter, isCorrect, finalCorrectBalloon, balloonIndex ->
                                                     if (!audioEnabled) return@PopBalloonsOptions
                                                     cancelFeedbackVoice()
                                                     if (chapterId == 1 && stationId == 2) {
@@ -823,11 +833,22 @@ fun GameScreen(
                                                                 sfx.stopStream(station2VoiceStreamId)
                                                                 station2VoiceStreamId = 0
                                                                 if (isCorrect) {
-                                                                    // Snappy pop first (short wav), then letter name on the second stream.
+                                                                    val variant = station2CorrectPopCount++
+                                                                    val rate =
+                                                                        if (variant % 2 == 0) {
+                                                                            0.98f
+                                                                        } else {
+                                                                            1.02f
+                                                                        }
+                                                                    val pops =
+                                                                        AudioClips.station2CorrectPopPlaylist(
+                                                                            variant,
+                                                                            finalCorrectBalloon,
+                                                                        )
                                                                     sfx.playFirstAvailable(
-                                                                        AudioClips.SfxBalloonPop,
-                                                                        AudioClips.SfxBalloonPopSoft,
-                                                                        volume = 1f,
+                                                                        *pops,
+                                                                        volume = if (finalCorrectBalloon) 0.72f else 0.64f,
+                                                                        rate = rate,
                                                                     )
                                                                     val letterClip = AudioClips.letterNameClip(letter)
                                                                     if (letterClip != null) {
@@ -837,13 +858,13 @@ fun GameScreen(
                                                                         if (d > 0) delay(d)
                                                                     }
                                                                 } else {
+                                                                    val wrongPops =
+                                                                        AudioClips.station2WrongPopPlaylist(balloonIndex)
                                                                     sfx.playFirstAvailable(
-                                                                        AudioClips.SfxBalloonPopWrongFunny,
-                                                                        AudioClips.SfxBalloonPop,
-                                                                        AudioClips.SfxBalloonPopSoft,
-                                                                        volume = 0.4f,
+                                                                        *wrongPops,
+                                                                        volume = 0.56f,
+                                                                        rate = 1f,
                                                                     )
-                                                                    // Pop → letter name immediately → try again (no bundled wrong clip).
                                                                     val letterClip = AudioClips.letterNameClip(letter)
                                                                     if (letterClip != null) {
                                                                         station2VoiceStreamId =
@@ -914,7 +935,10 @@ fun GameScreen(
                                                                     withTimeoutOrNull(4000) { feedbackVoiceJob?.join() }
                                                                     cancelFeedbackVoice()
                                                                 }
-                                                                if (audioEnabled) ChildGameAudioHooks.onCorrect()
+                                                                // Station 2: round-end uses playSuccessBig in advanceAfterRound; skip extra hook SFX.
+                                                                if (audioEnabled && !ch1St2) {
+                                                                    ChildGameAudioHooks.onCorrect()
+                                                                }
                                                                 val isLast = session.currentIndex >= session.totalQuestions - 1
                                                                 advanceAfterRound(isLast)
                                                             }

@@ -48,28 +48,52 @@ def noise_burst(seconds: float, amp: float) -> list[float]:
     return out
 
 
+def mix(a: list[float], b: list[float]) -> list[float]:
+    n = max(len(a), len(b))
+    out = []
+    for i in range(n):
+        va = a[i] if i < len(a) else 0.0
+        vb = b[i] if i < len(b) else 0.0
+        out.append(va + vb)
+    return out
+
+
+def soft_pop_kid1() -> list[float]:
+    """Bright, very short kid-friendly pop (soft noise + tiny ping)."""
+    n1 = noise_burst(0.028, 0.38)
+    p1 = sine_tone(920, 0.018, 0.22, "hann")
+    return mix(n1, p1 + [0.0] * max(0, len(n1) - len(p1)))
+
+
+def soft_pop_kid2() -> list[float]:
+    """Slightly rounder / warmer pop variant."""
+    n1 = noise_burst(0.032, 0.32)
+    p1 = sine_tone(740, 0.022, 0.26, "hann")
+    p2 = sine_tone(990, 0.014, 0.12, "hann")
+    return mix(mix(n1, p1), p2)
+
+
+def soft_pop_plop() -> list[float]:
+    """Gentle 'plop' — softer, a bit longer tail, no harsh attack."""
+    n1 = noise_burst(0.045, 0.22)
+    down = sine_tone(520, 0.055, 0.18, "exp")
+    return mix(n1, down)
+
+
+def soft_pop_finale() -> list[float]:
+    """Mini-finale: soft double-bubble + tiny cheerful lift (still non-aggressive)."""
+    a = soft_pop_kid1()
+    gap = [0.0] * int(SR * 0.04)
+    b = mix(noise_burst(0.03, 0.36), sine_tone(880, 0.02, 0.2, "hann"))
+    lift = sine_tone(660, 0.08, 0.14, "hann") + sine_tone(990, 0.1, 0.12, "hann")
+    return a + gap + b + lift
+
+
 def main() -> None:
     root = Path(__file__).resolve().parents[1]
     out_dir = root / "app" / "src" / "main" / "assets" / "audio"
 
-    # Correct: short bright two-tone “ding”
-    a = sine_tone(784, 0.07, 0.42, "hann")
-    b = sine_tone(1047, 0.09, 0.38, "hann")
-    write_wav(out_dir / "sfx_correct.wav", a + b)
-
-    # Wrong: short low “bonk”
-    c = sine_tone(180, 0.12, 0.55, "exp")
-    d = sine_tone(140, 0.10, 0.35, "exp")
-    write_wav(out_dir / "sfx_wrong.wav", c + d)
-
-    # Balloon pop: very short noise + tiny click
-    e = noise_burst(0.035, 0.55)
-    f = sine_tone(1200, 0.012, 0.25, "hann")
-    write_wav(out_dir / "sfx_pop.wav", e + f)
-
-    print("Wrote:", out_dir / "sfx_correct.wav")
-    print("Wrote:", out_dir / "sfx_wrong.wav")
-    print("Wrote:", out_dir / "sfx_pop.wav")
+    # Note: We no longer generate Station 2 synthetic pops here.
 
 
 if __name__ == "__main__":
