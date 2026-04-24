@@ -4,6 +4,8 @@ object AudioClips {
     // System voice lines
     const val VoStart = "audio/vo_start.wav"
     const val VoChooseLetter = "audio/vo_choose_letter.wav"
+    /** Optional "מצא את האות"; station 1 intro may alternate with [VoChooseLetter]. */
+    const val VoFindLetter = "audio/vo_find_letter.wav"
     const val VoClickLetter = "audio/vo_click_letter.wav"
     const val VoWhichLetter = "audio/vo_which_letter.wav"
     const val VoListenChoose = "audio/vo_listen_choose.wav"
@@ -13,10 +15,21 @@ object AudioClips {
     const val VoTryAgain2 = "audio/vo_try_again_2.wav"
     /** Short praise (optional): e.g. "יפה!". */
     const val VoNice1 = "audio/vo_nice_1.wav"
+    /** Optional spoken "כל הכבוד!" — place at `assets/audio/vo_kol_hakavod.wav` (ASCII filename). */
+    const val VoKolHakavod = "audio/vo_kol_hakavod.wav"
+    /** Optional e.g. "יפה מאוד!"; station 1 plays after letter name on correct when file exists. */
+    const val VoYafeMeod = "audio/vo_yafe_meod.wav"
+    // Optional extra short praise clips (record to add variety)
+    const val VoPraiseMetzuyan = "audio/vo_praise_metzuyan.wav" // "מצוין!"
+    const val VoPraiseYofi = "audio/vo_praise_yofi.wav" // "יופי!"
+    const val VoPraiseHitzlacht = "audio/vo_praise_hitzlacht.wav" // "הצלחת!"
     const val VoLevelDone = "audio/vo_level_done.wav"
 
     /** Episode 1 station 5 prefix: "איזו מילה מתחילה באות". */
-    const val WhichWordStartsWithLetter = "audio/which_word_starts_with_letter.wav"
+    const val WhichWordStartsWithLetter = "audio/find_word_starts_with_letter.wav"
+
+    /** Episode 1 station 4: "באיזו אות מתחילה המילה" (then play the word clip, e.g. "ברווז"). */
+    const val WhichLetterDoesWordStart = "audio/which_letter_does_word_start.wav"
 
     /** Episode 1 station 6: "חברו בין אות למילה המתאימה". */
     const val MatchLetterToWordInstructions = "audio/match_letter_to_word_instructions.wav"
@@ -183,11 +196,7 @@ object AudioClips {
         }
 
     /**
-     * Station 1 (episode 1) ultra-fast combined feedback.
-     * These are OPTIONAL, but they are the only way to guarantee truly gapless playback.
-     *
-     * Wrong: "<letter name>, נסה שוב"
-     * Correct: "<letter name>, יפה מאוד"
+     * Station 1 (episode 1) wrong: optional single clip "<letter>, נסה שוב" for gapless playback.
      */
     fun station1WrongCombined(letter: String): String? =
         when (letter) {
@@ -201,16 +210,35 @@ object AudioClips {
             else -> null
         }
 
-    fun station1CorrectCombined(letter: String): String? =
-        when (letter) {
-            "א" -> "audio/st1_correct_alef.wav"
-            "ב" -> "audio/st1_correct_bet.wav"
-            "ג" -> "audio/st1_correct_gimel.wav"
-            "ד" -> "audio/st1_correct_dalet.wav"
-            "ה" -> "audio/st1_correct_heh.wav"
-            "ל" -> "audio/st1_correct_lamed.wav"
-            "מ" -> "audio/st1_correct_mem.wav"
-            else -> null
-        }
+    /**
+     * Station 1 correct: after the letter clip, play the first loadable tail (caller shuffles for variety).
+     */
+    fun station1CorrectPraiseTailCandidates(): Array<String> =
+        arrayOf(
+            VoYafeMeod,
+            VoKolHakavod,
+            VoNice1,
+            VoGoodJob2,
+            VoGoodJob1,
+            VoPraiseYofi,
+            VoPraiseMetzuyan,
+            VoPraiseHitzlacht,
+        )
+
+    /**
+     * After [VoLevelDone] on the "שלב הסתיים" reward screen — caller shuffles, then [VoicePlayer.playFirstAvailableBlocking].
+     * Wider than "יפה" alone so the tail feels varied.
+     */
+    fun rewardStagePraiseTailCandidates(): Array<String> =
+        arrayOf(
+            VoKolHakavod,
+            VoNice1,
+            VoYafeMeod,
+            VoGoodJob2,
+            VoGoodJob1,
+            VoPraiseMetzuyan,
+            VoPraiseYofi,
+            VoPraiseHitzlacht,
+        )
 }
 

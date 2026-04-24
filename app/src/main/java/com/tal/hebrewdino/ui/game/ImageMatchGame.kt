@@ -53,6 +53,8 @@ fun ImageMatchGame(
     contentKey: Int,
     enabled: Boolean,
     shakePx: Float,
+    /** Subtle guidance pulse when the round appears (cards). */
+    entryPulseEpoch: Int = 0,
     /** After 2 wrong taps, pulse the correct answer (subtle hint). */
     hintCorrectChoiceId: String? = null,
     hintPulseEpoch: Int = 0,
@@ -67,8 +69,12 @@ fun ImageMatchGame(
 ) {
     val scope = rememberCoroutineScope()
     var successChoiceId by remember(contentKey) { mutableStateOf<String?>(null) }
+    var wrongFlashChoiceId by remember(contentKey) { mutableStateOf<String?>(null) }
+    var wrongFlashEpoch by remember(contentKey) { mutableStateOf(0) }
     LaunchedEffect(contentKey) {
         successChoiceId = null
+        wrongFlashChoiceId = null
+        wrongFlashEpoch = 0
     }
     Box(modifier = modifier.fillMaxSize()) {
         BoxWithConstraints(
@@ -122,11 +128,23 @@ fun ImageMatchGame(
                 ) {
                     question.choices.forEach { choice ->
                         val scale = remember(choice.id, contentKey) { Animatable(1f) }
+                        val flash = remember(choice.id, contentKey) { Animatable(0f) }
+                        LaunchedEffect(entryPulseEpoch, choice.id, contentKey) {
+                            if (entryPulseEpoch <= 0) return@LaunchedEffect
+                            // Very subtle guidance: tiny pulse once per round.
+                            scale.animateTo(1.05f, tween(120))
+                            scale.animateTo(1f, spring(dampingRatio = 0.70f, stiffness = 420f))
+                        }
                         LaunchedEffect(hintPulseEpoch, hintCorrectChoiceId, choice.id, contentKey) {
                             if (hintPulseEpoch <= 0 || hintCorrectChoiceId != choice.id) return@LaunchedEffect
                             scale.snapTo(1f)
-                            scale.animateTo(1.14f, tween(120))
+                            scale.animateTo(1.22f, tween(120))
                             scale.animateTo(1f, spring(dampingRatio = 0.55f, stiffness = 420f))
+                        }
+                        LaunchedEffect(wrongFlashEpoch, wrongFlashChoiceId, choice.id, contentKey) {
+                            if (wrongFlashEpoch <= 0 || wrongFlashChoiceId != choice.id) return@LaunchedEffect
+                            flash.snapTo(1f)
+                            flash.animateTo(0f, tween(220))
                         }
                         val captionSp =
                             with(density) {
@@ -150,12 +168,20 @@ fun ImageMatchGame(
                                     successChoiceId = choice.id
                                     scope.launch {
                                         scale.snapTo(1f)
-                                        scale.animateTo(1.16f, tween(100))
+                                        scale.animateTo(1.28f, tween(100))
                                         scale.animateTo(1f, spring(dampingRatio = 0.52f, stiffness = 420f))
+                                    }
+                                } else {
+                                    wrongFlashChoiceId = choice.id
+                                    wrongFlashEpoch += 1
+                                    scope.launch {
+                                        flash.snapTo(1f)
+                                        flash.animateTo(0f, tween(220))
                                     }
                                 }
                             },
                             isCorrectPick = choice.id == successChoiceId,
+                            wrongFlashAlpha = flash.value,
                         )
                     }
                 }

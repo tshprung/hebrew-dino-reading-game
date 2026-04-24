@@ -9,7 +9,8 @@ package com.tal.hebrewdino.ui.domain
  * 3. Find letters (larger grid) — [StationQuizMode.FindLetterGrid]
  * 4. Picture → first letter — [StationQuizMode.PictureStartsWith] → [Question.PictureStartsWithQuestion]
  * 5. Image match (three cards, larger captions/pictures) — [StationQuizMode.ImageMatch]
- * 6. Picture–letter match summary — custom UI; session still uses [StationQuizMode.ImageMatch] for progression.
+ * 6. Picture–letter match summary — custom UI (same three cards as each [Question.ImageMatchQuestion] round);
+ * session still uses [StationQuizMode.ImageMatch] for progression, with the same caption/picture plan flags as station 5.
  *
  * Routing for level UI: [StationQuizPlans.chapter1] delegates here.
  */
@@ -43,7 +44,15 @@ object Chapter1StationOrder {
                     imageMatchPictureSizeMultiplier = 1f,
                 )
             FINALE_PICTURE_LETTER_MATCH ->
-                StationQuizPlan(StationQuizMode.ImageMatch, questionCount = 6, initialGroupIndex = 3)
+                StationQuizPlan(
+                    mode = StationQuizMode.ImageMatch,
+                    questionCount = 6,
+                    initialGroupIndex = 3,
+                    // Same card/caption tuning as station 5; station 6 UI reuses those choices from each question.
+                    imageMatchAlwaysThreeChoices = true,
+                    imageMatchCaptionSizeMultiplier = 1.5f,
+                    imageMatchPictureSizeMultiplier = 1f,
+                )
             else ->
                 error(
                     "Chapter 1 station out of range 1..${Chapter1Config.STATION_COUNT} after coerce (raw=$stationId)",

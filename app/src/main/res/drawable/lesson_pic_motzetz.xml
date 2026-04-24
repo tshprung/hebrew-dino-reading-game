@@ -4,17 +4,81 @@
     android:height="96dp"
     android:viewportWidth="120"
     android:viewportHeight="96">
-    <!-- Pacifier: ring + shield + nipple -->
+    <!-- Baby pacifier: ring handle + butterfly shield + nipple (clear plastic look) -->
+
+    <!-- Soft shadow under shield -->
+    <path
+        android:fillColor="#22000000"
+        android:pathData="M38,78 Q60,84 82,78 L82,82 Q60,88 38,82 Z" />
+
+    <!-- Ring handle (behind shield) -->
+    <path
+        android:pathData="M22,48 A18,18 0 1,1 58,48 A18,18 0 1,1 22,48"
+        android:fillColor="@android:color/transparent"
+        android:strokeColor="#1565C0"
+        android:strokeWidth="7"
+        android:strokeLineCap="round" />
+
+    <!-- Ring inner highlight -->
+    <path
+        android:pathData="M26,48 A14,14 0 1,1 54,48 A14,14 0 1,1 26,48"
+        android:fillColor="@android:color/transparent"
+        android:strokeColor="#42A5F5"
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round" />
+
+    <!-- Connector nub between ring and shield -->
     <path
         android:fillColor="#90CAF9"
-        android:pathData="M28,52 A20,20 0 1,1 28.01,52 Z" />
+        android:pathData="M44,44 L52,44 L52,58 L44,58 Z" />
+
+    <!-- Butterfly shield (outer) -->
+    <path
+        android:fillColor="#B3E5FC"
+        android:pathData="M52,34
+            C44,34 38,40 38,48
+            C38,56 44,62 52,62
+            L68,62
+            C76,62 82,56 82,48
+            C82,40 76,34 68,34
+            Z" />
+
+    <!-- Shield “wings” (left/right bumps) -->
+    <path
+        android:fillColor="#81D4FA"
+        android:pathData="M38,42 C30,38 26,44 28,52 C30,60 38,62 44,58 L44,44 Z" />
+    <path
+        android:fillColor="#81D4FA"
+        android:pathData="M82,42 C90,38 94,44 92,52 C90,60 82,62 76,58 L76,44 Z" />
+
+    <!-- Inner shield highlight -->
     <path
         android:fillColor="#E1F5FE"
-        android:pathData="M52,40 C40,40 32,50 32,62 C32,74 44,84 60,84 C76,84 88,74 88,62 C88,50 80,40 68,40 Z" />
+        android:pathData="M50,40 C46,40 42,44 42,50 C42,56 48,60 54,60 L66,60 C72,60 78,56 78,50 C78,44 74,40 70,40 Z" />
+
+    <!-- Vent holes (decorative) -->
     <path
-        android:fillColor="#FFB74D"
-        android:pathData="M60,56 C54,56 50,60 50,66 C50,72 54,76 60,76 C66,76 70,72 70,66 C70,60 66,56 60,56 Z" />
+        android:fillColor="#4FC3F7"
+        android:pathData="M48,48 m-2.5,0 a2.5,2.5 0 1,1 5,0 a2.5,2.5 0 1,1 -5,0" />
     <path
-        android:fillColor="#FFCC80"
-        android:pathData="M58,62 L62,62 L62,78 L58,78 Z" />
+        android:fillColor="#4FC3F7"
+        android:pathData="M60,44 m-2.5,0 a2.5,2.5 0 1,1 5,0 a2.5,2.5 0 1,1 -5,0" />
+    <path
+        android:fillColor="#4FC3F7"
+        android:pathData="M72,48 m-2.5,0 a2.5,2.5 0 1,1 5,0 a2.5,2.5 0 1,1 -5,0" />
+
+    <!-- Nipple bulb -->
+    <path
+        android:fillColor="#FFCCBC"
+        android:pathData="M54,62 C52,62 50,64 50,68 C50,72 54,76 60,76 C66,76 70,72 70,68 C70,64 68,62 66,62 Z" />
+
+    <!-- Nipple stem -->
+    <path
+        android:fillColor="#FFAB91"
+        android:pathData="M57,76 L63,76 L62,88 L58,88 Z" />
+
+    <!-- Nipple tip -->
+    <path
+        android:fillColor="#FF8A65"
+        android:pathData="M58,88 Q60,92 62,88 Z" />
 </vector>

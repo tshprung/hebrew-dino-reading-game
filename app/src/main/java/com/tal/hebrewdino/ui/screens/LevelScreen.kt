@@ -335,7 +335,7 @@ internal fun LetterOptions(
                 if (correctPulseEpoch <= 0 || correctPulseLetter != letter) return@LaunchedEffect
                 pop.snapTo(1f)
                 pop.animateTo(0.88f, tween(durationMillis = 70))
-                pop.animateTo(1.18f, tween(durationMillis = 110))
+                pop.animateTo(1.32f, tween(durationMillis = 110))
                 pop.animateTo(1f, spring(dampingRatio = 0.5f, stiffness = 500f))
             }
             val pressSquish = if (pressed) 0.94f else 1f

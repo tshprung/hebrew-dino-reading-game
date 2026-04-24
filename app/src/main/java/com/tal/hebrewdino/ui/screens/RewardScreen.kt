@@ -30,13 +30,30 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.tal.hebrewdino.R
-import com.tal.hebrewdino.ui.domain.Chapter1Config
 import com.tal.hebrewdino.ui.audio.AudioClips
 import com.tal.hebrewdino.ui.audio.VoicePlayer
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
+import kotlin.random.Random
+
+/** Random celebratory dino pose on the stage-complete screen (not a single static "nice" moment). */
+private val RewardStageMascotDrawables =
+    intArrayOf(
+        R.drawable.dino_idle,
+        R.drawable.dino_jump_0,
+        R.drawable.dino_jump_1,
+        R.drawable.dino_jump_2,
+        R.drawable.dino_talk_0,
+        R.drawable.dino_talk_1,
+        R.drawable.dino_talk_2,
+        R.drawable.dino_talk_3,
+        R.drawable.dino_walk_0,
+        R.drawable.dino_walk_1,
+        R.drawable.dino_walk_2,
+        R.drawable.dino_walk_3,
+    )
 
 @Composable
 fun RewardScreen(
@@ -51,6 +68,10 @@ fun RewardScreen(
     val context = androidx.compose.ui.platform.LocalContext.current
     val voice = remember { VoicePlayer(context = context) }
     var navigatedAway by remember(levelId) { mutableStateOf(false) }
+    val mascotRes =
+        remember {
+            RewardStageMascotDrawables[Random.nextInt(RewardStageMascotDrawables.size)]
+        }
 
     DisposableEffect(Unit) {
         onDispose {
@@ -60,14 +81,15 @@ fun RewardScreen(
 
     LaunchedEffect(levelId) {
         coroutineScope {
-            // Level complete: say "finished level" then "כל הכבוד".
-            // Use a sequence so the second line never overlaps the first.
+            // Level complete: say "finished level" then one random short praise (not only "יפה").
             val voiceJob =
                 launch {
-                    voice.playSequenceBlocking(
-                        AudioClips.VoLevelDone,
-                        AudioClips.VoGoodJob2,
-                    )
+                    val praisePool = AudioClips.rewardStagePraiseTailCandidates()
+                    voice.warmUp(AudioClips.VoLevelDone, *praisePool)
+                    voice.playBlocking(AudioClips.VoLevelDone)
+                    val tail = praisePool.toMutableList()
+                    tail.shuffle()
+                    voice.playFirstAvailableBlocking(*tail.toTypedArray())
                 }
             // Safety: always navigate back even if audio hangs.
             withTimeoutOrNull(9000) { voiceJob.join() }
@@ -105,7 +127,16 @@ fun RewardScreen(
                 color = Color(0xFF0B2B3D),
             )
             Spacer(modifier = Modifier.height(8.dp))
-            Spacer(modifier = Modifier.height(10.dp))
+            Image(
+                painter = painterResource(id = mascotRes),
+                contentDescription = null,
+                modifier =
+                    Modifier
+                        .height(168.dp)
+                        .fillMaxWidth(),
+                contentScale = ContentScale.Fit,
+            )
+            Spacer(modifier = Modifier.height(6.dp))
 
             Box(
                 modifier =

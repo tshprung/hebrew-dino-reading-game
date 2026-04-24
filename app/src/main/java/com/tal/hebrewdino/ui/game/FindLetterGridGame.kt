@@ -36,6 +36,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -63,12 +64,16 @@ fun FindLetterGridGame(
     onLetterTapped: ((letter: String) -> Unit)? = null,
     /** When incremented, triggers a subtle pulse hint on the header chip. */
     hintPulseEpoch: Int = 0,
+    /** Header hint peak scale (2nd wrong hint). */
+    hintHeaderPeakScale: Float = 1.12f,
     onCellTapped: (index: Int) -> Unit,
     onCompleted: () -> Unit,
     enabled: Boolean = true,
     contentKey: Int = 0,
     /** Scales only the letter glyphs inside grid cells, not cell size or the header chip. */
     gridLetterSizeMultiplier: Float = 1f,
+    /** Correct cell “pop” peak scale. */
+    correctCellPeakScale: Float = 1.12f,
     modifier: Modifier = Modifier,
 ) {
     val scope = rememberCoroutineScope()
@@ -97,7 +102,7 @@ fun FindLetterGridGame(
     LaunchedEffect(hintPulseEpoch, question, contentKey) {
         if (hintPulseEpoch <= 0 || completionFired) return@LaunchedEffect
         headerScale.snapTo(1f)
-        headerScale.animateTo(1.12f, tween(120))
+        headerScale.animateTo(hintHeaderPeakScale, tween(120))
         headerScale.animateTo(1f, spring(dampingRatio = 0.55f, stiffness = 420f))
     }
 
@@ -203,6 +208,11 @@ fun FindLetterGridGame(
                         modifier =
                             Modifier
                                 .aspectRatio(1f)
+                                .shadow(
+                                    elevation = if (done) 8.dp else 6.dp,
+                                    shape = RoundedCornerShape(16.dp),
+                                    clip = false,
+                                )
                                 .scale(scale.value)
                                 .offset { IntOffset(shake.value.roundToInt(), 0) }
                                 .clip(RoundedCornerShape(16.dp))
@@ -242,7 +252,7 @@ fun FindLetterGridGame(
                                         ChildGameAudioHooks.onCorrect()
                                         scope.launch {
                                             scale.snapTo(1f)
-                                            scale.animateTo(1.12f, tween(100))
+                                            scale.animateTo(correctCellPeakScale, tween(100))
                                             scale.animateTo(1f, spring(dampingRatio = 0.5f, stiffness = 400f))
                                         }
                                     } else {

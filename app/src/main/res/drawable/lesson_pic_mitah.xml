@@ -4,20 +4,60 @@
     android:height="96dp"
     android:viewportWidth="120"
     android:viewportHeight="96">
-    <!-- Simple bed: headboard, mattress, pillow -->
+    <!-- Side-view bed: headboard, mattress + blanket, pillow, legs -->
+    <!-- Floor shadow -->
     <path
-        android:fillColor="#5D4037"
-        android:pathData="M16,28 L16,88 L104,88 L104,28 C104,18 96,12 86,12 L34,12 C24,12 16,18 16,28 Z" />
-    <path
-        android:fillColor="#8D6E63"
-        android:pathData="M20,44 L100,44 L100,84 L20,84 Z" />
-    <path
-        android:fillColor="#D7CCC8"
-        android:pathData="M24,48 L52,48 L52,72 L24,72 Z" />
-    <path
-        android:fillColor="#A1887F"
-        android:pathData="M20,40 L100,40 L100,44 L20,44 Z" />
+        android:fillColor="#33000000"
+        android:pathData="M8,88 Q60,92 112,88 L112,92 L8,92 Z" />
+    <!-- Back legs -->
     <path
         android:fillColor="#4E342E"
-        android:pathData="M12,84 L108,84 L108,92 L12,92 Z" />
+        android:pathData="M22,78 L26,78 L26,92 L22,92 Z" />
+    <path
+        android:fillColor="#4E342E"
+        android:pathData="M34,78 L38,78 L38,92 L34,92 Z" />
+    <!-- Headboard (wood) -->
+    <path
+        android:fillColor="#6D4C41"
+        android:pathData="M10,88 L10,32 Q10,22 18,22 L32,22 L32,88 Z" />
+    <path
+        android:fillColor="#8D6E63"
+        android:pathData="M14,88 L14,36 Q14,28 20,28 L28,28 L28,88 Z" />
+    <!-- Mattress base -->
+    <path
+        android:fillColor="#BCAAA4"
+        android:pathData="M28,56 L102,56 Q108,56 108,62 L108,74 L28,74 Z" />
+    <!-- Mattress top -->
+    <path
+        android:fillColor="#D7CCC8"
+        android:pathData="M28,52 L102,52 Q108,52 108,58 L108,62 L28,62 Z" />
+    <!-- Blanket fold -->
+    <path
+        android:fillColor="#A1887F"
+        android:pathData="M44,52 L102,52 L102,58 L44,58 Z" />
+    <path
+        android:fillColor="#8D6E63"
+        android:pathData="M52,54 L96,54 L92,60 L56,60 Z" />
+    <!-- Pillow -->
+    <path
+        android:fillColor="#EFEBE9"
+        android:pathData="M32,50 Q32,44 40,44 L52,44 Q58,44 58,50 L58,56 L32,56 Z" />
+    <path
+        android:fillColor="#D7CCC8"
+        android:pathData="M34,52 L54,52 L54,54 L34,54 Z" />
+    <!-- Mattress front edge -->
+    <path
+        android:fillColor="#A1887F"
+        android:pathData="M28,62 L108,62 L108,74 L28,74 Z" />
+    <!-- Footboard (short) -->
+    <path
+        android:fillColor="#5D4037"
+        android:pathData="M102,56 L108,56 L108,78 L102,78 Z" />
+    <!-- Front legs -->
+    <path
+        android:fillColor="#4E342E"
+        android:pathData="M92,74 L96,74 L96,92 L92,92 Z" />
+    <path
+        android:fillColor="#4E342E"
+        android:pathData="M100,74 L104,74 L104,92 L100,92 Z" />
 </vector>

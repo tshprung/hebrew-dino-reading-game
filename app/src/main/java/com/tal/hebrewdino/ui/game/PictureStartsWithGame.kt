@@ -52,6 +52,8 @@ fun PictureStartsWithGame(
     question: Question.PictureStartsWithQuestion,
     enabled: Boolean,
     shakePx: Float,
+    /** Subtle guidance pulse when the round appears (buttons). */
+    entryPulseEpoch: Int = 0,
     pictureImageHeight: Dp = 140.dp,
     /** Scales only the prompt word text (under the picture). */
     promptWordSizeMultiplier: Float = 1f,
@@ -67,6 +69,9 @@ fun PictureStartsWithGame(
     /** Pulse the tapped correct letter (tiny positive bounce). */
     correctPulseLetter: String? = null,
     correctPulseEpoch: Int = 0,
+    /** Flash the last wrong-picked letter button (stronger feedback). */
+    wrongFlashLetter: String? = null,
+    wrongFlashEpoch: Int = 0,
     onPickLetter: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -79,7 +84,7 @@ fun PictureStartsWithGame(
     ) {
         Text(
             text = "באיזו אות המילה מתחילה?",
-            style = MaterialTheme.typography.titleMedium,
+            style = MaterialTheme.typography.titleMedium.copy(fontSize = MaterialTheme.typography.titleMedium.fontSize * 2),
             color = Color(0xFF0B2B3D),
             textAlign = TextAlign.Center,
         )
@@ -150,6 +155,13 @@ fun PictureStartsWithGame(
         ) {
             question.optionLetters.forEach { letter ->
                 val pop = remember(letter, question) { Animatable(1f) }
+                val flash = remember(letter, question) { Animatable(0f) }
+                LaunchedEffect(entryPulseEpoch, letter, question) {
+                    if (entryPulseEpoch <= 0) return@LaunchedEffect
+                    // Very subtle guidance: tiny pulse once per round.
+                    pop.animateTo(1.06f, tween(120))
+                    pop.animateTo(1f, spring(dampingRatio = 0.70f, stiffness = 420f))
+                }
                 LaunchedEffect(hintPulseEpoch, hintCorrectLetter, correctPulseEpoch, correctPulseLetter, question) {
                     val shouldPulse =
                         (hintPulseEpoch > 0 && hintCorrectLetter == letter) ||
@@ -157,13 +169,27 @@ fun PictureStartsWithGame(
                     if (!shouldPulse) return@LaunchedEffect
                     pop.snapTo(1f)
                     pop.animateTo(0.90f, tween(70))
-                    pop.animateTo(1.16f, tween(120))
+                    // Slightly stronger feedback for station 4 (still fast).
+                    pop.animateTo(1.28f, tween(120))
                     pop.animateTo(1f, spring(dampingRatio = 0.55f, stiffness = 520f))
+                }
+                LaunchedEffect(wrongFlashEpoch, wrongFlashLetter, letter, question) {
+                    if (wrongFlashEpoch <= 0 || wrongFlashLetter != letter) return@LaunchedEffect
+                    flash.snapTo(1f)
+                    flash.animateTo(0f, tween(220))
                 }
                 Button(
                     onClick = { onPickLetter(letter) },
                     enabled = enabled,
-                    modifier = Modifier.widthIn(min = 64.dp, max = 84.dp).scale(pop.value),
+                    modifier =
+                        Modifier
+                            .widthIn(min = 64.dp, max = 84.dp)
+                            .scale(pop.value)
+                            .border(
+                                width = 3.dp,
+                                color = Color(0xFFE53935).copy(alpha = 0.55f * flash.value),
+                                shape = RoundedCornerShape(14.dp),
+                            ),
                 ) {
                     Text(text = letter, fontSize = 38.sp, fontWeight = FontWeight.Black)
                 }
