@@ -91,6 +91,8 @@ fun MatchLetterToWordGame(
     onLetterPressed: ((letter: String) -> Unit)? = null,
     /** Called when the player attempts a match (true=correct, false=wrong). */
     onMatchAttempt: ((correct: Boolean) -> Unit)? = null,
+    /** Called when a correct match is made (choice id). */
+    onCorrectMatch: ((choiceId: String) -> Unit)? = null,
     onSolved: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -156,6 +158,7 @@ fun MatchLetterToWordGame(
     fun tryLockMatch(letter: String, choice: LessonChoice) {
         if (isLockedLetter(letter) || isLockedChoice(choice.id)) return
         if (choice.letter == letter) {
+            onCorrectMatch?.invoke(choice.id)
             onMatchAttempt?.invoke(true)
             locked[letter] = choice.id
             selectedLetter = null

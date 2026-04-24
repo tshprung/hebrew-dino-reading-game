@@ -104,6 +104,8 @@ private const val BetweenQuestionFadeMs = 80
  * 0.94 ≈ halving the remaining pause vs 0.88 (i.e. moving halfway from 0.88 toward 1.0).
  */
 private const val StationIntroLetterLeadFraction = 0.94f
+/** Station 3 find-letter intro: stretch the intro→letter delay by this factor (e.g. 1.05 = 5% more space before the letter). */
+private const val Station3IntroToLetterLeadStretch = 1.05f
 /**
  * Station 2 balloon intro ("פוצץ את הבלונים…"): **25% shorter** remaining gap vs [StationIntroLetterLeadFraction]
  * before overlapping the target letter name.
@@ -111,9 +113,13 @@ private const val StationIntroLetterLeadFraction = 0.94f
 private const val Station2BalloonIntroLetterLeadFraction =
     1f - (1f - StationIntroLetterLeadFraction) * 0.75f
 /**
- * Halves the SoundPool wait before the letter after [PopBalloonsWithLetter] (shorter gap before the letter name).
+ * Scales the overlap lead before the letter after [PopBalloonsWithLetter] (smaller = letter starts earlier).
  */
 private const val Station2IntroToLetterLeadScale = 0.5f
+/** Adds this fraction of the remaining tail `(1 - baseLead)` before the letter, where `baseLead` = [Station2BalloonIntroLetterLeadFraction] × [Station2IntroToLetterLeadScale]. */
+private const val Station2BalloonIntroToLetterGapBoost = 0.2f
+/** Fixed extra pause after that lead so the letter name does not ride on `pop_balloons_with_letter` (ms). */
+private const val Station2BalloonIntroToLetterExtraPauseMs = 1000L
 /**
  * Station 1 only: same overlap model, but the perceived gap before the letter is **20% shorter** than
  * [StationIntroLetterLeadFraction] would leave (i.e. start the letter earlier into `vo_choose_letter`).
@@ -121,15 +127,19 @@ private const val Station2IntroToLetterLeadScale = 0.5f
 private const val Station1IntroLetterLeadFraction =
     1f - (1f - StationIntroLetterLeadFraction) * 0.8f
 /**
- * Applied after [Station1IntroLetterLeadFraction]: halves the wait before the letter name on SoundPool
- * (shorter silence between "בחר את האות" and the letter).
+ * Multiplier on [Station1IntroLetterLeadFraction] before starting the letter on SoundPool.
+ * 1f = do not pull the letter earlier than that overlap model (values below ~0.85 tended to drown the letter under `vo_choose_letter`).
  */
-private const val Station1IntroToLetterLeadScale = 0.5f
+private const val Station1IntroToLetterLeadScale = 1f
 /**
  * Station 1 wrong pick: start the follow-up line (e.g. try-again / "כמעט") this far into the letter-name clip.
  * 0.7 ⇒ ~30% less wait than playing the full letter clip before the next line (overlap into the tail).
  */
 private const val Station1WrongLetterToFollowLeadFraction = 0.7f
+/** Adds this fraction of the remaining tail `(1 - baseWrongLead)` to the lead before try-again (station 1 wrong; also station 4 wrong SoundPool path). */
+private const val Station1WrongLetterToTryAgainGapBoost = 0.1f
+/** Station 4 wrong: add extra space before try-again (fraction of remaining tail). */
+private const val Station4WrongLetterToTryAgainGapBoost = 0.2f
 /**
  * Station 4 wrong: multiplier on the delay before try-again after the wrong letter name (SoundPool overlap).
  * Halves the wait vs [Station1WrongLetterToFollowLeadFraction] alone — tighter gap before "נסה שוב" / similar.
@@ -150,6 +160,10 @@ private const val Station4IntroWordLeadFraction = 0.775f
  * Halves the SoundPool wait before the spoken word after [WhichLetterDoesWordStart] (shorter gap before the word).
  */
 private const val Station4IntroToWordLeadScale = 0.5f
+/** Adds this fraction of `(1 - baseLead)` before the word, where `baseLead` = [Station4IntroWordLeadFraction] × [Station4IntroToWordLeadScale] (reduces overlap with `which_letter_does_word_start`). */
+private const val Station4IntroToWordGapBoost = 0.2f
+/** Fixed extra pause after that lead before the spoken word clip (ms). */
+private const val Station4IntroToWordExtraPauseMs = 1000L
 /**
  * Episode 1 station 5: start the letter name this far into `find_word_starts_with_letter` (overlap).
  * Same **25% shorter tail** target as [Station4IntroWordLeadFraction] (was sequential full intro before letter).
@@ -159,6 +173,10 @@ private const val Station5WhichWordIntroLetterLeadFraction = 0.775f
  * Halves the SoundPool wait before the letter after [WhichWordStartsWithLetter] (shorter gap before letter name).
  */
 private const val Station5WhichWordIntroToLetterLeadScale = 0.5f
+/** Adds this fraction of `(1 - baseLead)` before the letter, where `baseLead` = [Station5WhichWordIntroLetterLeadFraction] × [Station5WhichWordIntroToLetterLeadScale]. */
+private const val Station5WhichWordIntroToLetterGapBoost = 0.35f
+/** Fixed extra pause after that lead before the letter name clip (ms). */
+private const val Station5WhichWordIntroToLetterExtraPauseMs = 500L
 
 /** Episode 1: chance to play a short praise voice after a correct round. */
 private const val Episode1PraiseChance = 0.62f
@@ -460,7 +478,7 @@ fun GameScreen(
                                 val (intro, introMs) = introPair
                                 sfx.playReturningStreamId(intro, volume = 1f)
                                 val lead =
-                                    (introMs * StationIntroLetterLeadFraction)
+                                    (introMs * StationIntroLetterLeadFraction * Station3IntroToLetterLeadStretch)
                                         .toLong()
                                         .coerceIn(16L, introMs)
                                 delay(lead)
@@ -498,11 +516,16 @@ fun GameScreen(
                             if (introMs > 0 && voice.hasAsset(wordPath)) {
                                 sfx.stopAllStreams()
                                 sfx.playReturningStreamId(intro, volume = 1f)
+                                val baseIntroWordLeadFrac =
+                                    Station4IntroWordLeadFraction * Station4IntroToWordLeadScale
+                                val introWordLeadFrac =
+                                    baseIntroWordLeadFrac +
+                                        Station4IntroToWordGapBoost * (1f - baseIntroWordLeadFrac)
                                 val lead =
-                                    (introMs * Station4IntroWordLeadFraction * Station4IntroToWordLeadScale)
+                                    (introMs * introWordLeadFrac)
                                         .toLong()
                                         .coerceIn(16L, introMs)
-                                delay(lead)
+                                delay(lead + Station4IntroToWordExtraPauseMs)
                                 sfx.stopAllStreams()
                                 voice.playBlocking(wordPath)
                             } else {
@@ -518,11 +541,16 @@ fun GameScreen(
                                 // Let intro keep playing on one stream; start letter before the very end.
                                 sfx.stopAllStreams()
                                 sfx.playReturningStreamId(intro, volume = 1f)
+                                val baseIntroLeadFrac =
+                                    Station2BalloonIntroLetterLeadFraction * Station2IntroToLetterLeadScale
+                                val introLeadFrac =
+                                    baseIntroLeadFrac +
+                                        Station2BalloonIntroToLetterGapBoost * (1f - baseIntroLeadFrac)
                                 val lead =
-                                    (introMs * Station2BalloonIntroLetterLeadFraction * Station2IntroToLetterLeadScale)
+                                    (introMs * introLeadFrac)
                                         .toLong()
                                         .coerceIn(16L, introMs)
-                                delay(lead)
+                                delay(lead + Station2BalloonIntroToLetterExtraPauseMs)
                                 sfx.playReturningStreamId(letterClip, volume = 1f)
                             } else {
                                 // Fallback: strict sequential.
@@ -726,8 +754,12 @@ fun GameScreen(
                             if (letterClip != null && letterMs > 0L) {
                                 sfx.stopAllStreams()
                                 sfx.playReturningStreamId(letterClip, volume = 1f)
+                                val followLeadFrac =
+                                    Station1WrongLetterToFollowLeadFraction +
+                                        Station1WrongLetterToTryAgainGapBoost *
+                                        (1f - Station1WrongLetterToFollowLeadFraction)
                                 val lead =
-                                    (letterMs * Station1WrongLetterToFollowLeadFraction)
+                                    (letterMs * followLeadFrac)
                                         .toLong()
                                         .coerceIn(16L, letterMs)
                                 delay(lead)
@@ -759,10 +791,14 @@ fun GameScreen(
                             if (lc != null && letterMs > 0L) {
                                 sfx.stopAllStreams()
                                 sfx.playReturningStreamId(lc, volume = 1f)
+                                val baseWrongFrac =
+                                    Station1WrongLetterToFollowLeadFraction *
+                                        Station4WrongLetterToFollowLeadScale
+                                val followLeadFrac =
+                                    baseWrongFrac +
+                                        Station4WrongLetterToTryAgainGapBoost * (1f - baseWrongFrac)
                                 val lead =
-                                    (letterMs *
-                                        Station1WrongLetterToFollowLeadFraction *
-                                        Station4WrongLetterToFollowLeadScale)
+                                    (letterMs * followLeadFrac)
                                         .toLong()
                                         .coerceIn(16L, letterMs)
                                 delay(lead)
@@ -1239,11 +1275,12 @@ fun GameScreen(
                                                                         }.coerceAtMost(5000L)
                                                                     if (wrongWaitMs > 0) delay(wrongWaitMs)
                                                                     sfx.stopAllStreams()
-                                                                    // Wrong balloon: say the tapped letter, then "try again" sequentially.
-                                                                    // Use MediaPlayer sequencing so we don't depend on durationMs() (WAV header parse can be off).
+                                                                    // Wrong balloon: say the tapped letter, then one try-again clip (not both WAVs in one sequence).
                                                                     val letterClip = AudioClips.letterNameClip(letter)
-                                                                    voice.playSequenceBlocking(
-                                                                        letterClip ?: "",
+                                                                    if (letterClip != null && voice.hasAsset(letterClip)) {
+                                                                        voice.playBlocking(letterClip)
+                                                                    }
+                                                                    voice.playFirstAvailableBlocking(
                                                                         AudioClips.VoTryAgain2,
                                                                         AudioClips.VoTryAgain1,
                                                                     )
@@ -1438,31 +1475,24 @@ fun GameScreen(
                                         enabled = !inputLocked,
                                         compactWideSpread =
                                             chapterId in 1..4 && stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH,
-                                        onWordPressed = { choiceId ->
-                                            if (!audioEnabled) return@MatchLetterToWordGame
-                                            scope.launch {
-                                                voice.playBlocking(AudioClips.wordClipByCatalogId(choiceId))
-                                            }
-                                        },
+                                        onWordPressed = null,
                                         onLetterPressed = { letter ->
                                             if (!audioEnabled) return@MatchLetterToWordGame
                                             val clip = AudioClips.letterNameClip(letter) ?: return@MatchLetterToWordGame
                                             scope.launch { voice.playBlocking(clip) }
                                         },
+                                        onCorrectMatch = { choiceId ->
+                                            if (!audioEnabled) return@MatchLetterToWordGame
+                                            cancelFeedbackVoice()
+                                            feedbackVoiceJob =
+                                                scope.launch {
+                                                    voice.playBlocking(AudioClips.wordClipByCatalogId(choiceId))
+                                                }
+                                        },
                                         onMatchAttempt = { correct ->
                                             if (!audioEnabled) return@MatchLetterToWordGame
                                             scope.launch {
-                                                if (correct) {
-                                                    val praise =
-                                                        mutableListOf(
-                                                            AudioClips.VoKolHakavod,
-                                                            AudioClips.VoNice1,
-                                                            AudioClips.VoGoodJob1,
-                                                            AudioClips.VoGoodJob2,
-                                                        )
-                                                    praise.shuffle()
-                                                    voice.playFirstAvailableBlocking(*praise.toTypedArray())
-                                                } else {
+                                                if (!correct) {
                                                     voice.playFirstAvailableBlocking(AudioClips.VoTryAgain2, AudioClips.VoTryAgain1)
                                                 }
                                             }
@@ -1488,6 +1518,8 @@ fun GameScreen(
                                         onSolved = {
                                             if (!consumeTapCooldown()) return@MatchLetterToWordGame
                                             scope.launch {
+                                                // Ensure the last matched word name (onCorrectMatch) is heard before advancing.
+                                                withTimeoutOrNull(3500L) { feedbackVoiceJob?.join() }
                                                 when (session.completeCurrentRound()) {
                                                     AnswerResult.Correct -> {
                                                         if (audioEnabled) ChildGameAudioHooks.onCorrect()
@@ -1777,13 +1809,17 @@ private suspend fun speakLetterPrompt(
                     if (introMs > 0L && letterName != null) {
                         sfx.stopAllStreams()
                         sfx.playReturningStreamId(intro, volume = 1f)
+                        val baseWhichWordLeadFrac =
+                            Station5WhichWordIntroLetterLeadFraction *
+                                Station5WhichWordIntroToLetterLeadScale
+                        val whichWordLeadFrac =
+                            baseWhichWordLeadFrac +
+                                Station5WhichWordIntroToLetterGapBoost * (1f - baseWhichWordLeadFrac)
                         val lead =
-                            (introMs *
-                                Station5WhichWordIntroLetterLeadFraction *
-                                Station5WhichWordIntroToLetterLeadScale)
+                            (introMs * whichWordLeadFrac)
                                 .toLong()
                                 .coerceIn(16L, introMs)
-                        delay(lead)
+                        delay(lead + Station5WhichWordIntroToLetterExtraPauseMs)
                         sfx.playReturningStreamId(letterName, volume = 1f)
                     } else {
                         voice.playBlocking(intro)
