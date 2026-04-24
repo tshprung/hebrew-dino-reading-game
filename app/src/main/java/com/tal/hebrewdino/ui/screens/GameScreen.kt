@@ -104,8 +104,8 @@ private const val BetweenQuestionFadeMs = 80
  * 0.94 ≈ halving the remaining pause vs 0.88 (i.e. moving halfway from 0.88 toward 1.0).
  */
 private const val StationIntroLetterLeadFraction = 0.94f
-/** Station 3 find-letter intro: stretch the intro→letter delay by this factor (e.g. 1.05 = 5% more space before the letter). */
-private const val Station3IntroToLetterLeadStretch = 1.05f
+/** Station 3 find-letter intro: stretch the intro→letter delay by this factor (e.g. 1.10 = 10% more space before the letter). */
+private const val Station3IntroToLetterLeadStretch = 1.10f
 /**
  * Station 2 balloon intro ("פוצץ את הבלונים…"): **25% shorter** remaining gap vs [StationIntroLetterLeadFraction]
  * before overlapping the target letter name.
@@ -128,9 +128,9 @@ private const val Station1IntroLetterLeadFraction =
     1f - (1f - StationIntroLetterLeadFraction) * 0.8f
 /**
  * Multiplier on [Station1IntroLetterLeadFraction] before starting the letter on SoundPool.
- * 1f = do not pull the letter earlier than that overlap model (values below ~0.85 tended to drown the letter under `vo_choose_letter`).
+ * Higher = more space between "בחר את האות" and the letter.
  */
-private const val Station1IntroToLetterLeadScale = 1f
+private const val Station1IntroToLetterLeadScale = 1.1f
 /**
  * Station 1 wrong pick: start the follow-up line (e.g. try-again / "כמעט") this far into the letter-name clip.
  * 0.7 ⇒ ~30% less wait than playing the full letter clip before the next line (overlap into the tail).
@@ -139,7 +139,7 @@ private const val Station1WrongLetterToFollowLeadFraction = 0.7f
 /** Adds this fraction of the remaining tail `(1 - baseWrongLead)` to the lead before try-again (station 1 wrong; also station 4 wrong SoundPool path). */
 private const val Station1WrongLetterToTryAgainGapBoost = 0.1f
 /** Station 4 wrong: add extra space before try-again (fraction of remaining tail). */
-private const val Station4WrongLetterToTryAgainGapBoost = 0.2f
+private const val Station4WrongLetterToTryAgainGapBoost = 0.25f
 /**
  * Station 4 wrong: multiplier on the delay before try-again after the wrong letter name (SoundPool overlap).
  * Halves the wait vs [Station1WrongLetterToFollowLeadFraction] alone — tighter gap before "נסה שוב" / similar.
@@ -163,7 +163,7 @@ private const val Station4IntroToWordLeadScale = 0.5f
 /** Adds this fraction of `(1 - baseLead)` before the word, where `baseLead` = [Station4IntroWordLeadFraction] × [Station4IntroToWordLeadScale] (reduces overlap with `which_letter_does_word_start`). */
 private const val Station4IntroToWordGapBoost = 0.2f
 /** Fixed extra pause after that lead before the spoken word clip (ms). */
-private const val Station4IntroToWordExtraPauseMs = 1000L
+private const val Station4IntroToWordExtraPauseMs = 950L
 /**
  * Episode 1 station 5: start the letter name this far into `find_word_starts_with_letter` (overlap).
  * Same **25% shorter tail** target as [Station4IntroWordLeadFraction] (was sequential full intro before letter).
@@ -174,7 +174,7 @@ private const val Station5WhichWordIntroLetterLeadFraction = 0.775f
  */
 private const val Station5WhichWordIntroToLetterLeadScale = 0.5f
 /** Adds this fraction of `(1 - baseLead)` before the letter, where `baseLead` = [Station5WhichWordIntroLetterLeadFraction] × [Station5WhichWordIntroToLetterLeadScale]. */
-private const val Station5WhichWordIntroToLetterGapBoost = 0.35f
+private const val Station5WhichWordIntroToLetterGapBoost = 0.50f
 /** Fixed extra pause after that lead before the letter name clip (ms). */
 private const val Station5WhichWordIntroToLetterExtraPauseMs = 500L
 
@@ -232,6 +232,8 @@ fun GameScreen(
     val entryPulseScale = remember(stationId) { Animatable(1f) }
     var correctTapPulseEpoch by remember(stationId) { mutableIntStateOf(0) }
     var correctTapPulseLetter by remember(stationId) { mutableStateOf<String?>(null) }
+    var station4WrongFlashEpoch by remember(stationId, session.currentIndex) { mutableIntStateOf(0) }
+    var station4WrongFlashLetter by remember(stationId, session.currentIndex) { mutableStateOf<String?>(null) }
     var feedbackVoiceJob by remember(stationId) { mutableStateOf<Job?>(null) }
     var promptVoiceJob by remember(stationId) { mutableStateOf<Job?>(null) }
     var station1VoiceStreamId by remember(stationId) { mutableIntStateOf(0) }
@@ -412,6 +414,7 @@ fun GameScreen(
         inputLocked = true
         wrongTapsThisQuestion = 0
         correctTapPulseLetter = null
+        station4WrongFlashLetter = null
         station1PinnedCorrectLetter = null
         station2PinnedBalloonLetter = null
         station2PinnedBalloonColor = null
@@ -584,8 +587,8 @@ fun GameScreen(
         phase = GamePhase.Play
         inputLocked = false
         entryPulseEpoch += 1
-        if (chapterId == 1 && stationId == 3) {
-            // Entry guidance: a subtle pulse to draw attention to the target letter.
+        if (chapterId == 1 && stationId == 3 && session.currentIndex == 0) {
+            // Entry guidance: subtle pulse once at the station start (not every round).
             hintPulseEpoch += 1
         }
     }
@@ -624,6 +627,8 @@ fun GameScreen(
                 chapterId == 1 && stationId == 2 -> Unit
                 // Station 3 grid already plays per-tap SFX; avoid a second “pip” at round transition.
                 chapterId == 1 && stationId == 3 -> Unit
+                // Station 6: per-match already plays success cues; avoid stacking another SFX at round transition.
+                chapterId == 1 && stationId == 6 -> Unit
                 isLast -> gameFeedback.playSuccessBig()
                 else -> gameFeedback.playCorrect()
             }
@@ -689,7 +694,22 @@ fun GameScreen(
         if (!suppressInGameDinoProgress) {
             dinoForward.animateTo(dinoForward.value + forwardDir * 12f, spring(dampingRatio = 0.75f, stiffness = 520f))
         }
-        playSuccessPulse(scope, dinoScale)
+        val strongerSuccessPulse = (chapterId == 1 && (stationId == 1 || stationId == 3))
+        val station456SuccessPulse =
+            (chapterId == 1 &&
+                (stationId == Chapter1StationOrder.PICTURE_PICK_ONE ||
+                    stationId == Chapter1StationOrder.PICTURE_PICK_ALL ||
+                    stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH))
+        playSuccessPulse(
+            scope,
+            dinoScale,
+            peakScale =
+                when {
+                    strongerSuccessPulse -> 1.28f
+                    station456SuccessPulse -> 1.24f
+                    else -> 1.14f
+                },
+        )
         // UX: short pause before transition.
         delay(if (chapterId == 1 && stationId == 3) 120 else 170)
         // Episode 1 station 2: praise + pinned balloon stay until voice ends.
@@ -737,20 +757,40 @@ fun GameScreen(
                 dinoTilt.animateTo(0f, tween(140))
                 dinoSlip.animateTo(0f, tween(140))
             }
-            playShake(scope, optionsShake, chapterId = chapterId)
+            val strongerWrongShake =
+                (chapterId == 1 && (stationId == Chapter1StationOrder.PICTURE_PICK_ONE || stationId == Chapter1StationOrder.PICTURE_PICK_ALL))
+            playShake(scope, optionsShake, chapterId = chapterId, strength = if (strongerWrongShake) 1.25f else 1f)
             if (audioEnabled) {
                 // Station 1: no SFX; voice only.
-                if (!(chapterId == 1 && stationId == 1)) {
+                if (!(chapterId == 1 && stationId == 1) &&
+                    // Station 5: no error SFX (voice feedback only).
+                    !(chapterId in 1..4 && stationId == Chapter1StationOrder.PICTURE_PICK_ALL)
+                ) {
                     gameFeedback.playWrong()
                     ChildGameAudioHooks.onWrong()
                 }
-                // Station 1: wrong tap — letter name then try-again; overlap tail so the gap is ~30% shorter.
+                // Station 1: wrong tap — keep it varied to reduce fatigue.
                 if (chapterId == 1 && stationId == 1 && wrongPickedLetter != null) {
                     cancelFeedbackVoice()
                     feedbackVoiceJob =
                         scope.launch {
                             val letterClip = AudioClips.letterNameClip(wrongPickedLetter)
                             val letterMs = letterClip?.let { sfx.durationMs(it) } ?: 0L
+                            // 0: try-again only, 1: letter only, 2+: letter + try-again (overlapped)
+                            val variant = Random.nextInt(100)
+                            if (variant < 20) {
+                                sfx.playFirstAvailable(
+                                    AudioClips.VoTryAgain2,
+                                    AudioClips.VoTryAgain1,
+                                    volume = 1f,
+                                )
+                                return@launch
+                            }
+                            if (variant < 55) {
+                                if (letterClip != null && voice.hasAsset(letterClip)) voice.playBlocking(letterClip)
+                                return@launch
+                            }
+
                             if (letterClip != null && letterMs > 0L) {
                                 sfx.stopAllStreams()
                                 sfx.playReturningStreamId(letterClip, volume = 1f)
@@ -995,12 +1035,30 @@ fun GameScreen(
                                                             // Correct: positive SFX only.
                                                             sfx.playFirstAvailable(AudioClips.SfxCorrect, volume = 0.62f)
                                                         } else {
-                                                            // Wrong: error SFX + say the tapped letter name.
-                                                            sfx.playFirstAvailable(AudioClips.SfxWrong, volume = 0.44f)
+                                                            // Wrong: keep it lighter and varied (avoid stacking voice + SFX every time).
                                                             val tappedClip = AudioClips.letterNameClip(tapped)
-                                                            if (tappedClip != null) {
-                                                                station3VoiceStreamId =
-                                                                    sfx.playReturningStreamId(tappedClip, volume = 1f) ?: 0
+                                                            when (Random.nextInt(100)) {
+                                                                in 0..39 -> {
+                                                                    // SFX only
+                                                                    sfx.playFirstAvailable(AudioClips.SfxWrong, volume = 0.58f)
+                                                                }
+                                                                in 40..89 -> {
+                                                                    // Letter only
+                                                                    if (tappedClip != null) {
+                                                                        station3VoiceStreamId =
+                                                                            sfx.playReturningStreamId(tappedClip, volume = 1f) ?: 0
+                                                                    } else {
+                                                                        sfx.playFirstAvailable(AudioClips.SfxWrong, volume = 0.58f)
+                                                                    }
+                                                                }
+                                                                else -> {
+                                                                    // Rare: both
+                                                                    sfx.playFirstAvailable(AudioClips.SfxWrong, volume = 0.58f)
+                                                                    if (tappedClip != null) {
+                                                                        station3VoiceStreamId =
+                                                                            sfx.playReturningStreamId(tappedClip, volume = 1f) ?: 0
+                                                                    }
+                                                                }
                                                             }
                                                         }
                                                     }
@@ -1009,10 +1067,10 @@ fun GameScreen(
                                             null
                                         },
                                     hintPulseEpoch = hintPulseEpoch,
-                                    hintHeaderPeakScale = if (chapterId == 1 && stationId == 3) 1.16f else 1.12f,
+                                    hintHeaderPeakScale = if (chapterId == 1 && stationId == 3) 1.30f else 1.12f,
                                     // Episode 1 station 3: bigger letters inside same boxes.
                                     gridLetterSizeMultiplier = if (stationId == 3) 1.5f else 1f,
-                                    correctCellPeakScale = if (chapterId == 1 && stationId == 3) 1.16f else 1.12f,
+                                    correctCellPeakScale = if (chapterId == 1 && stationId == 3) 1.30f else 1.12f,
                                     onCellTapped = { index ->
                                         if (!consumeTapCooldown()) return@FindLetterGridGame
                                         // Station 3: wrong-tap voice is scheduled in onLetterTapped; cancel here would cut it off.
@@ -1245,12 +1303,16 @@ fun GameScreen(
                                                                         }.coerceAtMost(5000L)
                                                                     if (popWaitMs > 0) delay(popWaitMs)
                                                                     sfx.stopAllStreams()
-                                                                    val letterClip = AudioClips.letterNameClip(letter)
-                                                                    if (letterClip != null) {
-                                                                        station2VoiceStreamId =
-                                                                            sfx.playReturningStreamId(letterClip, volume = 1f) ?: 0
-                                                                        val d = sfx.durationMs(letterClip) ?: 0L
-                                                                        if (d > 0) delay(d)
+                                                                    // Prefer pop OR voice (not always both). Always speak the last balloon.
+                                                                    val speakLetter = finalCorrectBalloon || Random.nextFloat() < 0.35f
+                                                                    if (speakLetter) {
+                                                                        val letterClip = AudioClips.letterNameClip(letter)
+                                                                        if (letterClip != null) {
+                                                                            station2VoiceStreamId =
+                                                                                sfx.playReturningStreamId(letterClip, volume = 1f) ?: 0
+                                                                            val d = sfx.durationMs(letterClip) ?: 0L
+                                                                            if (d > 0) delay(d)
+                                                                        }
                                                                     }
                                                                 } else {
                                                                     val wrongPops =
@@ -1319,7 +1381,14 @@ fun GameScreen(
                                                         scope.launch {
                                                             inputLocked = true
                                                             dinoVisual = DinoVisual.TryAgain
-                                                            playShake(scope, optionsShake, chapterId = chapterId)
+                                                            val strongerWrongShake =
+                                                                (chapterId == 1 && (stationId == Chapter1StationOrder.PICTURE_PICK_ONE || stationId == Chapter1StationOrder.PICTURE_PICK_ALL))
+                                                            playShake(
+                                                                scope,
+                                                                optionsShake,
+                                                                chapterId = chapterId,
+                                                                strength = if (strongerWrongShake) 1.25f else 1f,
+                                                            )
                                                             dinoVisual = DinoVisual.Idle
                                                             inputLocked = false
                                                         }
@@ -1362,6 +1431,7 @@ fun GameScreen(
                                     question = current,
                                     enabled = !inputLocked,
                                     shakePx = optionsShake.value,
+                                    entryPulseEpoch = entryPulseEpoch,
                                     pictureImageHeight =
                                         if (chapterId in 1..4 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
                                             // Station 4: keep the frame compact so the word + letters remain visible.
@@ -1404,6 +1474,8 @@ fun GameScreen(
                                     hintPulseEpoch = hintPulseEpoch,
                                     correctPulseLetter = correctTapPulseLetter,
                                     correctPulseEpoch = correctTapPulseEpoch,
+                                    wrongFlashLetter = station4WrongFlashLetter,
+                                    wrongFlashEpoch = station4WrongFlashEpoch,
                                     onPickLetter = { picked ->
                                         if (!consumeTapCooldown()) return@PictureStartsWithGame
                                             cancelFeedbackVoice()
@@ -1455,6 +1527,8 @@ fun GameScreen(
                                                 wrongTapsThisQuestion += 1
                                                 if (wrongTapsThisQuestion >= 2) hintPulseEpoch += 1
                                                 if (chapterId == 1 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
+                                                    station4WrongFlashLetter = picked
+                                                    station4WrongFlashEpoch += 1
                                                     onWrongFeedback(wrongPickedLetter = picked)
                                                 } else {
                                                     onWrongFeedback()
@@ -1469,33 +1543,44 @@ fun GameScreen(
                                 if (stationId == 6) {
                                     // Same three picture cards as this round's ImageMatch question (station 5 generator/shape).
                                     val matchChoices = current.choices
+                                    fun enqueueVoice(play: suspend () -> Unit) {
+                                        if (!audioEnabled) return
+                                        val prev = feedbackVoiceJob
+                                        feedbackVoiceJob =
+                                            scope.launch {
+                                                // Keep station 6 responsive: queue voice instead of cancelling, so quick taps
+                                                // still speak both the pressed letter and the pressed word.
+                                                withTimeoutOrNull(4000L) { prev?.join() }
+                                                play()
+                                            }
+                                    }
                                     MatchLetterToWordGame(
                                         choices = matchChoices,
                                         contentKey = session.currentIndex,
                                         enabled = !inputLocked,
                                         compactWideSpread =
                                             chapterId in 1..4 && stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH,
-                                        onWordPressed = null,
-                                        onLetterPressed = { letter ->
-                                            if (!audioEnabled) return@MatchLetterToWordGame
-                                            val clip = AudioClips.letterNameClip(letter) ?: return@MatchLetterToWordGame
-                                            scope.launch { voice.playBlocking(clip) }
+                                        onWordPressed = { choiceId ->
+                                            enqueueVoice { voice.playBlocking(AudioClips.wordClipByCatalogId(choiceId)) }
                                         },
-                                        onCorrectMatch = { choiceId ->
+                                        onLetterPressed = { letter ->
+                                            val clip = AudioClips.letterNameClip(letter) ?: return@MatchLetterToWordGame
+                                            enqueueVoice { voice.playBlocking(clip) }
+                                        },
+                                        onCorrectMatch = {
                                             if (!audioEnabled) return@MatchLetterToWordGame
-                                            cancelFeedbackVoice()
-                                            feedbackVoiceJob =
-                                                scope.launch {
-                                                    voice.playBlocking(AudioClips.wordClipByCatalogId(choiceId))
-                                                }
+                                            // Short reward, no waiting.
+                                            scope.launch { sfx.playFirstAvailable(AudioClips.SfxCorrect, volume = 0.58f) }
+                                        },
+                                        onWrongMatch = { pickedLetter, pickedChoiceId ->
+                                            // Letter/word are spoken on press; on mismatch add a short "try again" line.
+                                            enqueueVoice {
+                                                voice.playFirstAvailableBlocking(AudioClips.VoTryAgain2, AudioClips.VoTryAgain1)
+                                            }
                                         },
                                         onMatchAttempt = { correct ->
                                             if (!audioEnabled) return@MatchLetterToWordGame
-                                            scope.launch {
-                                                if (!correct) {
-                                                    voice.playFirstAvailableBlocking(AudioClips.VoTryAgain2, AudioClips.VoTryAgain1)
-                                                }
-                                            }
+                                            // Wrong speech handled in onWrongMatch (letter name + try again).
                                         },
                                         innerPictureScaleForChoice = { choice ->
                                             if (chapterId in 1..4 && stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH) {
@@ -1518,8 +1603,8 @@ fun GameScreen(
                                         onSolved = {
                                             if (!consumeTapCooldown()) return@MatchLetterToWordGame
                                             scope.launch {
-                                                // Ensure the last matched word name (onCorrectMatch) is heard before advancing.
-                                                withTimeoutOrNull(3500L) { feedbackVoiceJob?.join() }
+                                                // Between rounds: positive feedback, but never block the transition.
+                                                gameFeedback.playCorrect()
                                                 when (session.completeCurrentRound()) {
                                                     AnswerResult.Correct -> {
                                                         if (audioEnabled) ChildGameAudioHooks.onCorrect()
@@ -1538,6 +1623,7 @@ fun GameScreen(
                                         contentKey = session.currentIndex,
                                         enabled = !inputLocked,
                                         shakePx = optionsShake.value,
+                                        entryPulseEpoch = entryPulseEpoch,
                                         hintCorrectChoiceId = current.correctChoiceId.takeIf { wrongTapsThisQuestion >= 2 },
                                         hintPulseEpoch = hintPulseEpoch,
                                         showWordCaptions = true,
@@ -1839,10 +1925,11 @@ private suspend fun speakLetterPrompt(
 private fun playSuccessPulse(
     scope: CoroutineScope,
     dinoScale: Animatable<Float, AnimationVector1D>,
+    peakScale: Float = 1.14f,
 ): Job =
     scope.launch {
         dinoScale.snapTo(1f)
-        dinoScale.animateTo(1.14f, tween(120))
+        dinoScale.animateTo(peakScale, tween(120))
         dinoScale.animateTo(1f, spring(dampingRatio = 0.48f, stiffness = 560f))
     }
 
@@ -1850,10 +1937,11 @@ private fun playShake(
     scope: CoroutineScope,
     optionsShake: Animatable<Float, AnimationVector1D>,
     chapterId: Int,
+    strength: Float = 1f,
 ): Job =
     scope.launch {
         optionsShake.snapTo(0f)
-        val amp = if (chapterId == 1) 20f else 18f
+        val amp = (if (chapterId == 1) 20f else 18f) * strength.coerceIn(0.8f, 1.6f)
         repeat(5) { i ->
             optionsShake.animateTo(
                 if (i % 2 == 0) amp else -amp,

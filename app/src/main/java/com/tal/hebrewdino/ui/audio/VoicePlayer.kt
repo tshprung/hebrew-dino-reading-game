@@ -4,6 +4,7 @@ import android.content.Context
 import android.media.MediaPlayer
 import android.util.Log
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -21,6 +22,7 @@ class VoicePlayer(context: Context) {
     private val appContext = context.applicationContext
     private val mutex = Mutex()
     private var player: MediaPlayer? = null
+    @Volatile private var activeWaiter: CancellableContinuation<Unit>? = null
 
     /**
      * Best-effort warm-up for an asset so later playback starts faster.
@@ -55,6 +57,13 @@ class VoicePlayer(context: Context) {
      * Best-effort and non-blocking (does not acquire [mutex]).
      */
     fun stopNow() {
+        // IMPORTANT: stopping a MediaPlayer does not guarantee onCompletion/onError fires.
+        // If a coroutine is currently waiting inside playBlocking/playSequenceBlocking, unblock it so the mutex isn't held forever.
+        val waiter = activeWaiter
+        if (waiter != null && waiter.isActive) {
+            runCatching { waiter.resume(Unit) }
+        }
+        activeWaiter = null
         try {
             player?.stop()
         } catch (_: Throwable) {
@@ -80,15 +89,21 @@ class VoicePlayer(context: Context) {
 
             val mp = player ?: return
             suspendCancellableCoroutine<Unit> { cont ->
+                activeWaiter = cont
                 // IMPORTANT: attach listeners BEFORE starting playback.
                 mp.setOnCompletionListener {
+                    if (activeWaiter === cont) activeWaiter = null
                     if (cont.isActive) cont.resume(Unit)
                 }
                 mp.setOnErrorListener { _, _, _ ->
+                    if (activeWaiter === cont) activeWaiter = null
                     if (cont.isActive) cont.resume(Unit)
                     true
                 }
-                cont.invokeOnCancellation { stopLocked() }
+                cont.invokeOnCancellation {
+                    if (activeWaiter === cont) activeWaiter = null
+                    stopLocked()
+                }
                 mp.start()
             }
 
@@ -133,15 +148,21 @@ class VoicePlayer(context: Context) {
 
                 val mp = player ?: continue
                 suspendCancellableCoroutine<Unit> { cont ->
+                    activeWaiter = cont
                     // IMPORTANT: attach listeners BEFORE starting playback.
                     mp.setOnCompletionListener {
+                        if (activeWaiter === cont) activeWaiter = null
                         if (cont.isActive) cont.resume(Unit)
                     }
                     mp.setOnErrorListener { _, _, _ ->
+                        if (activeWaiter === cont) activeWaiter = null
                         if (cont.isActive) cont.resume(Unit)
                         true
                     }
-                    cont.invokeOnCancellation { stopLocked() }
+                    cont.invokeOnCancellation {
+                        if (activeWaiter === cont) activeWaiter = null
+                        stopLocked()
+                    }
                     mp.start()
                 }
 

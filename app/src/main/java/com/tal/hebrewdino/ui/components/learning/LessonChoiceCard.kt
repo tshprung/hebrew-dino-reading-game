@@ -49,12 +49,16 @@ fun LessonChoiceCard(
     innerPictureScale: Float = 1f,
     isCorrectPick: Boolean = false,
     isSelected: Boolean = false,
+    /** 0..1 red flash overlay for wrong pick feedback. */
+    wrongFlashAlpha: Float = 0f,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val density = LocalDensity.current
     val borderColor =
-        if (isCorrectPick) {
+        if (wrongFlashAlpha > 0.01f) {
+            Color(0xFFE53935).copy(alpha = 0.90f)
+        } else if (isCorrectPick) {
             Color(0xFF2E7D32).copy(alpha = 0.95f)
         } else if (isSelected) {
             Color(0xFF2E7D32).copy(alpha = 0.70f)
@@ -63,6 +67,13 @@ fun LessonChoiceCard(
         }
     val bgBrush =
         when {
+            wrongFlashAlpha > 0.01f ->
+                Brush.verticalGradient(
+                    listOf(
+                        Color(0xFFFFCDD2).copy(alpha = 0.92f),
+                        Color(0xFFFFEBEE).copy(alpha = 0.72f),
+                    ),
+                )
             isCorrectPick ->
                 Brush.verticalGradient(
                     listOf(

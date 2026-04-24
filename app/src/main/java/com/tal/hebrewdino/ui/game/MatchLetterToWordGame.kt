@@ -1,6 +1,7 @@
 package com.tal.hebrewdino.ui.game
 
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
@@ -93,6 +94,8 @@ fun MatchLetterToWordGame(
     onMatchAttempt: ((correct: Boolean) -> Unit)? = null,
     /** Called when a correct match is made (choice id). */
     onCorrectMatch: ((choiceId: String) -> Unit)? = null,
+    /** Called when a wrong match is attempted (picked letter + picked word choice id). */
+    onWrongMatch: ((pickedLetter: String, pickedChoiceId: String) -> Unit)? = null,
     onSolved: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -102,11 +105,18 @@ fun MatchLetterToWordGame(
     val locked = remember { mutableStateMapOf<String, String>() } // letter -> choiceId
     val shake = remember { Animatable(0f) }
     val glow = remember { Animatable(0f) }
+    val boardScale = remember(contentKey) { Animatable(1f) }
     val scope = androidx.compose.runtime.rememberCoroutineScope()
     var wrongAttemptsThisRound by remember(contentKey) { mutableIntStateOf(0) }
     var hintEpoch by remember(contentKey) { mutableIntStateOf(0) }
     var hintLetter by remember(contentKey) { mutableStateOf<String?>(null) }
     var hintChoiceId by remember(contentKey) { mutableStateOf<String?>(null) }
+    var correctEpoch by remember(contentKey) { mutableIntStateOf(0) }
+    var correctLetter by remember(contentKey) { mutableStateOf<String?>(null) }
+    var correctChoiceId by remember(contentKey) { mutableStateOf<String?>(null) }
+    var wrongFlashEpoch by remember(contentKey) { mutableIntStateOf(0) }
+    var wrongFlashLetter by remember(contentKey) { mutableStateOf<String?>(null) }
+    var wrongFlashChoiceId by remember(contentKey) { mutableStateOf<String?>(null) }
 
     val letterRects = remember { mutableStateMapOf<String, Rect>() }
     val itemRects = remember { mutableStateMapOf<String, Rect>() } // choiceId -> rect
@@ -132,10 +142,17 @@ fun MatchLetterToWordGame(
 
     LaunchedEffect(locked.size) {
         if (locked.size == maxPairs.size && maxPairs.isNotEmpty()) {
-            glow.snapTo(0f)
-            glow.animateTo(1f, tween(160))
-            glow.animateTo(0f, tween(220))
-            delay(120)
+            // End-of-round closure: quick glow + small board bounce, but never block advancing.
+            scope.launch {
+                glow.snapTo(0f)
+                glow.animateTo(1f, tween(120))
+                glow.animateTo(0f, tween(160))
+            }
+            scope.launch {
+                boardScale.snapTo(1f)
+                boardScale.animateTo(1.06f, tween(90))
+                boardScale.animateTo(1f, spring(dampingRatio = 0.60f, stiffness = 520f))
+            }
             onSolved()
         }
     }
@@ -158,12 +175,19 @@ fun MatchLetterToWordGame(
     fun tryLockMatch(letter: String, choice: LessonChoice) {
         if (isLockedLetter(letter) || isLockedChoice(choice.id)) return
         if (choice.letter == letter) {
+            correctEpoch += 1
+            correctLetter = letter
+            correctChoiceId = choice.id
             onCorrectMatch?.invoke(choice.id)
             onMatchAttempt?.invoke(true)
             locked[letter] = choice.id
             selectedLetter = null
             selectedChoiceId = null
         } else {
+            wrongFlashEpoch += 1
+            wrongFlashLetter = letter
+            wrongFlashChoiceId = choice.id
+            onWrongMatch?.invoke(letter, choice.id)
             onMatchAttempt?.invoke(false)
             wrongAttemptsThisRound += 1
             if (wrongAttemptsThisRound >= 2) {
@@ -234,6 +258,7 @@ fun MatchLetterToWordGame(
             modifier =
                 Modifier
                     .fillMaxWidth()
+                    .scale(boardScale.value)
                     .onGloballyPositioned { coords ->
                         boardOriginInRoot = coords.positionInRoot()
                     },
@@ -322,11 +347,23 @@ fun MatchLetterToWordGame(
                             val lockedThis = isLockedChoice(ch.id)
                             val selectedThis = selectedChoiceId == ch.id
                             val pop = remember(ch.id, contentKey) { Animatable(1f) }
+                            val wrongFlash = remember(ch.id, contentKey) { Animatable(0f) }
                             LaunchedEffect(hintEpoch, hintChoiceId, ch.id, contentKey) {
                                 if (hintEpoch <= 0 || hintChoiceId != ch.id) return@LaunchedEffect
                                 pop.snapTo(1f)
                                 pop.animateTo(1.12f, tween(120))
                                 pop.animateTo(1f, tween(160))
+                            }
+                            LaunchedEffect(correctEpoch, correctChoiceId, ch.id, contentKey) {
+                                if (correctEpoch <= 0 || correctChoiceId != ch.id) return@LaunchedEffect
+                                pop.snapTo(1f)
+                                pop.animateTo(1.18f, tween(90))
+                                pop.animateTo(1f, tween(140))
+                            }
+                            LaunchedEffect(wrongFlashEpoch, wrongFlashChoiceId, ch.id, contentKey) {
+                                if (wrongFlashEpoch <= 0 || wrongFlashChoiceId != ch.id) return@LaunchedEffect
+                                wrongFlash.snapTo(1f)
+                                wrongFlash.animateTo(0f, tween(220))
                             }
                             LessonChoiceCard(
                                 choice = ch,
@@ -339,6 +376,7 @@ fun MatchLetterToWordGame(
                                 innerPictureScale = innerPictureScaleForChoice(ch),
                                 isCorrectPick = lockedThis,
                                 isSelected = !lockedThis && selectedThis,
+                                wrongFlashAlpha = wrongFlash.value,
                                 onClick = {
                                     if (!enabled || lockedThis) return@LessonChoiceCard
                                     onWordPressed?.invoke(ch.id)
@@ -367,11 +405,23 @@ fun MatchLetterToWordGame(
                             val lockedThis = isLockedLetter(letter)
                             val selected = selectedLetter == letter
                             val pop = remember(letter, contentKey) { Animatable(1f) }
+                            val wrongFlash = remember(letter, contentKey) { Animatable(0f) }
                             LaunchedEffect(hintEpoch, hintLetter, letter, contentKey) {
                                 if (hintEpoch <= 0 || hintLetter != letter) return@LaunchedEffect
                                 pop.snapTo(1f)
                                 pop.animateTo(1.14f, tween(120))
                                 pop.animateTo(1f, tween(160))
+                            }
+                            LaunchedEffect(correctEpoch, correctLetter, letter, contentKey) {
+                                if (correctEpoch <= 0 || correctLetter != letter) return@LaunchedEffect
+                                pop.snapTo(1f)
+                                pop.animateTo(1.20f, tween(90))
+                                pop.animateTo(1f, tween(140))
+                            }
+                            LaunchedEffect(wrongFlashEpoch, wrongFlashLetter, letter, contentKey) {
+                                if (wrongFlashEpoch <= 0 || wrongFlashLetter != letter) return@LaunchedEffect
+                                wrongFlash.snapTo(1f)
+                                wrongFlash.animateTo(0f, tween(220))
                             }
                             Box(
                                 modifier =
@@ -391,6 +441,7 @@ fun MatchLetterToWordGame(
                                         .border(
                                             2.dp,
                                             when {
+                                                wrongFlash.value > 0.01f -> Color(0xFFE53935).copy(alpha = 0.95f)
                                                 lockedThis -> Color(0xFF2E7D32).copy(alpha = 0.85f)
                                                 selected -> Color(0xFF2E7D32).copy(alpha = 0.70f)
                                                 else -> Color(0xFF0B2B3D).copy(alpha = 0.14f)
@@ -417,6 +468,13 @@ fun MatchLetterToWordGame(
                                         },
                                 contentAlignment = Alignment.Center,
                             ) {
+                                if (wrongFlash.value > 0.01f) {
+                                    Box(
+                                        Modifier
+                                            .fillMaxSize()
+                                            .background(Color(0xFFE53935).copy(alpha = 0.18f * wrongFlash.value), tileShape),
+                                    )
+                                }
                                 Text(
                                     text = letter,
                                     fontSize = 46.sp,
@@ -458,11 +516,23 @@ fun MatchLetterToWordGame(
                             val lockedThis = isLockedLetter(letter)
                             val selected = selectedLetter == letter
                             val pop = remember(letter, contentKey) { Animatable(1f) }
+                            val wrongFlash = remember(letter, contentKey) { Animatable(0f) }
                             LaunchedEffect(hintEpoch, hintLetter, letter, contentKey) {
                                 if (hintEpoch <= 0 || hintLetter != letter) return@LaunchedEffect
                                 pop.snapTo(1f)
                                 pop.animateTo(1.14f, tween(120))
                                 pop.animateTo(1f, tween(160))
+                            }
+                            LaunchedEffect(correctEpoch, correctLetter, letter, contentKey) {
+                                if (correctEpoch <= 0 || correctLetter != letter) return@LaunchedEffect
+                                pop.snapTo(1f)
+                                pop.animateTo(1.20f, tween(90))
+                                pop.animateTo(1f, tween(140))
+                            }
+                            LaunchedEffect(wrongFlashEpoch, wrongFlashLetter, letter, contentKey) {
+                                if (wrongFlashEpoch <= 0 || wrongFlashLetter != letter) return@LaunchedEffect
+                                wrongFlash.snapTo(1f)
+                                wrongFlash.animateTo(0f, tween(220))
                             }
                             Box(
                                 modifier =
@@ -481,6 +551,7 @@ fun MatchLetterToWordGame(
                                         .border(
                                             2.dp,
                                             when {
+                                                wrongFlash.value > 0.01f -> Color(0xFFE53935).copy(alpha = 0.95f)
                                                 lockedThis -> Color(0xFF2E7D32).copy(alpha = 0.85f)
                                                 selected -> Color(0xFF2E7D32).copy(alpha = 0.70f)
                                                 else -> Color(0xFF0B2B3D).copy(alpha = 0.14f)
@@ -507,6 +578,13 @@ fun MatchLetterToWordGame(
                                         },
                                 contentAlignment = Alignment.Center,
                             ) {
+                                if (wrongFlash.value > 0.01f) {
+                                    Box(
+                                        Modifier
+                                            .fillMaxSize()
+                                            .background(Color(0xFFE53935).copy(alpha = 0.18f * wrongFlash.value), tileShape),
+                                    )
+                                }
                                 Text(text = letter, fontSize = 46.sp, fontWeight = FontWeight.Black, color = Color(0xFF0B2B3D))
                             }
                         }
@@ -531,11 +609,23 @@ fun MatchLetterToWordGame(
                                     ).toSp()
                                 }
                             val pop = remember(ch.id, contentKey) { Animatable(1f) }
+                            val wrongFlash = remember(ch.id, contentKey) { Animatable(0f) }
                             LaunchedEffect(hintEpoch, hintChoiceId, ch.id, contentKey) {
                                 if (hintEpoch <= 0 || hintChoiceId != ch.id) return@LaunchedEffect
                                 pop.snapTo(1f)
                                 pop.animateTo(1.12f, tween(120))
                                 pop.animateTo(1f, tween(160))
+                            }
+                            LaunchedEffect(correctEpoch, correctChoiceId, ch.id, contentKey) {
+                                if (correctEpoch <= 0 || correctChoiceId != ch.id) return@LaunchedEffect
+                                pop.snapTo(1f)
+                                pop.animateTo(1.18f, tween(90))
+                                pop.animateTo(1f, tween(140))
+                            }
+                            LaunchedEffect(wrongFlashEpoch, wrongFlashChoiceId, ch.id, contentKey) {
+                                if (wrongFlashEpoch <= 0 || wrongFlashChoiceId != ch.id) return@LaunchedEffect
+                                wrongFlash.snapTo(1f)
+                                wrongFlash.animateTo(0f, tween(220))
                             }
                             LessonChoiceCard(
                                 choice = ch,
@@ -548,6 +638,7 @@ fun MatchLetterToWordGame(
                                 innerPictureScale = innerPictureScaleForChoice(ch),
                                 isCorrectPick = lockedThis,
                                 isSelected = !lockedThis && selectedThis,
+                                wrongFlashAlpha = wrongFlash.value,
                                 onClick = {
                                     if (!enabled || lockedThis) return@LessonChoiceCard
                                     onWordPressed?.invoke(ch.id)
