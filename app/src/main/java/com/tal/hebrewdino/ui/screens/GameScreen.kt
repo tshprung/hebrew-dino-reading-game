@@ -1543,16 +1543,11 @@ fun GameScreen(
                                 if (stationId == 6) {
                                     // Same three picture cards as this round's ImageMatch question (station 5 generator/shape).
                                     val matchChoices = current.choices
-                                    fun enqueueVoice(play: suspend () -> Unit) {
+                                    fun speakNow(play: suspend () -> Unit) {
                                         if (!audioEnabled) return
-                                        val prev = feedbackVoiceJob
-                                        feedbackVoiceJob =
-                                            scope.launch {
-                                                // Keep station 6 responsive: queue voice instead of cancelling, so quick taps
-                                                // still speak both the pressed letter and the pressed word.
-                                                withTimeoutOrNull(4000L) { prev?.join() }
-                                                play()
-                                            }
+                                        // Station 6 request: stop the current voice immediately, then speak the newly pressed item.
+                                        cancelFeedbackVoice()
+                                        feedbackVoiceJob = scope.launch { play() }
                                     }
                                     MatchLetterToWordGame(
                                         choices = matchChoices,
@@ -1561,11 +1556,11 @@ fun GameScreen(
                                         compactWideSpread =
                                             chapterId in 1..4 && stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH,
                                         onWordPressed = { choiceId ->
-                                            enqueueVoice { voice.playBlocking(AudioClips.wordClipByCatalogId(choiceId)) }
+                                            speakNow { voice.playBlocking(AudioClips.wordClipByCatalogId(choiceId)) }
                                         },
                                         onLetterPressed = { letter ->
                                             val clip = AudioClips.letterNameClip(letter) ?: return@MatchLetterToWordGame
-                                            enqueueVoice { voice.playBlocking(clip) }
+                                            speakNow { voice.playBlocking(clip) }
                                         },
                                         onCorrectMatch = {
                                             if (!audioEnabled) return@MatchLetterToWordGame
@@ -1573,10 +1568,7 @@ fun GameScreen(
                                             scope.launch { sfx.playFirstAvailable(AudioClips.SfxCorrect, volume = 0.58f) }
                                         },
                                         onWrongMatch = { pickedLetter, pickedChoiceId ->
-                                            // Letter/word are spoken on press; on mismatch add a short "try again" line.
-                                            enqueueVoice {
-                                                voice.playFirstAvailableBlocking(AudioClips.VoTryAgain2, AudioClips.VoTryAgain1)
-                                            }
+                                            // Letter/word are spoken on press; keep wrong feedback minimal (no extra voice stacking here).
                                         },
                                         onMatchAttempt = { correct ->
                                             if (!audioEnabled) return@MatchLetterToWordGame
@@ -1603,8 +1595,28 @@ fun GameScreen(
                                         onSolved = {
                                             if (!consumeTapCooldown()) return@MatchLetterToWordGame
                                             scope.launch {
-                                                // Between rounds: positive feedback, but never block the transition.
-                                                gameFeedback.playCorrect()
+                                                // Station 6 request: clear/advance only after the last pressed letter/word finishes.
+                                                withTimeoutOrNull(4500L) { feedbackVoiceJob?.join() }
+                                                // Add a clear, single positive praise between rounds (voice, not stacked).
+                                                if (audioEnabled) {
+                                                    cancelFeedbackVoice()
+                                                    val job =
+                                                        scope.launch {
+                                                            val praise =
+                                                                mutableListOf(
+                                                                    AudioClips.VoPraiseMetzuyan,
+                                                                    AudioClips.VoPraiseYofi,
+                                                                    AudioClips.VoPraiseHitzlacht,
+                                                                    AudioClips.VoNice1,
+                                                                    AudioClips.VoGoodJob2,
+                                                                    AudioClips.VoGoodJob1,
+                                                                )
+                                                            praise.shuffle()
+                                                            voice.playFirstAvailableBlocking(*praise.toTypedArray())
+                                                        }
+                                                    feedbackVoiceJob = job
+                                                    withTimeoutOrNull(3000L) { job.join() }
+                                                }
                                                 when (session.completeCurrentRound()) {
                                                     AnswerResult.Correct -> {
                                                         if (audioEnabled) ChildGameAudioHooks.onCorrect()
