@@ -9,8 +9,6 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -27,13 +25,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -75,6 +70,9 @@ import com.tal.hebrewdino.ui.domain.LevelSession
 import com.tal.hebrewdino.ui.domain.Question
 import com.tal.hebrewdino.ui.domain.LetterPoolSpec
 import com.tal.hebrewdino.ui.domain.StationQuizPlan
+import com.tal.hebrewdino.ui.components.ChapterNavChipStyles
+import com.tal.hebrewdino.ui.components.learning.StoryEggStrip
+import com.tal.hebrewdino.ui.components.learning.storyEggStripVerticalHeight
 import com.tal.hebrewdino.ui.feedback.GameFeedback
 import com.tal.hebrewdino.ui.game.ChildGameAudioHooks
 import com.tal.hebrewdino.ui.game.FindLetterGridGame
@@ -98,6 +96,15 @@ private enum class DinoVisual { Idle, TryAgain, Jump }
 
 private const val IntroDurationMs = 450L
 private const val BetweenQuestionFadeMs = 80
+
+/** ~0.5 cm: lift top bar (חזור / בדיקה) slightly toward the status bar. */
+private val TopBarRaise = 19.dp
+
+/** ~1 cm vertical gap between the back button and the collected-egg strip. */
+private val SpaceBelowBackBeforeEggs = 38.dp
+
+/** Chapters 1–2 share the same six-station journey template (tuned prompts, feedback, and pacing). */
+private fun isSagaEpisode(chapterId: Int): Boolean = chapterId == 1 || chapterId == 2
 
 /**
  * Episode 1 stations 2–3: start the letter name this far into the intro clip on SoundPool (overlap).
@@ -196,6 +203,8 @@ fun GameScreen(
     onDebugStationAdvance: (() -> Unit)? = null,
     /** Replay of an already-completed station: no extra in-game dino motion after correct answers. */
     suppressInGameDinoProgress: Boolean = false,
+    /** Eggs already collected in prior chapter finales (shown upright under the status bar). */
+    collectedEggStripCount: Int = 0,
     modifier: Modifier = Modifier,
 ) {
     // UX: no audio for now (per request).
@@ -257,13 +266,13 @@ fun GameScreen(
         promptVoiceJob?.cancel()
         promptVoiceJob = null
         voice.stopNow()
-        if (chapterId == 1 && stationId == 1) {
+        if (isSagaEpisode(chapterId) && stationId == 1) {
             // Station 1 uses SoundPool for letter + praise tail; stop all streams so no tail leaks into the next round.
             sfx.stopAllStreams()
             sfx.stopStream(station1VoiceStreamId)
             station1VoiceStreamId = 0
         }
-        if (chapterId == 1 && stationId == 2) {
+        if (isSagaEpisode(chapterId) && stationId == 2) {
             sfx.stopAllStreams()
             sfx.stopStream(station2VoiceStreamId)
             station2VoiceStreamId = 0
@@ -300,7 +309,7 @@ fun GameScreen(
     // Station 1: preload ALL voice clips as early as possible (screen entry),
     // so instruction playback has near-zero latency when the first question appears.
     LaunchedEffect(stationId, chapterId) {
-        if (!(audioEnabled && chapterId == 1 && stationId == 1)) return@LaunchedEffect
+        if (!(audioEnabled && isSagaEpisode(chapterId) && stationId == 1)) return@LaunchedEffect
         voice.warmUp(
             AudioClips.VoChooseLetter,
             AudioClips.VoFindLetter,
@@ -338,7 +347,7 @@ fun GameScreen(
 
     // Episode 1 station 2: preload instruction + balloon feedback clips for low latency.
     LaunchedEffect(stationId, chapterId) {
-        if (!(audioEnabled && chapterId == 1 && stationId == 2)) return@LaunchedEffect
+        if (!(audioEnabled && isSagaEpisode(chapterId) && stationId == 2)) return@LaunchedEffect
         val letters = listOf("א", "ב", "ג", "ד", "ה", "ל", "מ")
         val paths = ArrayList<String>()
         paths.add(AudioClips.PopBalloonsWithLetter)
@@ -432,7 +441,7 @@ fun GameScreen(
                 try {
                         // No artificial delay before instruction voice.
                         // Station 1: use SoundPool for ultra-low-latency voice.
-                        if (chapterId == 1 && stationId == 1) {
+                        if (isSagaEpisode(chapterId) && stationId == 1) {
                             val target =
                                 when (q) {
                                     is Question.PopBalloonsQuestion -> q.correctAnswer
@@ -511,7 +520,7 @@ fun GameScreen(
                                     }
                                 }
                             }
-                        } else if (chapterId == 1 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE && q is Question.PictureStartsWithQuestion) {
+                        } else if (isSagaEpisode(chapterId) && stationId == Chapter1StationOrder.PICTURE_PICK_ONE && q is Question.PictureStartsWithQuestion) {
                             // Station 4: reduce gap between intro and word by skipping intro trailing silence.
                             val intro = AudioClips.WhichLetterDoesWordStart
                             val wordPath = AudioClips.wordClipByCatalogId(q.catalogEntryId)
@@ -534,7 +543,7 @@ fun GameScreen(
                             } else {
                                 voice.playSequenceBlocking(intro, wordPath)
                             }
-                        } else if (chapterId == 1 && stationId == 2 && q is Question.PopBalloonsQuestion) {
+                        } else if (isSagaEpisode(chapterId) && stationId == 2 && q is Question.PopBalloonsQuestion) {
                             // Station 2: we want minimal gap between intro and letter (skip intro trailing silence).
                             // Prefer SoundPool overlap timing when duration is available; otherwise fall back to strict sequence.
                             val intro = AudioClips.PopBalloonsWithLetter
@@ -587,7 +596,7 @@ fun GameScreen(
         phase = GamePhase.Play
         inputLocked = false
         entryPulseEpoch += 1
-        if (chapterId == 1 && stationId == 3 && session.currentIndex == 0) {
+        if (isSagaEpisode(chapterId) && stationId == 3 && session.currentIndex == 0) {
             // Entry guidance: subtle pulse once at the station start (not every round).
             hintPulseEpoch += 1
         }
@@ -623,12 +632,12 @@ fun GameScreen(
         // Episode 1 station 2: keep end-of-round clean (no extra "success big" stack; last balloon already feels special).
         if (audioEnabled) {
             when {
-                chapterId == 1 && stationId == 1 && isLast -> gameFeedback.playCorrect()
-                chapterId == 1 && stationId == 2 -> Unit
+                isSagaEpisode(chapterId) && stationId == 1 && isLast -> gameFeedback.playCorrect()
+                isSagaEpisode(chapterId) && stationId == 2 -> Unit
                 // Station 3 grid already plays per-tap SFX; avoid a second “pip” at round transition.
-                chapterId == 1 && stationId == 3 -> Unit
+                isSagaEpisode(chapterId) && stationId == 3 -> Unit
                 // Station 6: per-match already plays success cues; avoid stacking another SFX at round transition.
-                chapterId == 1 && stationId == 6 -> Unit
+                isSagaEpisode(chapterId) && stationId == 6 -> Unit
                 isLast -> gameFeedback.playSuccessBig()
                 else -> gameFeedback.playCorrect()
             }
@@ -640,22 +649,22 @@ fun GameScreen(
         // Station 6 (episode 1): "kol hakavod" is played per correct match; avoid double-speaking here.
         val episode1PraiseEligible =
             audioEnabled &&
-                chapterId == 1 &&
+                isSagaEpisode(chapterId) &&
                 stationId in 2..5 &&
                 // Station 4: letter + praise is played on correct tap before advancing.
                 stationId != Chapter1StationOrder.PICTURE_PICK_ONE &&
                 Random.nextFloat() < Episode1PraiseChance
         val otherPraiseEligible =
             audioEnabled &&
-                !(chapterId == 1 && stationId == 6) &&
-                !(chapterId == 1 && stationId == 1) &&
-                !(chapterId == 1 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) &&
+                !(isSagaEpisode(chapterId) && stationId == 6) &&
+                !(isSagaEpisode(chapterId) && stationId == 1) &&
+                !(isSagaEpisode(chapterId) && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) &&
                 !episode1PraiseEligible
 
         if (episode1PraiseEligible) {
             // Station 3: last correct tap starts target letter on SoundPool; don't cancel until it finishes
             // or "כל הכבוד" overwrites the stream.
-            if (chapterId == 1 && stationId == 3) {
+            if (isSagaEpisode(chapterId) && stationId == 3) {
                 withTimeoutOrNull(5000L) { feedbackVoiceJob?.join() }
             }
             cancelFeedbackVoice()
@@ -680,7 +689,7 @@ fun GameScreen(
                     scope.launch { voice.playFirstAvailableBlocking(*arr) }
                 }
         } else if (otherPraiseEligible) {
-            if (chapterId == 1 && stationId == 3) {
+            if (isSagaEpisode(chapterId) && stationId == 3) {
                 withTimeoutOrNull(5000L) { feedbackVoiceJob?.join() }
             }
             cancelFeedbackVoice()
@@ -694,9 +703,9 @@ fun GameScreen(
         if (!suppressInGameDinoProgress) {
             dinoForward.animateTo(dinoForward.value + forwardDir * 12f, spring(dampingRatio = 0.75f, stiffness = 520f))
         }
-        val strongerSuccessPulse = (chapterId == 1 && (stationId == 1 || stationId == 3))
+        val strongerSuccessPulse = (isSagaEpisode(chapterId) && (stationId == 1 || stationId == 3))
         val station456SuccessPulse =
-            (chapterId == 1 &&
+            (isSagaEpisode(chapterId) &&
                 (stationId == Chapter1StationOrder.PICTURE_PICK_ONE ||
                     stationId == Chapter1StationOrder.PICTURE_PICK_ALL ||
                     stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH))
@@ -711,19 +720,19 @@ fun GameScreen(
                 },
         )
         // UX: short pause before transition.
-        delay(if (chapterId == 1 && stationId == 3) 120 else 170)
+        delay(if (isSagaEpisode(chapterId) && stationId == 3) 120 else 170)
         // Episode 1 station 2: praise + pinned balloon stay until voice ends.
         // Episode 1 station 3: praise (SoundPool) must finish before fade — otherwise the screen goes blank mid-sentence.
         val waitPraiseBeforeFade =
-            chapterId == 1 &&
+            isSagaEpisode(chapterId) &&
                 (stationId == 2 ||
                     stationId == 3 ||
                     stationId == Chapter1StationOrder.PICTURE_PICK_ONE)
-        if (chapterId == 1 && stationId == 2) {
+        if (isSagaEpisode(chapterId) && stationId == 2) {
             withTimeoutOrNull(8000) { feedbackVoiceJob?.join() }
             station2PinnedBalloonLetter = null
             station2PinnedBalloonColor = null
-        } else if (chapterId == 1 && (stationId == 3 || stationId == Chapter1StationOrder.PICTURE_PICK_ONE)) {
+        } else if (isSagaEpisode(chapterId) && (stationId == 3 || stationId == Chapter1StationOrder.PICTURE_PICK_ONE)) {
             withTimeoutOrNull(8000) { feedbackVoiceJob?.join() }
         }
         contentAlpha.animateTo(0f, tween(BetweenQuestionFadeMs))
@@ -758,11 +767,11 @@ fun GameScreen(
                 dinoSlip.animateTo(0f, tween(140))
             }
             val strongerWrongShake =
-                (chapterId == 1 && (stationId == Chapter1StationOrder.PICTURE_PICK_ONE || stationId == Chapter1StationOrder.PICTURE_PICK_ALL))
+                (isSagaEpisode(chapterId) && (stationId == Chapter1StationOrder.PICTURE_PICK_ONE || stationId == Chapter1StationOrder.PICTURE_PICK_ALL))
             playShake(scope, optionsShake, chapterId = chapterId, strength = if (strongerWrongShake) 1.25f else 1f)
             if (audioEnabled) {
                 // Station 1: no SFX; voice only.
-                if (!(chapterId == 1 && stationId == 1) &&
+                if (!(isSagaEpisode(chapterId) && stationId == 1) &&
                     // Station 5: no error SFX (voice feedback only).
                     !(chapterId in 1..4 && stationId == Chapter1StationOrder.PICTURE_PICK_ALL)
                 ) {
@@ -770,7 +779,7 @@ fun GameScreen(
                     ChildGameAudioHooks.onWrong()
                 }
                 // Station 1: wrong tap — keep it varied to reduce fatigue.
-                if (chapterId == 1 && stationId == 1 && wrongPickedLetter != null) {
+                if (isSagaEpisode(chapterId) && stationId == 1 && wrongPickedLetter != null) {
                     cancelFeedbackVoice()
                     feedbackVoiceJob =
                         scope.launch {
@@ -819,7 +828,7 @@ fun GameScreen(
                     inputLocked = false
                     return@launch
                 }
-                if (chapterId == 1 &&
+                if (isSagaEpisode(chapterId) &&
                     stationId == Chapter1StationOrder.PICTURE_PICK_ONE &&
                     wrongPickedLetter != null
                 ) {
@@ -925,57 +934,74 @@ fun GameScreen(
         // Removed “sparkle balls” feedback per UX request.
         // Keep only dino + subtle motion feedback; no short-lived particle overlays.
 
-        Row(
+        val contentTopInset =
+            if (collectedEggStripCount > 0) {
+                44.dp + SpaceBelowBackBeforeEggs + storyEggStripVerticalHeight(collectedEggStripCount) + 8.dp
+            } else {
+                40.dp
+            }
+        Column(
             modifier =
                 Modifier
                     .fillMaxWidth()
                     .statusBarsPadding()
                     .padding(horizontal = 4.dp, vertical = 2.dp)
+                    .offset(y = -TopBarRaise)
                     .align(Alignment.TopCenter)
                     .zIndex(4f),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            IconButton(onClick = onBack, modifier = Modifier.padding(0.dp)) {
-                Box(
-                    modifier =
-                        Modifier
-                            .size(44.dp)
-                            .background(Color.White.copy(alpha = 0.88f), RoundedCornerShape(22.dp))
-                            .border(2.dp, Color(0xFF0B2B3D).copy(alpha = 0.12f), RoundedCornerShape(22.dp)),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text("חזור", fontSize = 16.sp, color = Color(0xFF0B2B3D), fontWeight = FontWeight.Black)
-                }
-            }
-            Column(
-                modifier = Modifier.weight(1f).padding(horizontal = 8.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
             ) {
-                LinearProgressIndicator(
-                    progress = {
-                        (session.questionNumber.toFloat() / session.totalQuestions.coerceAtLeast(1))
-                            .coerceIn(0f, 1f)
-                    },
-                    modifier = Modifier.fillMaxWidth().height(7.dp),
-                    color = Color(0xFF2E7D32),
-                    trackColor = Color(0xFF0B2B3D).copy(alpha = 0.12f),
-                )
-            }
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                if (onLettersHelp != null) {
+                // App is RTL: start side = physical right — stack back + eggs here.
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     OutlinedButton(
-                        onClick = onLettersHelp,
-                        modifier = Modifier.height(40.dp),
-                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
-                    ) { Text("אותיות", style = MaterialTheme.typography.labelLarge) }
+                        onClick = onBack,
+                        colors = ChapterNavChipStyles.outlinedButtonColors(),
+                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
+                    ) {
+                        Text("חזור", style = ChapterNavChipStyles.labelTextStyle())
+                    }
+                    if (collectedEggStripCount > 0) {
+                        Spacer(modifier = Modifier.height(SpaceBelowBackBeforeEggs))
+                        StoryEggStrip(foundCount = collectedEggStripCount)
+                    }
                 }
-                if (onDebugStationAdvance != null) {
-                    Spacer(modifier = Modifier.width(4.dp))
-                    TextButton(
-                        onClick = onDebugStationAdvance,
-                        modifier = Modifier.height(40.dp),
-                    ) { Text("בדיקה", style = MaterialTheme.typography.labelLarge) }
+                Column(
+                    modifier = Modifier.weight(1f).padding(horizontal = 8.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    LinearProgressIndicator(
+                        progress = {
+                            (session.questionNumber.toFloat() / session.totalQuestions.coerceAtLeast(1))
+                                .coerceIn(0f, 1f)
+                        },
+                        modifier = Modifier.fillMaxWidth().height(7.dp),
+                        color = Color(0xFF2E7D32),
+                        trackColor = Color(0xFF0B2B3D).copy(alpha = 0.12f),
+                    )
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (onLettersHelp != null) {
+                        OutlinedButton(
+                            onClick = onLettersHelp,
+                            modifier = Modifier.height(40.dp),
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                        ) { Text("אותיות", style = MaterialTheme.typography.labelLarge) }
+                    }
+                    if (onDebugStationAdvance != null) {
+                        Spacer(modifier = Modifier.width(4.dp))
+                        OutlinedButton(
+                            onClick = onDebugStationAdvance,
+                            colors = ChapterNavChipStyles.outlinedButtonColors(),
+                            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
+                        ) {
+                            Text("בדיקה", style = ChapterNavChipStyles.labelTextStyle())
+                        }
+                    }
                 }
             }
         }
@@ -984,7 +1010,7 @@ fun GameScreen(
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .padding(start = 8.dp, end = 8.dp, top = 52.dp, bottom = 8.dp)
+                    .padding(start = 8.dp, end = 8.dp, top = contentTopInset, bottom = 8.dp)
                     .alpha(contentAlpha.value),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.SpaceBetween,
@@ -1005,9 +1031,9 @@ fun GameScreen(
                         // Station 6: don't show the mid-screen intro pulse between rounds.
                         if (!(stationId == 6 && current is Question.ImageMatchQuestion) &&
                             // Station 1: don't show blinking letter between rounds.
-                            !(chapterId == 1 && stationId == 1) &&
+                            !(isSagaEpisode(chapterId) && stationId == 1) &&
                             // Station 4: don't blink the word; keep it readable/stable.
-                            !(chapterId == 1 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) &&
+                            !(isSagaEpisode(chapterId) && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) &&
                             // Station 5: no pulsing letter intro (go straight to choices).
                             !(chapterId in 1..4 && stationId == Chapter1StationOrder.PICTURE_PICK_ALL) &&
                             // Station 3: no pulsing letter intro before each round.
@@ -1022,7 +1048,7 @@ fun GameScreen(
                                     question = current,
                                     // Station 3 (episode 1): SoundPool voice per tap for low-latency feedback.
                                     onLetterTapped =
-                                        if (chapterId == 1 && stationId == 3) {
+                                        if (isSagaEpisode(chapterId) && stationId == 3) {
                                             { tapped ->
                                                 if (!audioEnabled) return@FindLetterGridGame
                                                 // Cut any in-flight round intro / previous letter stream (ids are not tracked for intro).
@@ -1067,14 +1093,14 @@ fun GameScreen(
                                             null
                                         },
                                     hintPulseEpoch = hintPulseEpoch,
-                                    hintHeaderPeakScale = if (chapterId == 1 && stationId == 3) 1.30f else 1.12f,
+                                    hintHeaderPeakScale = if (isSagaEpisode(chapterId) && stationId == 3) 1.30f else 1.12f,
                                     // Episode 1 station 3: bigger letters inside same boxes.
                                     gridLetterSizeMultiplier = if (stationId == 3) 1.5f else 1f,
-                                    correctCellPeakScale = if (chapterId == 1 && stationId == 3) 1.30f else 1.12f,
+                                    correctCellPeakScale = if (isSagaEpisode(chapterId) && stationId == 3) 1.30f else 1.12f,
                                     onCellTapped = { index ->
                                         if (!consumeTapCooldown()) return@FindLetterGridGame
                                         // Station 3: wrong-tap voice is scheduled in onLetterTapped; cancel here would cut it off.
-                                        if (!(chapterId == 1 && stationId == 3)) {
+                                        if (!(isSagaEpisode(chapterId) && stationId == 3)) {
                                             cancelFeedbackVoice()
                                         }
                                         session.wrongTap()
@@ -1082,7 +1108,7 @@ fun GameScreen(
                                         wrongTapsThisQuestion += 1
                                         if (wrongTapsThisQuestion >= 2) hintPulseEpoch += 1
                                         val tappedLetter = current.cells.getOrNull(index)
-                                        if (!(chapterId == 1 && stationId == 3)) {
+                                        if (!(isSagaEpisode(chapterId) && stationId == 3)) {
                                             onWrongFeedback(
                                                 wrongPickedLetter = tappedLetter,
                                                 wrongPickedLetterAlreadySpoken = false,
@@ -1116,7 +1142,7 @@ fun GameScreen(
                                     verticalArrangement = Arrangement.Top,
                                 ) {
                                     if (plan.mode != com.tal.hebrewdino.ui.domain.StationQuizMode.PickLetter) {
-                                        if (chapterId == 1 && stationId == 2 && station2PinnedBalloonLetter != null) {
+                                        if (isSagaEpisode(chapterId) && stationId == 2 && station2PinnedBalloonLetter != null) {
                                             Row(
                                                 modifier =
                                                     Modifier
@@ -1163,7 +1189,7 @@ fun GameScreen(
                                             )
                                             LetterOptions(
                                                 options =
-                                                    if (chapterId == 1 && stationId == 1 && station1PinnedCorrectLetter != null) {
+                                                    if (isSagaEpisode(chapterId) && stationId == 1 && station1PinnedCorrectLetter != null) {
                                                         listOf(station1PinnedCorrectLetter!!)
                                                     } else {
                                                         current.options
@@ -1183,13 +1209,13 @@ fun GameScreen(
                                                     when (session.submitAnswer(picked)) {
                                                         AnswerResult.Correct -> {
                                                             // Station 1: no SFX before speaking the letter name.
-                                                            if (audioEnabled && !(chapterId == 1 && stationId == 1)) {
+                                                            if (audioEnabled && !(isSagaEpisode(chapterId) && stationId == 1)) {
                                                                 ChildGameAudioHooks.onCorrect()
                                                             }
                                                             correctTapPulseLetter = picked
                                                             correctTapPulseEpoch += 1
                                                             // Station 1: letter name then a random praise tail (SoundPool), then advance.
-                                                            if (audioEnabled && chapterId == 1 && stationId == 1) {
+                                                            if (audioEnabled && isSagaEpisode(chapterId) && stationId == 1) {
                                                                 scope.launch {
                                                                     cancelFeedbackVoice()
                                                                     val letterName = AudioClips.letterNameClip(picked)
@@ -1224,7 +1250,7 @@ fun GameScreen(
                                                         }
                                                         AnswerResult.Wrong -> {
                                                             // Station 1: no SFX before speaking the letter name.
-                                                            if (audioEnabled && !(chapterId == 1 && stationId == 1)) {
+                                                            if (audioEnabled && !(isSagaEpisode(chapterId) && stationId == 1)) {
                                                                 ChildGameAudioHooks.onWrong()
                                                             }
                                                             shakeEpoch += 1
@@ -1253,7 +1279,7 @@ fun GameScreen(
                                                 enabled = !inputLocked,
                                                 shakePx = optionsShake.value,
                                                 visualRoundSeed =
-                                                    if (chapterId == 1 && stationId == 2) {
+                                                    if (isSagaEpisode(chapterId) && stationId == 2) {
                                                         session.currentIndex
                                                     } else {
                                                         0
@@ -1264,7 +1290,7 @@ fun GameScreen(
                                                 onPopSfx = { letter, isCorrect, finalCorrectBalloon, balloonIndex ->
                                                     if (!audioEnabled) return@PopBalloonsOptions
                                                     cancelFeedbackVoice()
-                                                    if (chapterId == 1 && stationId == 2) {
+                                                    if (isSagaEpisode(chapterId) && stationId == 2) {
                                                         feedbackVoiceJob =
                                                             scope.launch {
                                                                 sfx.stopStream(station2VoiceStreamId)
@@ -1369,7 +1395,7 @@ fun GameScreen(
                                                 },
                                                 onWrongPick = {
                                                     if (!consumeTapCooldown()) return@PopBalloonsOptions
-                                                    if (!(chapterId == 1 && stationId == 2)) {
+                                                    if (!(isSagaEpisode(chapterId) && stationId == 2)) {
                                                         cancelFeedbackVoice()
                                                     }
                                                     // Wrong balloon: feedback only, stay on same question.
@@ -1377,12 +1403,12 @@ fun GameScreen(
                                                     shakeEpoch += 1
                                                     wrongTapsThisQuestion += 1
                                                     if (wrongTapsThisQuestion >= 2) hintPulseEpoch += 1
-                                                    if (chapterId == 1 && stationId == 2) {
+                                                    if (isSagaEpisode(chapterId) && stationId == 2) {
                                                         scope.launch {
                                                             inputLocked = true
                                                             dinoVisual = DinoVisual.TryAgain
                                                             val strongerWrongShake =
-                                                                (chapterId == 1 && (stationId == Chapter1StationOrder.PICTURE_PICK_ONE || stationId == Chapter1StationOrder.PICTURE_PICK_ALL))
+                                                                (isSagaEpisode(chapterId) && (stationId == Chapter1StationOrder.PICTURE_PICK_ONE || stationId == Chapter1StationOrder.PICTURE_PICK_ALL))
                                                             playShake(
                                                                 scope,
                                                                 optionsShake,
@@ -1397,7 +1423,7 @@ fun GameScreen(
                                                     }
                                                 },
                                                 onAllCorrectPopped = { lastLetter, poppedBalloonColor ->
-                                                    val ch1St2 = chapterId == 1 && stationId == 2
+                                                    val ch1St2 = isSagaEpisode(chapterId) && stationId == 2
                                                     if (ch1St2) {
                                                         station2PinnedBalloonLetter = lastLetter
                                                         station2PinnedBalloonColor = poppedBalloonColor
@@ -1482,7 +1508,7 @@ fun GameScreen(
                                         when (session.submitPictureStartsWith(picked)) {
                                             AnswerResult.Correct -> {
                                                 if (audioEnabled) ChildGameAudioHooks.onCorrect()
-                                                if (chapterId == 1 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
+                                                if (isSagaEpisode(chapterId) && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
                                                     scope.launch {
                                                         correctTapPulseLetter = picked
                                                         correctTapPulseEpoch += 1
@@ -1526,7 +1552,7 @@ fun GameScreen(
                                                 if (audioEnabled) ChildGameAudioHooks.onWrong()
                                                 wrongTapsThisQuestion += 1
                                                 if (wrongTapsThisQuestion >= 2) hintPulseEpoch += 1
-                                                if (chapterId == 1 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
+                                                if (isSagaEpisode(chapterId) && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
                                                     station4WrongFlashLetter = picked
                                                     station4WrongFlashEpoch += 1
                                                     onWrongFeedback(wrongPickedLetter = picked)
@@ -1664,7 +1690,7 @@ fun GameScreen(
                                                 AnswerResult.Correct -> {
                                                     if (audioEnabled) ChildGameAudioHooks.onCorrect()
                                                     scope.launch {
-                                                        if (chapterId == 1 && stationId == Chapter1StationOrder.PICTURE_PICK_ALL) {
+                                                        if (isSagaEpisode(chapterId) && stationId == Chapter1StationOrder.PICTURE_PICK_ALL) {
                                                             // Station 5 request: say the tapped WORD, then the existing "good job" flow will run.
                                                             voice.playBlocking(AudioClips.wordClipByCatalogId(choiceId))
                                                         }
@@ -1677,7 +1703,7 @@ fun GameScreen(
                                                     if (audioEnabled) ChildGameAudioHooks.onWrong()
                                                     wrongTapsThisQuestion += 1
                                                     if (wrongTapsThisQuestion >= 2) hintPulseEpoch += 1
-                                                    if (chapterId == 1 && stationId == Chapter1StationOrder.PICTURE_PICK_ALL) {
+                                                    if (isSagaEpisode(chapterId) && stationId == Chapter1StationOrder.PICTURE_PICK_ALL) {
                                                         onWrongFeedback(wrongWordCatalogId = choiceId)
                                                     } else {
                                                         onWrongFeedback()
@@ -1729,8 +1755,8 @@ fun GameScreen(
                     DinoVisual.Jump -> jumpFrames[jumpFrameIndex.coerceIn(0, jumpFrames.lastIndex)]
                 }
             val talkFrames =
-                if (chapterId in 2..4) {
-                    // “Walk” feel on chapter roads between rounds.
+                if (chapterId in 3..4) {
+                    // “Walk” feel on chapter roads between rounds (mountain arcs after the first saga).
                     listOf(R.drawable.dino_walk_0, R.drawable.dino_walk_1, R.drawable.dino_walk_2, R.drawable.dino_walk_3)
                 } else {
                     listOf(R.drawable.dino_talk_0, R.drawable.dino_talk_1, R.drawable.dino_talk_2, R.drawable.dino_talk_3)
@@ -1738,7 +1764,7 @@ fun GameScreen(
             AnimatedTalkingCharacter(
                 idleRes = dinoDrawable,
                 talkFrameResIds = talkFrames,
-                isTalking = dinoTalking || (chapterId in 2..4 && inputLocked && dinoVisual == DinoVisual.Jump),
+                isTalking = dinoTalking || (chapterId in 3..4 && inputLocked && dinoVisual == DinoVisual.Jump),
                 modifier =
                     Modifier
                         .offset { IntOffset((dinoForward.value + dinoSlip.value).toInt(), 0) }
@@ -1887,7 +1913,7 @@ private suspend fun speakLetterPrompt(
         is Question.FindLetterGridQuestion -> speakLetterPrompt(voice, q.targetLetter)
             is Question.PictureStartsWithQuestion -> {
                 // Episode 1 station 4: instruction + spoken word (e.g. "ברווז").
-                if (chapterId == 1 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
+                if (isSagaEpisode(chapterId) && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
                     val intro = AudioClips.WhichLetterDoesWordStart
                     val wordPath = AudioClips.wordClipByCatalogId(q.catalogEntryId)
                     // Exact timing/overlap handled in the prompt startup path (has access to SoundPool).
@@ -1900,7 +1926,7 @@ private suspend fun speakLetterPrompt(
             }
             is Question.ImageMatchQuestion -> {
                 // Episode 1 station 5: "איזו מילה מתחילה באות" + letter name (SoundPool overlap when duration parses).
-                if (chapterId == 1 && stationId == Chapter1StationOrder.PICTURE_PICK_ALL) {
+                if (isSagaEpisode(chapterId) && stationId == Chapter1StationOrder.PICTURE_PICK_ALL) {
                     val intro = AudioClips.WhichWordStartsWithLetter
                     val letterName = AudioClips.letterNameClip(q.targetLetter)
                     val introMs = sfx.durationMs(intro) ?: 0L
@@ -1953,7 +1979,7 @@ private fun playShake(
 ): Job =
     scope.launch {
         optionsShake.snapTo(0f)
-        val amp = (if (chapterId == 1) 20f else 18f) * strength.coerceIn(0.8f, 1.6f)
+        val amp = (if (isSagaEpisode(chapterId)) 20f else 18f) * strength.coerceIn(0.8f, 1.6f)
         repeat(5) { i ->
             optionsShake.animateTo(
                 if (i % 2 == 0) amp else -amp,

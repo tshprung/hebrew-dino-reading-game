@@ -16,6 +16,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.tal.hebrewdino.ui.domain.Chapter1Config
+import com.tal.hebrewdino.ui.domain.CollectedEggs
 import com.tal.hebrewdino.ui.domain.Chapter2Config
 import com.tal.hebrewdino.ui.domain.Chapter3Config
 import com.tal.hebrewdino.ui.domain.Chapter4Config
@@ -76,6 +77,12 @@ fun AppNav() {
     val chapter4Completed by progress.chapter4CompletedFlow.collectAsState(initial = false)
     val unlockedLevel by progress.unlockedLevelFlow.collectAsState(initial = 1)
     val completedLevels by progress.completedLevelsFlow.collectAsState(initial = emptySet())
+    val collectedEggStripCount =
+        CollectedEggs.stripCount(
+            beachOutroSeen = beachOutroSeen,
+            chapter2Completed = chapter2Completed,
+            chapter3Completed = chapter3Completed,
+        )
 
     val unlockedChapter =
         when {
@@ -216,12 +223,16 @@ fun AppNav() {
                 totalLevels = Chapter2Config.STATION_COUNT,
                 headerTitle = "פרק 2 - מצא את הביצה הורודה",
                 headerSubtitle = "בדרך לביצה הורודה — ${Chapter2Config.STATION_COUNT} תחנות",
+                collectedEggStripCount = collectedEggStripCount,
                 endMarker = JourneyEndMarker.PinkEgg,
                 backgroundRes = R.drawable.mountain_bg_chapter2,
                 onPlayLevel = { stationId ->
                     navController.navigate("${NavRoutes.Ch2Level}/$stationId")
                 },
                 onBack = { navController.navigate(NavRoutes.Chapters) { popUpTo(NavRoutes.Ch2Journey) { inclusive = true } } },
+                onLettersHelp = {
+                    navController.navigate(NavRoutes.Ch2Letters) { launchSingleTop = true }
+                },
                 onDebugUnlockNext = {
                     scope.launch { progress.debugUnlockNextChapter2Station() }
                 },
@@ -260,12 +271,16 @@ fun AppNav() {
                 headerTitle = "פרק 3 - מצא את הביצה הסגולה",
                 headerSubtitle = "בדרך לביצה הסגולה — ${Chapter3Config.STATION_COUNT} תחנות",
                 headerSubtitleCompact = true,
+                collectedEggStripCount = collectedEggStripCount,
                 endMarker = JourneyEndMarker.PurpleEgg,
                 backgroundRes = R.drawable.mountain_bg_chapter3,
                 onPlayLevel = { stationId ->
                     navController.navigate("${NavRoutes.Ch3Level}/$stationId")
                 },
                 onBack = { navController.navigate(NavRoutes.Chapters) { popUpTo(NavRoutes.Ch3Journey) { inclusive = true } } },
+                onLettersHelp = {
+                    navController.navigate(NavRoutes.Ch3Letters) { launchSingleTop = true }
+                },
                 onDebugUnlockNext = {
                     scope.launch { progress.debugUnlockNextChapter3Station() }
                 },
@@ -276,6 +291,7 @@ fun AppNav() {
             JourneyScreen(
                 unlockedLevel = unlockedLevel,
                 completedLevels = completedLevels,
+                collectedEggStripCount = collectedEggStripCount,
                 endMarkerReached = beachOutroSeen,
                 onPlayLevel = { levelId ->
                     navController.navigate("${NavRoutes.Level}/$levelId")
@@ -296,6 +312,7 @@ fun AppNav() {
             JourneyScreen(
                 unlockedLevel = unlockedLevel,
                 completedLevels = completedLevels,
+                collectedEggStripCount = collectedEggStripCount,
                 endMarkerReached = false,
                 endWalkThenContinue = true,
                 onEndWalkComplete = {
@@ -336,6 +353,7 @@ fun AppNav() {
                     } else {
                         null
                     },
+                collectedEggStripCount = collectedEggStripCount,
                 suppressInGameDinoProgress = chapter2CompletedStations.contains(stationId),
                 onComplete = { completedStationId, correctCount, mistakeCount ->
                     scope.launch {
@@ -382,13 +400,16 @@ fun AppNav() {
             LevelScreen(
                 levelId = levelId,
                 onBack = { navController.popBackStack() },
-                onLettersHelp = null,
+                onLettersHelp = {
+                    navController.navigate(NavRoutes.ChapterLettersIntro) { launchSingleTop = true }
+                },
                 onDebugStationAdvance =
                     if (isDebuggable) {
                         { scope.launch { progress.debugUnlockNextChapter1Station() } }
                     } else {
                         null
                     },
+                collectedEggStripCount = collectedEggStripCount,
                 suppressInGameDinoProgress = completedLevels.contains(levelId),
                 onComplete = { completedLevelId, correctCount, mistakeCount ->
                     scope.launch {
@@ -450,6 +471,7 @@ fun AppNav() {
                 levelId = stationId,
                 correct = correct,
                 mistakes = mistakes,
+                backgroundRes = R.drawable.mountain_bg_ch2_reward,
                 onBackToMap = {
                     if (stationId >= Chapter2Config.STATION_COUNT) {
                         navController.navigate(NavRoutes.Ch2StoryOutro) {
@@ -547,12 +569,16 @@ fun AppNav() {
                 headerTitle = "פרק 4 - חיזוק חכם",
                 headerSubtitle = "אותיות ומילים — ${Chapter4Config.STATION_COUNT} תחנות",
                 headerSubtitleCompact = true,
+                collectedEggStripCount = collectedEggStripCount,
                 endMarker = JourneyEndMarker.BigEgg,
                 backgroundRes = R.drawable.mountain_bg_chapter4,
                 onPlayLevel = { stationId ->
                     navController.navigate("${NavRoutes.Ch4Level}/$stationId")
                 },
                 onBack = { navController.navigate(NavRoutes.Chapters) { popUpTo(NavRoutes.Ch4Journey) { inclusive = true } } },
+                onLettersHelp = {
+                    navController.navigate(NavRoutes.Ch4Letters) { launchSingleTop = true }
+                },
                 onDebugUnlockNext =
                     if (isDebuggable) {
                         { scope.launch { progress.debugUnlockNextChapter4Station() } }
@@ -579,6 +605,7 @@ fun AppNav() {
                     } else {
                         null
                     },
+                collectedEggStripCount = collectedEggStripCount,
                 suppressInGameDinoProgress = chapter4CompletedStations.contains(stationId),
                 onComplete = { completedStationId, correctCount, mistakeCount ->
                     scope.launch {

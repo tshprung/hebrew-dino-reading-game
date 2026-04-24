@@ -76,6 +76,7 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.ui.draw.scale
 import com.tal.hebrewdino.R
+import com.tal.hebrewdino.ui.components.ChapterNavChipStyles
 import com.tal.hebrewdino.ui.components.learning.DinoNestMark
 import com.tal.hebrewdino.ui.domain.ChaptersPathLayout
 import kotlin.math.hypot
@@ -215,13 +216,9 @@ fun ChaptersScreen(
         ) {
             OutlinedButton(
                 onClick = onOpenSettings,
-                colors =
-                    ButtonDefaults.outlinedButtonColors(
-                        containerColor = Color.White.copy(alpha = 0.92f),
-                        contentColor = Color(0xFF0B2B3D),
-                    ),
+                colors = ChapterNavChipStyles.outlinedButtonColors(),
             ) {
-                Text("הגדרות", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
+                Text("הגדרות", style = ChapterNavChipStyles.labelTextStyle())
             }
         }
     }

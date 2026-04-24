@@ -19,6 +19,7 @@ fun LetterQuizStationScreen(
     onLettersHelp: (() -> Unit)? = null,
     onDebugStationAdvance: (() -> Unit)? = null,
     suppressInGameDinoProgress: Boolean = false,
+    collectedEggStripCount: Int = 0,
     modifier: Modifier = Modifier,
 ) {
     GameScreen(
@@ -34,6 +35,7 @@ fun LetterQuizStationScreen(
         onLettersHelp = onLettersHelp,
         onDebugStationAdvance = onDebugStationAdvance,
         suppressInGameDinoProgress = suppressInGameDinoProgress,
+        collectedEggStripCount = collectedEggStripCount,
         modifier = modifier,
     )
 }

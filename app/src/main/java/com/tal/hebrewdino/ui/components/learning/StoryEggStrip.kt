@@ -2,20 +2,33 @@ package com.tal.hebrewdino.ui.components.learning
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.tal.hebrewdino.R
 
+private val EggImageSize = 44.dp
+private val EggStackSpacing = 8.dp
+private val EggStripPaddingH = 12.dp
+private val EggStripPaddingV = 8.dp
+
+/** Total height of [StoryEggStrip] for a given [foundCount] (vertical stack). */
+fun storyEggStripVerticalHeight(foundCount: Int): Dp {
+    if (foundCount <= 0) return 0.dp
+    val n = foundCount.coerceIn(1, 3)
+    return EggStripPaddingV * 2 + EggImageSize * n + EggStackSpacing * (n - 1).coerceAtLeast(0)
+}
+
 /**
- * Shows up to three found eggs (white → pink → purple) at the top of story screens.
+ * Shows up to three collected story eggs (white → pink → cream), upright, stacked top-to-bottom.
  */
 @Composable
 fun StoryEggStrip(
@@ -24,22 +37,25 @@ fun StoryEggStrip(
 ) {
     if (foundCount <= 0) return
     val n = foundCount.coerceIn(1, 3)
-    Row(
-        modifier = modifier.padding(horizontal = 12.dp, vertical = 8.dp).height(52.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally),
+    Column(
+        modifier =
+            modifier
+                .width(EggImageSize + EggStripPaddingH * 2)
+                .padding(horizontal = EggStripPaddingH, vertical = EggStripPaddingV),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(EggStackSpacing, Alignment.Top),
     ) {
         repeat(n) { index ->
             val res =
                 when (index) {
-                    0 -> R.drawable.egg_white
-                    1 -> R.drawable.egg_pink
-                    else -> R.drawable.egg_purple
+                    0 -> R.drawable.egg_white_up
+                    1 -> R.drawable.egg_pink_up
+                    else -> R.drawable.egg_cream_up
                 }
             Image(
                 painter = painterResource(id = res),
                 contentDescription = null,
-                modifier = Modifier.size(44.dp),
+                modifier = Modifier.size(EggImageSize),
                 contentScale = ContentScale.Fit,
             )
         }

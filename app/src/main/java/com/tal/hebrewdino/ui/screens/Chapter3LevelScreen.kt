@@ -17,6 +17,7 @@ fun Chapter3LevelScreen(
     onLettersHelp: (() -> Unit)? = null,
     onDebugStationAdvance: (() -> Unit)? = null,
     suppressInGameDinoProgress: Boolean = false,
+    collectedEggStripCount: Int = 0,
     modifier: Modifier = Modifier,
 ) {
     val station = stationId.coerceIn(1, Chapter3Config.STATION_COUNT)
@@ -33,6 +34,7 @@ fun Chapter3LevelScreen(
         onLettersHelp = onLettersHelp,
         onDebugStationAdvance = onDebugStationAdvance,
         suppressInGameDinoProgress = suppressInGameDinoProgress,
+        collectedEggStripCount = collectedEggStripCount,
         modifier = modifier,
     )
 }

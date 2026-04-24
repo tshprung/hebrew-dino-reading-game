@@ -118,6 +118,7 @@ fun LevelScreen(
     onDebugStationAdvance: (() -> Unit)? = null,
     /** When replaying a station already marked complete, skip the in-game dino “step forward” after each round. */
     suppressInGameDinoProgress: Boolean = false,
+    collectedEggStripCount: Int = 0,
     modifier: Modifier = Modifier,
 ) {
     val chapterLevel = levelId.coerceIn(1, Chapter1Config.STATION_COUNT)
@@ -134,6 +135,7 @@ fun LevelScreen(
         onLettersHelp = onLettersHelp,
         onDebugStationAdvance = onDebugStationAdvance,
         suppressInGameDinoProgress = suppressInGameDinoProgress,
+        collectedEggStripCount = collectedEggStripCount,
         modifier = modifier,
     )
 }

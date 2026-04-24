@@ -63,7 +63,7 @@ fun Chapter2LettersIntroScreen(
 ) {
     ChapterLettersIntroScreen(
         chapterTitle = "פרק 2 - מצא את הביצה הורודה",
-        letters = listOf("ש", "נ", "פ", "ג", "ק"),
+        letters = listOf("ג", "ה", "ו", "ר", "ש"),
         backgroundRes = R.drawable.mountain_bg_chapter2,
         onContinue = onContinue,
         onBack = onBack,

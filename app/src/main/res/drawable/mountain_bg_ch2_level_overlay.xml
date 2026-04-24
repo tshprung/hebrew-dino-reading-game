@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Chapter 2 gameplay backdrop; points at chapter art so it can be swapped independently later. -->
+<bitmap xmlns:android="http://schemas.android.com/apk/res/android"
+    android:gravity="fill"
+    android:src="@drawable/mountain_bg_chapter2" />

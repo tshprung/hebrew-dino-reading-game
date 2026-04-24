@@ -14,11 +14,12 @@ fun Chapter2OutroScreen(
         backgroundRes = R.drawable.mountain_bg_chapter2,
         title = "יש!",
         body =
-            "עוד ביצה נמצאה!\n" +
+            "מצאנו עוד ביצה!\n" +
                 "\n" +
-                "\"אנחנו מתקדמים!\"\n" +
+                "אמא כבר מרגישה יותר רגועה…\n" +
                 "\n" +
-                "נשארה רק עוד אחת!",
+                "נשארה עוד ביצה אחת —\n" +
+                "נמשיך בהרפתקה הבאה.",
         eggStripCount = 2,
         companion = ChapterLobbyCompanion.DinoOnly,
         narrationPlaying = false,

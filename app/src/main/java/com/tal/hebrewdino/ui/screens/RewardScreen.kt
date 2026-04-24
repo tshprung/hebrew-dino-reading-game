@@ -61,6 +61,8 @@ fun RewardScreen(
     @Suppress("UNUSED_PARAMETER") correct: Int,
     @Suppress("UNUSED_PARAMETER") mistakes: Int,
     onBackToMap: () -> Unit,
+    /** Full-bleed station-complete backdrop (chapter-specific). */
+    backgroundRes: Int = R.drawable.forest_bg_reward,
     modifier: Modifier = Modifier,
 ) {
     fun rtl(text: String): String = "\u200F$text"
@@ -102,7 +104,7 @@ fun RewardScreen(
 
     Box(modifier = modifier.fillMaxSize()) {
         Image(
-            painter = painterResource(id = R.drawable.forest_bg_reward),
+            painter = painterResource(id = backgroundRes),
             contentDescription = null,
             modifier = Modifier.fillMaxSize(),
             contentScale = ContentScale.Crop,

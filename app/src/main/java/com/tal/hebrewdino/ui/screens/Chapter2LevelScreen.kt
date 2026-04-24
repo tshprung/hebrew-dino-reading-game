@@ -17,6 +17,7 @@ fun Chapter2LevelScreen(
     onLettersHelp: (() -> Unit)? = null,
     onDebugStationAdvance: (() -> Unit)? = null,
     suppressInGameDinoProgress: Boolean = false,
+    collectedEggStripCount: Int = 0,
     modifier: Modifier = Modifier,
 ) {
     val station = stationId.coerceIn(1, Chapter2Config.STATION_COUNT)
@@ -27,12 +28,13 @@ fun Chapter2LevelScreen(
         stageLabel = "תחנה $station",
         plan = StationQuizPlans.chapter2(station),
         letterPoolSpec = Chapter2LetterPoolSpec,
-        backgroundRes = R.drawable.mountain_bg_chapter2,
+        backgroundRes = R.drawable.mountain_bg_ch2_level_overlay,
         onBack = onBack,
         onComplete = onComplete,
         onLettersHelp = onLettersHelp,
         onDebugStationAdvance = onDebugStationAdvance,
         suppressInGameDinoProgress = suppressInGameDinoProgress,
+        collectedEggStripCount = collectedEggStripCount,
         modifier = modifier,
     )
 }

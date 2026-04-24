@@ -7,7 +7,7 @@ object StationMatchPlaceholders {
     val forest: List<Pair<Int, String?>> =
         listOf(
             R.drawable.egg_found to "ביצה",
-            R.drawable.finish_marker_egg to "סיום",
+            R.drawable.egg_white to "סיום",
             R.drawable.stop_marker to "עצור",
         )
 }

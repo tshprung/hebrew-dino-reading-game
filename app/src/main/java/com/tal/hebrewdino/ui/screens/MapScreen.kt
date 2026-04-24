@@ -227,7 +227,19 @@ private fun PathStone(
         ) {
             Text(
                 text = subtitle,
-                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                style =
+                    run {
+                        val base = MaterialTheme.typography.bodyMedium
+                        if (completed) {
+                            base.copy(
+                                fontSize = base.fontSize * 2,
+                                lineHeight = base.lineHeight * 2,
+                                fontWeight = FontWeight.Bold,
+                            )
+                        } else {
+                            base.copy(fontWeight = FontWeight.Bold)
+                        }
+                    },
                 color = Color(0xFF0B2B3D),
                 textAlign = TextAlign.Center,
             )
