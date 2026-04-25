@@ -197,6 +197,3 @@ fun PictureStartsWithGame(
         }
     }
 }
-
-// Removed local picture-tile renderer in favor of [LessonChoiceCard] to keep picture formatting
-// identical across stations 4, 5, and 6.

@@ -7,7 +7,6 @@ import com.tal.hebrewdino.R
 @Composable
 fun Chapter2IntroScreen(
     onContinue: () -> Unit,
-    onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     ChapterLobbyStoryLayout(
@@ -26,7 +25,6 @@ fun Chapter2IntroScreen(
         narrationPlaying = false,
         dinoContentDescription = "דינו",
         onContinue = onContinue,
-        onBack = onBack,
         modifier = modifier,
     )
 }

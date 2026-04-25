@@ -42,7 +42,6 @@ import kotlinx.coroutines.launch
 @Composable
 fun Chapter1LettersIntroScreen(
     onContinue: () -> Unit,
-    onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     ChapterLettersIntroScreen(
@@ -50,7 +49,6 @@ fun Chapter1LettersIntroScreen(
         letters = listOf("א", "ב", "ד", "ל", "מ"),
         backgroundRes = R.drawable.forest_bg_story_intro,
         onContinue = onContinue,
-        onBack = onBack,
         modifier = modifier,
     )
 }
@@ -58,7 +56,6 @@ fun Chapter1LettersIntroScreen(
 @Composable
 fun Chapter2LettersIntroScreen(
     onContinue: () -> Unit,
-    onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     ChapterLettersIntroScreen(
@@ -66,7 +63,6 @@ fun Chapter2LettersIntroScreen(
         letters = listOf("ג", "ה", "ו", "ר", "ש"),
         backgroundRes = R.drawable.mountain_bg_chapter2,
         onContinue = onContinue,
-        onBack = onBack,
         modifier = modifier,
     )
 }
@@ -74,7 +70,6 @@ fun Chapter2LettersIntroScreen(
 @Composable
 fun Chapter3LettersIntroScreen(
     onContinue: () -> Unit,
-    onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     ChapterLettersIntroScreen(
@@ -82,7 +77,6 @@ fun Chapter3LettersIntroScreen(
         letters = listOf("ר", "ת", "צ", "ח", "ט"),
         backgroundRes = R.drawable.mountain_bg_chapter3,
         onContinue = onContinue,
-        onBack = onBack,
         modifier = modifier,
     )
 }
@@ -90,7 +84,6 @@ fun Chapter3LettersIntroScreen(
 @Composable
 fun Chapter4LettersIntroScreen(
     onContinue: () -> Unit,
-    onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     ChapterLettersIntroScreen(
@@ -98,7 +91,6 @@ fun Chapter4LettersIntroScreen(
         letters = listOf("א", "מ", "ש", "ר", "ת"),
         backgroundRes = R.drawable.mountain_bg_chapter4,
         onContinue = onContinue,
-        onBack = onBack,
         modifier = modifier,
     )
 }
@@ -109,7 +101,6 @@ fun ChapterLettersIntroScreen(
     letters: List<String>,
     backgroundRes: Int,
     onContinue: () -> Unit,
-    onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val stableLetters = remember(letters) { letters.distinct() }
@@ -208,13 +199,8 @@ fun ChapterLettersIntroScreen(
 
             Spacer(modifier = Modifier.height(18.dp))
 
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                OutlinedButton(onClick = onBack, modifier = Modifier.width(160.dp)) {
-                    Text("חזור")
-                }
-                Button(onClick = onContinue, modifier = Modifier.width(160.dp)) {
-                    Text("המשך")
-                }
+            Button(onClick = onContinue, modifier = Modifier.width(180.dp)) {
+                Text("המשך")
             }
         }
     }

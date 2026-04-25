@@ -60,7 +60,6 @@ private val dinoTalkFrames =
 fun ForestIntroScreen(
     character: DinoCharacter,
     onContinue: () -> Unit,
-    onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     ForestStoryScreen(
@@ -81,7 +80,6 @@ fun ForestIntroScreen(
         eggStripCount = 0,
         showMomCharacter = true,
         onContinue = onContinue,
-        onBack = onBack,
         modifier = modifier,
     )
 }
@@ -90,7 +88,6 @@ fun ForestIntroScreen(
 fun ForestOutroScreen(
     character: DinoCharacter,
     onContinue: () -> Unit,
-    onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     ForestStoryScreen(
@@ -109,7 +106,6 @@ fun ForestOutroScreen(
         eggStripCount = 1,
         showMomCharacter = false,
         onContinue = onContinue,
-        onBack = onBack,
         modifier = modifier,
     )
 }
@@ -124,7 +120,6 @@ private fun ForestStoryScreen(
     eggStripCount: Int,
     showMomCharacter: Boolean,
     onContinue: () -> Unit,
-    onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
@@ -214,21 +209,8 @@ private fun ForestStoryScreen(
                 }
             }
 
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                OutlinedButton(
-                    onClick = onBack,
-                    modifier = Modifier.width(140.dp),
-                    colors =
-                        androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
-                            containerColor = Color.White.copy(alpha = 0.86f),
-                            contentColor = Color(0xFF0B2B3D),
-                        ),
-                ) {
-                    Text("חזור")
-                }
-                Button(onClick = onContinue, modifier = Modifier.width(160.dp)) {
-                    Text("המשך")
-                }
+            Button(onClick = onContinue, modifier = Modifier.width(180.dp)) {
+                Text("המשך")
             }
         }
     }

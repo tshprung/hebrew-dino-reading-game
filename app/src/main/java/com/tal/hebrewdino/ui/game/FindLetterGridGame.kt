@@ -88,6 +88,8 @@ fun FindLetterGridGame(
     val gridScale = remember(question, contentKey) { Animatable(1f) }
     var wrongFlashIndex by remember(question, contentKey) { mutableIntStateOf(-1) }
     var completionFired by remember(question, contentKey) { mutableStateOf(false) }
+    /** True as soon as the last required cell is tapped — blocks extra taps before [onCompleted] runs (avoids stuck rounds). */
+    var gridFrozen by remember(question, contentKey) { mutableStateOf(false) }
 
     LaunchedEffect(question, contentKey) {
         found = emptySet()
@@ -97,6 +99,7 @@ fun FindLetterGridGame(
         gridScale.snapTo(1f)
         wrongFlashIndex = -1
         completionFired = false
+        gridFrozen = false
     }
 
     LaunchedEffect(hintPulseEpoch, question, contentKey) {
@@ -245,10 +248,14 @@ fun FindLetterGridGame(
                                         },
                                     shape = RoundedCornerShape(16.dp),
                                 )
-                                .clickable(enabled = enabled && !done) {
+                                .clickable(enabled = enabled && !done && !gridFrozen) {
                                     onLetterTapped?.invoke(letter)
                                     if (letter == question.targetLetter) {
-                                        found = found + index
+                                        val newFound = found + index
+                                        found = newFound
+                                        if (newFound == targetIndices) {
+                                            gridFrozen = true
+                                        }
                                         ChildGameAudioHooks.onCorrect()
                                         scope.launch {
                                             scale.snapTo(1f)

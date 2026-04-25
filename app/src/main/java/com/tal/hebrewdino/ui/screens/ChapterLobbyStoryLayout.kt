@@ -62,7 +62,6 @@ fun ChapterLobbyStoryLayout(
     narrationPlaying: Boolean,
     dinoContentDescription: String,
     onContinue: () -> Unit,
-    onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Box(modifier = modifier.fillMaxSize()) {
@@ -138,21 +137,8 @@ fun ChapterLobbyStoryLayout(
                 }
             }
 
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                OutlinedButton(
-                    onClick = onBack,
-                    modifier = Modifier.width(160.dp),
-                    colors =
-                        androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
-                            containerColor = Color.White.copy(alpha = 0.86f),
-                            contentColor = Color(0xFF0B2B3D),
-                        ),
-                ) {
-                    Text("חזור")
-                }
-                Button(onClick = onContinue, modifier = Modifier.width(160.dp)) {
-                    Text("המשך")
-                }
+            Button(onClick = onContinue, modifier = Modifier.width(180.dp)) {
+                Text("המשך")
             }
         }
     }

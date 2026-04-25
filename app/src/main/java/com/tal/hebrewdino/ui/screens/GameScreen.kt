@@ -62,7 +62,6 @@ import com.tal.hebrewdino.ui.audio.AudioClips
 import com.tal.hebrewdino.ui.audio.SoundPoolPlayer
 import com.tal.hebrewdino.ui.audio.VoicePlayer
 import com.tal.hebrewdino.ui.domain.AnswerResult
-import com.tal.hebrewdino.ui.domain.Chapter1Config
 import com.tal.hebrewdino.ui.domain.Chapter1Station4PictureInnerScale
 import com.tal.hebrewdino.ui.domain.Chapter1Station5And6ImageMatchInnerScale
 import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
@@ -97,8 +96,8 @@ private enum class DinoVisual { Idle, TryAgain, Jump }
 private const val IntroDurationMs = 450L
 private const val BetweenQuestionFadeMs = 80
 
-/** ~0.5 cm: lift top bar (חזור / בדיקה) slightly toward the status bar. */
-private val TopBarRaise = 19.dp
+/** ~½ cm: chapter 1 layout nudges (back + progress bar up; station content down). */
+private val Chapter1HalfCmNudge = 19.dp
 
 /** ~1 cm vertical gap between the back button and the collected-egg strip. */
 private val SpaceBelowBackBeforeEggs = 38.dp
@@ -210,8 +209,10 @@ fun GameScreen(
     // UX: no audio for now (per request).
     val audioEnabled = true
 
+    // Must include letterPoolSpec + chapterId: station 1 plan is identical across chapters 1–4 (same mode/count),
+    // but the letter pool differs — reusing a cached LevelSession would throw in generators / desync UI.
     val session =
-        remember(stationId, plan) {
+        remember(stationId, letterPoolSpec, chapterId, plan) {
             LevelSession(plan = plan, letterPoolSpec = letterPoolSpec)
         }
     val scope = rememberCoroutineScope()
@@ -228,7 +229,6 @@ fun GameScreen(
     val optionsShake = remember(stationId) { Animatable(0f) }
     var dinoVisual by remember(stationId) { mutableStateOf(DinoVisual.Idle) }
     val dinoScale = remember(stationId) { Animatable(1f) }
-    // Removed short-lived particle feedback per UX request.
     var shakeEpoch by remember(stationId) { mutableIntStateOf(0) }
     var dinoTalking by remember(stationId, session.currentIndex) { mutableStateOf(false) }
     val dinoForward = remember(stationId) { Animatable(0f) }
@@ -308,37 +308,25 @@ fun GameScreen(
 
     // Station 1: preload ALL voice clips as early as possible (screen entry),
     // so instruction playback has near-zero latency when the first question appears.
-    LaunchedEffect(stationId, chapterId) {
+    LaunchedEffect(stationId, chapterId, letterPoolSpec) {
         if (!(audioEnabled && isSagaEpisode(chapterId) && stationId == 1)) return@LaunchedEffect
+        val poolLetters = letterPoolSpec.groups.flatten().distinct()
         voice.warmUp(
             AudioClips.VoChooseLetter,
             AudioClips.VoFindLetter,
             AudioClips.VoKolHakavod,
         )
+        val perLetterPaths =
+            poolLetters.flatMap { letter ->
+                listOfNotNull(
+                    AudioClips.chooseLetterClip(letter),
+                    AudioClips.station1WrongCombined(letter),
+                    AudioClips.letterNameClip(letter),
+                )
+            }
         sfx.preload(
             AudioClips.VoChooseLetter,
-            // Instruction clips (choose_<letter>)
-            AudioClips.chooseLetterClip("א") ?: "",
-            AudioClips.chooseLetterClip("ב") ?: "",
-            AudioClips.chooseLetterClip("ג") ?: "",
-            AudioClips.chooseLetterClip("ד") ?: "",
-            AudioClips.chooseLetterClip("ה") ?: "",
-            AudioClips.chooseLetterClip("ל") ?: "",
-            AudioClips.chooseLetterClip("מ") ?: "",
-            // Wrong combined clips (st1_wrong_*)
-            AudioClips.station1WrongCombined("א") ?: "",
-            AudioClips.station1WrongCombined("ב") ?: "",
-            AudioClips.station1WrongCombined("ג") ?: "",
-            AudioClips.station1WrongCombined("ד") ?: "",
-            AudioClips.station1WrongCombined("ה") ?: "",
-            AudioClips.station1WrongCombined("ל") ?: "",
-            AudioClips.station1WrongCombined("מ") ?: "",
-            // Correct: letter (choose or letter_*) then a shuffled praise tail — preload both.
-            AudioClips.letterNameClip("א") ?: "",
-            AudioClips.letterNameClip("ב") ?: "",
-            AudioClips.letterNameClip("ד") ?: "",
-            AudioClips.letterNameClip("ל") ?: "",
-            AudioClips.letterNameClip("מ") ?: "",
+            *perLetterPaths.toTypedArray(),
             AudioClips.VoTryAgain1,
             AudioClips.VoTryAgain2,
             *AudioClips.station1CorrectPraiseTailCandidates(),
@@ -346,9 +334,9 @@ fun GameScreen(
     }
 
     // Episode 1 station 2: preload instruction + balloon feedback clips for low latency.
-    LaunchedEffect(stationId, chapterId) {
+    LaunchedEffect(stationId, chapterId, letterPoolSpec) {
         if (!(audioEnabled && isSagaEpisode(chapterId) && stationId == 2)) return@LaunchedEffect
-        val letters = listOf("א", "ב", "ג", "ד", "ה", "ל", "מ")
+        val letters = letterPoolSpec.groups.flatten().distinct()
         val paths = ArrayList<String>()
         paths.add(AudioClips.PopBalloonsWithLetter)
         paths.add(AudioClips.VoTryAgain1)
@@ -371,9 +359,9 @@ fun GameScreen(
     }
 
     // Episode 1–4 station 3: warm instruction (MediaPlayer); preload tap SFX + letter clips for SoundPool.
-    LaunchedEffect(stationId, chapterId) {
+    LaunchedEffect(stationId, chapterId, letterPoolSpec) {
         if (!(audioEnabled && chapterId in 1..4 && stationId == 3)) return@LaunchedEffect
-        val letters = Chapter1Config.letters
+        val letters = letterPoolSpec.groups.flatten().distinct()
         voice.warmUp(AudioClips.VoFindLetter, AudioClips.VoChooseLetter, AudioClips.VoKolHakavod)
         for (l in letters) {
             AudioClips.letterNameClip(l)?.let { voice.warmUp(it) }
@@ -931,22 +919,18 @@ fun GameScreen(
                 contentScale = ContentScale.Fit,
             )
         }
-        // Removed “sparkle balls” feedback per UX request.
-        // Keep only dino + subtle motion feedback; no short-lived particle overlays.
 
-        val contentTopInset =
-            if (collectedEggStripCount > 0) {
-                44.dp + SpaceBelowBackBeforeEggs + storyEggStripVerticalHeight(collectedEggStripCount) + 8.dp
-            } else {
-                40.dp
-            }
+        // Station screens: keep the top bar fixed (like Journey). Do not show collected eggs/letters/debug inside stations.
+        val contentTopInset = 40.dp
         Column(
             modifier =
                 Modifier
                     .fillMaxWidth()
                     .statusBarsPadding()
-                    .padding(horizontal = 4.dp, vertical = 2.dp)
-                    .offset(y = -TopBarRaise)
+                    // Give a consistent ~1cm breathing room below the status bar so the progress line
+                    // and the "חזור" button are never clipped.
+                    .padding(start = 8.dp, end = 8.dp, top = 38.dp, bottom = 0.dp)
+                    .offset(y = if (chapterId == 1) -Chapter1HalfCmNudge else 0.dp)
                     .align(Alignment.TopCenter)
                     .zIndex(4f),
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -954,55 +938,25 @@ fun GameScreen(
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                // App is RTL: start side = physical right — stack back + eggs here.
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    OutlinedButton(
-                        onClick = onBack,
-                        colors = ChapterNavChipStyles.outlinedButtonColors(),
-                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
-                    ) {
-                        Text("חזור", style = ChapterNavChipStyles.labelTextStyle())
-                    }
-                    if (collectedEggStripCount > 0) {
-                        Spacer(modifier = Modifier.height(SpaceBelowBackBeforeEggs))
-                        StoryEggStrip(foundCount = collectedEggStripCount)
-                    }
-                }
-                Column(
-                    modifier = Modifier.weight(1f).padding(horizontal = 8.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
+                // Keep back on the physical right; put the progress line immediately to its left.
+                OutlinedButton(
+                    onClick = onBack,
+                    colors = ChapterNavChipStyles.outlinedButtonColors(),
+                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
                 ) {
-                    LinearProgressIndicator(
-                        progress = {
-                            (session.questionNumber.toFloat() / session.totalQuestions.coerceAtLeast(1))
-                                .coerceIn(0f, 1f)
-                        },
-                        modifier = Modifier.fillMaxWidth().height(7.dp),
-                        color = Color(0xFF2E7D32),
-                        trackColor = Color(0xFF0B2B3D).copy(alpha = 0.12f),
-                    )
+                    Text("חזור", style = ChapterNavChipStyles.labelTextStyle())
                 }
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    if (onLettersHelp != null) {
-                        OutlinedButton(
-                            onClick = onLettersHelp,
-                            modifier = Modifier.height(40.dp),
-                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
-                        ) { Text("אותיות", style = MaterialTheme.typography.labelLarge) }
-                    }
-                    if (onDebugStationAdvance != null) {
-                        Spacer(modifier = Modifier.width(4.dp))
-                        OutlinedButton(
-                            onClick = onDebugStationAdvance,
-                            colors = ChapterNavChipStyles.outlinedButtonColors(),
-                            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
-                        ) {
-                            Text("בדיקה", style = ChapterNavChipStyles.labelTextStyle())
-                        }
-                    }
-                }
+                LinearProgressIndicator(
+                    progress = {
+                        (session.questionNumber.toFloat() / session.totalQuestions.coerceAtLeast(1))
+                            .coerceIn(0f, 1f)
+                    },
+                    modifier = Modifier.weight(1f).height(9.dp),
+                    color = Color(0xFF2E7D32),
+                    trackColor = Color(0xFF0B2B3D).copy(alpha = 0.12f),
+                )
             }
         }
 
@@ -1137,7 +1091,17 @@ fun GameScreen(
                                 )
                             is Question.PopBalloonsQuestion ->
                                 Column(
-                                    modifier = Modifier.fillMaxSize().scale(entryPulseScale.value),
+                                    modifier =
+                                        Modifier
+                                            .fillMaxSize()
+                                            .scale(entryPulseScale.value)
+                                            .then(
+                                                if (chapterId == 1 && stationId == Chapter1StationOrder.BALLOON_POP) {
+                                                    Modifier.padding(top = Chapter1HalfCmNudge)
+                                                } else {
+                                                    Modifier
+                                                },
+                                            ),
                                     horizontalAlignment = Alignment.CenterHorizontally,
                                     verticalArrangement = Arrangement.Top,
                                 ) {
@@ -1177,7 +1141,14 @@ fun GameScreen(
                                             modifier =
                                                 Modifier
                                                     .fillMaxWidth()
-                                                    .weight(1f, fill = true),
+                                                    .weight(1f, fill = true)
+                                                    .then(
+                                                        if (chapterId == 1 && stationId == Chapter1StationOrder.TAP_LETTER) {
+                                                            Modifier.padding(top = Chapter1HalfCmNudge)
+                                                        } else {
+                                                            Modifier
+                                                        },
+                                                    ),
                                             contentAlignment = Alignment.Center,
                                         ) {
                                             TargetLetterHeaderChip(
@@ -1563,7 +1534,17 @@ fun GameScreen(
                                             AnswerResult.Finished -> {}
                                         }
                                     },
-                                    modifier = Modifier.fillMaxSize().scale(entryPulseScale.value),
+                                    modifier =
+                                        Modifier
+                                            .fillMaxSize()
+                                            .scale(entryPulseScale.value)
+                                            .then(
+                                                if (chapterId == 1 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
+                                                    Modifier.offset(y = Chapter1HalfCmNudge)
+                                                } else {
+                                                    Modifier
+                                                },
+                                            ),
                                 )
                             is Question.ImageMatchQuestion ->
                                 if (stationId == 6) {
@@ -1617,7 +1598,7 @@ fun GameScreen(
                                                 } else {
                                                     1f
                                                 },
-                                        instructions = "חברו בין אות למילה המתאימה",
+                                        instructions = "ליחצו על אות והמילה שמתחילה באותה האות",
                                         onSolved = {
                                             if (!consumeTapCooldown()) return@MatchLetterToWordGame
                                             scope.launch {
@@ -1653,7 +1634,17 @@ fun GameScreen(
                                                 }
                                             }
                                         },
-                                        modifier = Modifier.fillMaxSize().scale(entryPulseScale.value),
+                                        modifier =
+                                            Modifier
+                                                .fillMaxSize()
+                                                .scale(entryPulseScale.value)
+                                                .then(
+                                                    if (chapterId == 1 && stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH) {
+                                                        Modifier.offset(y = Chapter1HalfCmNudge)
+                                                    } else {
+                                                        Modifier
+                                                    },
+                                                ),
                                     )
                                 } else {
                                     ImageMatchGame(
@@ -1713,7 +1704,17 @@ fun GameScreen(
                                                 AnswerResult.Finished -> false
                                             }
                                         },
-                                        modifier = Modifier.fillMaxSize().scale(entryPulseScale.value),
+                                        modifier =
+                                            Modifier
+                                                .fillMaxSize()
+                                                .scale(entryPulseScale.value)
+                                                .then(
+                                                    if (chapterId == 1 && stationId == Chapter1StationOrder.PICTURE_PICK_ALL) {
+                                                        Modifier.offset(y = Chapter1HalfCmNudge)
+                                                    } else {
+                                                        Modifier
+                                                    },
+                                                ),
                                     )
                                 }
                             is Question.FinaleSlotQuestion ->
@@ -1797,7 +1798,7 @@ private fun IntroPulse(
             is Question.PictureStartsWithQuestion -> question.word
             is Question.ImageMatchQuestion ->
                 when {
-                    stationId == 6 -> "חברו בין אות למילה המתאימה"
+                    stationId == 6 -> "ליחצו על אות והמילה שמתחילה באותה האות"
                     stationId in 4..6 -> question.targetLetter
                     else -> question.targetWord
                 }
@@ -1950,7 +1951,7 @@ private suspend fun speakLetterPrompt(
                         if (letterName != null) voice.playBlocking(letterName)
                     }
                 } else if (chapterId in 1..4 && stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH) {
-                    // Episode 1–4 station 6: "חברו בין אות למילה המתאימה" (`assets/audio/match_letter_to_word_instructions.wav`).
+                    // Episode 1–4 station 6: "ליחצו על אות והמילה שמתחילה באותה האות" (`assets/audio/match_letter_to_word_instructions.wav`).
                     voice.playBlocking(AudioClips.MatchLetterToWordInstructions)
                 } else {
                     speakLetterPrompt(voice, q.targetLetter)

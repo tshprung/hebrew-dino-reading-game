@@ -974,7 +974,6 @@ internal fun PopBalloon(
             Text(text = letter, fontSize = 38.sp, fontWeight = FontWeight.Black, color = Color(0xFF0B2B3D))
         }
 
-        // String
         androidx.compose.foundation.Canvas(modifier = Modifier.width(2.dp).height(18.dp)) {
             drawLine(
                 color = Color(0xFF0B2B3D).copy(alpha = 0.30f),

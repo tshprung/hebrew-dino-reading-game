@@ -7,7 +7,6 @@ import com.tal.hebrewdino.R
 @Composable
 fun Chapter2OutroScreen(
     onContinue: () -> Unit,
-    onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     ChapterLobbyStoryLayout(
@@ -25,7 +24,6 @@ fun Chapter2OutroScreen(
         narrationPlaying = false,
         dinoContentDescription = "דינו",
         onContinue = onContinue,
-        onBack = onBack,
         modifier = modifier,
     )
 }
@@ -33,7 +31,6 @@ fun Chapter2OutroScreen(
 @Composable
 fun Chapter3OutroScreen(
     onContinue: () -> Unit,
-    onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     ChapterLobbyStoryLayout(
@@ -50,7 +47,6 @@ fun Chapter3OutroScreen(
         narrationPlaying = false,
         dinoContentDescription = "דינו",
         onContinue = onContinue,
-        onBack = onBack,
         modifier = modifier,
     )
 }
@@ -58,7 +54,6 @@ fun Chapter3OutroScreen(
 @Composable
 fun Chapter4IntroScreen(
     onContinue: () -> Unit,
-    onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     ChapterLobbyStoryLayout(
@@ -75,7 +70,6 @@ fun Chapter4IntroScreen(
         narrationPlaying = false,
         dinoContentDescription = "דינו",
         onContinue = onContinue,
-        onBack = onBack,
         modifier = modifier,
     )
 }
@@ -83,7 +77,6 @@ fun Chapter4IntroScreen(
 @Composable
 fun Chapter4OutroScreen(
     onContinue: () -> Unit,
-    onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     ChapterLobbyStoryLayout(
@@ -101,7 +94,6 @@ fun Chapter4OutroScreen(
         narrationPlaying = false,
         dinoContentDescription = "דינו",
         onContinue = onContinue,
-        onBack = onBack,
         modifier = modifier,
     )
 }

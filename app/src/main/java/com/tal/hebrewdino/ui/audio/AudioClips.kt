@@ -31,7 +31,7 @@ object AudioClips {
     /** Episode 1 station 4: "באיזו אות מתחילה המילה" (then play the word clip, e.g. "ברווז"). */
     const val WhichLetterDoesWordStart = "audio/which_letter_does_word_start.wav"
 
-    /** Episode 1 station 6: "חברו בין אות למילה המתאימה". */
+    /** Episode 1 station 6: "ליחצו על אות והמילה שמתחילה באותה האות". */
     const val MatchLetterToWordInstructions = "audio/match_letter_to_word_instructions.wav"
 
     /** Episode 1 station 2 prefix: "פוצץ את הבלונים עם האות". */

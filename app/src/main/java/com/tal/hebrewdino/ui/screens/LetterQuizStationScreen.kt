@@ -32,10 +32,11 @@ fun LetterQuizStationScreen(
         backgroundRes = backgroundRes,
         onBack = onBack,
         onComplete = onComplete,
-        onLettersHelp = onLettersHelp,
-        onDebugStationAdvance = onDebugStationAdvance,
+        // Station screens should not show letters help / debug / collected eggs in the top bar.
+        onLettersHelp = null,
+        onDebugStationAdvance = null,
         suppressInGameDinoProgress = suppressInGameDinoProgress,
-        collectedEggStripCount = collectedEggStripCount,
+        collectedEggStripCount = 0,
         modifier = modifier,
     )
 }

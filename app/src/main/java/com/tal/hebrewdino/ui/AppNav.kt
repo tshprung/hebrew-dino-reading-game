@@ -77,9 +77,13 @@ fun AppNav() {
     val chapter4Completed by progress.chapter4CompletedFlow.collectAsState(initial = false)
     val unlockedLevel by progress.unlockedLevelFlow.collectAsState(initial = 1)
     val completedLevels by progress.completedLevelsFlow.collectAsState(initial = emptySet())
+    val chapter1AllStationsComplete =
+        (1..Chapter1Config.STATION_COUNT).all { station -> completedLevels.contains(station) }
+    /** First-egg / chapter-1 “done” for strip: outro seen, or all six stations finished (even before outro). */
+    val chapter1ProgressForStrip = beachOutroSeen || chapter1AllStationsComplete
     val collectedEggStripCount =
         CollectedEggs.stripCount(
-            beachOutroSeen = beachOutroSeen,
+            beachOutroSeen = chapter1ProgressForStrip,
             chapter2Completed = chapter2Completed,
             chapter3Completed = chapter3Completed,
         )
@@ -89,7 +93,7 @@ fun AppNav() {
             chapter4Completed -> 4
             chapter3Completed -> 4
             chapter2Completed -> 3
-            beachOutroSeen -> 2
+            beachOutroSeen || chapter1AllStationsComplete -> 2
             else -> 1
         }
     /** Chapter 4 story unlocks after chapter 3 is finished; “בקרוב” shows until then. */
@@ -113,7 +117,7 @@ fun AppNav() {
                 maxSelectableChapterId = maxSelectableChapterId,
                 chaptersProgress =
                     ChaptersProgress(
-                        chapter1Completed = beachOutroSeen,
+                        chapter1Completed = chapter1ProgressForStrip,
                         chapter2Completed = chapter2Completed,
                         chapter3Completed = chapter3Completed,
                         chapter4Completed = chapter4Completed,
@@ -131,14 +135,16 @@ fun AppNav() {
                             navController.navigate(next)
                         }
                         2 -> {
-                            val next =
-                                when {
-                                    !beachOutroSeen -> NavRoutes.Chapters // locked; shouldn't happen
-                                    !chapter2IntroSeen -> NavRoutes.Ch2Intro
-                                    !chapter2LettersIntroSeen -> NavRoutes.Ch2Letters
-                                    else -> NavRoutes.Ch2Journey
-                                }
-                            navController.navigate(next)
+                            val canEnterChapter2 = beachOutroSeen || chapter1AllStationsComplete
+                            if (canEnterChapter2) {
+                                val next =
+                                    when {
+                                        !chapter2IntroSeen -> NavRoutes.Ch2Intro
+                                        !chapter2LettersIntroSeen -> NavRoutes.Ch2Letters
+                                        else -> NavRoutes.Ch2Journey
+                                    }
+                                navController.navigate(next)
+                            }
                         }
                         3 -> {
                             val next =
@@ -176,7 +182,6 @@ fun AppNav() {
                         popUpTo(NavRoutes.StoryIntro) { inclusive = true }
                     }
                 },
-                onBack = { navController.popBackStack() },
             )
         }
 
@@ -188,7 +193,6 @@ fun AppNav() {
                         popUpTo(NavRoutes.ChapterLettersIntro) { inclusive = true }
                     }
                 },
-                onBack = { navController.popBackStack() },
             )
         }
 
@@ -200,7 +204,6 @@ fun AppNav() {
                         popUpTo(NavRoutes.Ch2Intro) { inclusive = true }
                     }
                 },
-                onBack = { navController.popBackStack() },
             )
         }
 
@@ -212,7 +215,6 @@ fun AppNav() {
                         popUpTo(NavRoutes.Ch2Letters) { inclusive = true }
                     }
                 },
-                onBack = { navController.popBackStack() },
             )
         }
 
@@ -247,7 +249,6 @@ fun AppNav() {
                         popUpTo(NavRoutes.Ch3Intro) { inclusive = true }
                     }
                 },
-                onBack = { navController.popBackStack() },
             )
         }
 
@@ -259,7 +260,6 @@ fun AppNav() {
                         popUpTo(NavRoutes.Ch3Letters) { inclusive = true }
                     }
                 },
-                onBack = { navController.popBackStack() },
             )
         }
 
@@ -471,7 +471,7 @@ fun AppNav() {
                 levelId = stationId,
                 correct = correct,
                 mistakes = mistakes,
-                backgroundRes = R.drawable.mountain_bg_ch2_reward,
+                backgroundRes = R.drawable.mountain_bg_chapter2,
                 onBackToMap = {
                     if (stationId >= Chapter2Config.STATION_COUNT) {
                         navController.navigate(NavRoutes.Ch2StoryOutro) {
@@ -493,7 +493,6 @@ fun AppNav() {
                         popUpTo(NavRoutes.Ch2StoryOutro) { inclusive = true }
                     }
                 },
-                onBack = { navController.popBackStack() },
             )
         }
 
@@ -533,7 +532,6 @@ fun AppNav() {
                         popUpTo(NavRoutes.Ch3StoryOutro) { inclusive = true }
                     }
                 },
-                onBack = { navController.popBackStack() },
             )
         }
 
@@ -545,7 +543,6 @@ fun AppNav() {
                         popUpTo(NavRoutes.Ch4Intro) { inclusive = true }
                     }
                 },
-                onBack = { navController.popBackStack() },
             )
         }
 
@@ -557,7 +554,6 @@ fun AppNav() {
                         popUpTo(NavRoutes.Ch4Letters) { inclusive = true }
                     }
                 },
-                onBack = { navController.popBackStack() },
             )
         }
 
@@ -656,7 +652,6 @@ fun AppNav() {
                         popUpTo(NavRoutes.Ch4Outro) { inclusive = true }
                     }
                 },
-                onBack = { navController.popBackStack() },
             )
         }
 
@@ -669,7 +664,6 @@ fun AppNav() {
                         popUpTo(NavRoutes.StoryOutro) { inclusive = true }
                     }
                 },
-                onBack = { navController.popBackStack() },
             )
         }
 
