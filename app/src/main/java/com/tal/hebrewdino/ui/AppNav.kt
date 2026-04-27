@@ -1,5 +1,6 @@
 package com.tal.hebrewdino.ui
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -166,8 +167,8 @@ fun AppNav() {
                 character = DinoCharacter.Dino,
                 onContinue = {
                     scope.launch { progress.markBeachIntroSeen() }
-                    // Intro should show every entry, then continue to journey.
-                    navController.navigate(NavRoutes.Journey) {
+                    // After intro, always show letters presentation, then continue to journey.
+                    navController.navigate(NavRoutes.ChapterLettersIntro) {
                         popUpTo(NavRoutes.StoryIntro) { inclusive = true }
                     }
                 },
@@ -189,8 +190,8 @@ fun AppNav() {
             Chapter2IntroScreen(
                 onContinue = {
                     scope.launch { progress.markChapter2IntroSeen() }
-                    // Intro should show every entry, then continue to journey.
-                    navController.navigate(NavRoutes.Ch2Journey) {
+                    // After intro, always show letters presentation, then continue to journey.
+                    navController.navigate(NavRoutes.Ch2Letters) {
                         popUpTo(NavRoutes.Ch2Intro) { inclusive = true }
                     }
                 },
@@ -251,8 +252,8 @@ fun AppNav() {
                 eggStripCount = collectedEggStripCount,
                 onContinue = {
                     scope.launch { progress.markChapter3IntroSeen() }
-                    // Intro should show every entry, then continue to journey.
-                    navController.navigate(NavRoutes.Ch3Journey) {
+                    // After intro, always show letters presentation, then continue to journey.
+                    navController.navigate(NavRoutes.Ch3Letters) {
                         popUpTo(NavRoutes.Ch3Intro) { inclusive = true }
                     }
                 },
@@ -461,30 +462,32 @@ fun AppNav() {
             val levelId = backStackEntry.arguments?.getInt("levelId") ?: 1
             val correct = backStackEntry.arguments?.getInt("correct") ?: 0
             val mistakes = backStackEntry.arguments?.getInt("mistakes") ?: 0
+            val backToMap: () -> Unit = backToMap@{
+                if (levelId == 3 && !chapter1MidBoostSeen) {
+                    navController.navigate(NavRoutes.Ch1MidBoost) {
+                        popUpTo(NavRoutes.Reward) { inclusive = true }
+                    }
+                    return@backToMap
+                }
+                val isChapterEnd = levelId >= Chapter1Config.STATION_COUNT
+                if (isChapterEnd && !beachOutroSeen) {
+                    // Episode 1 finale: after reward, return to journey to watch Dino walk to the egg,
+                    // then JourneyEndWalk will show the outro summary screen.
+                    navController.navigate(NavRoutes.JourneyEndWalk) {
+                        popUpTo(NavRoutes.Journey) { inclusive = true }
+                    }
+                } else {
+                    navController.navigate(NavRoutes.Journey) {
+                        popUpTo(NavRoutes.Journey) { inclusive = true }
+                    }
+                }
+            }
+            BackHandler { backToMap() }
             RewardScreen(
                 levelId = levelId,
                 correct = correct,
                 mistakes = mistakes,
-                onBackToMap = {
-                    if (levelId == 3 && !chapter1MidBoostSeen) {
-                        navController.navigate(NavRoutes.Ch1MidBoost) {
-                            popUpTo(NavRoutes.Reward) { inclusive = true }
-                        }
-                        return@RewardScreen
-                    }
-                    val isChapterEnd = levelId >= Chapter1Config.STATION_COUNT
-                    if (isChapterEnd && !beachOutroSeen) {
-                        // Episode 1 finale: after reward, return to journey to watch Dino walk to the egg,
-                        // then JourneyEndWalk will show the outro summary screen.
-                        navController.navigate(NavRoutes.JourneyEndWalk) {
-                            popUpTo(NavRoutes.Journey) { inclusive = true }
-                        }
-                    } else {
-                        navController.navigate(NavRoutes.Journey) {
-                            popUpTo(NavRoutes.Journey) { inclusive = true }
-                        }
-                    }
-                },
+                onBackToMap = backToMap,
             )
         }
 
@@ -510,29 +513,31 @@ fun AppNav() {
             val stationId = backStackEntry.arguments?.getInt("stationId") ?: 1
             val correct = backStackEntry.arguments?.getInt("correct") ?: 0
             val mistakes = backStackEntry.arguments?.getInt("mistakes") ?: 0
+            val backToMap: () -> Unit = backToMap@{
+                if (stationId == 3 && !chapter2MidBoostSeen) {
+                    navController.navigate(NavRoutes.Ch2MidBoost) {
+                        popUpTo(NavRoutes.Ch2Reward) { inclusive = true }
+                    }
+                    return@backToMap
+                }
+                if (stationId >= Chapter2Config.STATION_COUNT) {
+                    navController.navigate(NavRoutes.Ch2StoryOutro) {
+                        popUpTo(NavRoutes.Ch2Journey) { inclusive = true }
+                    }
+                } else {
+                    navController.navigate(NavRoutes.Ch2Journey) {
+                        popUpTo(NavRoutes.Ch2Journey) { inclusive = true }
+                    }
+                }
+            }
+            BackHandler { backToMap() }
             RewardScreen(
                 levelId = stationId,
                 correct = correct,
                 mistakes = mistakes,
                 // Match gameplay (`Chapter2LevelScreen`) so station-complete doesn't feel like a different "camera".
                 backgroundRes = R.drawable.chapter2_level_overlay,
-                onBackToMap = {
-                    if (stationId == 3 && !chapter2MidBoostSeen) {
-                        navController.navigate(NavRoutes.Ch2MidBoost) {
-                            popUpTo(NavRoutes.Ch2Reward) { inclusive = true }
-                        }
-                        return@RewardScreen
-                    }
-                    if (stationId >= Chapter2Config.STATION_COUNT) {
-                        navController.navigate(NavRoutes.Ch2StoryOutro) {
-                            popUpTo(NavRoutes.Ch2Journey) { inclusive = true }
-                        }
-                    } else {
-                        navController.navigate(NavRoutes.Ch2Journey) {
-                            popUpTo(NavRoutes.Ch2Journey) { inclusive = true }
-                        }
-                    }
-                },
+                onBackToMap = backToMap,
             )
         }
 
