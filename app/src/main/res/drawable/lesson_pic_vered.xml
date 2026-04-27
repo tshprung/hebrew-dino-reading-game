@@ -6,10 +6,10 @@
     android:viewportHeight="110">
     <!-- Rose (more painterly / realistic feel): layered petals + leaves + stem -->
 
-    <!-- Stem -->
+    <!-- Stem (same start; extended downward only) -->
     <path
         android:fillColor="#2E7D32"
-        android:pathData="M60,104 L64,104 L64,38 L60,38 Z" />
+        android:pathData="M60,110 L64,110 L64,38 L60,38 Z" />
     <path
         android:fillColor="#1B5E20"
         android:pathData="M60,74 C56,72 54,68 56,64 C58,60 62,60 64,62 C62,64 62,70 64,72 Z" />
@@ -32,45 +32,25 @@
         android:fillAlpha="0.35"
         android:pathData="M44,92 C50,88 58,88 64,92 C58,94 52,98 46,102 C46,98 44,96 44,92 Z" />
 
-    <!-- Outer petals -->
+    <!-- Rose bud (side view): asymmetrical petals + curl -->
+    <!-- Back petal mass -->
     <path
         android:fillColor="#F48FB1"
-        android:pathData="M60,18 C78,18 96,30 96,52 C96,70 82,86 60,90 C38,86 24,70 24,52 C24,30 42,18 60,18 Z" />
-    <path
-        android:fillColor="#F06292"
-        android:pathData="M34,44 C30,34 38,24 50,22 C44,30 44,40 50,48 C42,50 38,50 34,44 Z" />
-    <path
-        android:fillColor="#F06292"
-        android:pathData="M86,44 C90,34 82,24 70,22 C76,30 76,40 70,48 C78,50 82,50 86,44 Z" />
-
-    <!-- Mid petals -->
-    <path
-        android:fillColor="#F8BBD0"
-        android:pathData="M60,30 C72,30 84,40 84,54 C84,66 74,76 60,78 C46,76 36,66 36,54 C36,40 48,30 60,30 Z" />
+        android:pathData="M52,20 C66,16 84,24 90,40 C96,56 88,74 70,82 C56,76 44,62 42,46 C40,34 44,24 52,20 Z" />
+    <!-- Front petal wrap -->
     <path
         android:fillColor="#EC407A"
-        android:pathData="M44,52 C44,44 52,38 60,38 C68,38 76,44 76,52 C76,60 70,64 60,66 C50,64 44,60 44,52 Z" />
-
-    <!-- Inner swirl -->
+        android:pathData="M48,44 C46,32 58,24 70,26 C82,28 88,40 84,54 C80,66 70,72 60,70 C54,64 50,56 48,44 Z" />
+    <!-- Inner curl -->
     <path
         android:fillColor="#FFCDD2"
-        android:pathData="M60,40 C66,40 72,44 72,50 C72,56 68,60 60,60 C52,60 48,56 48,50 C48,44 54,40 60,40 Z" />
+        android:pathData="M60,34 C68,34 74,40 74,48 C74,56 68,62 60,62 C54,60 52,54 54,46 C56,40 58,36 60,34 Z" />
     <path
         android:fillColor="#D81B60"
-        android:pathData="M60,44 C64,44 66,46 66,50 C66,54 64,56 60,56 C56,56 54,54 54,50 C54,46 56,44 60,44 Z" />
-
-    <!-- Petal highlights for painterly contrast -->
+        android:pathData="M62,40 C66,40 68,42 68,46 C68,50 66,52 62,52 C58,52 56,50 56,46 C56,42 58,40 62,40 Z" />
+    <!-- Highlight -->
     <path
         android:fillColor="#FFFFFF"
-        android:fillAlpha="0.20"
-        android:pathData="M34,36 C44,28 54,26 60,26 C54,34 46,40 38,44 C36,42 34,40 34,36 Z" />
-    <path
-        android:fillColor="#FFFFFF"
-        android:fillAlpha="0.14"
-        android:pathData="M72,28 C80,30 88,36 90,44 C84,42 78,40 72,36 C70,34 70,30 72,28 Z" />
-
-    <!-- Front stem overlay (make stem clearly visible and longer) -->
-    <path
-        android:fillColor="#2E7D32"
-        android:pathData="M62,110 L66,110 L66,48 L62,48 Z" />
+        android:fillAlpha="0.18"
+        android:pathData="M52,26 C62,22 74,26 80,36 C70,34 62,36 54,42 C52,38 50,32 52,26 Z" />
 </vector>

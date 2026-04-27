@@ -175,12 +175,6 @@ fun ChaptersScreen(
                 "פרק 4 - חיזוק חכם",
                 if (chapter4ComingSoon) "בקרוב" else "תחנות כמו בפרק 1 — אותיות חוזרות בחוכמה",
             ),
-            ChapterCard(5, "פרק 5", ""),
-            ChapterCard(6, "פרק 6", ""),
-            ChapterCard(7, "פרק 7", ""),
-            ChapterCard(8, "פרק 8", ""),
-            ChapterCard(9, "פרק 9", ""),
-            ChapterCard(10, "פרק 10", ""),
         )
 
     Box(modifier = modifier.fillMaxSize()) {

@@ -1,9 +1,5 @@
 package com.tal.hebrewdino.ui
 
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.size
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -88,8 +84,8 @@ fun AppNav() {
     val collectedEggStripCount =
         CollectedEggs.stripCount(
             beachOutroSeen = chapter1ProgressForStrip,
-            chapter2Completed = chapter2Completed,
             chapter3Completed = chapter3Completed,
+            chapter4Completed = chapter4Completed,
         )
 
     val unlockedChapter =
@@ -216,6 +212,8 @@ fun AppNav() {
             JourneyScreen(
                 unlockedLevel = chapter2UnlockedStation,
                 completedLevels = chapter2CompletedStations,
+                // After finishing all stations, Dino should stand by the tracks end marker and stay there.
+                endMarkerReached = chapter2Completed,
                 totalLevels = Chapter2Config.STATION_COUNT,
                 headerTitle = "פרק 2 - מוצאים עקבות לביצה הורודה",
                 collectedEggStripCount = collectedEggStripCount,
@@ -250,6 +248,7 @@ fun AppNav() {
 
         composable(NavRoutes.Ch3Intro) {
             Chapter3IntroScreen(
+                eggStripCount = collectedEggStripCount,
                 onContinue = {
                     scope.launch { progress.markChapter3IntroSeen() }
                     // Intro should show every entry, then continue to journey.
@@ -593,6 +592,7 @@ fun AppNav() {
 
         composable(NavRoutes.Ch3StoryOutro) {
             Chapter3OutroScreen(
+                eggStripCount = collectedEggStripCount,
                 onContinue = {
                     navController.navigate(NavRoutes.Chapters) {
                         popUpTo(NavRoutes.Ch3StoryOutro) { inclusive = true }
@@ -603,6 +603,7 @@ fun AppNav() {
 
         composable(NavRoutes.Ch4Intro) {
             Chapter4IntroScreen(
+                eggStripCount = collectedEggStripCount,
                 onContinue = {
                     scope.launch { progress.markChapter4IntroSeen() }
                     navController.navigate(NavRoutes.Ch4Letters) {
@@ -713,6 +714,7 @@ fun AppNav() {
 
         composable(NavRoutes.Ch4Outro) {
             Chapter4OutroScreen(
+                eggStripCount = collectedEggStripCount,
                 onContinue = {
                     navController.navigate(NavRoutes.Chapters) {
                         popUpTo(NavRoutes.Ch4Outro) { inclusive = true }

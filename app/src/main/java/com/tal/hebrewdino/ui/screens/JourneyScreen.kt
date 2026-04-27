@@ -117,6 +117,15 @@ private val roadFractions: List<Pair<Float, Float>> =
 
 private val stationFractions = JourneyMapLayout.stationFractions
 
+private data class JourneyProgressKey(
+    val unlockedLevel: Int,
+    val completedLevelsHash: Int,
+    val endMarkerReached: Boolean,
+    val endWalkThenContinue: Boolean,
+    val totalLevels: Int,
+    val playableLevels: Int,
+)
+
 enum class JourneyEndMarker {
     Egg,
     HomeCave,
@@ -222,8 +231,17 @@ fun JourneyScreen(
     var walking by remember { mutableStateOf(false) }
     var walkFrame by remember { mutableIntStateOf(0) }
     // Persist dino position across navigating into/out of stations.
-    var savedProgress by rememberSaveable { mutableStateOf<Float?>(null) }
-    val dinoProgress = remember(maxDinoF) {
+    val progressKey =
+        JourneyProgressKey(
+            unlockedLevel = unlockedLevel,
+            completedLevelsHash = completedLevels.hashCode(),
+            endMarkerReached = endMarkerReached,
+            endWalkThenContinue = endWalkThenContinue,
+            totalLevels = totalLevels,
+            playableLevels = playableLevels,
+        )
+    var savedProgress by rememberSaveable(progressKey) { mutableStateOf<Float?>(null) }
+    val dinoProgress = remember(progressKey, maxDinoF) {
         val raw = savedProgress
         val idle = idleDinoProgressAlongRoad()
         Animatable((raw ?: idle).coerceIn(0f, maxDinoF))
@@ -245,7 +263,17 @@ fun JourneyScreen(
     }
 
     // Auto-walk after a station is completed: stand near the next station (and after station 6, walk to the end marker).
-    LaunchedEffect(nextPlayableSuggested, completedLevels, unlockedLevel, playableLevels, maxDinoF, canWalkToEndMarker, baseMaxDinoF, endMarkerReached) {
+    LaunchedEffect(
+        nextPlayableSuggested,
+        completedLevels,
+        unlockedLevel,
+        playableLevels,
+        maxDinoF,
+        canWalkToEndMarker,
+        baseMaxDinoF,
+        endMarkerReached,
+        endWalkThenContinue,
+    ) {
         if (walking) return@LaunchedEffect
         if (JourneyEndMarkerIdle.suppressRepeatEndMarkerAutoWalk(endMarkerReached, canWalkToEndMarker)) return@LaunchedEffect
         val target = nextPlayableSuggested
@@ -255,8 +283,10 @@ fun JourneyScreen(
                 target in 2..playableLevels &&
                     target <= unlockedLevel &&
                     completedLevels.contains(target - 1) -> (target - 1).toFloat().coerceIn(0f, maxDinoF)
-                // Chapter end: after finishing the last station, walk to the end marker (egg / cave).
-                canWalkToEndMarker &&
+                // Finale flow: after finishing the last station, walk to the end marker (egg / cave / tracks).
+                // Normal journeys should not auto-walk to the end marker, otherwise Dino gets “stuck” there on re-entry.
+                endWalkThenContinue &&
+                    canWalkToEndMarker &&
                     target == (playableLevels + 1) &&
                     completedLevels.contains(playableLevels) -> maxDinoF
                 else -> return@LaunchedEffect

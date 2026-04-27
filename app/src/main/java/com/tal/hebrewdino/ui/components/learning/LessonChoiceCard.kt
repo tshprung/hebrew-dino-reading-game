@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -32,6 +33,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
@@ -39,6 +41,17 @@ import androidx.compose.ui.unit.sp
 import com.tal.hebrewdino.R
 import com.tal.hebrewdino.ui.domain.LessonChoice
 import com.tal.hebrewdino.ui.domain.LessonWordIllustrations
+
+/**
+ * Shared sizing constants for picture+caption lesson cards.
+ *
+ * These are referenced from multiple stations/games to keep a unified design and to avoid
+ * "caption gets clipped" issues when any screen estimates required layout height.
+ */
+const val LessonChoiceCardPictureAspect: Float = 121f / 160f // +~10% taller than the old 110/160
+// Taller reserved band so Hebrew glyphs never clip on small devices.
+val LessonChoiceCardCaptionAreaHeight: Dp = 66.dp
+val LessonChoiceCardCaptionSpacerHeight: Dp = 8.dp
 
 @Composable
 fun LessonChoiceCard(
@@ -184,11 +197,20 @@ fun LessonChoiceCard(
                 )
             }
         } else {
+            val pictureRotationZ =
+                if (choice.tileDrawable == R.drawable.lesson_pic_regel) {
+                    90f
+                } else {
+                    0f
+                }
             Box(
                 modifier =
                     Modifier
                         .size(width = cardWidth, height = cardHeight)
-                        .clip(RoundedCornerShape(18.dp)),
+                        .clip(RoundedCornerShape(18.dp))
+                        // Unify illustration presentation: all vector pictures sit on the same soft
+                        // background (also fixes medusa looking "cut out" vs others).
+                        .background(Color.White.copy(alpha = 0.55f)),
                 contentAlignment = Alignment.Center,
             ) {
                 Image(
@@ -200,6 +222,7 @@ fun LessonChoiceCard(
                             .graphicsLayer {
                                 scaleX = innerPictureScale
                                 scaleY = innerPictureScale
+                                rotationZ = pictureRotationZ
                                 transformOrigin = TransformOrigin(0.5f, 0.5f)
                             },
                     // For our vector lesson illustrations, Fit keeps all pictures visually consistent
@@ -209,14 +232,14 @@ fun LessonChoiceCard(
             }
         }
         if (showWordCaption) {
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(LessonChoiceCardCaptionSpacerHeight))
             val isPictureWord =
                 choice.tileDrawable != R.drawable.lesson_word_tile
             val targetCaptionSize =
                 if (isPictureWord) {
                     // Global tuning: picture-word captions read large; shrink baseline by ~10%,
                     // then AutoFit will further reduce for long words.
-                    (captionFontSize.value * 0.9f).sp
+                    (captionFontSize.value * 0.85f).sp
                 } else {
                     captionFontSize
                 }
@@ -224,13 +247,13 @@ fun LessonChoiceCard(
             // This must NOT depend on the word-specific target font size; otherwise cards get different heights.
             // Fixed caption band height: must be tall enough for the *largest* caption size
             // (otherwise glyphs get clipped on some devices).
-            val captionAreaHeight = 54.dp
             BoxWithConstraints(
                 modifier =
                     Modifier
                         .width(cardWidth + 8.dp)
-                        .height(captionAreaHeight),
-                contentAlignment = Alignment.Center,
+                        .height(LessonChoiceCardCaptionAreaHeight),
+                // Keep the caption slightly higher so descenders don't get clipped on small devices.
+                contentAlignment = Alignment.TopCenter,
             ) {
                 AutoFitSingleLineText(
                     text = choice.word,
@@ -242,7 +265,12 @@ fun LessonChoiceCard(
                             color = Color(0xFF0B2B3D),
                         ),
                     // Fill the reserved area so layout is stable; AutoFit handles font shrink.
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            // Picture-card captions: lift baseline ~20% within the reserved caption band
+                            // so text stays visible and readable under the picture frame on small devices.
+                            .offset(y = if (isPictureWord) (-0.20f * maxHeight.value).dp else 0.dp),
                     minFontSize = 10.sp,
                 )
             }

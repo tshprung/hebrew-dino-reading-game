@@ -33,12 +33,14 @@ object Chapter1Station4PictureInnerScale {
             // Tweaked again: +20%.
             isBed -> 0.96f
             // Same drawable as station 5 (`lesson_pic_motzetz`); match [Chapter1Station5And6ImageMatchInnerScale] pacifier scale.
-            isPacifier -> (2f / 3f)
+            // New request: pacifier +50% everywhere.
+            isPacifier -> 1.5f
             isTrafficLight -> 1f
             isFence -> 0.75f
             isTeeth -> 1f
             isGiraffe -> 1f
-            isTable || isCar -> 1f
+            isTable -> 1.2f
+            isCar -> 1f
             isCurtain -> 1f
             isWaffle -> 1f
             isLeg || isRose -> 1f

@@ -22,7 +22,7 @@ fun Chapter2OutroScreen(
                 "ועכשיו יש כיוון ברור.\n" +
                 "\n" +
                 "בואו נתקדם אחרי העקבות בפרק הבא.",
-        eggStripCount = 2,
+        eggStripCount = 1,
         companion = ChapterLobbyCompanion.DinoOnly,
         narrationPlaying = false,
         voiceAssetPath = AudioClips.StoryMountainApproachOutro,
@@ -34,6 +34,7 @@ fun Chapter2OutroScreen(
 
 @Composable
 fun Chapter3OutroScreen(
+    eggStripCount: Int,
     onContinue: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -47,7 +48,7 @@ fun Chapter3OutroScreen(
                 "\n" +
                 "הוא אוסף אותה בזהירות,\n" +
                 "וממשיך במסע למצוא את הביצה האחרונה.",
-        eggStripCount = 3,
+        eggStripCount = eggStripCount,
         companion = ChapterLobbyCompanion.DinoOnly,
         narrationPlaying = false,
         voiceAssetPath = AudioClips.StoryMountainPathOutro,
@@ -59,6 +60,7 @@ fun Chapter3OutroScreen(
 
 @Composable
 fun Chapter4IntroScreen(
+    eggStripCount: Int,
     onContinue: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -71,7 +73,7 @@ fun Chapter4IntroScreen(
                 "אבל בדרך יש לנו לעבור את הביצה הגדולה.\n" +
                 "\n" +
                 "תעזור/י לי?",
-        eggStripCount = 3,
+        eggStripCount = eggStripCount,
         companion = ChapterLobbyCompanion.DinoOnly,
         narrationPlaying = false,
         voiceAssetPath = AudioClips.StoryCh4Intro,
@@ -83,6 +85,7 @@ fun Chapter4IntroScreen(
 
 @Composable
 fun Chapter4OutroScreen(
+    eggStripCount: Int,
     onContinue: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -96,7 +99,7 @@ fun Chapter4OutroScreen(
                 "\"תודה שעזרת לי!\"\n" +
                 "\n" +
                 "כל הכבוד! 🎉",
-        eggStripCount = 3,
+        eggStripCount = eggStripCount,
         companion = ChapterLobbyCompanion.DinoAndMom,
         narrationPlaying = false,
         voiceAssetPath = AudioClips.StoryCh4HomeOutro,

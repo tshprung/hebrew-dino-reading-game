@@ -24,8 +24,8 @@ class Chapter1Station4PictureInnerScaleTest {
 
     @Test
     fun pacifier_matchesStation5() {
-        assertEquals(2f / 3f, Chapter1Station4PictureInnerScale.likeStation5("מוצץ", 0), 0f)
-        assertEquals(2f / 3f, Chapter1Station4PictureInnerScale.likeStation5("x", R.drawable.lesson_pic_motzetz), 0f)
+        assertEquals(1.5f, Chapter1Station4PictureInnerScale.likeStation5("מוצץ", 0), 0f)
+        assertEquals(1.5f, Chapter1Station4PictureInnerScale.likeStation5("x", R.drawable.lesson_pic_motzetz), 0f)
     }
 
     @Test

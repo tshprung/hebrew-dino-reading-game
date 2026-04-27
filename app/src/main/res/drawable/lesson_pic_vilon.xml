@@ -4,6 +4,22 @@
     android:height="110dp"
     android:viewportWidth="120"
     android:viewportHeight="110">
+    <!-- Soft backplate to match other illustrations -->
+    <path
+        android:fillColor="#FFF7F9FC"
+        android:strokeColor="#240B2B3D"
+        android:strokeWidth="2"
+        android:pathData="M18,14
+            h84
+            a10,10 0 0,1 10,10
+            v72
+            a10,10 0 0,1 -10,10
+            h-84
+            a10,10 0 0,1 -10,-10
+            v-72
+            a10,10 0 0,1 10,-10
+            z" />
+
     <!-- Simple curtain: rod + two panels -->
     <path
         android:fillColor="#5D4037"

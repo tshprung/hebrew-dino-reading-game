@@ -6,19 +6,19 @@
     android:viewportHeight="110">
     <!-- Simple car (side view) -->
     <path
-        android:fillColor="#1E88E5"
+        android:fillColor="#E53935"
         android:pathData="M22,62 C22,52 34,46 48,46 L54,40 L86,40 L94,52 L104,56 L104,70 L16,70 Z" />
     <path
-        android:fillColor="#0D47A1"
+        android:fillColor="#B71C1C"
         android:pathData="M30,56 L78,56 L84,62 L28,62 Z" />
     <path
         android:fillColor="#E3F2FD"
         android:pathData="M58,44 L82,44 L88,52 L60,52 Z" />
     <path
-        android:fillColor="#0D47A1"
+        android:fillColor="#B71C1C"
         android:pathData="M26,70 L34,70 A10,10 0 0,1 46,70 L46,78 L26,78 Z" />
     <path
-        android:fillColor="#0D47A1"
+        android:fillColor="#B71C1C"
         android:pathData="M74,70 L86,70 A10,10 0 0,1 98,70 L98,78 L74,78 Z" />
     <path
         android:fillColor="#B0BEC5"

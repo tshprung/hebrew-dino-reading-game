@@ -1,20 +1,16 @@
 package com.tal.hebrewdino.ui.game
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
@@ -25,8 +21,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -37,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.tal.hebrewdino.R
 import com.tal.hebrewdino.ui.components.learning.LessonChoiceCard
+import com.tal.hebrewdino.ui.components.learning.LessonChoiceCardPictureAspect
 import com.tal.hebrewdino.ui.components.learning.captionFontSizeForWordCard
 import com.tal.hebrewdino.ui.domain.LessonChoice
 import com.tal.hebrewdino.ui.domain.Question
@@ -114,18 +109,20 @@ fun PictureStartsWithGame(
                     )
 
                 // Match Station 5 sizing rules (computed width/height + caption size from card width).
-                val cardGap = 0.dp
+                // Even though station 4 shows a single card, we size it as if it were one of the
+                // three station-5 cards so the look (frame + caption) is identical across stations.
+                val cardGap = 10.dp
                 var cardW =
                     ScreenFit.rowChildWidthDp(
                         rowInnerWidth = availableW.coerceAtMost(frameMaxW),
-                        count = 1,
+                        count = 3,
                         gap = cardGap,
                         minEach = 72.dp,
                         maxEach = 168.dp,
                     )
                 // Respect authored max width constraints.
                 cardW = cardW.coerceAtMost(frameMaxW).coerceAtMost(availableW)
-                val cardH = cardW * (110f / 160f)
+                val cardH = cardW * LessonChoiceCardPictureAspect
                 val captionSp =
                     captionFontSizeForWordCard(
                         density = density,

@@ -1470,28 +1470,10 @@ fun GameScreen(
                                         } else {
                                             140.dp
                                         },
-                                    // Station 4 request: word + image doubled, frame (box) slightly smaller.
-                                    promptWordSizeMultiplier =
-                                        if (isSagaEpisode(chapterId) && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
-                                            2f
-                                        } else {
-                                            1f
-                                        },
-                                    // Station 4 screenshots: the outer card should be wider (more rectangle).
-                                    pictureFrameMaxWidthFraction =
-                                        if (isSagaEpisode(chapterId) && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
-                                            // Station 4: frame (box) ~20% smaller.
-                                            0.25f
-                                        } else {
-                                            null
-                                        },
-                                    pictureFrameMinWidth =
-                                        if (isSagaEpisode(chapterId) && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
-                                            // Station 4: frame (box) ~20% smaller.
-                                            112.dp
-                                        } else {
-                                            200.dp
-                                        },
+                                    // Keep picture-caption sizing consistent across stations (like station 5).
+                                    promptWordSizeMultiplier = 1f,
+                                    pictureFrameMaxWidthFraction = null,
+                                    pictureFrameMinWidth = 200.dp,
                                     // Normalize “perceived” picture size: some assets (medusa/house) read too large,
                                     // while emoji/placeholder art reads too small.
                                     pictureInnerScale = { word, tileDrawable ->

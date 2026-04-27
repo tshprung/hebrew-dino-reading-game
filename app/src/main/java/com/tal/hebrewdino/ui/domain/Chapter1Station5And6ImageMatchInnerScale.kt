@@ -34,7 +34,8 @@ object Chapter1Station5And6ImageMatchInnerScale {
             isTeeth -> 1f
             // Feedback: giraffe 2x.
             isGiraffe -> 1f
-            isTable || isCar -> 1f
+            isTable -> 1.2f
+            isCar -> 1f
             isCurtain -> 1f
             // Feedback: shrink waffle 2x (relative to default 2f).
             isWaffle -> 1f
@@ -48,7 +49,8 @@ object Chapter1Station5And6ImageMatchInnerScale {
             // Tweaked again: +20%.
             isBed -> 0.72f
             // Episode 1 station 5 feedback: pacifier reads huge; make it 1/3 of the default (2x) scale.
-            isPacifier -> (2f / 3f)
+            // New request: pacifier +50% everywhere.
+            isPacifier -> 1.5f
             else -> 2f
         }
     }
