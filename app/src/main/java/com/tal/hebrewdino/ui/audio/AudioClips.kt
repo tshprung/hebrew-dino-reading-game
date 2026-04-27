@@ -31,7 +31,7 @@ object AudioClips {
     /** Episode 1 station 4: "באיזו אות מתחילה המילה" (then play the word clip, e.g. "ברווז"). */
     const val WhichLetterDoesWordStart = "audio/which_letter_does_word_start.wav"
 
-    /** Episode 1 station 6: "חברו בין אות למילה המתאימה". */
+    /** Episode 1 station 6: "ליחצו על אות והמילה שמתחילה באותה האות". */
     const val MatchLetterToWordInstructions = "audio/match_letter_to_word_instructions.wav"
 
     /** Episode 1 station 2 prefix: "פוצץ את הבלונים עם האות". */
@@ -89,6 +89,9 @@ object AudioClips {
     const val StoryMountainPathOutro = "audio/story_mountain_path_outro.wav"
     const val StoryCh4Intro = "audio/story_ch4_intro.wav"
     const val StoryCh4HomeOutro = "audio/story_ch4_home_outro.wav"
+    // Mid-chapter boost (after station 3)
+    const val StoryCh1MidBoost = "audio/story_ch1_mid_boost.wav"
+    const val StoryCh2MidBoost = "audio/story_ch2_mid_boost.wav"
 
     /**
      * Optional per-word voice lines, keyed by catalog entry id (e.g. `w_ב_1`).
@@ -109,6 +112,7 @@ object AudioClips {
                     "ג" -> "gimel"
                     "ד" -> "dalet"
                     "ה" -> "heh"
+                    "ו" -> "vav"
                     "ח" -> "chet"
                     "ט" -> "tet"
                     "י" -> "yod"
@@ -142,6 +146,7 @@ object AudioClips {
             "ל" -> "audio/choose_lamed.wav"
             "ד" -> "audio/choose_dalet.wav"
             "ה" -> "audio/choose_heh.wav"
+            "ו" -> "audio/choose_vav.wav"
             "ח" -> "audio/choose_chet.wav"
             "ט" -> "audio/choose_tet.wav"
             "י" -> "audio/choose_yod.wav"
@@ -163,6 +168,7 @@ object AudioClips {
             "ג" -> "audio/letter_gimel.wav"
             "ד" -> "audio/letter_dalet.wav"
             "ה" -> "audio/letter_heh.wav"
+            "ו" -> "audio/letter_vav.wav"
             "ח" -> "audio/letter_chet.wav"
             "ט" -> "audio/letter_tet.wav"
             "י" -> "audio/letter_yod.wav"

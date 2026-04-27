@@ -8,10 +8,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-/**
- * Unified audio + light haptics for kid-facing stations. Visuals stay in composables
- * (scale, shake, sparkles) triggered alongside these calls.
- */
+/** Unified audio + light haptics for kid-facing stations; visuals stay in composables. */
 class GameFeedback(
     private val scope: CoroutineScope,
     private val sfx: SoundPoolPlayer,

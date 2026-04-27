@@ -26,11 +26,11 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
@@ -64,11 +64,14 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import com.tal.hebrewdino.R
+import com.tal.hebrewdino.ui.components.ChapterNavChipStyles
 import com.tal.hebrewdino.ui.components.learning.DinoNestMark
+import com.tal.hebrewdino.ui.components.learning.StoryEggStrip
 import com.tal.hebrewdino.ui.domain.Chapter1Config
 import com.tal.hebrewdino.ui.domain.JourneyEndMarkerIdle
 import com.tal.hebrewdino.ui.domain.JourneyMapLayout
@@ -82,6 +85,12 @@ import kotlinx.coroutines.flow.first
 import kotlin.math.abs
 import kotlin.math.floor
 import kotlin.math.roundToInt
+
+/** ~1 cm gap under the back button before the egg strip. */
+private val JourneySpaceBelowBackBeforeEggs = 38.dp
+
+/** Space between journey header row and title (matches chapters top breathing room). */
+private val JourneyHeaderToBodyGap = 8.dp
 
 private val walkFrames =
     listOf(
@@ -108,11 +117,21 @@ private val roadFractions: List<Pair<Float, Float>> =
 
 private val stationFractions = JourneyMapLayout.stationFractions
 
+private data class JourneyProgressKey(
+    val unlockedLevel: Int,
+    val completedLevelsHash: Int,
+    val endMarkerReached: Boolean,
+    val endWalkThenContinue: Boolean,
+    val totalLevels: Int,
+    val playableLevels: Int,
+)
+
 enum class JourneyEndMarker {
     Egg,
     HomeCave,
     PinkEgg,
     PurpleEgg,
+    Tracks,
     /** Chapter 4: distinct goal after all six stations (smart reinforcement arc). */
     BigEgg,
 }
@@ -170,12 +189,16 @@ fun JourneyScreen(
     companionImageRes: Int? = null,
     endMarker: JourneyEndMarker = JourneyEndMarker.Egg,
     backgroundRes: Int = R.drawable.forest_bg_journey_road,
+    /** Eggs already collected in prior chapter finales (shown under the top bar). */
+    collectedEggStripCount: Int = 0,
     modifier: Modifier = Modifier,
 ) {
     val resolvedSubtitle = headerSubtitle // when null, hide subtitle (chapter 1 request)
     val nextPlayableSuggested =
         (1..playableLevels).firstOrNull { !completedLevels.contains(it) } ?: (playableLevels + 1)
     val allPlayableComplete = (1..playableLevels).all { level -> completedLevels.contains(level) }
+    /** Chapter 1 finale route: block entering stations / quick-play until outro navigation runs. */
+    val journeyNavigationLocked = endWalkThenContinue
     // Only add an “end marker walk” when this journey is fully playable (chapter end).
     val canWalkToEndMarker = (playableLevels == totalLevels) && allPlayableComplete
     val baseMaxDinoF = (minOf(totalLevels, stationFractions.size) - 1).coerceAtLeast(0).toFloat()
@@ -208,8 +231,17 @@ fun JourneyScreen(
     var walking by remember { mutableStateOf(false) }
     var walkFrame by remember { mutableIntStateOf(0) }
     // Persist dino position across navigating into/out of stations.
-    var savedProgress by rememberSaveable { mutableStateOf<Float?>(null) }
-    val dinoProgress = remember(maxDinoF) {
+    val progressKey =
+        JourneyProgressKey(
+            unlockedLevel = unlockedLevel,
+            completedLevelsHash = completedLevels.hashCode(),
+            endMarkerReached = endMarkerReached,
+            endWalkThenContinue = endWalkThenContinue,
+            totalLevels = totalLevels,
+            playableLevels = playableLevels,
+        )
+    var savedProgress by rememberSaveable(progressKey) { mutableStateOf<Float?>(null) }
+    val dinoProgress = remember(progressKey, maxDinoF) {
         val raw = savedProgress
         val idle = idleDinoProgressAlongRoad()
         Animatable((raw ?: idle).coerceIn(0f, maxDinoF))
@@ -231,7 +263,17 @@ fun JourneyScreen(
     }
 
     // Auto-walk after a station is completed: stand near the next station (and after station 6, walk to the end marker).
-    LaunchedEffect(nextPlayableSuggested, completedLevels, unlockedLevel, playableLevels, maxDinoF, canWalkToEndMarker, baseMaxDinoF, endMarkerReached) {
+    LaunchedEffect(
+        nextPlayableSuggested,
+        completedLevels,
+        unlockedLevel,
+        playableLevels,
+        maxDinoF,
+        canWalkToEndMarker,
+        baseMaxDinoF,
+        endMarkerReached,
+        endWalkThenContinue,
+    ) {
         if (walking) return@LaunchedEffect
         if (JourneyEndMarkerIdle.suppressRepeatEndMarkerAutoWalk(endMarkerReached, canWalkToEndMarker)) return@LaunchedEffect
         val target = nextPlayableSuggested
@@ -241,8 +283,10 @@ fun JourneyScreen(
                 target in 2..playableLevels &&
                     target <= unlockedLevel &&
                     completedLevels.contains(target - 1) -> (target - 1).toFloat().coerceIn(0f, maxDinoF)
-                // Chapter end: after finishing the last station, walk to the end marker (egg / cave).
-                canWalkToEndMarker &&
+                // Finale flow: after finishing the last station, walk to the end marker (egg / cave / tracks).
+                // Normal journeys should not auto-walk to the end marker, otherwise Dino gets “stuck” there on re-entry.
+                endWalkThenContinue &&
+                    canWalkToEndMarker &&
                     target == (playableLevels + 1) &&
                     completedLevels.contains(playableLevels) -> maxDinoF
                 else -> return@LaunchedEffect
@@ -275,8 +319,9 @@ fun JourneyScreen(
         onEndWalkComplete?.invoke()
     }
 
-    val scroll = rememberScrollState()
-    val roadScroll = rememberScrollState() // kept for API compatibility; no longer used for horizontal scroll.
+    val roadScroll = rememberScrollState() // API compat; not used for horizontal scroll.
+    val journeyNavChipColors = ChapterNavChipStyles.outlinedButtonColors()
+    val journeyNavChipTextStyle = ChapterNavChipStyles.labelTextStyle()
 
     Box(modifier = modifier.fillMaxSize()) {
         Image(
@@ -286,133 +331,133 @@ fun JourneyScreen(
             contentScale = ContentScale.Crop,
         )
 
-        Box(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .statusBarsPadding()
-                    .padding(horizontal = 8.dp, vertical = 4.dp)
-                    .zIndex(10f)
-                    .align(Alignment.TopCenter),
-        ) {
+        Column(modifier = Modifier.fillMaxSize().statusBarsPadding()) {
+            // RTL Row: physical right = חזור + ביצים, center = כותרת + שחק + אותיות, physical left = בדיקה.
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(start = 8.dp, end = 8.dp, top = 4.dp),
+                verticalAlignment = Alignment.Top,
             ) {
-                OutlinedButton(
-                    onClick = onBack,
-                    enabled = true,
-                    colors =
-                        ButtonDefaults.outlinedButtonColors(
-                            containerColor = Color.White.copy(alpha = 0.86f),
-                            contentColor = Color(0xFF0B2B3D),
-                        ),
-                    modifier = Modifier.height(44.dp),
-                ) {
-                    Text(text = "חזור", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    OutlinedButton(onClick = onBack, enabled = true, colors = journeyNavChipColors) {
+                        Text(text = "חזור", style = journeyNavChipTextStyle)
+                    }
+                    if (collectedEggStripCount > 0) {
+                        Spacer(modifier = Modifier.height(JourneySpaceBelowBackBeforeEggs))
+                        StoryEggStrip(foundCount = collectedEggStripCount)
+                    }
                 }
-                if (onDebugUnlockNext != null) {
-                    OutlinedButton(
-                        onClick = onDebugUnlockNext,
-                        enabled = true,
+                Column(
+                    modifier =
+                        Modifier
+                            .weight(1f)
+                            .padding(horizontal = 6.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Text(
+                        text = headerTitle,
+                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black),
+                        color = Color(0xFF0B2B3D),
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    if (!resolvedSubtitle.isNullOrBlank()) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = resolvedSubtitle,
+                            modifier = Modifier.fillMaxWidth(),
+                            style =
+                                if (headerSubtitleCompact) {
+                                    MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Medium)
+                                } else {
+                                    MaterialTheme.typography.titleMedium
+                                },
+                            color = Color(0xFF0B2B3D).copy(alpha = if (headerSubtitleCompact) 0.78f else 1f),
+                            textAlign = TextAlign.Center,
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Button(
+                        onClick = { if (!walking && !journeyNavigationLocked) onPlayLevel(quickPlayLevel) },
+                        modifier = Modifier.wrapContentWidth().height(56.dp),
+                        enabled = !walking && !journeyNavigationLocked,
                         colors =
-                            ButtonDefaults.outlinedButtonColors(
-                                containerColor = Color.White.copy(alpha = 0.86f),
+                            ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFFFFC400).copy(alpha = 0.95f),
                                 contentColor = Color(0xFF0B2B3D),
                             ),
-                        modifier = Modifier.height(40.dp),
                     ) {
-                        Text("בדיקה")
+                        Text(
+                            text = "שחק עכשיו (תחנה $quickPlayLevel)",
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black),
+                            maxLines = 2,
+                            textAlign = TextAlign.Center,
+                        )
+                    }
+                    if (onLettersHelp != null) {
+                        Spacer(modifier = Modifier.height(6.dp))
+                        OutlinedButton(
+                            onClick = onLettersHelp,
+                            enabled = !walking && !journeyNavigationLocked,
+                            colors =
+                                ButtonDefaults.outlinedButtonColors(
+                                    containerColor = Color.White.copy(alpha = 0.86f),
+                                    contentColor = Color(0xFF0B2B3D),
+                                ),
+                            modifier = Modifier.wrapContentWidth().height(44.dp),
+                        ) {
+                            Text("אותיות", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold))
+                        }
+                    }
+                }
+                if (onDebugUnlockNext != null) {
+                    OutlinedButton(onClick = onDebugUnlockNext, enabled = true, colors = journeyNavChipColors) {
+                        Text("בדיקה", style = journeyNavChipTextStyle)
                     }
                 } else {
                     Spacer(modifier = Modifier.width(1.dp))
                 }
             }
-        }
 
-        Column(
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    // Push scroll content *below* the top buttons so it doesn't intercept taps.
-                    .padding(top = 56.dp)
-                    .verticalScroll(scroll)
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Text(
-                text = headerTitle,
-                style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Black),
-                color = Color(0xFF0B2B3D),
-            )
-            if (!resolvedSubtitle.isNullOrBlank()) {
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = resolvedSubtitle,
-                    modifier = Modifier.fillMaxWidth(),
-                    style =
-                        if (headerSubtitleCompact) {
-                            MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Medium)
-                        } else {
-                            MaterialTheme.typography.titleLarge
-                        },
-                    color = Color(0xFF0B2B3D).copy(alpha = if (headerSubtitleCompact) 0.78f else 1f),
-                    textAlign = TextAlign.Center,
-                )
-            }
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(JourneyHeaderToBodyGap))
 
-            Button(
-                onClick = { if (!walking) onPlayLevel(quickPlayLevel) },
-                modifier = Modifier.width(360.dp).height(84.dp),
-                enabled = !walking,
-                colors =
-                    ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFFFFC400).copy(alpha = 0.95f),
-                        contentColor = Color(0xFF0B2B3D),
-                    ),
+            BoxWithConstraints(
+                modifier =
+                    Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .padding(start = 12.dp, end = 12.dp, bottom = 8.dp),
             ) {
-                Text(
-                    text = "שחק עכשיו (תחנה $quickPlayLevel)",
-                    style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Black),
-                )
-            }
-            Spacer(modifier = Modifier.height(12.dp))
-            if (onLettersHelp != null) {
-                OutlinedButton(
-                    onClick = onLettersHelp,
-                    enabled = !walking,
-                    colors =
-                        ButtonDefaults.outlinedButtonColors(
-                            containerColor = Color.White.copy(alpha = 0.86f),
-                            contentColor = Color(0xFF0B2B3D),
-                        ),
-                    modifier = Modifier.width(220.dp).height(52.dp),
+                val roadH = (maxHeight - 8.dp).coerceIn(156.dp, 292.dp)
+
+                Column(
+                    modifier = Modifier.fillMaxSize(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    Text("אותיות", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
+                    JourneyRoadStrip(
+                        totalLevels = totalLevels,
+                        playableLevels = playableLevels,
+                        unlockedLevel = unlockedLevel,
+                        completedLevels = completedLevels,
+                        nextSuggested = nextPlayableSuggested,
+                        completedPlayableCount = completedPlayableCount,
+                        goalSegmentComplete = goalSegmentComplete,
+                        walking = walking,
+                        navigationLocked = journeyNavigationLocked,
+                        dinoProgress = dinoProgress.value,
+                        walkDrawable = walkFrames[walkFrame],
+                        companionImageRes = companionImageRes,
+                        roadScrollState = roadScroll,
+                        endMarker = endMarker,
+                        roadHeight = roadH,
+                        onStationClick = { levelId ->
+                            if (!walking && !journeyNavigationLocked) onPlayLevel(levelId)
+                        },
+                    )
                 }
-                Spacer(modifier = Modifier.height(10.dp))
             }
-
-            JourneyRoadStrip(
-                totalLevels = totalLevels,
-                playableLevels = playableLevels,
-                unlockedLevel = unlockedLevel,
-                completedLevels = completedLevels,
-                nextSuggested = nextPlayableSuggested,
-                completedPlayableCount = completedPlayableCount,
-                goalSegmentComplete = goalSegmentComplete,
-                walking = walking,
-                dinoProgress = dinoProgress.value,
-                walkDrawable = walkFrames[walkFrame],
-                companionImageRes = companionImageRes,
-                roadScrollState = roadScroll,
-                endMarker = endMarker,
-                onStationClick = { levelId -> if (!walking) onPlayLevel(levelId) },
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }
@@ -428,15 +473,17 @@ private fun JourneyRoadStrip(
     /** All playable stations finished while more stations exist on the map (e.g. chapter 3). */
     goalSegmentComplete: Boolean,
     walking: Boolean,
+    /** When true (e.g. chapter 1 finale walk → outro), do not open any station from the map. */
+    navigationLocked: Boolean = false,
     dinoProgress: Float,
     walkDrawable: Int,
     companionImageRes: Int?,
     roadScrollState: ScrollState,
     endMarker: JourneyEndMarker,
+    roadHeight: Dp = 300.dp,
     onStationClick: (Int) -> Unit,
 ) {
     val density = LocalDensity.current
-    val roadHeight = 300.dp
 
     // Use a physical LTR coordinate space for x-offset math, while the overall app stays RTL.
     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
@@ -582,7 +629,7 @@ private fun JourneyRoadStrip(
                 when (endMarker) {
                     JourneyEndMarker.Egg ->
                         Image(
-                            painter = painterResource(id = R.drawable.finish_marker_egg),
+                            painter = painterResource(id = R.drawable.egg_white),
                             contentDescription = null,
                             modifier = Modifier.size(110.dp).scale(goalPulse),
                             contentScale = ContentScale.Fit,
@@ -607,6 +654,13 @@ private fun JourneyRoadStrip(
                             modifier = Modifier.size(110.dp).scale(goalPulse),
                             contentScale = ContentScale.Fit,
                         )
+                    JourneyEndMarker.Tracks ->
+                        Image(
+                            painter = painterResource(id = R.drawable.finish_marker_tracks),
+                            contentDescription = null,
+                            modifier = Modifier.size(104.dp).scale(goalPulse),
+                            contentScale = ContentScale.Fit,
+                        )
                     JourneyEndMarker.BigEgg ->
                         Image(
                             painter = painterResource(id = R.drawable.finish_marker_big_egg),
@@ -629,6 +683,7 @@ private fun JourneyRoadStrip(
                     playable &&
                         levelId <= unlockedLevel &&
                         !walking &&
+                        !navigationLocked &&
                         (levelId == nextSuggested || completed)
                 val lockedWaiting =
                     playable &&
@@ -747,10 +802,11 @@ private fun JourneyStationMarker(
             gatedOff || isFutureTrack -> null
             isLast && completed ->
                 when (endMarker) {
-                    JourneyEndMarker.Egg -> R.drawable.finish_marker_egg
+                    JourneyEndMarker.Egg -> R.drawable.egg_white
                     JourneyEndMarker.HomeCave -> R.drawable.egg_found
                     JourneyEndMarker.PinkEgg -> R.drawable.egg_pink
                     JourneyEndMarker.PurpleEgg -> R.drawable.egg_purple
+                    JourneyEndMarker.Tracks -> R.drawable.finish_marker_tracks
                     JourneyEndMarker.BigEgg -> R.drawable.finish_marker_big_egg
                 }
             completed -> R.drawable.egg_found
@@ -832,7 +888,7 @@ private fun JourneyStationMarker(
         Box(
                     modifier =
                         Modifier
-                            .width(88.dp)
+                            .width(if (completed) 104.dp else 88.dp)
                             .background(
                                 when {
                                     isFutureTrack -> Color.White.copy(alpha = 0.36f)
@@ -849,9 +905,19 @@ private fun JourneyStationMarker(
             Text(
                 text = subtitle,
                 style =
-                    MaterialTheme.typography.bodySmall.copy(
-                        fontWeight = if (isFutureTrack) FontWeight.Medium else FontWeight.Bold,
-                    ),
+                    run {
+                        val base = MaterialTheme.typography.bodySmall
+                        when {
+                            completed ->
+                                base.copy(
+                                    fontSize = base.fontSize * 2,
+                                    lineHeight = base.lineHeight * 2,
+                                    fontWeight = FontWeight.Bold,
+                                )
+                            isFutureTrack -> base.copy(fontWeight = FontWeight.Medium)
+                            else -> base.copy(fontWeight = FontWeight.Bold)
+                        }
+                    },
                 color = Color(0xFF0B2B3D).copy(alpha = if (isFutureTrack) 0.48f else 1f),
                 textAlign = TextAlign.Center,
             )

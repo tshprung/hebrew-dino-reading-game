@@ -4,7 +4,6 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -35,7 +34,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
@@ -44,12 +42,10 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.LayoutDirection
@@ -58,9 +54,12 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.tal.hebrewdino.R
+import com.tal.hebrewdino.ui.components.learning.captionFontSizeForWordCard
 import com.tal.hebrewdino.ui.components.learning.LessonChoiceCard
+import com.tal.hebrewdino.ui.components.learning.LessonChoiceCardCaptionAreaHeight
+import com.tal.hebrewdino.ui.components.learning.LessonChoiceCardCaptionSpacerHeight
+import com.tal.hebrewdino.ui.components.learning.LessonChoiceCardPictureAspect
 import com.tal.hebrewdino.ui.domain.LessonChoice
-import com.tal.hebrewdino.ui.domain.LessonWordIllustrations
 import com.tal.hebrewdino.ui.layout.ScreenFit
 import kotlin.math.roundToInt
 import kotlin.math.min
@@ -97,6 +96,9 @@ fun MatchLetterToWordGame(
     /** Called when a wrong match is attempted (picked letter + picked word choice id). */
     onWrongMatch: ((pickedLetter: String, pickedChoiceId: String) -> Unit)? = null,
     onSolved: () -> Unit,
+    /** Optional saga context for [captionFontSizeForWordCard]. */
+    chapterId: Int? = null,
+    stationId: Int? = null,
     modifier: Modifier = Modifier,
 ) {
     val maxPairs = choices.take(3)
@@ -228,13 +230,18 @@ fun MatchLetterToWordGame(
 
             // Estimate needed height so nothing clips. We scale the whole board uniformly.
             val landscapePictureLetterGap = 56.dp * 1.8f
+            // Estimate must match `LessonChoiceCard` sizing, otherwise captions can get clipped
+            // when we scale the whole board to fit the available height.
+            val maxCardWForEstimate = 168.dp
+            val maxCardHForEstimate = maxCardWForEstimate * LessonChoiceCardPictureAspect
+            val onePictureCardOuterH = maxCardHForEstimate + LessonChoiceCardCaptionSpacerHeight + LessonChoiceCardCaptionAreaHeight
             val rowNeeds =
                 if (isLandscape) {
                     // pictures row + letters row + gaps
-                    (110.dp + 6.dp + 26.dp) + landscapePictureLetterGap + 88.dp + 12.dp
+                    onePictureCardOuterH + landscapePictureLetterGap + 88.dp + 12.dp
                 } else {
                     // 3 stacked picture cards with captions + some spacing
-                    val perItemH = 110.dp + 6.dp + 26.dp + 12.dp
+                    val perItemH = onePictureCardOuterH + 12.dp
                     (perItemH * 3) + 8.dp
                 }
             val scaleToFit = min(1f, availableH.value / rowNeeds.value)
@@ -331,14 +338,7 @@ fun MatchLetterToWordGame(
                             minEach = 72.dp,
                             maxEach = 168.dp,
                         )
-                    val cardH = cardW * (110f / 160f)
-                    val captionSp =
-                        with(density) {
-                            (cardW.toPx() * 0.22f * captionSizeMultiplier).coerceIn(
-                                22f * fontScale * captionSizeMultiplier,
-                                40f * fontScale * captionSizeMultiplier,
-                            ).toSp()
-                        }
+                    val cardH = cardW * LessonChoiceCardPictureAspect
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(gap, Alignment.CenterHorizontally),
@@ -365,6 +365,15 @@ fun MatchLetterToWordGame(
                                 wrongFlash.snapTo(1f)
                                 wrongFlash.animateTo(0f, tween(220))
                             }
+                            val captionSp =
+                                captionFontSizeForWordCard(
+                                    density = density,
+                                    cardWidth = cardW,
+                                    word = ch.word,
+                                    sizeMultiplier = captionSizeMultiplier,
+                                    chapterId = chapterId,
+                                    stationId = stationId,
+                                )
                             LessonChoiceCard(
                                 choice = ch,
                                 enabled = enabled && !lockedThis,
@@ -600,14 +609,16 @@ fun MatchLetterToWordGame(
                             val selectedThis = selectedChoiceId == ch.id
                             // Match station 5 sizing for the card inside the word column.
                             val cardW = (wordColW * 0.86f).coerceAtMost(168.dp).coerceAtLeast(72.dp)
-                            val cardH = cardW * (110f / 160f)
+                            val cardH = cardW * LessonChoiceCardPictureAspect
                             val captionSp =
-                                with(density) {
-                                    (cardW.toPx() * 0.22f * captionSizeMultiplier).coerceIn(
-                                        22f * fontScale * captionSizeMultiplier,
-                                        40f * fontScale * captionSizeMultiplier,
-                                    ).toSp()
-                                }
+                                captionFontSizeForWordCard(
+                                    density = density,
+                                    cardWidth = cardW,
+                                    word = ch.word,
+                                    sizeMultiplier = captionSizeMultiplier,
+                                    chapterId = chapterId,
+                                    stationId = stationId,
+                                )
                             val pop = remember(ch.id, contentKey) { Animatable(1f) }
                             val wrongFlash = remember(ch.id, contentKey) { Animatable(0f) }
                             LaunchedEffect(hintEpoch, hintChoiceId, ch.id, contentKey) {
@@ -663,92 +674,5 @@ fun MatchLetterToWordGame(
             }
         }
     }
-    }
-}
-
-@Composable
-private fun MatchWordPicture(
-    choice: LessonChoice,
-    width: Dp,
-    height: Dp,
-    lockedThis: Boolean,
-) {
-    val density = LocalDensity.current
-    when {
-        choice.tileDrawable == R.drawable.lesson_word_tile -> {
-            Box(
-                modifier =
-                    Modifier
-                        .size(width = width, height = height)
-                        .clip(RoundedCornerShape(18.dp))
-                        .background(
-                            Color(
-                                red = ((choice.tintArgb shr 16) and 0xFF) / 255f,
-                                green = ((choice.tintArgb shr 8) and 0xFF) / 255f,
-                                blue = (choice.tintArgb and 0xFF) / 255f,
-                                alpha = 1f,
-                            ),
-                        ),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = choice.letter,
-                    fontSize = 54.sp,
-                    fontWeight = FontWeight.Black,
-                    color = Color(0xFF0B2B3D).copy(alpha = 0.92f),
-                    textAlign = TextAlign.Center,
-                    modifier =
-                        Modifier
-                            .background(Color.White.copy(alpha = 0.50f), RoundedCornerShape(18.dp))
-                            .padding(horizontal = 12.dp, vertical = 6.dp),
-                )
-            }
-        }
-        choice.tileDrawable == R.drawable.lesson_pic_placeholder -> {
-            val emoji = LessonWordIllustrations.emojiForWord(choice.word)
-            val emojiSp =
-                with(density) {
-                    (height.toPx() * 0.55f).coerceIn(40f * fontScale, 72f * fontScale).toSp()
-                }
-            Box(
-                modifier =
-                    Modifier
-                        .size(width = width, height = height)
-                        .clip(RoundedCornerShape(18.dp))
-                        .background(
-                            Color(
-                                red = ((choice.tintArgb shr 16) and 0xFF) / 255f,
-                                green = ((choice.tintArgb shr 8) and 0xFF) / 255f,
-                                blue = (choice.tintArgb and 0xFF) / 255f,
-                                alpha = 1f,
-                            ),
-                        ),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(text = emoji, fontSize = emojiSp, textAlign = TextAlign.Center, modifier = Modifier.alpha(if (lockedThis) 0.55f else 1f))
-            }
-        }
-        else -> {
-            // Use Crop to normalize padding differences between assets (so all pictures read the same size).
-            val innerScale =
-                when {
-                    choice.word == "מדוזה" || choice.id == "w_מ_3" || choice.tileDrawable == R.drawable.lesson_pic_medusa -> 0.5f
-                    else -> 1f
-                }
-            Image(
-                painter = painterResource(id = choice.tileDrawable),
-                contentDescription = choice.word,
-                modifier =
-                    Modifier
-                        .size(width = width, height = height)
-                        .clip(RoundedCornerShape(18.dp))
-                        .graphicsLayer {
-                            scaleX = innerScale
-                            scaleY = innerScale
-                        },
-                contentScale = ContentScale.Crop,
-                alpha = if (lockedThis) 0.55f else 1f,
-            )
-        }
     }
 }

@@ -79,7 +79,12 @@ class LevelSession(
                                 rnd = rnd,
                                 group = group,
                                 targetLetter = correct,
-                                maxTargetCount = if (letterPoolSpec === Chapter1LetterPoolSpec) 4 else null,
+                                maxTargetCount =
+                                    if (letterPoolSpec === Chapter1LetterPoolSpec || letterPoolSpec === Chapter2LetterPoolSpec) {
+                                        4
+                                    } else {
+                                        null
+                                    },
                             )
                         }
                         StationQuizMode.PickLetter -> {

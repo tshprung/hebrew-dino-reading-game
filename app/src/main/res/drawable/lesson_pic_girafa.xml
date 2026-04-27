@@ -4,22 +4,62 @@
     android:height="110dp"
     android:viewportWidth="120"
     android:viewportHeight="110">
+    <!-- body -->
     <path
-        android:fillColor="#FFB74D"
-        android:pathData="M78,88 L78,44 L88,24 L96,24 L92,44 L88,88 Z" />
+        android:fillColor="#FFCC80"
+        android:pathData="M30,70 Q55,60 75,70 Q80,90 60,95 Q35,90 30,70 Z" />
+
+    <!-- neck -->
     <path
-        android:fillColor="#FFCA28"
-        android:pathData="M88,24 L102,18 L106,30 L94,36 Z" />
+        android:fillColor="#FFCC80"
+        android:pathData="M65,30 Q70,20 75,30 L75,75 L65,75 Z" />
+
+    <!-- head -->
+    <path
+        android:fillColor="#FFCC80"
+        android:pathData="M70,20 Q80,15 90,25 Q88,35 78,35 Q70,32 70,20 Z" />
+
+    <!-- Ossicones (two small horns, giraffe-style) -->
     <path
         android:fillColor="#6D4C41"
-        android:pathData="M94,20 A3,3 0 1,1 94.01,20 Z" />
+        android:pathData="M78,16 A3,3 0 1,1 78.01,16 Z" />
     <path
         android:fillColor="#6D4C41"
-        android:pathData="M100,22 A3,3 0 1,1 100.01,22 Z" />
+        android:pathData="M86,18 A3,3 0 1,1 86.01,18 Z" />
+
+    <!-- ears -->
+    <path
+        android:fillColor="#FFCC80"
+        android:pathData="M85,18 L90,10 L92,20 Z" />
+
+    <!-- legs (4 simple rectangles) -->
     <path
         android:fillColor="#FFB74D"
-        android:pathData="M32,88 L32,70 C32,52 48,40 70,40 L78,44 L78,88 Z" />
+        android:pathData="M40,95 L46,95 L46,108 L40,108 Z" />
     <path
-        android:fillColor="#5D4037"
-        android:pathData="M24,88 L96,88 L96,96 L24,96 Z" />
+        android:fillColor="#FFB74D"
+        android:pathData="M50,95 L56,95 L56,108 L50,108 Z" />
+    <path
+        android:fillColor="#FFB74D"
+        android:pathData="M62,95 L68,95 L68,108 L62,108 Z" />
+    <path
+        android:fillColor="#FFB74D"
+        android:pathData="M72,95 L78,95 L78,108 L72,108 Z" />
+
+    <!-- spots -->
+    <path
+        android:fillColor="#8D6E63"
+        android:pathData="M40,75 Q45,70 50,75 Q45,80 40,75 Z
+                          M55,70 Q60,65 65,70 Q60,75 55,70 Z
+                          M68,55 Q72,50 76,55 Q72,60 68,55 Z" />
+
+    <!-- eye -->
+    <path
+        android:fillColor="#000000"
+        android:pathData="M82,27 Q84,25 86,27 Q84,29 82,27 Z" />
+
+    <!-- highlight -->
+    <path
+        android:fillColor="#66FFFFFF"
+        android:pathData="M35,72 Q60,60 80,72 Q60,68 35,72 Z" />
 </vector>

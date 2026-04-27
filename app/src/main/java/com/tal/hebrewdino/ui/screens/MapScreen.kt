@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -85,7 +86,7 @@ fun MapScreen(
 
             Button(
                 onClick = { onPlayLevel(quickPlayLevel) },
-                modifier = Modifier.width(260.dp),
+                modifier = Modifier.wrapContentWidth(),
                 colors =
                     ButtonDefaults.buttonColors(
                         containerColor = Color(0xFFFFC400).copy(alpha = 0.95f),
@@ -227,7 +228,19 @@ private fun PathStone(
         ) {
             Text(
                 text = subtitle,
-                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                style =
+                    run {
+                        val base = MaterialTheme.typography.bodyMedium
+                        if (completed) {
+                            base.copy(
+                                fontSize = base.fontSize * 2,
+                                lineHeight = base.lineHeight * 2,
+                                fontWeight = FontWeight.Bold,
+                            )
+                        } else {
+                            base.copy(fontWeight = FontWeight.Bold)
+                        }
+                    },
                 color = Color(0xFF0B2B3D),
                 textAlign = TextAlign.Center,
             )

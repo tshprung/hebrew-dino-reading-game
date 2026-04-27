@@ -18,6 +18,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -28,8 +32,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.tal.hebrewdino.R
+import com.tal.hebrewdino.ui.audio.VoicePlayer
 import com.tal.hebrewdino.ui.components.AnimatedTalkingCharacter
 import com.tal.hebrewdino.ui.components.learning.StoryEggStrip
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 
 enum class ChapterLobbyCompanion {
     DinoOnly,
@@ -59,12 +66,32 @@ fun ChapterLobbyStoryLayout(
     body: String,
     eggStripCount: Int,
     companion: ChapterLobbyCompanion,
-    narrationPlaying: Boolean,
+    narrationPlaying: Boolean = false,
+    /** Optional narration WAV in assets (e.g. `audio/story_*.wav`). */
+    voiceAssetPath: String? = null,
     dinoContentDescription: String,
     onContinue: () -> Unit,
-    onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val voicePlayer = remember(voiceAssetPath) { voiceAssetPath?.let { VoicePlayer(context = context) } }
+    var autoNarrationPlaying by remember(voiceAssetPath) { mutableStateOf(false) }
+
+    DisposableEffect(voicePlayer) {
+        onDispose { voicePlayer?.release() }
+    }
+
+    LaunchedEffect(voiceAssetPath) {
+        if (voicePlayer == null || voiceAssetPath.isNullOrBlank()) return@LaunchedEffect
+        autoNarrationPlaying = true
+        if (voicePlayer.hasAsset(voiceAssetPath)) {
+            voicePlayer.playBlocking(voiceAssetPath)
+        }
+        autoNarrationPlaying = false
+    }
+
+    val talking = if (voiceAssetPath != null) autoNarrationPlaying else narrationPlaying
+
     Box(modifier = modifier.fillMaxSize()) {
         Image(
             painter = painterResource(id = backgroundRes),
@@ -119,7 +146,7 @@ fun ChapterLobbyStoryLayout(
                             AnimatedTalkingCharacter(
                                 idleRes = R.drawable.dino_idle,
                                 talkFrameResIds = dinoTalkFrames,
-                                isTalking = narrationPlaying,
+                                isTalking = talking,
                                 modifier = Modifier.size(92.dp),
                                 contentDescription = dinoContentDescription,
                             )
@@ -128,7 +155,7 @@ fun ChapterLobbyStoryLayout(
                                 AnimatedTalkingCharacter(
                                     idleRes = R.drawable.mom_idle,
                                     talkFrameResIds = momTalkFrames,
-                                    isTalking = narrationPlaying,
+                                    isTalking = talking,
                                     modifier = Modifier.size(92.dp),
                                     contentDescription = "אמא דינוזאור",
                                 )
@@ -138,21 +165,8 @@ fun ChapterLobbyStoryLayout(
                 }
             }
 
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                OutlinedButton(
-                    onClick = onBack,
-                    modifier = Modifier.width(160.dp),
-                    colors =
-                        androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
-                            containerColor = Color.White.copy(alpha = 0.86f),
-                            contentColor = Color(0xFF0B2B3D),
-                        ),
-                ) {
-                    Text("חזור")
-                }
-                Button(onClick = onContinue, modifier = Modifier.width(160.dp)) {
-                    Text("המשך")
-                }
+            Button(onClick = onContinue, modifier = Modifier.width(180.dp)) {
+                Text("המשך")
             }
         }
     }

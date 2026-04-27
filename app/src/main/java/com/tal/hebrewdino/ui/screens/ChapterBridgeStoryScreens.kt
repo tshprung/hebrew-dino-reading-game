@@ -3,61 +3,65 @@ package com.tal.hebrewdino.ui.screens
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.tal.hebrewdino.R
+import com.tal.hebrewdino.ui.audio.AudioClips
 
 @Composable
 fun Chapter2OutroScreen(
     onContinue: () -> Unit,
-    onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     ChapterLobbyStoryLayout(
-        backgroundRes = R.drawable.mountain_bg_chapter2,
+        backgroundRes = R.drawable.chapter2_story_outro,
         title = "יש!",
         body =
-            "עוד ביצה נמצאה!\n" +
+            "העקבות ממשיכות קדימה…\n" +
                 "\n" +
-                "\"אנחנו מתקדמים!\"\n" +
+                "נראה שמישהו עבר כאן ולקח משהו.\n" +
                 "\n" +
-                "נשארה רק עוד אחת!",
-        eggStripCount = 2,
+                "דינו ממשיך לעקוב אחרי הדרך,\n" +
+                "ועכשיו יש כיוון ברור.\n" +
+                "\n" +
+                "בואו נתקדם אחרי העקבות בפרק הבא.",
+        eggStripCount = 1,
         companion = ChapterLobbyCompanion.DinoOnly,
         narrationPlaying = false,
+        voiceAssetPath = AudioClips.StoryMountainApproachOutro,
         dinoContentDescription = "דינו",
         onContinue = onContinue,
-        onBack = onBack,
         modifier = modifier,
     )
 }
 
 @Composable
 fun Chapter3OutroScreen(
+    eggStripCount: Int,
     onContinue: () -> Unit,
-    onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     ChapterLobbyStoryLayout(
-        backgroundRes = R.drawable.mountain_bg_chapter3,
+        backgroundRes = R.drawable.chapter3_story_outro,
         title = "יש!!!",
         body =
-            "מצאנו את הביצה האחרונה!\n" +
+            "הנה זה!\n" +
                 "\n" +
-                "כל הביצים חזרו!\n" +
+                "דינו מצא עוד ביצה — והיא שלמה!\n" +
                 "\n" +
-                "בוא נחזיר אותן לאמא.",
-        eggStripCount = 3,
+                "הוא אוסף אותה בזהירות,\n" +
+                "וממשיך במסע למצוא את הביצה האחרונה.",
+        eggStripCount = eggStripCount,
         companion = ChapterLobbyCompanion.DinoOnly,
         narrationPlaying = false,
+        voiceAssetPath = AudioClips.StoryMountainPathOutro,
         dinoContentDescription = "דינו",
         onContinue = onContinue,
-        onBack = onBack,
         modifier = modifier,
     )
 }
 
 @Composable
 fun Chapter4IntroScreen(
+    eggStripCount: Int,
     onContinue: () -> Unit,
-    onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     ChapterLobbyStoryLayout(
@@ -69,20 +73,20 @@ fun Chapter4IntroScreen(
                 "אבל בדרך יש לנו לעבור את הביצה הגדולה.\n" +
                 "\n" +
                 "תעזור/י לי?",
-        eggStripCount = 3,
+        eggStripCount = eggStripCount,
         companion = ChapterLobbyCompanion.DinoOnly,
         narrationPlaying = false,
+        voiceAssetPath = AudioClips.StoryCh4Intro,
         dinoContentDescription = "דינו",
         onContinue = onContinue,
-        onBack = onBack,
         modifier = modifier,
     )
 }
 
 @Composable
 fun Chapter4OutroScreen(
+    eggStripCount: Int,
     onContinue: () -> Unit,
-    onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     ChapterLobbyStoryLayout(
@@ -95,12 +99,12 @@ fun Chapter4OutroScreen(
                 "\"תודה שעזרת לי!\"\n" +
                 "\n" +
                 "כל הכבוד! 🎉",
-        eggStripCount = 3,
+        eggStripCount = eggStripCount,
         companion = ChapterLobbyCompanion.DinoAndMom,
         narrationPlaying = false,
+        voiceAssetPath = AudioClips.StoryCh4HomeOutro,
         dinoContentDescription = "דינו",
         onContinue = onContinue,
-        onBack = onBack,
         modifier = modifier,
     )
 }

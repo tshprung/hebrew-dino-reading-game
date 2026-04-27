@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="110dp"
+    android:height="110dp"
+    android:viewportWidth="110"
+    android:viewportHeight="110">
+    <!-- Light badge background for contrast -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="0.45"
+        android:pathData="M55,55 m-48,0 a48,48 0 1,1 96,0 a48,48 0 1,1 -96,0" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="0.16"
+        android:pathData="M55,55 m-44,0 a44,44 0 1,1 88,0 a44,44 0 1,1 -88,0" />
+    <!-- Subtle border ring -->
+    <path
+        android:fillColor="#B0BEC5"
+        android:fillAlpha="0.18"
+        android:pathData="M55,55 m-48,0 a48,48 0 1,1 96,0 a48,48 0 1,1 -96,0" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="0.70"
+        android:pathData="M55,55 m-44,0 a44,44 0 1,1 88,0 a44,44 0 1,1 -88,0" />
+
+    <!-- Dino footprints: three prints along the road -->
+    <path
+        android:fillColor="#6D4C41"
+        android:fillAlpha="0.90"
+        android:pathData="M32,70 C26,60 30,48 40,48 C48,48 52,56 48,66 C44,76 36,78 32,70 Z" />
+    <path
+        android:fillColor="#6D4C41"
+        android:fillAlpha="0.78"
+        android:pathData="M58,52 C52,42 56,30 66,30 C74,30 78,38 74,48 C70,58 62,60 58,52 Z" />
+    <path
+        android:fillColor="#6D4C41"
+        android:fillAlpha="0.68"
+        android:pathData="M70,82 C64,72 68,60 78,60 C86,60 90,68 86,78 C82,88 74,90 70,82 Z" />
+
+    <!-- Toe marks -->
+    <path android:fillColor="#5D4037" android:fillAlpha="0.95" android:pathData="M26,52 A4,4 0 1,1 26.01,52 Z" />
+    <path android:fillColor="#5D4037" android:fillAlpha="0.95" android:pathData="M34,44 A4,4 0 1,1 34.01,44 Z" />
+    <path android:fillColor="#5D4037" android:fillAlpha="0.95" android:pathData="M44,44 A4,4 0 1,1 44.01,44 Z" />
+
+    <path android:fillColor="#5D4037" android:fillAlpha="0.85" android:pathData="M52,34 A3.5,3.5 0 1,1 52.01,34 Z" />
+    <path android:fillColor="#5D4037" android:fillAlpha="0.85" android:pathData="M60,26 A3.5,3.5 0 1,1 60.01,26 Z" />
+    <path android:fillColor="#5D4037" android:fillAlpha="0.85" android:pathData="M70,26 A3.5,3.5 0 1,1 70.01,26 Z" />
+
+    <path android:fillColor="#5D4037" android:fillAlpha="0.80" android:pathData="M62,64 A4,4 0 1,1 62.01,64 Z" />
+    <path android:fillColor="#5D4037" android:fillAlpha="0.80" android:pathData="M72,56 A4,4 0 1,1 72.01,56 Z" />
+    <path android:fillColor="#5D4037" android:fillAlpha="0.80" android:pathData="M82,56 A4,4 0 1,1 82.01,56 Z" />
+</vector>
+

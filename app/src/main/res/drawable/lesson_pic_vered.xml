@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="120dp"
+    android:height="110dp"
+    android:viewportWidth="120"
+    android:viewportHeight="110">
+    <!-- Rose (more painterly / realistic feel): layered petals + leaves + stem -->
+
+    <!-- Stem (same start; extended downward only) -->
+    <path
+        android:fillColor="#2E7D32"
+        android:pathData="M60,110 L64,110 L64,38 L60,38 Z" />
+    <path
+        android:fillColor="#1B5E20"
+        android:pathData="M60,74 C56,72 54,68 56,64 C58,60 62,60 64,62 C62,64 62,70 64,72 Z" />
+
+    <!-- Leaves (darker, with highlight) -->
+    <path
+        android:fillColor="#1B5E20"
+        android:pathData="M62,74 C78,66 92,78 82,90 C92,92 88,104 70,98 Z" />
+    <path
+        android:fillColor="#2E7D32"
+        android:pathData="M64,78 C78,72 88,82 80,90 C86,92 84,100 70,96 Z" />
+    <path
+        android:fillColor="#33691E"
+        android:pathData="M58,78 C42,70 28,82 38,94 C28,96 32,108 50,102 Z" />
+    <path
+        android:fillColor="#43A047"
+        android:pathData="M58,82 C44,76 34,86 42,94 C36,96 38,104 52,100 Z" />
+    <path
+        android:fillColor="#A5D6A7"
+        android:fillAlpha="0.35"
+        android:pathData="M44,92 C50,88 58,88 64,92 C58,94 52,98 46,102 C46,98 44,96 44,92 Z" />
+
+    <!-- Rose bud (side view): asymmetrical petals + curl -->
+    <!-- Back petal mass -->
+    <path
+        android:fillColor="#F48FB1"
+        android:pathData="M52,20 C66,16 84,24 90,40 C96,56 88,74 70,82 C56,76 44,62 42,46 C40,34 44,24 52,20 Z" />
+    <!-- Front petal wrap -->
+    <path
+        android:fillColor="#EC407A"
+        android:pathData="M48,44 C46,32 58,24 70,26 C82,28 88,40 84,54 C80,66 70,72 60,70 C54,64 50,56 48,44 Z" />
+    <!-- Inner curl -->
+    <path
+        android:fillColor="#FFCDD2"
+        android:pathData="M60,34 C68,34 74,40 74,48 C74,56 68,62 60,62 C54,60 52,54 54,46 C56,40 58,36 60,34 Z" />
+    <path
+        android:fillColor="#D81B60"
+        android:pathData="M62,40 C66,40 68,42 68,46 C68,50 66,52 62,52 C58,52 56,50 56,46 C56,42 58,40 62,40 Z" />
+    <!-- Highlight -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="0.18"
+        android:pathData="M52,26 C62,22 74,26 80,36 C70,34 62,36 54,42 C52,38 50,32 52,26 Z" />
+</vector>

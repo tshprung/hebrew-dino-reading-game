@@ -1,16 +1,34 @@
 <?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="120dp"
-    android:height="96dp"
+    android:height="110dp"
     android:viewportWidth="120"
-    android:viewportHeight="96">
+    android:viewportHeight="110">
+
+    <!-- mouth background -->
     <path
-        android:fillColor="#FAFAFA"
-        android:pathData="M24,40 C24,28 36,20 60,20 C84,20 96,28 96,40 L96,56 C96,72 80,84 60,84 C40,84 24,72 24,56 Z" />
+        android:fillColor="#F28B82"
+        android:pathData="M20,40 Q60,20 100,40 Q95,85 60,90 Q25,85 20,40 Z" />
+
+    <!-- inner mouth -->
     <path
-        android:fillColor="#CFD8DC"
-        android:pathData="M30,50 L90,50 L90,56 L30,56 Z" />
+        android:fillColor="#C62828"
+        android:pathData="M28,45 Q60,30 92,45 Q88,80 60,84 Q32,80 28,45 Z" />
+
+    <!-- teeth -->
     <path
-        android:fillColor="#CFD8DC"
-        android:pathData="M30,64 L90,64 L90,70 L30,70 Z" />
+        android:fillColor="#FFFFFF"
+        android:pathData="M30,50 L90,50 L88,68 Q60,74 32,68 Z" />
+
+    <!-- teeth separation hint -->
+    <path
+        android:strokeColor="#E0E0E0"
+        android:strokeWidth="2"
+        android:pathData="M60,50 L60,70" />
+
+    <!-- highlight -->
+    <path
+        android:fillColor="#66FFFFFF"
+        android:pathData="M35,48 Q60,38 85,48 Q60,45 35,48 Z" />
+
 </vector>

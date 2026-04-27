@@ -4,25 +4,23 @@
     android:height="96dp"
     android:viewportWidth="120"
     android:viewportHeight="96">
-    <path
-        android:fillColor="#6D4C41"
-        android:pathData="M18,20 L18,88 L26,88 L26,20 Z" />
-    <path
-        android:fillColor="#6D4C41"
-        android:pathData="M46,20 L46,88 L54,88 L54,20 Z" />
-    <path
-        android:fillColor="#6D4C41"
-        android:pathData="M74,20 L74,88 L82,88 L82,20 Z" />
-    <path
-        android:fillColor="#6D4C41"
-        android:pathData="M102,20 L102,88 L110,88 L110,20 Z" />
+    <!-- Picket fence: pointed boards + rails -->
     <path
         android:fillColor="#8D6E63"
-        android:pathData="M12,32 L108,32 L108,40 L12,40 Z" />
+        android:pathData="M10,40 L110,40 L110,48 L10,48 Z" />
     <path
         android:fillColor="#8D6E63"
-        android:pathData="M12,56 L108,56 L108,64 L12,64 Z" />
+        android:pathData="M10,62 L110,62 L110,70 L10,70 Z" />
+
+    <!-- Pickets -->
+    <path android:fillColor="#6D4C41" android:pathData="M18,24 L24,16 L30,24 L30,88 L18,88 Z" />
+    <path android:fillColor="#6D4C41" android:pathData="M36,24 L42,16 L48,24 L48,88 L36,88 Z" />
+    <path android:fillColor="#6D4C41" android:pathData="M54,24 L60,16 L66,24 L66,88 L54,88 Z" />
+    <path android:fillColor="#6D4C41" android:pathData="M72,24 L78,16 L84,24 L84,88 L72,88 Z" />
+    <path android:fillColor="#6D4C41" android:pathData="M90,24 L96,16 L102,24 L102,88 L90,88 Z" />
+
+    <!-- Ground shadow -->
     <path
-        android:fillColor="#8D6E63"
-        android:pathData="M12,80 L108,80 L108,88 L12,88 Z" />
+        android:fillColor="#3E2723"
+        android:pathData="M12,88 L108,88 L108,92 L12,92 Z" />
 </vector>

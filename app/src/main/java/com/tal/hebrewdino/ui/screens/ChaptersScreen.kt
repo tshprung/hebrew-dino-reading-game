@@ -76,6 +76,7 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.ui.draw.scale
 import com.tal.hebrewdino.R
+import com.tal.hebrewdino.ui.components.ChapterNavChipStyles
 import com.tal.hebrewdino.ui.components.learning.DinoNestMark
 import com.tal.hebrewdino.ui.domain.ChaptersPathLayout
 import kotlin.math.hypot
@@ -167,19 +168,13 @@ fun ChaptersScreen(
     val chapters =
         listOf(
             ChapterCard(1, "פרק 1 - מצא את הביצה", "היער: תחנות בדרך + אותיות"),
-            ChapterCard(2, "פרק 2 - מצא את הביצה הורודה", "בדרך לביצה הורודה — אותיות בדרך"),
-            ChapterCard(3, "פרק 3 - מצא את הביצה הסגולה", "בדרך לביצה הסגולה — תחנות כמו בפרק 1"),
+            ChapterCard(2, "פרק 2 - מוצאים עקבות לביצה הורודה", "מחפשים רמזים: עקבות בדרך"),
+            ChapterCard(3, "פרק 3 - מצא את הביצה הורודה", "בדרך לביצה הורודה — תחנות כמו בפרק 1"),
             ChapterCard(
                 4,
                 "פרק 4 - חיזוק חכם",
                 if (chapter4ComingSoon) "בקרוב" else "תחנות כמו בפרק 1 — אותיות חוזרות בחוכמה",
             ),
-            ChapterCard(5, "פרק 5", ""),
-            ChapterCard(6, "פרק 6", ""),
-            ChapterCard(7, "פרק 7", ""),
-            ChapterCard(8, "פרק 8", ""),
-            ChapterCard(9, "פרק 9", ""),
-            ChapterCard(10, "פרק 10", ""),
         )
 
     Box(modifier = modifier.fillMaxSize()) {
@@ -215,13 +210,9 @@ fun ChaptersScreen(
         ) {
             OutlinedButton(
                 onClick = onOpenSettings,
-                colors =
-                    ButtonDefaults.outlinedButtonColors(
-                        containerColor = Color.White.copy(alpha = 0.92f),
-                        contentColor = Color(0xFF0B2B3D),
-                    ),
+                colors = ChapterNavChipStyles.outlinedButtonColors(),
             ) {
-                Text("הגדרות", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
+                Text("הגדרות", style = ChapterNavChipStyles.labelTextStyle())
             }
         }
     }
@@ -294,8 +285,8 @@ private fun ChaptersHexHoneycomb(
                             title = ch.title,
                             imageRes =
                                 when (ch.id) {
-                                    2 -> R.drawable.mountain_bg_chapter2
-                                    3 -> R.drawable.mountain_bg_chapter3
+                                    2 -> R.drawable.chapter2_journey_road
+                                    3 -> R.drawable.chapter3_journey_road
                                     4 -> R.drawable.mountain_bg_chapter4
                                     else -> R.drawable.forest_bg_journey_road
                                 },

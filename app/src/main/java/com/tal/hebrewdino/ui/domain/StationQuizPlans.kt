@@ -16,7 +16,7 @@ object StationQuizPlans {
     /** Chapter 1 — see [Chapter1StationOrder] for station indices and `Question` subtype mapping. */
     fun chapter1(stationId: Int): StationQuizPlan = Chapter1StationOrder.quizPlan(stationId)
 
-    /** Chapters 2–4 use the same six-station structure as chapter 1; only letters and end-of-road art differ. */
+    /** Chapters 2–4 reuse the same six-station plan as chapter 1 ([Chapter1StationOrder]); letters/art/intros differ. */
     fun chapter2(stationId: Int): StationQuizPlan = Chapter1StationOrder.quizPlan(stationId)
 
     fun chapter3(stationId: Int): StationQuizPlan = Chapter1StationOrder.quizPlan(stationId)

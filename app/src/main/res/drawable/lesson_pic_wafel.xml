@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="120dp"
+    android:height="110dp"
+    android:viewportWidth="120"
+    android:viewportHeight="110">
+    <!-- Wafer snack: big wrapper + two wafers (closer to reference photo) -->
+
+    <!-- Wrapper (brown) -->
+    <path
+        android:fillColor="#B38A6A"
+        android:pathData="M10,34 C10,30 14,26 18,26 L112,26 C116,26 118,30 118,34 L118,76 C118,80 116,84 112,84 L18,84 C14,84 10,80 10,76 Z" />
+    <!-- Wrapper top highlight -->
+    <path
+        android:fillColor="#D7B79C"
+        android:pathData="M14,30 C18,28 26,28 32,28 L108,28 C112,28 114,30 114,34 L114,38 L14,38 Z" />
+    <!-- Left crinkle -->
+    <path
+        android:fillColor="#A97958"
+        android:pathData="M10,34 L16,30 L16,80 L10,76 Z" />
+    <!-- Right crinkle -->
+    <path
+        android:fillColor="#A97958"
+        android:pathData="M118,34 L112,30 L112,80 L118,76 Z" />
+
+    <!-- Label circle (purple-ish) -->
+    <path
+        android:fillColor="#7E57C2"
+        android:pathData="M92,40 A16,16 0 1,1 91.99,40 Z" />
+    <!-- Label inner highlight -->
+    <path
+        android:fillColor="#B39DDB"
+        android:fillAlpha="0.55"
+        android:pathData="M92,40 A12,12 0 1,1 91.99,40 Z" />
+
+    <!-- Small “text lines” on wrapper -->
+    <path android:fillColor="#F5F5F5" android:fillAlpha="0.55" android:pathData="M44,44 L84,44 L84,48 L44,48 Z" />
+    <path android:fillColor="#F5F5F5" android:fillAlpha="0.45" android:pathData="M44,52 L80,52 L80,55 L44,55 Z" />
+    <path android:fillColor="#F5F5F5" android:fillAlpha="0.40" android:pathData="M44,58 L76,58 L76,61 L44,61 Z" />
+
+    <!-- Front wafers (bottom-left) -->
+    <path
+        android:fillColor="#F6D48A"
+        android:pathData="M18,78 L54,70 L66,86 L30,94 Z" />
+    <path
+        android:fillColor="#E8C06E"
+        android:pathData="M22,74 L52,68 L60,80 L30,86 Z" />
+    <!-- Chocolate layers -->
+    <path android:fillColor="#6D4C41" android:pathData="M24,76 L56,68 L58,71 L26,79 Z" />
+    <path android:fillColor="#6D4C41" android:pathData="M30,86 L62,78 L64,81 L32,89 Z" />
+    <!-- Wafer grid hints -->
+    <path android:fillColor="#D9A441" android:fillAlpha="0.65" android:pathData="M28,74 L50,70 L50,72 L28,76 Z" />
+    <path android:fillColor="#D9A441" android:fillAlpha="0.55" android:pathData="M34,82 L56,76 L56,78 L34,84 Z" />
+</vector>
