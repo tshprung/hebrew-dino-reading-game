@@ -3,6 +3,7 @@ package com.tal.hebrewdino.ui.screens
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.tal.hebrewdino.R
+import com.tal.hebrewdino.ui.audio.AudioClips
 
 @Composable
 fun Chapter3IntroScreen(
@@ -10,19 +11,19 @@ fun Chapter3IntroScreen(
     modifier: Modifier = Modifier,
 ) {
     ChapterLobbyStoryLayout(
-        backgroundRes = R.drawable.mountain_bg_chapter3,
-        title = "פרק 3 - מצא את הביצה הסגולה",
+        backgroundRes = R.drawable.chapter3_story_intro,
+        title = "פרק 3 - מצא את הביצה הורודה",
         body =
-            "נשארה רק ביצה אחת!\n" +
+            "דינו ממשיך לעקוב אחרי העקבות.\n" +
                 "\n" +
-                "השביל נהיה צר…\n" +
+                "הדרך כבר לא ארוכה,\n" +
+                "ונראה שהוא מתקרב למשהו חשוב.\n" +
                 "\n" +
-                "\"צריך להיזהר\"\n" +
-                "\n" +
-                "קדימה, עוד קצת!",
+                "בואו נתקדם בזהירות ונגלה מה מחכה בהמשך.",
         eggStripCount = 2,
         companion = ChapterLobbyCompanion.DinoOnly,
         narrationPlaying = false,
+        voiceAssetPath = AudioClips.StoryMountainPathIntro,
         dinoContentDescription = "דינו",
         onContinue = onContinue,
         modifier = modifier,

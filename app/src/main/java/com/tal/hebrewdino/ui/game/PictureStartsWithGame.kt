@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.tal.hebrewdino.R
 import com.tal.hebrewdino.ui.components.learning.LessonChoiceCard
+import com.tal.hebrewdino.ui.components.learning.captionFontSizeForWordCard
 import com.tal.hebrewdino.ui.domain.LessonChoice
 import com.tal.hebrewdino.ui.domain.Question
 import com.tal.hebrewdino.ui.layout.ScreenFit
@@ -126,12 +127,12 @@ fun PictureStartsWithGame(
                 cardW = cardW.coerceAtMost(frameMaxW).coerceAtMost(availableW)
                 val cardH = cardW * (110f / 160f)
                 val captionSp =
-                    with(density) {
-                        (cardW.toPx() * 0.22f * promptWordSizeMultiplier).coerceIn(
-                            22f * fontScale * promptWordSizeMultiplier,
-                            40f * fontScale * promptWordSizeMultiplier,
-                        ).toSp()
-                    }
+                    captionFontSizeForWordCard(
+                        density = density,
+                        cardWidth = cardW,
+                        word = question.word,
+                        sizeMultiplier = promptWordSizeMultiplier,
+                    )
                 LessonChoiceCard(
                     choice = choice,
                     enabled = false,

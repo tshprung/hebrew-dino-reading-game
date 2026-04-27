@@ -168,8 +168,8 @@ fun ChaptersScreen(
     val chapters =
         listOf(
             ChapterCard(1, "פרק 1 - מצא את הביצה", "היער: תחנות בדרך + אותיות"),
-            ChapterCard(2, "פרק 2 - מצא את הביצה הורודה", "בדרך לביצה הורודה — אותיות בדרך"),
-            ChapterCard(3, "פרק 3 - מצא את הביצה הסגולה", "בדרך לביצה הסגולה — תחנות כמו בפרק 1"),
+            ChapterCard(2, "פרק 2 - מוצאים עקבות לביצה הורודה", "מחפשים רמזים: עקבות בדרך"),
+            ChapterCard(3, "פרק 3 - מצא את הביצה הורודה", "בדרך לביצה הורודה — תחנות כמו בפרק 1"),
             ChapterCard(
                 4,
                 "פרק 4 - חיזוק חכם",
@@ -291,8 +291,8 @@ private fun ChaptersHexHoneycomb(
                             title = ch.title,
                             imageRes =
                                 when (ch.id) {
-                                    2 -> R.drawable.mountain_bg_chapter2
-                                    3 -> R.drawable.mountain_bg_chapter3
+                                    2 -> R.drawable.chapter2_journey_road
+                                    3 -> R.drawable.chapter3_journey_road
                                     4 -> R.drawable.mountain_bg_chapter4
                                     else -> R.drawable.forest_bg_journey_road
                                 },

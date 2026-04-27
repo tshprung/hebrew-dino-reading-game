@@ -61,7 +61,7 @@ fun Chapter2LettersIntroScreen(
     ChapterLettersIntroScreen(
         chapterTitle = "פרק 2 - מצא את הביצה הורודה",
         letters = listOf("ג", "ה", "ו", "ר", "ש"),
-        backgroundRes = R.drawable.mountain_bg_chapter2,
+        backgroundRes = R.drawable.chapter2_journey_road,
         onContinue = onContinue,
         modifier = modifier,
     )
@@ -75,7 +75,7 @@ fun Chapter3LettersIntroScreen(
     ChapterLettersIntroScreen(
         chapterTitle = "פרק 3 - מצא את הביצה הסגולה",
         letters = listOf("ר", "ת", "צ", "ח", "ט"),
-        backgroundRes = R.drawable.mountain_bg_chapter3,
+        backgroundRes = R.drawable.chapter3_journey_road,
         onContinue = onContinue,
         modifier = modifier,
     )

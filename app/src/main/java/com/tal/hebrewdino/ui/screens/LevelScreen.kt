@@ -86,6 +86,7 @@ import com.tal.hebrewdino.R
 import com.tal.hebrewdino.ui.audio.AudioClips
 import com.tal.hebrewdino.ui.audio.SoundPoolPlayer
 import com.tal.hebrewdino.ui.audio.VoicePlayer
+import com.tal.hebrewdino.ui.components.TargetLetterHeaderChip
 import com.tal.hebrewdino.ui.domain.AnswerResult
 import com.tal.hebrewdino.ui.domain.Chapter1Config
 import com.tal.hebrewdino.ui.domain.Chapter1LetterPoolSpec
@@ -138,39 +139,6 @@ fun LevelScreen(
         collectedEggStripCount = collectedEggStripCount,
         modifier = modifier,
     )
-}
-
-/** Same yellow “header” chip as [com.tal.hebrewdino.ui.game.FindLetterGridGame] target letter. */
-@Composable
-internal fun TargetLetterHeaderChip(
-    letter: String,
-    modifier: Modifier = Modifier,
-) {
-    Box(
-        modifier =
-            modifier
-                .clip(RoundedCornerShape(18.dp))
-                .background(
-                    brush =
-                        Brush.verticalGradient(
-                            listOf(
-                                Color(0xFFFFF59D).copy(alpha = 0.95f),
-                                Color(0xFFFFE082).copy(alpha = 0.88f),
-                            ),
-                        ),
-                )
-                .border(2.dp, Color(0xFFFFA000).copy(alpha = 0.45f), RoundedCornerShape(18.dp))
-                .padding(horizontal = 20.dp, vertical = 5.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(
-            text = letter,
-            fontSize = 56.sp,
-            fontWeight = FontWeight.Black,
-            color = Color(0xFF0B2B3D),
-            textAlign = TextAlign.Center,
-        )
-    }
 }
 
 /**

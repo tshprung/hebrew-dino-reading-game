@@ -12,13 +12,38 @@ object Chapter1Station4PictureInnerScale {
         val isHouse = word == "בית"
         val isBed = word == "מיטה" || tileDrawable == R.drawable.lesson_pic_mitah
         val isPacifier = word == "מוצץ" || tileDrawable == R.drawable.lesson_pic_motzetz
+        val isTeeth = word == "שיניים" || tileDrawable == R.drawable.lesson_pic_shinayim
+        val isGiraffe = word == "ג'ירפה" || tileDrawable == R.drawable.lesson_pic_girafa
+        val isTrafficLight = word == "רמזור" || tileDrawable == R.drawable.lesson_pic_ramzor
+        val isFence = word == "גדר" || tileDrawable == R.drawable.lesson_pic_gader
+        val isTable = word == "שולחן" || tileDrawable == R.drawable.lesson_pic_shulchan
+        val isCar = word == "רכב" || tileDrawable == R.drawable.lesson_pic_car
+        val isCurtain = word == "וילון" || tileDrawable == R.drawable.lesson_pic_vilon
+        val isLeg = word == "רגל" || tileDrawable == R.drawable.lesson_pic_regel
+        val isRose = word == "ורד" || tileDrawable == R.drawable.lesson_pic_vered
+        val isHippo = word == "היפופוטם"
+        val isWaffle = word == "וופל" || tileDrawable == R.drawable.lesson_pic_wafel
+        val isMountain = word == "הר"
         return when {
-            isMedusa -> (2f / 3f)
+            // Tweaked: +20% for readability.
+            isMedusa -> 0.8f
             isHouse -> 1f
             // UX: "מיטה" was too large; shrink to match station 5 perception (1/3 of previous 2f).
-            isBed -> (2f / 3f)
+            // Tweaked: slightly larger (≈ +20%) to read better.
+            // Tweaked again: +20%.
+            isBed -> 0.96f
             // Same drawable as station 5 (`lesson_pic_motzetz`); match [Chapter1Station5And6ImageMatchInnerScale] pacifier scale.
             isPacifier -> (2f / 3f)
+            isTrafficLight -> 1f
+            isFence -> 0.75f
+            isTeeth -> 1f
+            isGiraffe -> 1f
+            isTable || isCar -> 1f
+            isCurtain -> 1f
+            isWaffle -> 1f
+            isLeg || isRose -> 1f
+            isHippo -> 2.4f
+            isMountain -> 2.3f
             else -> 2f
         }
     }

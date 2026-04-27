@@ -7,7 +7,7 @@ import com.tal.hebrewdino.ui.domain.Chapter3Config
 import com.tal.hebrewdino.ui.domain.Chapter3LetterPoolSpec
 import com.tal.hebrewdino.ui.domain.StationQuizPlans
 
-private const val Ch3Title = "פרק 3 - מצא את הביצה הסגולה"
+private const val Ch3Title = "פרק 3 - מצא את הביצה הורודה"
 
 @Composable
 fun Chapter3LevelScreen(
@@ -28,7 +28,7 @@ fun Chapter3LevelScreen(
         stageLabel = "תחנה $station",
         plan = StationQuizPlans.chapter3(station),
         letterPoolSpec = Chapter3LetterPoolSpec,
-        backgroundRes = R.drawable.mountain_bg_chapter3,
+        backgroundRes = R.drawable.chapter3_level_overlay,
         onBack = onBack,
         onComplete = onComplete,
         onLettersHelp = onLettersHelp,

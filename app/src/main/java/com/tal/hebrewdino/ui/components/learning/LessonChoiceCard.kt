@@ -5,14 +5,17 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -199,21 +202,50 @@ fun LessonChoiceCard(
                                 scaleY = innerPictureScale
                                 transformOrigin = TransformOrigin(0.5f, 0.5f)
                             },
-                    contentScale = ContentScale.Crop,
+                    // For our vector lesson illustrations, Fit keeps all pictures visually consistent
+                    // inside the same card frame (no surprise cropping / perceived size jumps).
+                    contentScale = ContentScale.Fit,
                 )
             }
         }
         if (showWordCaption) {
             Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = choice.word,
-                fontSize = captionFontSize,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF0B2B3D),
-                textAlign = TextAlign.Center,
-                maxLines = 2,
-                modifier = Modifier.widthIn(max = cardWidth + 8.dp),
-            )
+            val isPictureWord =
+                choice.tileDrawable != R.drawable.lesson_word_tile
+            val targetCaptionSize =
+                if (isPictureWord) {
+                    // Global tuning: picture-word captions read large; shrink baseline by ~10%,
+                    // then AutoFit will further reduce for long words.
+                    (captionFontSize.value * 0.9f).sp
+                } else {
+                    captionFontSize
+                }
+            // Keep *outer card height* identical across choices: reserve a fixed one-line caption area.
+            // This must NOT depend on the word-specific target font size; otherwise cards get different heights.
+            // Fixed caption band height: must be tall enough for the *largest* caption size
+            // (otherwise glyphs get clipped on some devices).
+            val captionAreaHeight = 54.dp
+            BoxWithConstraints(
+                modifier =
+                    Modifier
+                        .width(cardWidth + 8.dp)
+                        .height(captionAreaHeight),
+                contentAlignment = Alignment.Center,
+            ) {
+                AutoFitSingleLineText(
+                    text = choice.word,
+                    maxWidth = maxWidth,
+                    targetFontSize = targetCaptionSize,
+                    style =
+                        MaterialTheme.typography.titleLarge.copy(
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF0B2B3D),
+                        ),
+                    // Fill the reserved area so layout is stable; AutoFit handles font shrink.
+                    modifier = Modifier.fillMaxWidth(),
+                    minFontSize = 10.sp,
+                )
+            }
         }
     }
 }

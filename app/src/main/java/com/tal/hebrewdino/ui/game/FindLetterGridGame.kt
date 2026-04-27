@@ -37,7 +37,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -47,7 +46,6 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.tal.hebrewdino.ui.domain.Question
-import com.tal.hebrewdino.ui.layout.ScreenFit
 import kotlin.math.roundToInt
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.coroutineScope
@@ -74,6 +72,10 @@ fun FindLetterGridGame(
     gridLetterSizeMultiplier: Float = 1f,
     /** Correct cell “pop” peak scale. */
     correctCellPeakScale: Float = 1.12f,
+    /** Scales grid cell edge length after layout (1f = default). */
+    cellSideScale: Float = 1f,
+    /** Moves header chip + grid down as a fraction of parent max height (e.g. 0.05f). */
+    contentNudgeDownFraction: Float = 0f,
     modifier: Modifier = Modifier,
 ) {
     val scope = rememberCoroutineScope()
@@ -129,10 +131,11 @@ fun FindLetterGridGame(
 
     val gap: Dp = if (question.columns >= 4) 5.dp else 7.dp
     val gridHorizontalPadding = 6.dp
-    val density = LocalDensity.current
-    val shortSideDp = ScreenFit.shortSideDp()
+    val cellScale = cellSideScale.coerceIn(0.5f, 1.5f)
+    val nudgeFrac = contentNudgeDownFraction.coerceIn(0f, 0.2f)
 
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
+        val nudgeDown = maxHeight * nudgeFrac
         val headerBoxH = if (question.columns >= 4) 74.dp else 82.dp
         val topPaddingH = 6.dp
         val outerW = maxWidth
@@ -140,12 +143,13 @@ fun FindLetterGridGame(
         val availableForGrid = (maxHeight - headerBoxH - topPaddingH - 6.dp).coerceAtLeast(120.dp)
 
         Column(
-        modifier =
-            Modifier
-                .fillMaxSize()
-                .padding(horizontal = 4.dp, vertical = 2.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 4.dp, vertical = 2.dp)
+                    .offset(y = nudgeDown),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
         Box(
             modifier =
                 Modifier
@@ -188,7 +192,7 @@ fun FindLetterGridGame(
             val cellSideByHeight = (safeMaxHeight - gap * (rows - 1)) / rows
             val cellSide =
                 // Fill the shorter dimension (width/height) while staying symmetric.
-                minOf(cellSideByWidth, cellSideByHeight).coerceAtLeast(32.dp)
+                minOf(cellSideByWidth, cellSideByHeight).coerceAtLeast(32.dp) * cellScale
             val gridW = cellSide * cols + gap * (cols - 1)
             val gridH = cellSide * rows + gap * (rows - 1)
             // Keep letters readable; shrink the *squares* to fit landscape. Scale glyphs only via [gridLetterSizeMultiplier].

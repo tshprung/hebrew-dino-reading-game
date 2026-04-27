@@ -89,6 +89,9 @@ object AudioClips {
     const val StoryMountainPathOutro = "audio/story_mountain_path_outro.wav"
     const val StoryCh4Intro = "audio/story_ch4_intro.wav"
     const val StoryCh4HomeOutro = "audio/story_ch4_home_outro.wav"
+    // Mid-chapter boost (after station 3)
+    const val StoryCh1MidBoost = "audio/story_ch1_mid_boost.wav"
+    const val StoryCh2MidBoost = "audio/story_ch2_mid_boost.wav"
 
     /**
      * Optional per-word voice lines, keyed by catalog entry id (e.g. `w_ב_1`).

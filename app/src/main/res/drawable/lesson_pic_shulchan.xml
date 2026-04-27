@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="120dp"
+    android:height="110dp"
+    android:viewportWidth="120"
+    android:viewportHeight="110">
+    <!-- Table: top + legs -->
+    <path
+        android:fillColor="#8D6E63"
+        android:pathData="M18,52 L102,52 L96,64 L24,64 Z" />
+    <path
+        android:fillColor="#6D4C41"
+        android:pathData="M28,64 L36,64 L36,96 L28,96 Z" />
+    <path
+        android:fillColor="#6D4C41"
+        android:pathData="M84,64 L92,64 L92,96 L84,96 Z" />
+    <path
+        android:fillColor="#A1887F"
+        android:pathData="M22,48 L98,48 L102,52 L18,52 Z" />
+
+    <!-- Simple plate on table -->
+    <path
+        android:fillColor="#ECEFF1"
+        android:pathData="M44,44 C44,38 76,38 76,44 C76,50 44,50 44,44 Z" />
+    <path
+        android:fillColor="#CFD8DC"
+        android:pathData="M48,44 C48,40 72,40 72,44 Z" />
+</vector>

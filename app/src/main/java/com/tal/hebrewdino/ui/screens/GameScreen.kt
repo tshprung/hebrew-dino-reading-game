@@ -9,6 +9,7 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -45,6 +46,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.zIndex
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
@@ -70,6 +72,7 @@ import com.tal.hebrewdino.ui.domain.Question
 import com.tal.hebrewdino.ui.domain.LetterPoolSpec
 import com.tal.hebrewdino.ui.domain.StationQuizPlan
 import com.tal.hebrewdino.ui.components.ChapterNavChipStyles
+import com.tal.hebrewdino.ui.components.TargetLetterHeaderChip
 import com.tal.hebrewdino.ui.components.learning.StoryEggStrip
 import com.tal.hebrewdino.ui.components.learning.storyEggStripVerticalHeight
 import com.tal.hebrewdino.ui.feedback.GameFeedback
@@ -96,14 +99,16 @@ private enum class DinoVisual { Idle, TryAgain, Jump }
 private const val IntroDurationMs = 450L
 private const val BetweenQuestionFadeMs = 80
 
-/** ~½ cm: chapter 1 layout nudges (back + progress bar up; station content down). */
-private val Chapter1HalfCmNudge = 19.dp
+/** ~½ cm: shared layout nudges for the six-station arc (chapters 1–4); letters/art/intros differ per chapter. */
+private val SixStationArcHalfCmNudge = 19.dp
 
 /** ~1 cm vertical gap between the back button and the collected-egg strip. */
 private val SpaceBelowBackBeforeEggs = 38.dp
 
-/** Chapters 1–2 share the same six-station journey template (tuned prompts, feedback, and pacing). */
-private fun isSagaEpisode(chapterId: Int): Boolean = chapterId == 1 || chapterId == 2
+/** Chapters that use the shared six-station journey ([Chapter1StationOrder]); intros, art, and letter pools differ. */
+private val SixStationArcChapterRange = 1..4
+
+private fun isSagaEpisode(chapterId: Int): Boolean = chapterId in SixStationArcChapterRange
 
 /**
  * Episode 1 stations 2–3: start the letter name this far into the intro clip on SoundPool (overlap).
@@ -277,7 +282,7 @@ fun GameScreen(
             sfx.stopStream(station2VoiceStreamId)
             station2VoiceStreamId = 0
         }
-        if (chapterId in 1..4 && stationId == 3) {
+        if (isSagaEpisode(chapterId) && stationId == 3) {
             sfx.stopAllStreams()
             sfx.stopStream(station3VoiceStreamId)
             station3VoiceStreamId = 0
@@ -360,7 +365,7 @@ fun GameScreen(
 
     // Episode 1–4 station 3: warm instruction (MediaPlayer); preload tap SFX + letter clips for SoundPool.
     LaunchedEffect(stationId, chapterId, letterPoolSpec) {
-        if (!(audioEnabled && chapterId in 1..4 && stationId == 3)) return@LaunchedEffect
+        if (!(audioEnabled && isSagaEpisode(chapterId) && stationId == 3)) return@LaunchedEffect
         val letters = letterPoolSpec.groups.flatten().distinct()
         voice.warmUp(AudioClips.VoFindLetter, AudioClips.VoChooseLetter, AudioClips.VoKolHakavod)
         for (l in letters) {
@@ -743,8 +748,8 @@ fun GameScreen(
         scope.launch {
             inputLocked = true
             dinoVisual = DinoVisual.TryAgain
-            if (chapterId == 2 || chapterId == 4) {
-                // Tiny “slip” in the mountains: a playful stumble with no punishment.
+            if (isSagaEpisode(chapterId)) {
+                // Tiny playful stumble on wrong tap (same across the six-station arc chapters).
                 dinoSlip.snapTo(0f)
                 dinoTilt.snapTo(0f)
                 dinoTilt.animateTo(-7f, tween(90))
@@ -761,7 +766,7 @@ fun GameScreen(
                 // Station 1: no SFX; voice only.
                 if (!(isSagaEpisode(chapterId) && stationId == 1) &&
                     // Station 5: no error SFX (voice feedback only).
-                    !(chapterId in 1..4 && stationId == Chapter1StationOrder.PICTURE_PICK_ALL)
+                    !(isSagaEpisode(chapterId) && stationId == Chapter1StationOrder.PICTURE_PICK_ALL)
                 ) {
                     gameFeedback.playWrong()
                     ChildGameAudioHooks.onWrong()
@@ -904,6 +909,23 @@ fun GameScreen(
             modifier = Modifier.fillMaxSize(),
             contentScale = ContentScale.Crop,
         )
+        if (chapterId == 2) {
+            // Chapter 2 PNG reads a bit flat on-device; a very light warm veil keeps the scene readable
+            // while restoring some "sun" without fighting the authored art.
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            listOf(
+                                Color(0xFFFFF3E0).copy(alpha = 0.10f),
+                                Color(0xFFFFFDE7).copy(alpha = 0.06f),
+                                Color(0xFFE1F5FE).copy(alpha = 0.05f),
+                            ),
+                        ),
+                    ),
+            )
+        }
         if (chapterId == 3) {
             // Swamp: a small “friend” becomes more visible as the player progresses.
             val p = (session.currentIndex.toFloat() / session.totalQuestions.coerceAtLeast(1)).coerceIn(0f, 1f)
@@ -930,7 +952,7 @@ fun GameScreen(
                     // Give a consistent ~1cm breathing room below the status bar so the progress line
                     // and the "חזור" button are never clipped.
                     .padding(start = 8.dp, end = 8.dp, top = 38.dp, bottom = 0.dp)
-                    .offset(y = if (chapterId == 1) -Chapter1HalfCmNudge else 0.dp)
+                    .offset(y = if (isSagaEpisode(chapterId)) -SixStationArcHalfCmNudge else 0.dp)
                     .align(Alignment.TopCenter)
                     .zIndex(4f),
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -989,9 +1011,9 @@ fun GameScreen(
                             // Station 4: don't blink the word; keep it readable/stable.
                             !(isSagaEpisode(chapterId) && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) &&
                             // Station 5: no pulsing letter intro (go straight to choices).
-                            !(chapterId in 1..4 && stationId == Chapter1StationOrder.PICTURE_PICK_ALL) &&
+                            !(isSagaEpisode(chapterId) && stationId == Chapter1StationOrder.PICTURE_PICK_ALL) &&
                             // Station 3: no pulsing letter intro before each round.
-                            !(chapterId in 1..4 && stationId == 3)
+                            !(isSagaEpisode(chapterId) && stationId == 3)
                         ) {
                             IntroPulse(stationId = stationId, question = current, modifier = Modifier.fillMaxWidth())
                         }
@@ -1000,7 +1022,19 @@ fun GameScreen(
                             is Question.FindLetterGridQuestion ->
                                 FindLetterGridGame(
                                     question = current,
-                                    // Station 3 (episode 1): SoundPool voice per tap for low-latency feedback.
+                                    cellSideScale =
+                                        if (isSagaEpisode(chapterId) && stationId == Chapter1StationOrder.REVEAL_THEN_CHOOSE) {
+                                            0.9f
+                                        } else {
+                                            1f
+                                        },
+                                    contentNudgeDownFraction =
+                                        if (isSagaEpisode(chapterId) && stationId == Chapter1StationOrder.REVEAL_THEN_CHOOSE) {
+                                            0.05f
+                                        } else {
+                                            0f
+                                        },
+                                    // Station 3 (six-station arc): SoundPool voice per tap for low-latency feedback.
                                     onLetterTapped =
                                         if (isSagaEpisode(chapterId) && stationId == 3) {
                                             { tapped ->
@@ -1096,8 +1130,8 @@ fun GameScreen(
                                             .fillMaxSize()
                                             .scale(entryPulseScale.value)
                                             .then(
-                                                if (chapterId == 1 && stationId == Chapter1StationOrder.BALLOON_POP) {
-                                                    Modifier.padding(top = Chapter1HalfCmNudge)
+                                                if (isSagaEpisode(chapterId) && stationId == Chapter1StationOrder.BALLOON_POP) {
+                                                    Modifier.padding(top = SixStationArcHalfCmNudge)
                                                 } else {
                                                     Modifier
                                                 },
@@ -1143,8 +1177,8 @@ fun GameScreen(
                                                     .fillMaxWidth()
                                                     .weight(1f, fill = true)
                                                     .then(
-                                                        if (chapterId == 1 && stationId == Chapter1StationOrder.TAP_LETTER) {
-                                                            Modifier.padding(top = Chapter1HalfCmNudge)
+                                                        if (isSagaEpisode(chapterId) && stationId == Chapter1StationOrder.TAP_LETTER) {
+                                                            Modifier.padding(top = SixStationArcHalfCmNudge)
                                                         } else {
                                                             Modifier
                                                         },
@@ -1430,7 +1464,7 @@ fun GameScreen(
                                     shakePx = optionsShake.value,
                                     entryPulseEpoch = entryPulseEpoch,
                                     pictureImageHeight =
-                                        if (chapterId in 1..4 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
+                                        if (isSagaEpisode(chapterId) && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
                                             // Station 4: keep the frame compact so the word + letters remain visible.
                                             160.dp
                                         } else {
@@ -1438,21 +1472,21 @@ fun GameScreen(
                                         },
                                     // Station 4 request: word + image doubled, frame (box) slightly smaller.
                                     promptWordSizeMultiplier =
-                                        if (chapterId in 1..4 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
+                                        if (isSagaEpisode(chapterId) && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
                                             2f
                                         } else {
                                             1f
                                         },
                                     // Station 4 screenshots: the outer card should be wider (more rectangle).
                                     pictureFrameMaxWidthFraction =
-                                        if (chapterId in 1..4 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
+                                        if (isSagaEpisode(chapterId) && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
                                             // Station 4: frame (box) ~20% smaller.
                                             0.25f
                                         } else {
                                             null
                                         },
                                     pictureFrameMinWidth =
-                                        if (chapterId in 1..4 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
+                                        if (isSagaEpisode(chapterId) && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
                                             // Station 4: frame (box) ~20% smaller.
                                             112.dp
                                         } else {
@@ -1461,7 +1495,7 @@ fun GameScreen(
                                     // Normalize “perceived” picture size: some assets (medusa/house) read too large,
                                     // while emoji/placeholder art reads too small.
                                     pictureInnerScale = { word, tileDrawable ->
-                                        if (chapterId in 1..4 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
+                                        if (isSagaEpisode(chapterId) && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
                                             Chapter1Station4PictureInnerScale.likeStation5(word, tileDrawable)
                                         } else {
                                             1f
@@ -1539,8 +1573,8 @@ fun GameScreen(
                                             .fillMaxSize()
                                             .scale(entryPulseScale.value)
                                             .then(
-                                                if (chapterId == 1 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
-                                                    Modifier.offset(y = Chapter1HalfCmNudge)
+                                                if (isSagaEpisode(chapterId) && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
+                                                    Modifier.offset(y = SixStationArcHalfCmNudge)
                                                 } else {
                                                     Modifier
                                                 },
@@ -1561,7 +1595,7 @@ fun GameScreen(
                                         contentKey = session.currentIndex,
                                         enabled = !inputLocked,
                                         compactWideSpread =
-                                            chapterId in 1..4 && stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH,
+                                            isSagaEpisode(chapterId) && stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH,
                                         onWordPressed = { choiceId ->
                                             speakNow { voice.playBlocking(AudioClips.wordClipByCatalogId(choiceId)) }
                                         },
@@ -1582,7 +1616,7 @@ fun GameScreen(
                                             // Wrong speech handled in onWrongMatch (letter name + try again).
                                         },
                                         innerPictureScaleForChoice = { choice ->
-                                            if (chapterId in 1..4 && stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH) {
+                                            if (isSagaEpisode(chapterId) && stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH) {
                                                 Chapter1Station5And6ImageMatchInnerScale.innerScale(choice)
                                             } else {
                                                 when {
@@ -1593,7 +1627,7 @@ fun GameScreen(
                                         },
                                         captionSizeMultiplier =
                                             plan.imageMatchCaptionSizeMultiplier *
-                                                if (chapterId in 1..4 && stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH) {
+                                                if (isSagaEpisode(chapterId) && stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH) {
                                                     1.2f
                                                 } else {
                                                     1f
@@ -1639,8 +1673,8 @@ fun GameScreen(
                                                 .fillMaxSize()
                                                 .scale(entryPulseScale.value)
                                                 .then(
-                                                    if (chapterId == 1 && stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH) {
-                                                        Modifier.offset(y = Chapter1HalfCmNudge)
+                                                    if (isSagaEpisode(chapterId) && stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH) {
+                                                        Modifier.offset(y = SixStationArcHalfCmNudge)
                                                     } else {
                                                         Modifier
                                                     },
@@ -1659,7 +1693,7 @@ fun GameScreen(
                                         // Episode 1 station 5: caption text +20%.
                                         captionSizeMultiplier =
                                             plan.imageMatchCaptionSizeMultiplier *
-                                                if (chapterId in 1..4 && stationId == Chapter1StationOrder.PICTURE_PICK_ALL) {
+                                                if (isSagaEpisode(chapterId) && stationId == Chapter1StationOrder.PICTURE_PICK_ALL) {
                                                     1.2f
                                                 } else {
                                                     1f
@@ -1668,7 +1702,7 @@ fun GameScreen(
                                         innerPictureScaleForChoice = { choice ->
                                             // Station 5 request: all pictures should look same-size as the heart.
                                             // Use Crop in the card and keep per-choice scaling at 1x.
-                                            if (chapterId in 1..4 && stationId == Chapter1StationOrder.PICTURE_PICK_ALL) {
+                                            if (isSagaEpisode(chapterId) && stationId == Chapter1StationOrder.PICTURE_PICK_ALL) {
                                                 Chapter1Station5And6ImageMatchInnerScale.innerScale(choice)
                                             } else {
                                                 1f
@@ -1709,8 +1743,8 @@ fun GameScreen(
                                                 .fillMaxSize()
                                                 .scale(entryPulseScale.value)
                                                 .then(
-                                                    if (chapterId == 1 && stationId == Chapter1StationOrder.PICTURE_PICK_ALL) {
-                                                        Modifier.offset(y = Chapter1HalfCmNudge)
+                                                    if (isSagaEpisode(chapterId) && stationId == Chapter1StationOrder.PICTURE_PICK_ALL) {
+                                                        Modifier.offset(y = SixStationArcHalfCmNudge)
                                                     } else {
                                                         Modifier
                                                     },
@@ -1755,17 +1789,13 @@ fun GameScreen(
                     DinoVisual.TryAgain -> R.drawable.dino_try_again
                     DinoVisual.Jump -> jumpFrames[jumpFrameIndex.coerceIn(0, jumpFrames.lastIndex)]
                 }
+            // Same in-round dino mouth animation for all chapters that use this screen (road-specific walks live in Journey).
             val talkFrames =
-                if (chapterId in 3..4) {
-                    // “Walk” feel on chapter roads between rounds (mountain arcs after the first saga).
-                    listOf(R.drawable.dino_walk_0, R.drawable.dino_walk_1, R.drawable.dino_walk_2, R.drawable.dino_walk_3)
-                } else {
-                    listOf(R.drawable.dino_talk_0, R.drawable.dino_talk_1, R.drawable.dino_talk_2, R.drawable.dino_talk_3)
-                }
+                listOf(R.drawable.dino_talk_0, R.drawable.dino_talk_1, R.drawable.dino_talk_2, R.drawable.dino_talk_3)
             AnimatedTalkingCharacter(
                 idleRes = dinoDrawable,
                 talkFrameResIds = talkFrames,
-                isTalking = dinoTalking || (chapterId in 3..4 && inputLocked && dinoVisual == DinoVisual.Jump),
+                isTalking = dinoTalking || (isSagaEpisode(chapterId) && inputLocked && dinoVisual == DinoVisual.Jump),
                 modifier =
                     Modifier
                         .offset { IntOffset((dinoForward.value + dinoSlip.value).toInt(), 0) }
@@ -1950,7 +1980,7 @@ private suspend fun speakLetterPrompt(
                         voice.playBlocking(intro)
                         if (letterName != null) voice.playBlocking(letterName)
                     }
-                } else if (chapterId in 1..4 && stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH) {
+                } else if (isSagaEpisode(chapterId) && stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH) {
                     // Episode 1–4 station 6: "ליחצו על אות והמילה שמתחילה באותה האות" (`assets/audio/match_letter_to_word_instructions.wav`).
                     voice.playBlocking(AudioClips.MatchLetterToWordInstructions)
                 } else {

@@ -122,6 +122,7 @@ enum class JourneyEndMarker {
     HomeCave,
     PinkEgg,
     PurpleEgg,
+    Tracks,
     /** Chapter 4: distinct goal after all six stations (smart reinforcement arc). */
     BigEgg,
 }
@@ -623,6 +624,13 @@ private fun JourneyRoadStrip(
                             modifier = Modifier.size(110.dp).scale(goalPulse),
                             contentScale = ContentScale.Fit,
                         )
+                    JourneyEndMarker.Tracks ->
+                        Image(
+                            painter = painterResource(id = R.drawable.finish_marker_tracks),
+                            contentDescription = null,
+                            modifier = Modifier.size(104.dp).scale(goalPulse),
+                            contentScale = ContentScale.Fit,
+                        )
                     JourneyEndMarker.BigEgg ->
                         Image(
                             painter = painterResource(id = R.drawable.finish_marker_big_egg),
@@ -768,6 +776,7 @@ private fun JourneyStationMarker(
                     JourneyEndMarker.HomeCave -> R.drawable.egg_found
                     JourneyEndMarker.PinkEgg -> R.drawable.egg_pink
                     JourneyEndMarker.PurpleEgg -> R.drawable.egg_purple
+                    JourneyEndMarker.Tracks -> R.drawable.finish_marker_tracks
                     JourneyEndMarker.BigEgg -> R.drawable.finish_marker_big_egg
                 }
             completed -> R.drawable.egg_found

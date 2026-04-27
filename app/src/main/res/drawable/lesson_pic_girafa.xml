@@ -4,22 +4,49 @@
     android:height="110dp"
     android:viewportWidth="120"
     android:viewportHeight="110">
+    <!-- Iconic giraffe: long neck + spots + small tail -->
+    <!-- Body -->
     <path
-        android:fillColor="#FFB74D"
-        android:pathData="M78,88 L78,44 L88,24 L96,24 L92,44 L88,88 Z" />
-    <path
-        android:fillColor="#FFCA28"
-        android:pathData="M88,24 L102,18 L106,30 L94,36 Z" />
-    <path
-        android:fillColor="#6D4C41"
-        android:pathData="M94,20 A3,3 0 1,1 94.01,20 Z" />
+        android:fillColor="#FFCC80"
+        android:pathData="M26,70 C26,54 42,44 62,44 C84,44 98,54 98,70 C98,84 88,94 74,94 L50,94 C36,94 26,84 26,70 Z" />
+    <!-- Tail -->
     <path
         android:fillColor="#6D4C41"
-        android:pathData="M100,22 A3,3 0 1,1 100.01,22 Z" />
+        android:pathData="M26,66 C18,68 18,78 26,80 Z" />
+
+    <!-- Legs (4) -->
+    <path android:fillColor="#FFB74D" android:pathData="M40,94 L48,94 L48,108 L40,108 Z" />
+    <path android:fillColor="#FFB74D" android:pathData="M54,94 L62,94 L62,108 L54,108 Z" />
+    <path android:fillColor="#FFB74D" android:pathData="M70,94 L78,94 L78,108 L70,108 Z" />
+    <path android:fillColor="#FFB74D" android:pathData="M84,92 L92,92 L92,108 L84,108 Z" />
+
+    <!-- Neck (very long + straight) -->
+    <path
+        android:fillColor="#FFCC80"
+        android:pathData="M80,44 L90,44 L96,12 L86,12 Z" />
+    <!-- Neck spots -->
+    <path android:fillColor="#8D6E63" android:pathData="M84,36 A4,4 0 1,1 84.01,36 Z" />
+    <path android:fillColor="#8D6E63" android:pathData="M90,26 A4,4 0 1,1 90.01,26 Z" />
+    <path android:fillColor="#8D6E63" android:pathData="M86,18 A3.5,3.5 0 1,1 86.01,18 Z" />
+
+    <!-- Head -->
     <path
         android:fillColor="#FFB74D"
-        android:pathData="M32,88 L32,70 C32,52 48,40 70,40 L78,44 L78,88 Z" />
+        android:pathData="M84,10 C92,4 108,6 112,16 C116,26 106,36 92,30 C84,26 80,16 84,10 Z" />
+    <!-- Snout -->
     <path
-        android:fillColor="#5D4037"
-        android:pathData="M24,88 L96,88 L96,96 L24,96 Z" />
+        android:fillColor="#FFB74D"
+        android:pathData="M104,18 C110,18 112,22 110,26 C108,30 102,30 98,26 Z" />
+    <!-- Ossicones (horns) -->
+    <path android:fillColor="#6D4C41" android:pathData="M98,8 A3,3 0 1,1 98.01,8 Z" />
+    <path android:fillColor="#6D4C41" android:pathData="M106,10 A3,3 0 1,1 106.01,10 Z" />
+    <!-- Ear -->
+    <path android:fillColor="#FFB74D" android:pathData="M92,10 L86,6 L88,14 Z" />
+    <!-- Eye -->
+    <path android:fillColor="#3E2723" android:pathData="M102,18 A2.5,2.5 0 1,1 102.01,18 Z" />
+
+    <!-- Body spots -->
+    <path android:fillColor="#8D6E63" android:pathData="M44,58 A6,6 0 1,1 44.01,58 Z" />
+    <path android:fillColor="#8D6E63" android:pathData="M60,70 A7,7 0 1,1 60.01,70 Z" />
+    <path android:fillColor="#8D6E63" android:pathData="M78,60 A6,6 0 1,1 78.01,60 Z" />
 </vector>

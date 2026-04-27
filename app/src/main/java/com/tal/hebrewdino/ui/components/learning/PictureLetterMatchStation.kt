@@ -7,7 +7,7 @@ import com.tal.hebrewdino.ui.domain.StationQuizMode
 import com.tal.hebrewdino.ui.domain.StationQuizPlan
 import com.tal.hebrewdino.ui.screens.GameScreen
 
-/** Chapter 2–3 finale: slot words + letter pool (same engine as chapter 1 finale). */
+/** Finale slot station: same engine as chapter 1 finale; chapter supplies letter pool and backdrop. */
 @Composable
 fun PictureLetterMatchStation(
     stationId: Int,

@@ -3,6 +3,7 @@ package com.tal.hebrewdino.ui.screens
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.tal.hebrewdino.R
+import com.tal.hebrewdino.ui.audio.AudioClips
 
 @Composable
 fun Chapter2OutroScreen(
@@ -10,18 +11,21 @@ fun Chapter2OutroScreen(
     modifier: Modifier = Modifier,
 ) {
     ChapterLobbyStoryLayout(
-        backgroundRes = R.drawable.mountain_bg_chapter2,
+        backgroundRes = R.drawable.chapter2_story_outro,
         title = "יש!",
         body =
-            "מצאנו עוד ביצה!\n" +
+            "העקבות ממשיכות קדימה…\n" +
                 "\n" +
-                "אמא כבר מרגישה יותר רגועה…\n" +
+                "נראה שמישהו עבר כאן ולקח משהו.\n" +
                 "\n" +
-                "נשארה עוד ביצה אחת —\n" +
-                "נמשיך בהרפתקה הבאה.",
+                "דינו ממשיך לעקוב אחרי הדרך,\n" +
+                "ועכשיו יש כיוון ברור.\n" +
+                "\n" +
+                "בואו נתקדם אחרי העקבות בפרק הבא.",
         eggStripCount = 2,
         companion = ChapterLobbyCompanion.DinoOnly,
         narrationPlaying = false,
+        voiceAssetPath = AudioClips.StoryMountainApproachOutro,
         dinoContentDescription = "דינו",
         onContinue = onContinue,
         modifier = modifier,
@@ -34,17 +38,19 @@ fun Chapter3OutroScreen(
     modifier: Modifier = Modifier,
 ) {
     ChapterLobbyStoryLayout(
-        backgroundRes = R.drawable.mountain_bg_chapter3,
+        backgroundRes = R.drawable.chapter3_story_outro,
         title = "יש!!!",
         body =
-            "מצאנו את הביצה האחרונה!\n" +
+            "הנה זה!\n" +
                 "\n" +
-                "כל הביצים חזרו!\n" +
+                "דינו מצא עוד ביצה — והיא שלמה!\n" +
                 "\n" +
-                "בוא נחזיר אותן לאמא.",
+                "הוא אוסף אותה בזהירות,\n" +
+                "וממשיך במסע למצוא את הביצה האחרונה.",
         eggStripCount = 3,
         companion = ChapterLobbyCompanion.DinoOnly,
         narrationPlaying = false,
+        voiceAssetPath = AudioClips.StoryMountainPathOutro,
         dinoContentDescription = "דינו",
         onContinue = onContinue,
         modifier = modifier,
@@ -68,6 +74,7 @@ fun Chapter4IntroScreen(
         eggStripCount = 3,
         companion = ChapterLobbyCompanion.DinoOnly,
         narrationPlaying = false,
+        voiceAssetPath = AudioClips.StoryCh4Intro,
         dinoContentDescription = "דינו",
         onContinue = onContinue,
         modifier = modifier,
@@ -92,6 +99,7 @@ fun Chapter4OutroScreen(
         eggStripCount = 3,
         companion = ChapterLobbyCompanion.DinoAndMom,
         narrationPlaying = false,
+        voiceAssetPath = AudioClips.StoryCh4HomeOutro,
         dinoContentDescription = "דינו",
         onContinue = onContinue,
         modifier = modifier,

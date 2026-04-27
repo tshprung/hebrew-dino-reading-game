@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -34,16 +33,16 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
-import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.tal.hebrewdino.ui.layout.ScreenFit
+import com.tal.hebrewdino.ui.components.TargetLetterHeaderChip
 import com.tal.hebrewdino.ui.domain.LessonChoice
 import com.tal.hebrewdino.ui.domain.Question
 import com.tal.hebrewdino.ui.components.learning.LessonChoiceCard
+import com.tal.hebrewdino.ui.components.learning.captionFontSizeForWordCard
 import kotlin.math.roundToInt
 import kotlinx.coroutines.launch
 
@@ -99,26 +98,16 @@ fun ImageMatchGame(
             val density = LocalDensity.current
             val narrowRow = rowInnerWidth < 380.dp
             Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
-                // Large target letter, kept high so picture cards do not cover it.
-                Text(
-                    text = question.targetLetter,
-                    style =
-                        if (rowInnerWidth < 420.dp) {
-                            androidx.compose.material3.MaterialTheme.typography.displayMedium.copy(fontWeight = FontWeight.Black)
-                        } else {
-                            androidx.compose.material3.MaterialTheme.typography.displayLarge.copy(fontWeight = FontWeight.Black)
-                        },
-                    color = Color(0xFF0B2B3D),
-                    textAlign = TextAlign.Center,
+                // Station 5 (all chapters): match station 3 target-letter chip style, and sit a bit lower.
+                TargetLetterHeaderChip(
+                    letter = question.targetLetter,
+                    fontSize = if (rowInnerWidth < 420.dp) 52.sp else 56.sp,
                     modifier =
                         Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 6.dp)
                             .padding(top = 2.dp)
-                            .offset(y = (-22).dp),
-                    maxLines = 1,
+                            .offset(y = (-10).dp),
                 )
-                Spacer(modifier = Modifier.height(if (narrowRow) 22.dp else 28.dp))
+                Spacer(modifier = Modifier.height(if (narrowRow) 16.dp else 20.dp))
                 Row(
                     modifier =
                         Modifier
@@ -147,12 +136,12 @@ fun ImageMatchGame(
                             flash.animateTo(0f, tween(220))
                         }
                         val captionSp =
-                            with(density) {
-                                (cardW.toPx() * 0.22f * captionSizeMultiplier).coerceIn(
-                                    22f * fontScale * captionSizeMultiplier,
-                                    40f * fontScale * captionSizeMultiplier,
-                                ).toSp()
-                            }
+                            captionFontSizeForWordCard(
+                                density = density,
+                                cardWidth = cardW,
+                                word = choice.word,
+                                sizeMultiplier = captionSizeMultiplier,
+                            )
                         LessonChoiceCard(
                             choice = choice,
                             enabled = enabled,

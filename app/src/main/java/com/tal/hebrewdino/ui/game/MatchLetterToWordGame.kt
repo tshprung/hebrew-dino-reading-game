@@ -58,6 +58,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.tal.hebrewdino.R
+import com.tal.hebrewdino.ui.components.learning.captionFontSizeForWordCard
 import com.tal.hebrewdino.ui.components.learning.LessonChoiceCard
 import com.tal.hebrewdino.ui.domain.LessonChoice
 import com.tal.hebrewdino.ui.domain.LessonWordIllustrations
@@ -332,13 +333,6 @@ fun MatchLetterToWordGame(
                             maxEach = 168.dp,
                         )
                     val cardH = cardW * (110f / 160f)
-                    val captionSp =
-                        with(density) {
-                            (cardW.toPx() * 0.22f * captionSizeMultiplier).coerceIn(
-                                22f * fontScale * captionSizeMultiplier,
-                                40f * fontScale * captionSizeMultiplier,
-                            ).toSp()
-                        }
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(gap, Alignment.CenterHorizontally),
@@ -365,6 +359,13 @@ fun MatchLetterToWordGame(
                                 wrongFlash.snapTo(1f)
                                 wrongFlash.animateTo(0f, tween(220))
                             }
+                            val captionSp =
+                                captionFontSizeForWordCard(
+                                    density = density,
+                                    cardWidth = cardW,
+                                    word = ch.word,
+                                    sizeMultiplier = captionSizeMultiplier,
+                                )
                             LessonChoiceCard(
                                 choice = ch,
                                 enabled = enabled && !lockedThis,
@@ -602,12 +603,12 @@ fun MatchLetterToWordGame(
                             val cardW = (wordColW * 0.86f).coerceAtMost(168.dp).coerceAtLeast(72.dp)
                             val cardH = cardW * (110f / 160f)
                             val captionSp =
-                                with(density) {
-                                    (cardW.toPx() * 0.22f * captionSizeMultiplier).coerceIn(
-                                        22f * fontScale * captionSizeMultiplier,
-                                        40f * fontScale * captionSizeMultiplier,
-                                    ).toSp()
-                                }
+                                captionFontSizeForWordCard(
+                                    density = density,
+                                    cardWidth = cardW,
+                                    word = ch.word,
+                                    sizeMultiplier = captionSizeMultiplier,
+                                )
                             val pop = remember(ch.id, contentKey) { Animatable(1f) }
                             val wrongFlash = remember(ch.id, contentKey) { Animatable(0f) }
                             LaunchedEffect(hintEpoch, hintChoiceId, ch.id, contentKey) {
