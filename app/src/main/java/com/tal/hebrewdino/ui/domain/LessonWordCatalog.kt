@@ -23,12 +23,15 @@ data class LessonWordEntry(
  * Frozen catalog: validated once at class load (fail fast in debug if corrupted).
  */
 object LessonWordCatalog {
+    /** אוטו / מכונית / רכב: same card tint + same placeholder art (see [validateCatalog] for allowed tint sharing). */
+    private val carSynonymCardTint = 0xFFFFE0B2.toInt()
+
     val entries: List<LessonWordEntry> =
         listOf(
             LessonWordEntry("w_א_1", "א", "איש", 0xFFB3E5FC.toInt()),
             LessonWordEntry("w_א_2", "א", "אריה", 0xFFFFF9C4.toInt()),
             LessonWordEntry("w_א_3", "א", "אבטיח", 0xFFC8E6C9.toInt()),
-            LessonWordEntry("w_א_4", "א", "אוטו", 0xFF8D6E63.toInt()),
+            LessonWordEntry("w_א_4", "א", "אוטו", carSynonymCardTint),
             LessonWordEntry("w_א_5", "א", "ארנב", 0xFF9CCC65.toInt()),
             LessonWordEntry("w_ב_1", "ב", "בית", 0xFFE1BEE7.toInt(), tileRes = R.drawable.lesson_pic_bait),
             LessonWordEntry("w_ב_2", "ב", "בלון", 0xFFFFCDD2.toInt()),
@@ -62,8 +65,8 @@ object LessonWordCatalog {
             LessonWordEntry("w_ל_1", "ל", "לחם", 0xFFFFE082.toInt()),
             LessonWordEntry("w_ל_2", "ל", "לב", 0xFFF8BBD0.toInt()),
             LessonWordEntry("w_ל_3", "ל", "למידה", 0xFFB2DFDB.toInt()),
-            // Car synonyms share the same picture; we use the main-branch style (emoji placeholder).
-            LessonWordEntry("w_מ_1", "מ", "מכונית", 0xFFFFE0B2.toInt()),
+            // Car synonyms share the same picture + card background as [w_א_4] (אוטו).
+            LessonWordEntry("w_מ_1", "מ", "מכונית", carSynonymCardTint),
             LessonWordEntry("w_מ_2", "מ", "מחבת", 0xFFDCEDC8.toInt()),
             LessonWordEntry("w_מ_3", "מ", "מדוזה", 0xFFC5CAE9.toInt(), tileRes = R.drawable.lesson_pic_medusa),
             LessonWordEntry("w_מ_4", "מ", "מיטה", 0xFFB4A196.toInt(), tileRes = R.drawable.lesson_pic_mitah),
@@ -84,7 +87,8 @@ object LessonWordCatalog {
             LessonWordEntry("w_ק_2", "ק", "קוביה", 0xFF4FC3F7.toInt()),
             LessonWordEntry("w_ק_3", "ק", "קטר", 0xFF455A64.toInt(), tileRes = R.drawable.lesson_pic_keter),
             LessonWordEntry("w_ר_1", "ר", "ראש", 0xFFF48FB1.toInt()),
-            LessonWordEntry("w_ר_2", "ר", "רכב", 0xFFA5D6A7.toInt()),
+            // רכב (פרק 2): same 🚗 placeholder + card tint as אוטו/מכונית (פרק 1).
+            LessonWordEntry("w_ר_2", "ר", "רכב", carSynonymCardTint),
             LessonWordEntry("w_ר_3", "ר", "רגל", 0xFFFFC400.toInt(), tileRes = R.drawable.lesson_pic_regel),
             LessonWordEntry("w_ר_4", "ר", "רכבת", 0xFFD4E157.toInt()),
             LessonWordEntry("w_ר_5", "ר", "רמזור", 0xFF00ACC1.toInt(), tileRes = R.drawable.lesson_pic_ramzor),
@@ -137,14 +141,22 @@ object LessonWordCatalog {
     /** Package-private for tests; throws if invalid. */
     internal fun validateCatalog(list: List<LessonWordEntry>) {
         val ids = mutableSetOf<String>()
-        val tints = mutableSetOf<Int>()
+        val tintToIds = mutableMapOf<Int, MutableList<String>>()
+        val carSynonymIds = setOf("w_א_4", "w_מ_1", "w_ר_2")
         for (e in list) {
             check(ids.add(e.id)) { "Duplicate lesson id: ${e.id}" }
-            check(tints.add(e.tintArgb)) { "Duplicate tint (visual collision): ${e.id} tint=${e.tintArgb}" }
+            tintToIds.getOrPut(e.tintArgb) { mutableListOf() }.add(e.id)
             check(e.letter.isNotEmpty() && e.letter.length == 1) { "Bad letter for ${e.id}" }
             check(e.word.isNotEmpty()) { "Empty word for ${e.id}" }
             val first = e.word.first().toString()
             check(first == e.letter) { "Word first char mismatch: ${e.id} word=${e.word} letter=${e.letter} first=$first" }
+        }
+        for ((tint, idList) in tintToIds) {
+            if (idList.size <= 1) continue
+            val idSet = idList.toSet()
+            check(idSet == carSynonymIds) {
+                "Duplicate tint (visual collision): tint=$tint ids=$idList — only car synonyms may share a tint"
+            }
         }
     }
 }

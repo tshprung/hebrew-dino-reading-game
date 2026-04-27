@@ -1,5 +1,6 @@
 package com.tal.hebrewdino.ui.components.learning
 
+import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
@@ -14,11 +15,18 @@ fun captionFontSizeForWordCard(
     cardWidth: Dp,
     word: String,
     sizeMultiplier: Float,
+    /** When set, allows chapter/station-specific caption tweaks (e.g. Ch2 station 5). */
+    chapterId: Int? = null,
+    stationId: Int? = null,
 ): TextUnit =
     with(density) {
         val codePoints = word.codePointCount(0, word.length)
         val wordTight =
             when {
+                // Chapter 2 station 5: "שעון" caption −10%.
+                chapterId == 2 &&
+                    stationId == Chapter1StationOrder.PICTURE_PICK_ALL &&
+                    word == "שעון" -> 0.90f
                 // Feedback: shrink hippo by ~15%, surprise by ~10%.
                 word == "היפופוטם" -> 0.66f
                 word == "הפתעה" -> 0.77f

@@ -64,7 +64,6 @@ import com.tal.hebrewdino.ui.audio.AudioClips
 import com.tal.hebrewdino.ui.audio.SoundPoolPlayer
 import com.tal.hebrewdino.ui.audio.VoicePlayer
 import com.tal.hebrewdino.ui.domain.AnswerResult
-import com.tal.hebrewdino.ui.domain.Chapter1Station4PictureInnerScale
 import com.tal.hebrewdino.ui.domain.Chapter1Station5And6ImageMatchInnerScale
 import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
 import com.tal.hebrewdino.ui.domain.LevelSession
@@ -1463,26 +1462,29 @@ fun GameScreen(
                                     enabled = !inputLocked,
                                     shakePx = optionsShake.value,
                                     entryPulseEpoch = entryPulseEpoch,
-                                    pictureImageHeight =
+                                    // Same caption sizing formula as [ImageMatchGame] on station 5 (plan × 1.2f in saga arc).
+                                    promptWordSizeMultiplier =
                                         if (isSagaEpisode(chapterId) && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
-                                            // Station 4: keep the frame compact so the word + letters remain visible.
-                                            160.dp
-                                        } else {
-                                            140.dp
-                                        },
-                                    // Keep picture-caption sizing consistent across stations (like station 5).
-                                    promptWordSizeMultiplier = 1f,
-                                    pictureFrameMaxWidthFraction = null,
-                                    pictureFrameMinWidth = 200.dp,
-                                    // Normalize “perceived” picture size: some assets (medusa/house) read too large,
-                                    // while emoji/placeholder art reads too small.
-                                    pictureInnerScale = { word, tileDrawable ->
-                                        if (isSagaEpisode(chapterId) && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
-                                            Chapter1Station4PictureInnerScale.likeStation5(word, tileDrawable)
+                                            plan.imageMatchCaptionSizeMultiplier * 1.2f
                                         } else {
                                             1f
-                                        }
-                                    },
+                                        },
+                                    innerPictureScale =
+                                        if (isSagaEpisode(chapterId) && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
+                                            Chapter1Station5And6ImageMatchInnerScale.innerScalePictureStartsWith(
+                                                catalogEntryId = current.catalogEntryId,
+                                                letter = current.correctLetter,
+                                                word = current.word,
+                                                tintArgb = current.tintArgb,
+                                                tileDrawable = current.tileDrawable,
+                                            )
+                                        } else {
+                                            1f
+                                        },
+                                    // Same outer card width formula as [ImageMatchGame] (stations 5/6).
+                                    pictureSizeMultiplier = plan.imageMatchPictureSizeMultiplier,
+                                    chapterId = chapterId,
+                                    stationId = stationId,
                                     hintCorrectLetter = current.correctLetter.takeIf { wrongTapsThisQuestion >= 2 },
                                     hintPulseEpoch = hintPulseEpoch,
                                     correctPulseLetter = correctTapPulseLetter,
@@ -1614,6 +1616,8 @@ fun GameScreen(
                                                 } else {
                                                     1f
                                                 },
+                                        chapterId = chapterId,
+                                        stationId = stationId,
                                         instructions = "ליחצו על אות והמילה שמתחילה באותה האות",
                                         onSolved = {
                                             if (!consumeTapCooldown()) return@MatchLetterToWordGame
@@ -1690,6 +1694,8 @@ fun GameScreen(
                                                 1f
                                             }
                                         },
+                                        chapterId = chapterId,
+                                        stationId = stationId,
                                         onAttempt = { choiceId ->
                                             if (!consumeTapCooldown()) return@ImageMatchGame false
                                             cancelFeedbackVoice()

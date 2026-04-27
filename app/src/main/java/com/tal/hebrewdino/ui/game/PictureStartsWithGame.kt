@@ -50,15 +50,16 @@ fun PictureStartsWithGame(
     shakePx: Float,
     /** Subtle guidance pulse when the round appears (buttons). */
     entryPulseEpoch: Int = 0,
-    pictureImageHeight: Dp = 140.dp,
     /** Scales only the prompt word text (under the picture). */
     promptWordSizeMultiplier: Float = 1f,
-    /** Max width for the picture card. If null, uses a reasonable default. */
+    /** Same as [ImageMatchGame.pictureSizeMultiplier]: scales each card width after [ScreenFit.rowChildWidthDp]. */
+    pictureSizeMultiplier: Float = 1f,
+    /** Max width for the picture card row. If null, uses full [maxWidth] like station 5 (three-card row math). */
     pictureFrameMaxWidthFraction: Float? = null,
-    /** Minimum width for the picture card (so very small screens don't collapse it). */
+    /** Minimum width when [pictureFrameMaxWidthFraction] caps the row (legacy / narrow layouts). */
     pictureFrameMinWidth: Dp = 200.dp,
-    /** Scales picture/emoji inside the frame, not the frame itself. */
-    pictureInnerScale: (word: String, tileDrawable: Int) -> Float = { _, _ -> 1f },
+    /** Scales picture/emoji inside the frame, not the frame itself (same knob as [ImageMatchGame.innerPictureScaleForChoice]). */
+    innerPictureScale: Float = 1f,
     /** After 2 wrong taps, pulse the correct answer (subtle hint). */
     hintCorrectLetter: String? = null,
     hintPulseEpoch: Int = 0,
@@ -68,6 +69,9 @@ fun PictureStartsWithGame(
     /** Flash the last wrong-picked letter button (stronger feedback). */
     wrongFlashLetter: String? = null,
     wrongFlashEpoch: Int = 0,
+    /** Optional saga context for [captionFontSizeForWordCard]. */
+    chapterId: Int? = null,
+    stationId: Int? = null,
     onPickLetter: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -86,16 +90,24 @@ fun PictureStartsWithGame(
         )
         Spacer(modifier = Modifier.height(12.dp))
         BoxWithConstraints(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-            val frameMaxW =
+            val rowInnerWidth = maxWidth
+            val frameCap =
                 pictureFrameMaxWidthFraction?.let { f ->
-                    (maxWidth * f.coerceIn(0.20f, 1f)).coerceAtLeast(pictureFrameMinWidth)
-                } ?: 280.dp
-            val availableW = maxWidth
+                    (rowInnerWidth * f.coerceIn(0.20f, 1f)).coerceAtLeast(pictureFrameMinWidth)
+                } ?: rowInnerWidth
+            val rowForSizing = rowInnerWidth.coerceAtMost(frameCap)
+            val choiceCount = 3
             val density = LocalDensity.current
             Column(
                 modifier =
                     Modifier
-                        .widthIn(max = frameMaxW)
+                        .then(
+                            if (pictureFrameMaxWidthFraction != null) {
+                                Modifier.widthIn(max = frameCap)
+                            } else {
+                                Modifier.fillMaxWidth()
+                            },
+                        )
                         .padding(horizontal = 0.dp, vertical = 0.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
@@ -108,20 +120,20 @@ fun PictureStartsWithGame(
                         tileDrawable = question.tileDrawable,
                     )
 
-                // Match Station 5 sizing rules (computed width/height + caption size from card width).
-                // Even though station 4 shows a single card, we size it as if it were one of the
-                // three station-5 cards so the look (frame + caption) is identical across stations.
+                // Same width math as [ImageMatchGame] for three choices (one visible card, same outer size as st 5/6).
                 val cardGap = 10.dp
                 var cardW =
                     ScreenFit.rowChildWidthDp(
-                        rowInnerWidth = availableW.coerceAtMost(frameMaxW),
-                        count = 3,
+                        rowInnerWidth = rowForSizing,
+                        count = choiceCount,
                         gap = cardGap,
                         minEach = 72.dp,
                         maxEach = 168.dp,
                     )
-                // Respect authored max width constraints.
-                cardW = cardW.coerceAtMost(frameMaxW).coerceAtMost(availableW)
+                cardW =
+                    (cardW * pictureSizeMultiplier).coerceAtMost(
+                        (rowForSizing - cardGap * (choiceCount - 1)) / choiceCount,
+                    )
                 val cardH = cardW * LessonChoiceCardPictureAspect
                 val captionSp =
                     captionFontSizeForWordCard(
@@ -129,6 +141,8 @@ fun PictureStartsWithGame(
                         cardWidth = cardW,
                         word = question.word,
                         sizeMultiplier = promptWordSizeMultiplier,
+                        chapterId = chapterId,
+                        stationId = stationId,
                     )
                 LessonChoiceCard(
                     choice = choice,
@@ -139,7 +153,7 @@ fun PictureStartsWithGame(
                     // Use station-5 aspect ratio; this also fixes "too tall" without a custom frame.
                     cardHeight = cardH,
                     captionFontSize = captionSp,
-                    innerPictureScale = pictureInnerScale(question.word, question.tileDrawable),
+                    innerPictureScale = innerPictureScale,
                     isCorrectPick = false,
                     onClick = {},
                 )

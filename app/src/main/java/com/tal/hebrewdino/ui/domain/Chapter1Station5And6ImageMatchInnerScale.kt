@@ -1,25 +1,61 @@
 package com.tal.hebrewdino.ui.domain
 
+import com.tal.hebrewdino.R
+
 /**
- * Episode 1 stations 5 and 6 (image-match cards): inner illustration scale inside the card.
- * Single implementation so station 6 cannot drift from station 5. Locked by unit tests.
+ * Six-station arc (chapters 1–4) stations **4, 5, and 6**: inner illustration scale inside [LessonChoiceCard].
+ * Station 4 picture rounds and station 5/6 image cards must stay identical — one implementation, unit-tested.
  */
 object Chapter1Station5And6ImageMatchInnerScale {
+    /** Station 4 single picture card: same scale rule as station 5/6 ([innerScale]). */
+    fun innerScalePictureStartsWith(
+        catalogEntryId: String,
+        letter: String,
+        word: String,
+        tintArgb: Int,
+        tileDrawable: Int,
+    ): Float =
+        innerScale(
+            LessonChoice(
+                id = catalogEntryId,
+                letter = letter,
+                word = word,
+                tintArgb = tintArgb,
+                tileDrawable = tileDrawable,
+            ),
+        )
+
     fun innerScale(choice: LessonChoice): Float {
         val isHouse = choice.word == "בית" || choice.id == "w_ב_1"
-        val isMedusa = choice.word == "מדוזה" || choice.id == "w_מ_3"
-        val isBed = choice.word == "מיטה" || choice.id == "w_מ_4"
-        val isPacifier = choice.word == "מוצץ" || choice.id == "w_מ_5"
-        val isTeeth = choice.word == "שיניים" || choice.id == "w_ש_3"
-        val isGiraffe = choice.word == "ג'ירפה" || choice.id == "w_ג_4"
-        val isTrafficLight = choice.word == "רמזור" || choice.id == "w_ר_5"
-        val isFence = choice.word == "גדר" || choice.id == "w_ג_3"
-        val isTable = choice.word == "שולחן" || choice.id == "w_ש_2"
-        val isCar = choice.word == "רכב" || choice.id == "w_ר_2"
-        val isCurtain = choice.word == "וילון" || choice.id == "w_ו_3"
-        val isWaffle = choice.word == "וופל" || choice.id == "w_ו_2"
-        val isLeg = choice.word == "רגל" || choice.id == "w_ר_3"
-        val isRose = choice.word == "ורד" || choice.id == "w_ו_1"
+        val isMedusa =
+            choice.word == "מדוזה" || choice.id == "w_מ_3" || choice.tileDrawable == R.drawable.lesson_pic_medusa
+        val isBed = choice.word == "מיטה" || choice.id == "w_מ_4" || choice.tileDrawable == R.drawable.lesson_pic_mitah
+        val isPacifier =
+            choice.word == "מוצץ" || choice.id == "w_מ_5" || choice.tileDrawable == R.drawable.lesson_pic_motzetz
+        val isTeeth =
+            choice.word == "שיניים" || choice.id == "w_ש_3" || choice.tileDrawable == R.drawable.lesson_pic_shinayim
+        val isGiraffe =
+            choice.word == "ג'ירפה" || choice.id == "w_ג_4" || choice.tileDrawable == R.drawable.lesson_pic_girafa
+        val isTrafficLight =
+            choice.word == "רמזור" || choice.id == "w_ר_5" || choice.tileDrawable == R.drawable.lesson_pic_ramzor
+        val isFence = choice.word == "גדר" || choice.id == "w_ג_3" || choice.tileDrawable == R.drawable.lesson_pic_gader
+        val isTable =
+            choice.word == "שולחן" || choice.id == "w_ש_2" || choice.tileDrawable == R.drawable.lesson_pic_shulchan
+        /** Reserved for a dedicated vector car asset (catalog uses emoji placeholder with [isCarPlaceholderSynonym]). */
+        val isVectorCarTile = choice.tileDrawable == R.drawable.lesson_pic_car
+        /** אוטו / מכונית / רכב: same placeholder drawing + inner scale as פרק 1 car words. */
+        val isCarPlaceholderSynonym =
+            choice.word == "מכונית" ||
+                choice.id == "w_מ_1" ||
+                choice.word == "אוטו" ||
+                choice.id == "w_א_4" ||
+                choice.word == "רכב" ||
+                choice.id == "w_ר_2"
+        val isCurtain =
+            choice.word == "וילון" || choice.id == "w_ו_3" || choice.tileDrawable == R.drawable.lesson_pic_vilon
+        val isWaffle = choice.word == "וופל" || choice.id == "w_ו_2" || choice.tileDrawable == R.drawable.lesson_pic_wafel
+        val isLeg = choice.word == "רגל" || choice.id == "w_ר_3" || choice.tileDrawable == R.drawable.lesson_pic_regel
+        val isRose = choice.word == "ורד" || choice.id == "w_ו_1" || choice.tileDrawable == R.drawable.lesson_pic_vered
         val isHippo = choice.word == "היפופוטם" || choice.id == "w_ה_3"
         val isMountain = choice.word == "הר" || choice.id == "w_ה_1"
         return when {
@@ -35,7 +71,7 @@ object Chapter1Station5And6ImageMatchInnerScale {
             // Feedback: giraffe 2x.
             isGiraffe -> 1f
             isTable -> 1.2f
-            isCar -> 1f
+            isVectorCarTile -> 1.15f
             isCurtain -> 1f
             // Feedback: shrink waffle 2x (relative to default 2f).
             isWaffle -> 1f
@@ -49,8 +85,10 @@ object Chapter1Station5And6ImageMatchInnerScale {
             // Tweaked again: +20%.
             isBed -> 0.72f
             // Episode 1 station 5 feedback: pacifier reads huge; make it 1/3 of the default (2x) scale.
-            // New request: pacifier +50% everywhere.
-            isPacifier -> 1.5f
+            // +50% tuning, then −10% on the drawing.
+            isPacifier -> 1.35f
+            // מכונית / אוטו / רכב: default card inner scale is 2f; +15% on the drawing.
+            isCarPlaceholderSynonym -> 2.3f
             else -> 2f
         }
     }

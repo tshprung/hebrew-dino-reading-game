@@ -17,6 +17,8 @@ object NavRoutes {
     const val Ch2Reward = "ch2_reward"
     const val Ch1MidBoost = "ch1_mid_boost"
     const val Ch2MidBoost = "ch2_mid_boost"
+    const val Ch3MidBoost = "ch3_mid_boost"
+    const val Ch4MidBoost = "ch4_mid_boost"
     const val Ch3Intro = "ch3_intro"
     const val Ch3Letters = "ch3_letters"
     const val Ch3Journey = "ch3_journey"

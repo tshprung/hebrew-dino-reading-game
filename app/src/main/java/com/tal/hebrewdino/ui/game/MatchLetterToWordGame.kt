@@ -96,6 +96,9 @@ fun MatchLetterToWordGame(
     /** Called when a wrong match is attempted (picked letter + picked word choice id). */
     onWrongMatch: ((pickedLetter: String, pickedChoiceId: String) -> Unit)? = null,
     onSolved: () -> Unit,
+    /** Optional saga context for [captionFontSizeForWordCard]. */
+    chapterId: Int? = null,
+    stationId: Int? = null,
     modifier: Modifier = Modifier,
 ) {
     val maxPairs = choices.take(3)
@@ -368,6 +371,8 @@ fun MatchLetterToWordGame(
                                     cardWidth = cardW,
                                     word = ch.word,
                                     sizeMultiplier = captionSizeMultiplier,
+                                    chapterId = chapterId,
+                                    stationId = stationId,
                                 )
                             LessonChoiceCard(
                                 choice = ch,
@@ -611,6 +616,8 @@ fun MatchLetterToWordGame(
                                     cardWidth = cardW,
                                     word = ch.word,
                                     sizeMultiplier = captionSizeMultiplier,
+                                    chapterId = chapterId,
+                                    stationId = stationId,
                                 )
                             val pop = remember(ch.id, contentKey) { Animatable(1f) }
                             val wrongFlash = remember(ch.id, contentKey) { Animatable(0f) }

@@ -31,7 +31,14 @@ object Chapter1StationOrder {
             // Station 3: a bit longer.
             REVEAL_THEN_CHOOSE -> StationQuizPlan(StationQuizMode.FindLetterGrid, questionCount = 7, initialGroupIndex = 0)
             PICTURE_PICK_ONE ->
-                StationQuizPlan(StationQuizMode.PictureStartsWith, questionCount = 8, initialGroupIndex = 1)
+                StationQuizPlan(
+                    mode = StationQuizMode.PictureStartsWith,
+                    questionCount = 8,
+                    initialGroupIndex = 1,
+                    // Same caption/picture tuning as stations 5–6 so the single picture card matches ImageMatch.
+                    imageMatchCaptionSizeMultiplier = 1.5f,
+                    imageMatchPictureSizeMultiplier = 1f,
+                )
             PICTURE_PICK_ALL ->
                 StationQuizPlan(
                     mode = StationQuizMode.ImageMatch,

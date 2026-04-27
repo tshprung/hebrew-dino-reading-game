@@ -55,6 +55,9 @@ fun ImageMatchGame(
     pictureSizeMultiplier: Float = 1f,
     /** Scales only the illustration inside the card frame (card outer size unchanged). */
     innerPictureScaleForChoice: (LessonChoice) -> Float = { 1f },
+    /** Optional saga context for [captionFontSizeForWordCard] (chapter/station tweaks). */
+    chapterId: Int? = null,
+    stationId: Int? = null,
     modifier: Modifier = Modifier,
 ) {
     val scope = rememberCoroutineScope()
@@ -132,6 +135,8 @@ fun ImageMatchGame(
                                 cardWidth = cardW,
                                 word = choice.word,
                                 sizeMultiplier = captionSizeMultiplier,
+                                chapterId = chapterId,
+                                stationId = stationId,
                             )
                         LessonChoiceCard(
                             choice = choice,

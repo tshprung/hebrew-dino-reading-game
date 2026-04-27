@@ -27,11 +27,13 @@ class ProgressPrefs(private val context: Context) {
     private val chapter2CompletedKey: Preferences.Key<Boolean> = booleanPreferencesKey("chapter2_completed")
     private val chapter3IntroSeenKey: Preferences.Key<Boolean> = booleanPreferencesKey("chapter3_intro_seen")
     private val chapter3LettersIntroSeenKey: Preferences.Key<Boolean> = booleanPreferencesKey("chapter3_letters_intro_seen")
+    private val chapter3MidBoostSeenKey: Preferences.Key<Boolean> = booleanPreferencesKey("chapter3_mid_boost_seen")
     private val chapter3UnlockedStationKey: Preferences.Key<Int> = intPreferencesKey("chapter3_unlocked_station")
     private val chapter3CompletedStationsKey: Preferences.Key<String> = androidx.datastore.preferences.core.stringPreferencesKey("chapter3_completed_stations")
     private val chapter3CompletedKey: Preferences.Key<Boolean> = booleanPreferencesKey("chapter3_completed")
     private val chapter4IntroSeenKey: Preferences.Key<Boolean> = booleanPreferencesKey("chapter4_intro_seen")
     private val chapter4LettersIntroSeenKey: Preferences.Key<Boolean> = booleanPreferencesKey("chapter4_letters_intro_seen")
+    private val chapter4MidBoostSeenKey: Preferences.Key<Boolean> = booleanPreferencesKey("chapter4_mid_boost_seen")
     private val chapter4UnlockedStationKey: Preferences.Key<Int> = intPreferencesKey("chapter4_unlocked_station")
     private val chapter4CompletedStationsKey: Preferences.Key<String> =
         androidx.datastore.preferences.core.stringPreferencesKey("chapter4_completed_stations")
@@ -97,6 +99,9 @@ class ProgressPrefs(private val context: Context) {
     val chapter3LettersIntroSeenFlow: Flow<Boolean> =
         context.dataStore.data.map { prefs -> prefs[chapter3LettersIntroSeenKey] ?: false }
 
+    val chapter3MidBoostSeenFlow: Flow<Boolean> =
+        context.dataStore.data.map { prefs -> prefs[chapter3MidBoostSeenKey] ?: false }
+
     val chapter3UnlockedStationFlow: Flow<Int> =
         context.dataStore.data.map { prefs ->
             (prefs[chapter3UnlockedStationKey] ?: 1).coerceIn(1, Chapter3Config.STATION_COUNT)
@@ -120,6 +125,9 @@ class ProgressPrefs(private val context: Context) {
 
     val chapter4LettersIntroSeenFlow: Flow<Boolean> =
         context.dataStore.data.map { prefs -> prefs[chapter4LettersIntroSeenKey] ?: false }
+
+    val chapter4MidBoostSeenFlow: Flow<Boolean> =
+        context.dataStore.data.map { prefs -> prefs[chapter4MidBoostSeenKey] ?: false }
 
     val chapter4UnlockedStationFlow: Flow<Int> =
         context.dataStore.data.map { prefs ->
@@ -165,6 +173,14 @@ class ProgressPrefs(private val context: Context) {
 
     suspend fun markChapter2MidBoostSeen() {
         context.dataStore.edit { prefs -> prefs[chapter2MidBoostSeenKey] = true }
+    }
+
+    suspend fun markChapter3MidBoostSeen() {
+        context.dataStore.edit { prefs -> prefs[chapter3MidBoostSeenKey] = true }
+    }
+
+    suspend fun markChapter4MidBoostSeen() {
+        context.dataStore.edit { prefs -> prefs[chapter4MidBoostSeenKey] = true }
     }
 
     suspend fun unlockChapter2AtLeast(stationId: Int) {
@@ -442,18 +458,22 @@ class ProgressPrefs(private val context: Context) {
             prefs[beachIntroSeenKey] = false
             prefs[beachOutroSeenKey] = false
             prefs[chapter1LettersIntroSeenKey] = false
+            prefs[chapter1MidBoostSeenKey] = false
             prefs[chapter2IntroSeenKey] = false
             prefs[chapter2LettersIntroSeenKey] = false
+            prefs[chapter2MidBoostSeenKey] = false
             prefs[chapter2UnlockedStationKey] = 1
             prefs[chapter2CompletedStationsKey] = ""
             prefs[chapter2CompletedKey] = false
             prefs[chapter3IntroSeenKey] = false
             prefs[chapter3LettersIntroSeenKey] = false
+            prefs[chapter3MidBoostSeenKey] = false
             prefs[chapter3UnlockedStationKey] = 1
             prefs[chapter3CompletedStationsKey] = ""
             prefs[chapter3CompletedKey] = false
             prefs[chapter4IntroSeenKey] = false
             prefs[chapter4LettersIntroSeenKey] = false
+            prefs[chapter4MidBoostSeenKey] = false
             prefs[chapter4UnlockedStationKey] = 1
             prefs[chapter4CompletedStationsKey] = ""
             prefs[chapter4CompletedKey] = false
