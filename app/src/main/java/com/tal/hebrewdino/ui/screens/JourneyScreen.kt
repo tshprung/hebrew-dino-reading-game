@@ -522,7 +522,7 @@ private fun JourneyRoadStrip(
                     val p0 = pts[i]
                     val p1 = pts[i + 1]
                     val mid = Offset((p0.x + p1.x) / 2f, (p0.y + p1.y) / 2f)
-                    path.quadraticBezierTo(p0.x, p0.y, mid.x, mid.y)
+                    path.quadraticTo(p0.x, p0.y, mid.x, mid.y)
                 }
                 // Finish to the last point.
                 val last = pts.last()

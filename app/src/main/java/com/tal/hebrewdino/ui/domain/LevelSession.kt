@@ -74,62 +74,175 @@ class LevelSession(
                 _currentQuestion =
                     when (plan.mode) {
                         StationQuizMode.FindLetterGrid -> {
-                            val correct = nextBalancedCorrect(group)
+                            val targetLetter =
+                                if (letterPoolSpec === Chapter3LetterPoolSpec) {
+                                    Chapter3EpisodeContent.gridTargetLetter(currentIndex)
+                                } else {
+                                    nextBalancedCorrect(group)
+                                }
                             FindLetterGridGenerator.generate(
                                 rnd = rnd,
                                 group = group,
-                                targetLetter = correct,
+                                targetLetter = targetLetter,
                                 maxTargetCount =
-                                    if (letterPoolSpec === Chapter1LetterPoolSpec || letterPoolSpec === Chapter2LetterPoolSpec) {
-                                        4
-                                    } else {
-                                        null
+                                    when {
+                                        letterPoolSpec === Chapter3LetterPoolSpec -> 4
+                                        letterPoolSpec === Chapter1LetterPoolSpec ||
+                                            letterPoolSpec === Chapter2LetterPoolSpec -> 4
+                                        else -> null
                                     },
                             )
                         }
                         StationQuizMode.PickLetter -> {
-                            val correct = nextBalancedCorrect(group)
-                            popGenerator.generate(
-                                rnd = rnd,
-                                group = group,
-                                correctAnswer = correct,
-                                optionCount = 3,
-                            )
+                            if (letterPoolSpec === Chapter3LetterPoolSpec) {
+                                val optionCount = plan.pickLetterOptionCount ?: 6
+                                if (plan.chapter3HighlightedLetterInWordPickLetter) {
+                                    val round = Chapter3EpisodeContent.pickSpellRound(currentIndex)
+                                    val options =
+                                        buildList {
+                                            add(round.correctLetter)
+                                            val distractors =
+                                                Chapter3Config.letters
+                                                    .filter { it != round.correctLetter }
+                                                    .shuffled(rnd)
+                                                    .take((optionCount - 1).coerceAtLeast(1))
+                                            addAll(distractors)
+                                        }.distinct()
+                                    // Ensure size is stable (kids notice when the layout jumps).
+                                    val padded =
+                                        if (options.size >= optionCount) {
+                                            options.take(optionCount)
+                                        } else {
+                                            val extra =
+                                                Chapter3Config.letters
+                                                    .filter { it !in options }
+                                                    .shuffled(rnd)
+                                                    .take(optionCount - options.size)
+                                            options + extra
+                                        }
+                                    Question.PopBalloonsQuestion(
+                                        correctAnswer = round.correctLetter,
+                                        options = padded,
+                                    )
+                                } else if (plan.chapter3FindAnyLetterInWordPickLetter) {
+                                    val (word, _) = Chapter3EpisodeContent.findAnyInWord(currentIndex)
+                                    val inWord =
+                                        word.toCharArray().map { it.toString() }.distinct()
+                                    val distractors =
+                                        Chapter3Config.letters
+                                            .filter { it !in inWord }
+                                            .shuffled(rnd)
+                                            .take((optionCount - inWord.size).coerceAtLeast(1))
+                                    val options = (inWord + distractors).take(optionCount)
+                                    Question.PopBalloonsQuestion(
+                                        // Placeholder; GameScreen will accept ANY in-word letter as correct for this station.
+                                        correctAnswer = options.first(),
+                                        options = options,
+                                    )
+                                } else {
+                                    val round = Chapter3EpisodeContent.pickSpellRound(currentIndex)
+                                    popGenerator.generatePickLetterOptions(
+                                        rnd = rnd,
+                                        group = group,
+                                        correctAnswer = round.correctLetter,
+                                        optionCount = optionCount,
+                                    )
+                                }
+                            } else {
+                                val correct = nextBalancedCorrect(group)
+                                popGenerator.generate(
+                                    rnd = rnd,
+                                    group = group,
+                                    correctAnswer = correct,
+                                    optionCount = plan.pickLetterOptionCount ?: 3,
+                                )
+                            }
                         }
                         StationQuizMode.PopBalloons -> {
-                            val correct = nextBalancedCorrect(group)
-                            popGenerator.generate(
-                                rnd = rnd,
-                                group = group,
-                                correctAnswer = correct,
-                                optionCount = 7,
-                            )
+                            if (letterPoolSpec === Chapter3LetterPoolSpec && plan.chapter3PopAllLettersInWord) {
+                                val wordIndex = currentIndex.coerceIn(0, 2)
+                                val (word, _) =
+                                    when (wordIndex) {
+                                        0 -> "גמל" to "w_ג_1"
+                                        1 -> "דבש" to "w_ד_4"
+                                        else -> "שמש" to "w_ש_1"
+                                    }
+                                val correctBalloons = word.toCharArray().map { it.toString() } // includes duplicates
+                                val optionCount = 8
+                                val distractors =
+                                    Chapter3Config.letters
+                                        .filter { it !in correctBalloons }
+                                        .shuffled(rnd)
+                                        .take((optionCount - correctBalloons.size).coerceAtLeast(1))
+                                val options = (correctBalloons + distractors).take(optionCount).shuffled(rnd)
+                                Question.PopBalloonsQuestion(
+                                    // Not used in Episode 3 station 3; UI supplies a multi-correct set.
+                                    correctAnswer = options.first(),
+                                    options = options,
+                                )
+                            } else {
+                                val correct =
+                                    if (letterPoolSpec === Chapter3LetterPoolSpec) {
+                                        Chapter3EpisodeContent.balloonFirstLetter(currentIndex)
+                                    } else {
+                                        nextBalancedCorrect(group)
+                                    }
+                                popGenerator.generate(
+                                    rnd = rnd,
+                                    group = group,
+                                    correctAnswer = correct,
+                                    optionCount = 7,
+                                )
+                            }
                         }
                         StationQuizMode.PictureStartsWith -> {
                             val correct = nextBalancedCorrect(group)
                             val used = lessonWordUsedCorrectIdsByLetter.getOrPut(correct) { mutableSetOf() }
-                            Chapter1LessonGenerators.pictureStartsWith(
-                                rnd = rnd,
-                                group = group,
-                                targetLetter = correct,
-                                excludeCorrectWordIds = used,
-                                optionLetters = episodeOptionLetters(),
-                            ).also { q ->
-                                used.add(q.catalogEntryId)
-                            }
+                            val q =
+                                if (letterPoolSpec === Chapter3LetterPoolSpec) {
+                                    Chapter3LessonGenerators.pictureStartsWith(
+                                        rnd = rnd,
+                                        group = group,
+                                        targetLetter = correct,
+                                        excludeCorrectWordIds = used,
+                                        optionLetters = episodeOptionLetters(),
+                                    )
+                                } else {
+                                    Chapter1LessonGenerators.pictureStartsWith(
+                                        rnd = rnd,
+                                        group = group,
+                                        targetLetter = correct,
+                                        excludeCorrectWordIds = used,
+                                        optionLetters = episodeOptionLetters(),
+                                    )
+                                }
+                            used.add(q.catalogEntryId)
+                            q
                         }
                         StationQuizMode.ImageMatch -> {
                             val correct = nextBalancedCorrect(group)
                             val used = lessonWordUsedCorrectIdsByLetter.getOrPut(correct) { mutableSetOf() }
-                            Chapter1LessonGenerators.imageMatch(
-                                rnd = rnd,
-                                group = group,
-                                targetLetter = correct,
-                                excludeCorrectWordIds = used,
-                                alwaysThreeChoices = plan.imageMatchAlwaysThreeChoices,
-                            ).also { q ->
-                                used.add(q.correctChoiceId)
-                            }
+                            val q =
+                                if (letterPoolSpec === Chapter3LetterPoolSpec) {
+                                    Chapter3LessonGenerators.imageMatch(
+                                        rnd = rnd,
+                                        group = group,
+                                        targetLetter = correct,
+                                        excludeCorrectWordIds = used,
+                                        alwaysThreeChoices = plan.imageMatchAlwaysThreeChoices,
+                                        totalChoiceCount = plan.imageMatchChoiceCount,
+                                    )
+                                } else {
+                                    Chapter1LessonGenerators.imageMatch(
+                                        rnd = rnd,
+                                        group = group,
+                                        targetLetter = correct,
+                                        excludeCorrectWordIds = used,
+                                        alwaysThreeChoices = plan.imageMatchAlwaysThreeChoices,
+                                    )
+                                }
+                            used.add(q.correctChoiceId)
+                            q
                         }
                         StationQuizMode.FinaleSlot -> {
                             val (a, b) = nextTwoDistinctCorrect(group)

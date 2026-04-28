@@ -15,8 +15,8 @@ data class LessonWordEntry(
     val id: String,
     val letter: String,
     val word: String,
-    @ColorInt val tintArgb: Int,
-    @DrawableRes val tileRes: Int = R.drawable.lesson_pic_placeholder,
+    @param:ColorInt val tintArgb: Int,
+    @param:DrawableRes val tileRes: Int = R.drawable.lesson_pic_placeholder,
 )
 
 /**
@@ -43,6 +43,7 @@ object LessonWordCatalog {
             LessonWordEntry("w_ד_1", "ד", "דג", 0xFF81D4FA.toInt()),
             LessonWordEntry("w_ד_2", "ד", "דלת", 0xFFFFF59D.toInt()),
             LessonWordEntry("w_ד_3", "ד", "דחליל", 0xFFD1C4E9.toInt()),
+            LessonWordEntry("w_ד_4", "ד", "דבש", 0xFFFFB300.toInt(), tileRes = R.drawable.lesson_pic_dvash),
             LessonWordEntry("w_ה_1", "ה", "הר", 0xFFA1887F.toInt()),
             LessonWordEntry("w_ה_2", "ה", "הפתעה", 0xFFFFF176.toInt()),
             LessonWordEntry("w_ה_3", "ה", "היפופוטם", 0xFFBCAAA4.toInt()),
@@ -107,6 +108,8 @@ object LessonWordCatalog {
     }
 
     fun entriesForLetter(letter: String): List<LessonWordEntry> = entries.filter { it.letter == letter }
+
+    fun entryById(id: String): LessonWordEntry? = entries.firstOrNull { it.id == id }
 
     fun pickRandom(rnd: Random, letter: String, excludeIds: Set<String> = emptySet()): LessonWordEntry {
         val pool = entries.filter { it.letter == letter && it.id !in excludeIds }

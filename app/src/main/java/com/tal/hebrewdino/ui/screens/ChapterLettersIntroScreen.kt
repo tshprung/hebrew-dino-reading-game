@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -31,9 +32,11 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.Image
 import com.tal.hebrewdino.R
+import com.tal.hebrewdino.ui.domain.Chapter3Config
 import com.tal.hebrewdino.ui.components.learning.LetterChoiceTile
 import com.tal.hebrewdino.ui.audio.AudioClips
 import com.tal.hebrewdino.ui.audio.VoicePlayer
@@ -73,9 +76,11 @@ fun Chapter3LettersIntroScreen(
     modifier: Modifier = Modifier,
 ) {
     ChapterLettersIntroScreen(
-        chapterTitle = "פרק 3 - מצא את הביצה הסגולה",
-        letters = listOf("ר", "ת", "צ", "ח", "ט"),
-        backgroundRes = R.drawable.chapter3_journey_road,
+        chapterTitle = "פרק 3 — האותיות במסע",
+        letters = Chapter3Config.letters,
+        backgroundRes = R.drawable.ch3_journey_bg,
+        letterGridRows = 2,
+        lettersAreaMinHeight = 228.dp,
         onContinue = onContinue,
         modifier = modifier,
     )
@@ -100,6 +105,10 @@ fun ChapterLettersIntroScreen(
     chapterTitle: String,
     letters: List<String>,
     backgroundRes: Int,
+    /** 2 = two horizontal rows of letter tiles (Episode 3 layout). */
+    letterGridRows: Int = 1,
+    /** Ensures enough vertical space so rows do not overlap. */
+    lettersAreaMinHeight: Dp? = null,
     onContinue: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -157,7 +166,14 @@ fun ChapterLettersIntroScreen(
                         .clip(RoundedCornerShape(24.dp))
                         .background(Color.White.copy(alpha = 0.88f))
                         .padding(18.dp)
-                        .width(560.dp),
+                        .width(560.dp)
+                        .then(
+                            if (lettersAreaMinHeight != null) {
+                                Modifier.heightIn(min = lettersAreaMinHeight)
+                            } else {
+                                Modifier
+                            },
+                        ),
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
@@ -168,15 +184,35 @@ fun ChapterLettersIntroScreen(
                     )
                     Spacer(modifier = Modifier.height(10.dp))
 
-                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
-                        stableLetters.forEach { l ->
-                            LetterChoiceTile(
-                                letter = l,
-                                tileSize = 88.dp,
-                                haloActive = highlightedLetter == l,
-                                enabled = false,
-                                onClick = { },
+                    val letterRows: List<List<String>> =
+                        if (letterGridRows >= 2 && stableLetters.size > 1) {
+                            val mid = (stableLetters.size + 1) / 2
+                            listOf(
+                                stableLetters.take(mid),
+                                stableLetters.drop(mid),
                             )
+                        } else {
+                            listOf(stableLetters)
+                        }
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        letterRows.forEach { rowLetters ->
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                rowLetters.forEach { l ->
+                                    LetterChoiceTile(
+                                        letter = l,
+                                        tileSize = 88.dp,
+                                        haloActive = highlightedLetter == l,
+                                        enabled = false,
+                                        onClick = { },
+                                    )
+                                }
+                            }
                         }
                     }
 

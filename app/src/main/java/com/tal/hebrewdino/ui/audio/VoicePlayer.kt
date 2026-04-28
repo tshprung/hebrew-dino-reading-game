@@ -1,6 +1,7 @@
 package com.tal.hebrewdino.ui.audio
 
 import android.content.Context
+import android.media.AudioAttributes
 import android.media.MediaPlayer
 import android.util.Log
 import kotlinx.coroutines.Dispatchers
@@ -209,7 +210,12 @@ class VoicePlayer(context: Context) {
             val afd = appContext.assets.openFd(assetPath)
             val mp = player ?: return false
             mp.setDataSource(afd.fileDescriptor, afd.startOffset, afd.length)
-            mp.setAudioStreamType(android.media.AudioManager.STREAM_MUSIC)
+            mp.setAudioAttributes(
+                AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_MEDIA)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                    .build(),
+            )
             mp.prepare()
             afd.close()
             true

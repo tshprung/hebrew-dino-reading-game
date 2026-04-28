@@ -286,7 +286,7 @@ private fun ChaptersHexHoneycomb(
                             imageRes =
                                 when (ch.id) {
                                     2 -> R.drawable.chapter2_journey_road
-                                    3 -> R.drawable.chapter3_journey_road
+                                    3 -> R.drawable.ch3_journey_bg
                                     4 -> R.drawable.mountain_bg_chapter4
                                     else -> R.drawable.forest_bg_journey_road
                                 },

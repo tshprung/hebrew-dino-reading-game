@@ -28,7 +28,7 @@ fun Chapter3LevelScreen(
         stageLabel = "תחנה $station",
         plan = StationQuizPlans.chapter3(station),
         letterPoolSpec = Chapter3LetterPoolSpec,
-        backgroundRes = R.drawable.chapter3_level_overlay,
+        backgroundRes = R.drawable.ch3_level_bg,
         onBack = onBack,
         onComplete = onComplete,
         onLettersHelp = onLettersHelp,

@@ -33,6 +33,17 @@ object AudioClips {
 
     /** Episode 1 station 6: "ליחצו על אות והמילה שמתחילה באותה האות". */
     const val MatchLetterToWordInstructions = "audio/match_letter_to_word_instructions.wav"
+    /** Station 6 (image → word): "איזו מילה מתאימה לתמונה?". */
+    const val ImageToWordInstructions = "audio/image_to_word_instructions.wav"
+
+    // Episode 3 — optional sentence-based instructions (recordings; fall back to legacy prompts if missing).
+    const val Ch3St1PictureStartsWithInstruction = "audio/ch3_st1_picture_starts_with.wav"
+    const val Ch3St2MatchLetterToWordInstruction = "audio/ch3_st2_match_letter_to_word.wav"
+    const val Ch3St3PopAllLettersInWordInstruction = "audio/ch3_st3_pop_all_letters_in_word.wav"
+    const val Ch3St4FindHighlightedLetterInWordInstruction = "audio/ch3_st4_find_highlighted_letter_in_word.wav"
+    const val Ch3St5AudioLetterRecognitionInstruction = "audio/ch3_st5_audio_letter_recognition.wav"
+    const val Ch3St6ImageMatchWordInstruction = "audio/ch3_st6_image_match_word.wav"
+    // (Old ch3 instruction constants removed/renamed; keep files if you already recorded them — they just won't be used.)
 
     /** Episode 1 station 2 prefix: "פוצץ את הבלונים עם האות". */
     const val PopBalloonsWithLetter = "audio/pop_balloons_with_letter.wav"
@@ -92,6 +103,8 @@ object AudioClips {
     // Mid-chapter boost (after station 3)
     const val StoryCh1MidBoost = "audio/story_ch1_mid_boost.wav"
     const val StoryCh2MidBoost = "audio/story_ch2_mid_boost.wav"
+    /** Episode 3: mid-chapter encouragement after station 3. */
+    const val StoryCh3MidBoost = "audio/story_ch3_mid_boost.wav"
 
     /**
      * Optional per-word voice lines, keyed by catalog entry id (e.g. `w_ב_1`).

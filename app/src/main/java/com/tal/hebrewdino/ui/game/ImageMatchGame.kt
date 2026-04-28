@@ -3,6 +3,7 @@ package com.tal.hebrewdino.ui.game
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -11,9 +12,13 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -23,9 +28,12 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import com.tal.hebrewdino.ui.layout.ScreenFit
 import com.tal.hebrewdino.ui.components.TargetLetterHeaderChip
@@ -58,6 +66,18 @@ fun ImageMatchGame(
     /** Optional saga context for [captionFontSizeForWordCard] (chapter/station tweaks). */
     chapterId: Int? = null,
     stationId: Int? = null,
+    /** When set, shown above the target-letter chip (Episode 3 “which picture is this word?”). */
+    headerInstructionText: String? = null,
+    /** Scales the header instruction text (Episode 1/2 station 5 sizing tweaks). */
+    headerInstructionFontScale: Float = 1.35f,
+    /** Optional big, prominent word prompt (Episode 3 station 5). */
+    headerPromptWord: String? = null,
+    /** When false, hides the large letter chip (word-only header). */
+    showTargetLetterChip: Boolean = true,
+    /** Adjusts the letter chip vertical placement (Episode 1 station 5). */
+    targetLetterChipOffsetYDp: Int = -10,
+    /** Adds extra top padding before header (Episode 1 station 5). */
+    headerTopPaddingDp: Int = 0,
     modifier: Modifier = Modifier,
 ) {
     val scope = rememberCoroutineScope()
@@ -91,16 +111,48 @@ fun ImageMatchGame(
             val cardH = cardW * LessonChoiceCardPictureAspect
             val density = LocalDensity.current
             val narrowRow = rowInnerWidth < 380.dp
-            Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
-                // Station 5 (all chapters): match station 3 target-letter chip style, and sit a bit lower.
-                TargetLetterHeaderChip(
-                    letter = question.targetLetter,
-                    fontSize = if (rowInnerWidth < 420.dp) 52.sp else 56.sp,
-                    modifier =
-                        Modifier
-                            .padding(top = 2.dp)
-                            .offset(y = (-10).dp),
-                )
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.fillMaxWidth().padding(top = headerTopPaddingDp.dp),
+            ) {
+                if (headerInstructionText != null) {
+                    Text(
+                        text = headerInstructionText,
+                        style =
+                            MaterialTheme.typography.titleMedium.copy(
+                                fontSize = MaterialTheme.typography.titleMedium.fontSize * headerInstructionFontScale,
+                            ),
+                        color = Color(0xFF0B2B3D),
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(horizontal = 8.dp),
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                }
+                if (headerPromptWord != null) {
+                    Text(
+                        text = headerPromptWord,
+                        fontSize = if (rowInnerWidth < 420.dp) 52.sp else 60.sp,
+                        fontWeight = FontWeight.Black,
+                        color = Color(0xFF0B2B3D),
+                        textAlign = TextAlign.Center,
+                        modifier =
+                            Modifier
+                                .background(Color(0xFFFFF59D).copy(alpha = 0.95f), shape = RoundedCornerShape(16.dp))
+                                .padding(horizontal = 18.dp, vertical = 6.dp),
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                }
+                if (showTargetLetterChip) {
+                    // Station 5 (all chapters): match station 3 target-letter chip style, and sit a bit lower.
+                    TargetLetterHeaderChip(
+                        letter = question.targetLetter,
+                        fontSize = if (rowInnerWidth < 420.dp) 52.sp else 56.sp,
+                        modifier =
+                            Modifier
+                                .padding(top = 2.dp)
+                                .offset(y = targetLetterChipOffsetYDp.dp),
+                    )
+                }
                 Spacer(modifier = Modifier.height(if (narrowRow) 16.dp else 20.dp))
                 Row(
                     modifier =

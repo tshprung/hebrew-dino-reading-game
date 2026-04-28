@@ -199,7 +199,7 @@ fun LessonChoiceCard(
         } else {
             val pictureRotationZ =
                 if (choice.tileDrawable == R.drawable.lesson_pic_regel) {
-                    90f
+                    -90f
                 } else {
                     0f
                 }

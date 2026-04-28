@@ -39,6 +39,11 @@ class Chapter1Station5And6ImageMatchInnerScaleTest {
     }
 
     @Test
+    fun honeyDvashInnerScale() {
+        assertEquals(1.08f, Chapter1Station5And6ImageMatchInnerScale.innerScale(LessonChoice("w_ד_4", "ד", "דבש", 0, R.drawable.lesson_pic_dvash)), 0f)
+    }
+
+    @Test
     fun bedIsLargerScale() {
         assertEquals(0.72f, Chapter1Station5And6ImageMatchInnerScale.innerScale(LessonChoice("w_מ_4", "מ", "מיטה", 0)), 0f)
         assertEquals(0.72f, Chapter1Station5And6ImageMatchInnerScale.innerScale(LessonChoice("x", "מ", "מיטה", 0)), 0f)
