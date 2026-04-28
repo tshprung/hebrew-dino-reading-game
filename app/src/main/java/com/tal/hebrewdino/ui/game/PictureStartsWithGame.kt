@@ -1,6 +1,7 @@
 package com.tal.hebrewdino.ui.game
 
 import androidx.compose.foundation.border
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -89,6 +90,14 @@ fun PictureStartsWithGame(
             style = MaterialTheme.typography.titleMedium.copy(fontSize = MaterialTheme.typography.titleMedium.fontSize * 2),
             color = Color(0xFF0B2B3D),
             textAlign = TextAlign.Center,
+            modifier =
+                if (chapterId == 3) {
+                    Modifier
+                        .background(Color.White.copy(alpha = 0.72f), RoundedCornerShape(18.dp))
+                        .padding(horizontal = 14.dp, vertical = 8.dp)
+                } else {
+                    Modifier
+                },
         )
         Spacer(modifier = Modifier.height(12.dp))
         BoxWithConstraints(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {

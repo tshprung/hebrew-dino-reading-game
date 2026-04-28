@@ -28,7 +28,8 @@ fun Chapter3LevelScreen(
         stageLabel = "תחנה $station",
         plan = StationQuizPlans.chapter3(station),
         letterPoolSpec = Chapter3LetterPoolSpec,
-        backgroundRes = R.drawable.ch3_level_bg,
+        // Use the same chapter background as the main Chapter 3 screens.
+        backgroundRes = R.drawable.ch3_journey_bg,
         onBack = onBack,
         onComplete = onComplete,
         onLettersHelp = onLettersHelp,

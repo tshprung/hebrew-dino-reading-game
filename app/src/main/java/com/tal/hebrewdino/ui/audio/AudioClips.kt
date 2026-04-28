@@ -33,8 +33,10 @@ object AudioClips {
 
     /** Episode 1 station 6: "ליחצו על אות והמילה שמתחילה באותה האות". */
     const val MatchLetterToWordInstructions = "audio/match_letter_to_word_instructions.wav"
-    /** Station 6 (image → word): "איזו מילה מתאימה לתמונה?". */
+    /** Station 6 (image → word): "איזו מילה מתאימה לתמונה?" (generic/shared). */
     const val ImageToWordInstructions = "audio/image_to_word_instructions.wav"
+    /** Episode 3 station 6: dedicated recording (optional). */
+    const val Ch3ImageToWordInstructions = "audio/ch3_image_to_word_instructions.wav"
 
     // Episode 3 — optional sentence-based instructions (recordings; fall back to legacy prompts if missing).
     const val Ch3St1PictureStartsWithInstruction = "audio/ch3_st1_picture_starts_with.wav"

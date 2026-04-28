@@ -94,7 +94,11 @@ fun ImageToWordGame(
                 fontWeight = FontWeight.Black,
                 color = Color(0xFF0B2B3D),
                 textAlign = TextAlign.Center,
-                modifier = Modifier.padding(top = 6.dp, bottom = 10.dp),
+                modifier =
+                    Modifier
+                        .padding(top = 6.dp, bottom = 10.dp)
+                        .background(Color.White.copy(alpha = 0.72f), RoundedCornerShape(18.dp))
+                        .padding(horizontal = 14.dp, vertical = 8.dp),
             )
 
             if (correctChoice != null) {

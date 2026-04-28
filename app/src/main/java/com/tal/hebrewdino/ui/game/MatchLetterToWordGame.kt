@@ -225,7 +225,18 @@ fun MatchLetterToWordGame(
                 fontWeight = FontWeight.Black,
                 color = Color(0xFF0B2B3D),
                 textAlign = TextAlign.Center,
-                modifier = Modifier.padding(top = headerPadTop, bottom = headerPadBottom, start = 12.dp, end = 12.dp),
+                modifier =
+                    Modifier
+                        .padding(top = headerPadTop, bottom = headerPadBottom, start = 12.dp, end = 12.dp)
+                        .then(
+                            if (chapterId == 3) {
+                                Modifier
+                                    .background(Color.White.copy(alpha = 0.72f), RoundedCornerShape(18.dp))
+                                    .padding(horizontal = 14.dp, vertical = 8.dp)
+                            } else {
+                                Modifier
+                            },
+                        ),
             )
 
             val availableH = (innerH - headerH - bottomSafe).coerceAtLeast(1.dp)

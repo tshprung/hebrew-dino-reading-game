@@ -12,7 +12,8 @@ fun Chapter3IntroScreen(
     modifier: Modifier = Modifier,
 ) {
     ChapterLobbyStoryLayout(
-        backgroundRes = R.drawable.ch3_story_intro_bg,
+        // Use the same background as in-station gameplay (user preference).
+        backgroundRes = R.drawable.ch3_journey_bg,
         title = "פרק 3 — בעקבות העקבות",
         body =
             "דינו ממשיך אחרי העקבות.\n" +

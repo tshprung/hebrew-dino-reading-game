@@ -39,7 +39,8 @@ fun Chapter3OutroScreen(
     modifier: Modifier = Modifier,
 ) {
     ChapterLobbyStoryLayout(
-        backgroundRes = R.drawable.ch3_reward_bg,
+        // Use the same background as in-station gameplay (user preference).
+        backgroundRes = R.drawable.ch3_journey_bg,
         title = "הנה היא!",
         body =
             "הנה היא!\n" +

@@ -82,6 +82,8 @@ fun FindLetterGridGame(
     suppressHeaderTargetLetter: Boolean = false,
     /** When set (Episode 1 station 3), shows an inline instruction next to the target letter. */
     inlineInstructionText: String? = null,
+    /** Optional saga context for chapter-specific UI tweaks. */
+    chapterId: Int? = null,
     modifier: Modifier = Modifier,
 ) {
     val scope = rememberCoroutineScope()
@@ -171,7 +173,18 @@ fun FindLetterGridGame(
                 fontWeight = FontWeight.Black,
                 color = Color(0xFF0B2B3D),
                 textAlign = TextAlign.Center,
-                modifier = Modifier.padding(top = 6.dp, bottom = 6.dp),
+                modifier =
+                    Modifier
+                        .padding(top = 6.dp, bottom = 6.dp)
+                        .then(
+                            if (chapterId == 3) {
+                                Modifier
+                                    .background(Color.White.copy(alpha = 0.72f), RoundedCornerShape(18.dp))
+                                    .padding(horizontal = 14.dp, vertical = 8.dp)
+                            } else {
+                                Modifier
+                            },
+                        ),
             )
         }
         Box(

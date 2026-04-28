@@ -30,6 +30,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
@@ -536,8 +537,9 @@ fun GameScreen(
                             val parts =
                                 buildList {
                                     if (voice.hasAsset(intro)) add(intro)
-                                    AudioClips.letterNameClip(round.correctLetter)?.let { add(it) }
+                                    // UX: say the word first, then the letter (matches on-screen context).
                                     add(AudioClips.wordClipByCatalogId(round.catalogId))
+                                    AudioClips.letterNameClip(round.correctLetter)?.let { add(it) }
                                 }.filter { voice.hasAsset(it) }
                             if (parts.isNotEmpty()) {
                                 voice.playSequenceBlocking(*parts.toTypedArray())
@@ -621,8 +623,9 @@ fun GameScreen(
                             if (chapterId == 3) {
                                 sfx.stopAllStreams()
                                 val clip = AudioClips.Ch3St3PopAllLettersInWordInstruction
-                                // Station 3 uses one round per word (3 words); keep audio aligned to the displayed word.
-                                val wordPath = AudioClips.wordClipByCatalogId(Chapter3EpisodeContent.balloonCatalogId(session.currentIndex))
+                                // Episode 3 station 3: one round per letter-occurrence; keep audio aligned to the displayed word.
+                                val r = Chapter3EpisodeContent.popAllLettersRound(session.currentIndex)
+                                val wordPath = AudioClips.wordClipByCatalogId(r.catalogId)
                                 if (voice.hasAsset(clip)) voice.playBlocking(clip)
                                 if (voice.hasAsset(wordPath)) voice.playBlocking(wordPath)
                             } else {
@@ -737,6 +740,8 @@ fun GameScreen(
                 stationId in 2..5 &&
                 // Station 4: letter + praise is played on correct tap before advancing.
                 stationId != Chapter1StationOrder.PICTURE_PICK_ONE &&
+                // Episode 3 station 5 already plays praise on correct pick; avoid double praise between rounds.
+                !isChapter3AudioLetterRecognitionStation &&
                 Random.nextFloat() < Episode1PraiseChance
         val otherPraiseEligible =
             audioEnabled &&
@@ -1130,6 +1135,7 @@ fun GameScreen(
                             is Question.FindLetterGridQuestion ->
                                 FindLetterGridGame(
                                     question = current,
+                                    chapterId = chapterId,
                                     contextWordHint =
                                         if (chapterId == 3 && sagaUsesFindGridAudioStaging) {
                                             Chapter3EpisodeContent.gridHintWord(session.currentIndex)
@@ -1261,12 +1267,7 @@ fun GameScreen(
                                     verticalArrangement = Arrangement.Top,
                                 ) {
                                     if (chapterId == 3 && sagaUsesPopBalloonsAudioStaging) {
-                                        val bw =
-                                            when (session.currentIndex.coerceIn(0, 2)) {
-                                                0 -> "גמל"
-                                                1 -> "דבש"
-                                                else -> "שמש"
-                                            }
+                                        val bw = Chapter3EpisodeContent.popAllLettersRound(session.currentIndex).word
                                         val emoji = com.tal.hebrewdino.ui.domain.LessonWordIllustrations.emojiForWord(bw)
                                         Column(
                                             modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
@@ -1278,6 +1279,10 @@ fun GameScreen(
                                                 fontWeight = FontWeight.Black,
                                                 color = Color(0xFF0B2B3D),
                                                 textAlign = TextAlign.Center,
+                                                modifier =
+                                                    Modifier
+                                                        .background(Color.White.copy(alpha = 0.72f), RoundedCornerShape(18.dp))
+                                                        .padding(horizontal = 14.dp, vertical = 8.dp),
                                             )
                                             Spacer(modifier = Modifier.height(8.dp))
                                             Row(
@@ -1387,7 +1392,11 @@ fun GameScreen(
                                                         fontWeight = FontWeight.SemiBold,
                                                         color = Color(0xFF0B2B3D),
                                                         textAlign = TextAlign.Center,
-                                                        modifier = Modifier.padding(start = 8.dp, end = 8.dp, bottom = 6.dp),
+                                                        modifier =
+                                                            Modifier
+                                                                .padding(start = 8.dp, end = 8.dp, bottom = 6.dp)
+                                                                .background(Color.White.copy(alpha = 0.72f), RoundedCornerShape(18.dp))
+                                                                .padding(horizontal = 14.dp, vertical = 8.dp),
                                                     )
                                                     Row(
                                                         horizontalArrangement = Arrangement.Center,
@@ -1418,6 +1427,10 @@ fun GameScreen(
                                                         fontWeight = FontWeight.Black,
                                                         color = Color(0xFF0B2B3D),
                                                         textAlign = TextAlign.Center,
+                                                        modifier =
+                                                            Modifier
+                                                                .background(Color.White.copy(alpha = 0.72f), RoundedCornerShape(18.dp))
+                                                                .padding(horizontal = 14.dp, vertical = 8.dp),
                                                     )
                                                     Spacer(modifier = Modifier.height(10.dp))
                                                     OutlinedButton(
@@ -1573,6 +1586,13 @@ fun GameScreen(
                                                                     cancelFeedbackVoice()
                                                                     val clip = AudioClips.letterNameClip(picked) ?: return@launch
                                                                     voice.playBlocking(clip)
+                                                                    val tryAgain =
+                                                                        mutableListOf(
+                                                                            AudioClips.VoTryAgain2,
+                                                                            AudioClips.VoTryAgain1,
+                                                                        )
+                                                                    tryAgain.shuffle()
+                                                                    voice.playFirstAvailableBlocking(*tryAgain.toTypedArray())
                                                                 }
                                                             }
                                                             shakeEpoch += 1
@@ -1613,12 +1633,7 @@ fun GameScreen(
                                                 correctAnswer = current.correctAnswer,
                                                 correctLetterSet =
                                                     if (isChapter3PopAllLettersStation) {
-                                                        val w =
-                                                            when (session.currentIndex.coerceIn(0, 2)) {
-                                                                0 -> "גמל"
-                                                                1 -> "דבש"
-                                                                else -> "שמש"
-                                                            }
+                                                        val w = Chapter3EpisodeContent.popAllLettersRound(session.currentIndex).word
                                                         w.toCharArray().map { it.toString() }.toSet()
                                                     } else {
                                                         null
@@ -2285,38 +2300,38 @@ private fun Chapter3LevelOverlayScrim(
         val w = size.width
         val h = size.height
 
-        // Base vertical gradient: top 30%, center 18%, bottom 34%.
+        // Base vertical gradient: keep it light so instructions stay readable.
         drawRect(
             brush =
                 Brush.verticalGradient(
                     colorStops =
                         arrayOf(
-                            0.00f to tint.copy(alpha = 0.30f),
-                            0.50f to tint.copy(alpha = 0.18f),
-                            1.00f to tint.copy(alpha = 0.34f),
+                            0.00f to tint.copy(alpha = 0.16f),
+                            0.50f to tint.copy(alpha = 0.10f),
+                            1.00f to tint.copy(alpha = 0.20f),
                         ),
                     startY = 0f,
                     endY = h,
                 ),
         )
 
-        // Light edge vignette (+6% alpha at sides).
+        // Light edge vignette (+4% alpha at sides).
         drawRect(
             brush =
                 Brush.horizontalGradient(
                     colorStops =
                         arrayOf(
-                            0.00f to tint.copy(alpha = 0.06f),
+                            0.00f to tint.copy(alpha = 0.04f),
                             0.15f to Color.Transparent,
                             0.85f to Color.Transparent,
-                            1.00f to tint.copy(alpha = 0.06f),
+                            1.00f to tint.copy(alpha = 0.04f),
                         ),
                     startX = 0f,
                     endX = w,
                 ),
         )
 
-        // Center “readability window”: subtract ~8% alpha in the center, fading out smoothly.
+        // Center “readability window”: subtract a bit more alpha in the center, fading out smoothly.
         val center = Offset(w * 0.50f, h * 0.52f)
         val rx = w * 0.55f
         val ry = h * 0.38f
@@ -2326,8 +2341,8 @@ private fun Chapter3LevelOverlayScrim(
                 Brush.radialGradient(
                     colorStops =
                         arrayOf(
-                            0.00f to Color.Black.copy(alpha = 0.08f),
-                            0.55f to Color.Black.copy(alpha = 0.04f),
+                            0.00f to Color.Black.copy(alpha = 0.12f),
+                            0.55f to Color.Black.copy(alpha = 0.06f),
                             1.00f to Color.Transparent,
                         ),
                     center = center,
@@ -2516,7 +2531,12 @@ private suspend fun speakLetterPrompt(
                 if (chapterId == 3 && stationId == 6) {
                     // Episode 3 station 6: play the dedicated instruction ONLY if it exists,
                     // and always speak the pictured word (no legacy fallback).
-                    val intro = AudioClips.ImageToWordInstructions
+                    val intro =
+                        if (voice.hasAsset(AudioClips.Ch3ImageToWordInstructions)) {
+                            AudioClips.Ch3ImageToWordInstructions
+                        } else {
+                            AudioClips.ImageToWordInstructions
+                        }
                     if (voice.hasAsset(intro)) {
                         voice.playBlocking(intro)
                     }
