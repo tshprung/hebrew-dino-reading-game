@@ -3,6 +3,23 @@ package com.tal.hebrewdino.ui.domain
 import kotlin.random.Random
 
 internal object Chapter1LessonGenerators {
+    private val forbidAutoAndCarPair = setOf("אוטו", "מכונית")
+
+    private fun pickRandomChoiceAvoidingWords(
+        rnd: Random,
+        letter: String,
+        bannedWords: Set<String>,
+    ): LessonChoice {
+        val pool =
+            LessonWordCatalog.entries
+                .asSequence()
+                .filter { it.letter == letter }
+                .filter { it.word !in bannedWords }
+                .toList()
+        val picked = (pool.ifEmpty { LessonWordCatalog.entries.filter { it.letter == letter } }).random(rnd)
+        return picked.toChoice()
+    }
+
     fun pictureStartsWith(
         rnd: Random,
         group: List<String>,
@@ -30,6 +47,7 @@ internal object Chapter1LessonGenerators {
         /** Prefer words not yet shown for this letter in the current station session. */
         excludeCorrectWordIds: Set<String> = emptySet(),
         alwaysThreeChoices: Boolean = false,
+        forbidAutoAndCarTogether: Boolean = false,
     ): Question.ImageMatchQuestion {
         require(targetLetter in group)
         val correct = LessonWordCatalog.pickRandomForImageMatch(rnd, targetLetter, excludeCorrectWordIds)
@@ -40,9 +58,15 @@ internal object Chapter1LessonGenerators {
                 2 -> otherLetters.take(1)
                 else -> otherLetters.take(2)
             }
+        val bannedPair =
+            if (forbidAutoAndCarTogether && correct.word in forbidAutoAndCarPair) {
+                forbidAutoAndCarPair
+            } else {
+                emptySet()
+            }
         val wrongChoices =
             wrongPicks.map { letter ->
-                LessonWordCatalog.pickRandom(rnd, letter).toChoice()
+                pickRandomChoiceAvoidingWords(rnd, letter, bannedPair)
             }
         val choices = (wrongChoices + correct.toChoice()).shuffled(rnd)
         return Question.ImageMatchQuestion(

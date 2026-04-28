@@ -27,6 +27,8 @@ data class StationQuizPlan(
     val chapter3PopAllLettersInWord: Boolean = false,
     /** Episode 3 station 5: audio-only letter recognition (play a letter, user taps it). */
     val chapter3AudioLetterRecognition: Boolean = false,
+    /** Chapter 1 station 6: forbid showing both "אוטו" and "מכונית" in the same round. */
+    val chapter1Station6ForbidAutoAndCarTogether: Boolean = false,
 )
 
 object StationQuizPlans {

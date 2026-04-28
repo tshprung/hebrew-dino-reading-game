@@ -24,6 +24,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.Job
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -119,9 +120,14 @@ fun ChapterLettersIntroScreen(
     val scope = rememberCoroutineScope()
     var playing by remember { mutableStateOf(false) }
     var highlightedLetter by remember { mutableStateOf<String?>(null) }
+    var playJob by remember { mutableStateOf<Job?>(null) }
 
     DisposableEffect(Unit) {
-        onDispose { voice.release() }
+        onDispose {
+            playJob?.cancel()
+            voice.stopNow()
+            voice.release()
+        }
     }
 
     suspend fun playAll() {
@@ -141,7 +147,8 @@ fun ChapterLettersIntroScreen(
 
     LaunchedEffect(Unit) {
         // Auto-play once when the screen appears.
-        playAll()
+        playJob?.cancel()
+        playJob = scope.launch { playAll() }
     }
 
     Box(modifier = modifier.fillMaxSize()) {
@@ -218,7 +225,12 @@ fun ChapterLettersIntroScreen(
 
                     Spacer(modifier = Modifier.height(14.dp))
                     OutlinedButton(
-                        onClick = { if (!playing) scope.launch { playAll() } },
+                        onClick = {
+                            if (!playing) {
+                                playJob?.cancel()
+                                playJob = scope.launch { playAll() }
+                            }
+                        },
                         enabled = !playing,
                     ) {
                         Text("שמע/י את האותיות שוב")
@@ -235,7 +247,17 @@ fun ChapterLettersIntroScreen(
 
             Spacer(modifier = Modifier.height(18.dp))
 
-            Button(onClick = onContinue, modifier = Modifier.width(180.dp)) {
+            Button(
+                onClick = {
+                    // UX: stop intro immediately when continuing (don't wait for dispose/navigation).
+                    playJob?.cancel()
+                    voice.stopNow()
+                    playing = false
+                    highlightedLetter = null
+                    onContinue()
+                },
+                modifier = Modifier.width(180.dp),
+            ) {
                 Text("המשך")
             }
         }

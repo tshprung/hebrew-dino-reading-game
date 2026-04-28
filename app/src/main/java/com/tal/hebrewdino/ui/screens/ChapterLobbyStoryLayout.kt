@@ -165,7 +165,14 @@ fun ChapterLobbyStoryLayout(
                 }
             }
 
-            Button(onClick = onContinue, modifier = Modifier.width(180.dp)) {
+            Button(
+                onClick = {
+                    // UX: stop intro immediately when continuing (don't wait for dispose/navigation).
+                    voicePlayer?.stopNow()
+                    onContinue()
+                },
+                modifier = Modifier.width(180.dp),
+            ) {
                 Text("המשך")
             }
         }

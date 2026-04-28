@@ -623,9 +623,10 @@ fun GameScreen(
                             if (chapterId == 3) {
                                 sfx.stopAllStreams()
                                 val clip = AudioClips.Ch3St3PopAllLettersInWordInstruction
-                                // Episode 3 station 3: one round per letter-occurrence; keep audio aligned to the displayed word.
-                                val r = Chapter3EpisodeContent.popAllLettersRound(session.currentIndex)
-                                val wordPath = AudioClips.wordClipByCatalogId(r.catalogId)
+                                val (_, catalogId) =
+                                    session.chapter3PopAllLettersCurrentWord()
+                                        ?: error("Missing Chapter 3 balloons word for index ${session.currentIndex}")
+                                val wordPath = AudioClips.wordClipByCatalogId(catalogId)
                                 if (voice.hasAsset(clip)) voice.playBlocking(clip)
                                 if (voice.hasAsset(wordPath)) voice.playBlocking(wordPath)
                             } else {
@@ -1267,7 +1268,7 @@ fun GameScreen(
                                     verticalArrangement = Arrangement.Top,
                                 ) {
                                     if (chapterId == 3 && sagaUsesPopBalloonsAudioStaging) {
-                                        val bw = Chapter3EpisodeContent.popAllLettersRound(session.currentIndex).word
+                                        val bw = session.chapter3PopAllLettersCurrentWord()?.first.orEmpty()
                                         val emoji = com.tal.hebrewdino.ui.domain.LessonWordIllustrations.emojiForWord(bw)
                                         Column(
                                             modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
@@ -1515,6 +1516,10 @@ fun GameScreen(
                                                                     Chapter3EpisodeContent.spellCompletesWordAfterCorrectRound(idx)
                                                                 scope.launch {
                                                                     sfx.playFirstAvailable(AudioClips.SfxCorrect, volume = 0.62f)
+                                                                val letterName = AudioClips.letterNameClip(picked)
+                                                                if (letterName != null && voice.hasAsset(letterName)) {
+                                                                    voice.playBlocking(letterName)
+                                                                }
                                                                     if (wordDone) {
                                                                         cancelFeedbackVoice()
                                                                         val praise =
@@ -1633,7 +1638,7 @@ fun GameScreen(
                                                 correctAnswer = current.correctAnswer,
                                                 correctLetterSet =
                                                     if (isChapter3PopAllLettersStation) {
-                                                        val w = Chapter3EpisodeContent.popAllLettersRound(session.currentIndex).word
+                                                        val w = session.chapter3PopAllLettersCurrentWord()?.first.orEmpty()
                                                         w.toCharArray().map { it.toString() }.toSet()
                                                     } else {
                                                         null
@@ -1867,6 +1872,12 @@ fun GameScreen(
                                     onPickLetter = { picked ->
                                         if (!consumeTapCooldown()) return@PictureStartsWithGame
                                             cancelFeedbackVoice()
+                                        if (audioEnabled && chapterId == 3 && stationId == 1) {
+                                            val clip = AudioClips.letterNameClip(picked)
+                                            if (clip != null && voice.hasAsset(clip)) {
+                                                feedbackVoiceJob = scope.launch { voice.playBlocking(clip) }
+                                            }
+                                        }
                                         when (session.submitPictureStartsWith(picked)) {
                                             AnswerResult.Correct -> {
                                                 if (audioEnabled) ChildGameAudioHooks.onCorrect()
@@ -1904,6 +1915,9 @@ fun GameScreen(
                                                     scope.launch {
                                                         correctTapPulseLetter = picked
                                                         correctTapPulseEpoch += 1
+                                                        if (audioEnabled && chapterId == 3 && stationId == 1) {
+                                                            withTimeoutOrNull(1200L) { feedbackVoiceJob?.join() }
+                                                        }
                                                         val isLast =
                                                             session.currentIndex >= session.totalQuestions - 1
                                                         advanceAfterRound(isLast)
@@ -1919,7 +1933,12 @@ fun GameScreen(
                                                     station4WrongFlashEpoch += 1
                                                     onWrongFeedback(wrongPickedLetter = picked)
                                                 } else {
+                                                    if (audioEnabled && chapterId == 3 && stationId == 1) {
+                                                        // Let the tapped letter name play; wrong feedback is still immediate via visuals/SFX.
+                                                        onWrongFeedback(wrongPickedLetterAlreadySpoken = true)
+                                                    } else {
                                                     onWrongFeedback()
+                                                    }
                                                 }
                                             }
                                             AnswerResult.Finished -> {}
@@ -1988,7 +2007,8 @@ fun GameScreen(
                                                     if (audioEnabled) ChildGameAudioHooks.onWrong()
                                                     wrongTapsThisQuestion += 1
                                                     if (wrongTapsThisQuestion >= 2) hintPulseEpoch += 1
-                                                    onWrongFeedback()
+                                                    // Station 6: play error SFX AND say which word was pressed.
+                                                    onWrongFeedback(wrongWordCatalogId = choiceId)
                                                     false
                                                 }
                                                 AnswerResult.Finished -> false

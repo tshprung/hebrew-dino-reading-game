@@ -94,7 +94,10 @@ private fun StoryScreenScaffold(
     val voice = remember { VoicePlayer(context = context) }
 
     DisposableEffect(Unit) {
-        onDispose { voice.release() }
+        onDispose {
+            voice.stopNow()
+            voice.release()
+        }
     }
 
     LaunchedEffect(voiceAssetPath) {
@@ -165,10 +168,24 @@ private fun StoryScreenScaffold(
             Spacer(modifier = Modifier.height(18.dp))
 
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                OutlinedButton(onClick = onSkip, modifier = Modifier.width(160.dp)) {
+                OutlinedButton(
+                    onClick = {
+                        // UX: stop intro immediately when leaving.
+                        voice.stopNow()
+                        onSkip()
+                    },
+                    modifier = Modifier.width(160.dp),
+                ) {
                     Text("דלג")
                 }
-                Button(onClick = onContinue, modifier = Modifier.width(160.dp)) {
+                Button(
+                    onClick = {
+                        // UX: stop intro immediately when continuing.
+                        voice.stopNow()
+                        onContinue()
+                    },
+                    modifier = Modifier.width(160.dp),
+                ) {
                     Text("המשך")
                 }
             }

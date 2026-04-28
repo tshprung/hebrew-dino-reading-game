@@ -30,7 +30,9 @@ object Chapter3StationOrder {
             3 ->
                 StationQuizPlan(
                     mode = StationQuizMode.PopBalloons,
-                    questionCount = 3,
+                    // Station 3 balloons: one round per word.
+                    // Product request: 5 unique words per run; each word appears once.
+                    questionCount = 5,
                     initialGroupIndex = 0,
                     chapter3PopAllLettersInWord = true,
                 )

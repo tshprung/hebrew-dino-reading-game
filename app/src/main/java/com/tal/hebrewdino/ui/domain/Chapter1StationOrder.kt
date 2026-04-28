@@ -59,6 +59,7 @@ object Chapter1StationOrder {
                     imageMatchAlwaysThreeChoices = true,
                     imageMatchCaptionSizeMultiplier = 1.5f,
                     imageMatchPictureSizeMultiplier = 1f,
+                    chapter1Station6ForbidAutoAndCarTogether = true,
                 )
             else ->
                 error(

@@ -44,6 +44,10 @@ object Chapter3EpisodeContent {
             BalloonRound("רגל", "w_ר_3"),
         )
 
+    /** Station 3: available words for the balloons station (word to catalogId). */
+    fun balloonWordCatalogPairs(): List<Pair<String, String>> =
+        balloonRounds.map { it.word to it.catalogId }
+
     data class SpellRound(
         val word: String,
         val catalogId: String,

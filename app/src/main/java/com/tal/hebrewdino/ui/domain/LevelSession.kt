@@ -22,6 +22,24 @@ class LevelSession(
     /** Correct catalog entry ids already used per letter (picture stations 4–5). */
     private val lessonWordUsedCorrectIdsByLetter: MutableMap<String, MutableSet<String>> = mutableMapOf()
 
+    /** Episode 3 station 3 (balloons): pick 5 unique words once per station run. */
+    private val chapter3PopAllLettersWords: List<Pair<String, String>>? =
+        if (letterPoolSpec === Chapter3LetterPoolSpec &&
+            plan.mode == StationQuizMode.PopBalloons &&
+            plan.chapter3PopAllLettersInWord
+        ) {
+            val all = Chapter3EpisodeContent.balloonWordCatalogPairs()
+            require(all.size >= 5) { "Chapter 3 balloons needs at least 5 words; got ${all.size}" }
+            all.shuffled(rnd).distinctBy { it.first }.take(5)
+        } else {
+            null
+        }
+
+    fun chapter3PopAllLettersCurrentWord(): Pair<String, String>? {
+        val list = chapter3PopAllLettersWords ?: return null
+        return list[currentIndex.coerceIn(0, list.lastIndex)]
+    }
+
     private val questionCount: Int = plan.questionCount
 
     var currentIndex by mutableIntStateOf(0)
@@ -96,7 +114,17 @@ class LevelSession(
                         StationQuizMode.PickLetter -> {
                             if (letterPoolSpec === Chapter3LetterPoolSpec) {
                                 val optionCount = plan.pickLetterOptionCount ?: 6
-                                if (plan.chapter3HighlightedLetterInWordPickLetter) {
+                                if (plan.chapter3AudioLetterRecognition) {
+                                    // Station 5: audio says a letter; learner taps it. Ensure we don't repeat the target
+                                    // letter during a station run by using the balanced bag.
+                                    val correct = nextBalancedCorrect(group)
+                                    popGenerator.generatePickLetterOptions(
+                                        rnd = rnd,
+                                        group = group,
+                                        correctAnswer = correct,
+                                        optionCount = optionCount,
+                                    )
+                                } else if (plan.chapter3HighlightedLetterInWordPickLetter) {
                                     val round = Chapter3EpisodeContent.pickSpellRound(currentIndex)
                                     val options =
                                         buildList {
@@ -160,14 +188,11 @@ class LevelSession(
                         }
                         StationQuizMode.PopBalloons -> {
                             if (letterPoolSpec === Chapter3LetterPoolSpec && plan.chapter3PopAllLettersInWord) {
-                                val wordIndex = currentIndex.coerceIn(0, 2)
                                 val (word, _) =
-                                    when (wordIndex) {
-                                        0 -> "גמל" to "w_ג_1"
-                                        1 -> "דבש" to "w_ד_4"
-                                        else -> "שמש" to "w_ש_1"
-                                    }
-                                val correctBalloons = word.toCharArray().map { it.toString() } // includes duplicates
+                                    chapter3PopAllLettersCurrentWord()
+                                        ?: error("Expected Chapter 3 pop-all-letters words to be initialized")
+                                // Distinct letters only: duplicates would force popping multiple identical letters.
+                                val correctBalloons = word.toCharArray().map { it.toString() }.distinct()
                                 val optionCount = 8
                                 val distractors =
                                     Chapter3Config.letters
@@ -239,6 +264,7 @@ class LevelSession(
                                         targetLetter = correct,
                                         excludeCorrectWordIds = used,
                                         alwaysThreeChoices = plan.imageMatchAlwaysThreeChoices,
+                                        forbidAutoAndCarTogether = plan.chapter1Station6ForbidAutoAndCarTogether,
                                     )
                                 }
                             used.add(q.correctChoiceId)
