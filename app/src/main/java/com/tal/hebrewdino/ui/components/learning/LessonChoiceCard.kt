@@ -197,12 +197,6 @@ fun LessonChoiceCard(
                 )
             }
         } else {
-            val pictureRotationZ =
-                if (choice.tileDrawable == R.drawable.lesson_pic_regel) {
-                    -90f
-                } else {
-                    0f
-                }
             Box(
                 modifier =
                     Modifier
@@ -222,7 +216,6 @@ fun LessonChoiceCard(
                             .graphicsLayer {
                                 scaleX = innerPictureScale
                                 scaleY = innerPictureScale
-                                rotationZ = pictureRotationZ
                                 transformOrigin = TransformOrigin(0.5f, 0.5f)
                             },
                     // For our vector lesson illustrations, Fit keeps all pictures visually consistent
