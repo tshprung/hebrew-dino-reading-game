@@ -39,7 +39,7 @@ fun Chapter3OutroScreen(
     modifier: Modifier = Modifier,
 ) {
     ChapterLobbyStoryLayout(
-        backgroundRes = R.drawable.chapter3_story_outro,
+        backgroundRes = R.drawable.ch3_reward_bg,
         title = "הנה היא!",
         body =
             "הנה היא!\n" +

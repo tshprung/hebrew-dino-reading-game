@@ -1,26 +1,48 @@
 <?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="120dp"
-    android:height="96dp"
-    android:viewportWidth="120"
-    android:viewportHeight="96">
-    <!-- רגל — מבט מהצד: שוק נטויה, כף רגל בפרופיל (עקב שמאל, בהונות ימינה) -->
+    android:width="512dp"
+    android:height="512dp"
+    android:viewportWidth="512"
+    android:viewportHeight="512">
+
     <path
-        android:fillColor="#EEC4B0"
-        android:pathData="M50,8 C44,8 40,12 40,18 L38,58 C38,64 40,68 46,70 L46,74 C46,78 52,82 60,84 L98,88 C108,90 116,85 114,77 C112,71 100,66 84,64 L58,62 C54,60 52,54 52,46 L54,16 C54,10 54,8 50,8 Z" />
-    <!-- עקב וסוליה (צד) -->
+        android:fillColor="#000000"
+        android:fillAlpha="0.15"
+        android:pathData="M138,422 C172,402 277,401 342,414 C378,421 377,445 335,452 C269,463 164,455 129,440 C113,433 119,426 138,422 Z" />
+
     <path
-        android:fillColor="#DCA590"
-        android:pathData="M36,70 C34,74 38,80 46,82 L96,87 C106,89 112,84 110,78 C108,73 98,69 84,67 L48,70 Z" />
-    <!-- בהונות בפרופיל -->
+        android:fillColor="#5A3E2B"
+        android:pathData="M244,58 C280,59 304,82 303,116 C302,158 292,197 291,239 C291,271 304,299 332,324 C355,345 377,365 384,389 C391,413 374,432 343,435 L195,435 C164,435 144,421 144,397 C144,374 164,358 191,358 L248,358 C238,343 224,321 215,293 C204,260 199,221 203,176 C206,137 205,102 214,80 C219,67 230,58 244,58 Z" />
+
     <path
-        android:fillColor="#D89A88"
-        android:pathData="M100,76 C106,74 112,76 112,80 C112,85 104,88 98,86 Z" />
+        android:fillColor="#F2C6A0"
+        android:pathData="M247,78 C273,78 286,94 284,118 C281,158 272,197 272,239 C272,278 291,311 321,337 C342,355 363,374 367,393 C371,410 360,418 339,418 L197,418 C175,418 162,411 162,398 C162,385 174,376 194,376 L272,376 C279,376 283,367 278,361 C259,339 242,314 233,283 C223,250 220,215 223,179 C226,138 224,105 232,89 C235,82 240,78 247,78 Z" />
+
     <path
-        android:fillColor="#D89A88"
-        android:pathData="M108,78 C114,76 118,78 118,82 C118,87 110,90 106,88 Z" />
-    <!-- צל -->
+        android:fillColor="#D9A785"
+        android:pathData="M268,245 C271,286 292,318 324,344 C341,358 355,374 359,389 C347,377 327,366 303,355 C266,338 244,307 235,275 C231,260 229,244 229,228 C239,241 252,246 268,245 Z" />
+
     <path
-        android:fillColor="#22000000"
-        android:pathData="M16,92 C16,86 112,88 112,92 C112,96 16,96 16,92 Z" />
+        android:fillColor="#FFE6D2"
+        android:fillAlpha="0.85"
+        android:pathData="M247,89 C259,88 269,95 270,109 C272,132 264,159 262,184 C260,211 263,233 267,252 C255,250 242,244 235,232 C235,188 238,139 239,107 C239,96 242,91 247,89 Z" />
+
+    <path
+        android:fillColor="#5A3E2B"
+        android:fillAlpha="0.35"
+        android:pathData="M169,397 C169,389 178,383 193,383 L276,383 C288,383 294,397 286,406 C276,416 251,421 213,419 L194,418 C178,417 169,411 169,397 Z" />
+
+    <path
+        android:fillColor="#FFE6D2"
+        android:fillAlpha="0.75"
+        android:pathData="M180,387 C196,384 229,386 260,385 C269,385 271,397 262,402 C243,412 200,411 181,405 C171,402 171,390 180,387 Z" />
+
+    <!-- Simple shoe (kid-friendly) -->
+    <path
+        android:fillColor="#263238"
+        android:pathData="M154,411 C162,398 182,392 206,392 L290,392 C312,392 328,400 332,412 C336,428 320,438 292,441 L196,446 C172,449 150,438 148,424 C147,418 149,415 154,411 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="0.85"
+        android:pathData="M170,414 C186,406 224,405 260,405 C276,405 286,408 292,413 C276,421 238,424 198,423 C182,423 172,420 170,414 Z" />
 </vector>

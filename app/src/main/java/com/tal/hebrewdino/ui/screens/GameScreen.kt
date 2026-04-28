@@ -47,9 +47,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.zIndex
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.scale
+import androidx.compose.foundation.Canvas
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.LocalLayoutDirection
@@ -617,8 +621,8 @@ fun GameScreen(
                             if (chapterId == 3) {
                                 sfx.stopAllStreams()
                                 val clip = AudioClips.Ch3St3PopAllLettersInWordInstruction
-                                val r = Chapter3EpisodeContent.popAllLettersRound(session.currentIndex)
-                                val wordPath = AudioClips.wordClipByCatalogId(r.catalogId)
+                                // Station 3 uses one round per word (3 words); keep audio aligned to the displayed word.
+                                val wordPath = AudioClips.wordClipByCatalogId(Chapter3EpisodeContent.balloonCatalogId(session.currentIndex))
                                 if (voice.hasAsset(clip)) voice.playBlocking(clip)
                                 if (voice.hasAsset(wordPath)) voice.playBlocking(wordPath)
                             } else {
@@ -1024,7 +1028,10 @@ fun GameScreen(
             )
         }
         if (chapterId == 3) {
-            // Swamp: a small “friend” becomes more visible as the player progresses.
+            Chapter3LevelOverlayScrim(modifier = Modifier.fillMaxSize())
+        }
+        if (chapterId == 3) {
+            // Chapter 3: a small “friend” becomes more visible as the player progresses.
             val p = (session.currentIndex.toFloat() / session.totalQuestions.coerceAtLeast(1)).coerceIn(0f, 1f)
             Image(
                 painter = painterResource(id = R.drawable.dino_idle),
@@ -1382,34 +1389,32 @@ fun GameScreen(
                                                         textAlign = TextAlign.Center,
                                                         modifier = Modifier.padding(start = 8.dp, end = 8.dp, bottom = 6.dp),
                                                     )
-                                                    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
-                                                        Row(
-                                                            horizontalArrangement = Arrangement.Center,
-                                                            verticalAlignment = Alignment.CenterVertically,
+                                                    Row(
+                                                        horizontalArrangement = Arrangement.Center,
+                                                        verticalAlignment = Alignment.CenterVertically,
+                                                    ) {
+                                                        Box(
+                                                            modifier =
+                                                                Modifier
+                                                                    .background(
+                                                                        color = Color(0xFFFFF59D).copy(alpha = 0.95f),
+                                                                        shape = androidx.compose.foundation.shape.RoundedCornerShape(18.dp),
+                                                                    )
+                                                                    .padding(horizontal = 16.dp, vertical = 10.dp),
                                                         ) {
-                                                            Text(text = emoji, fontSize = 42.sp)
-                                                            Spacer(modifier = Modifier.width(10.dp))
-                                                            Box(
-                                                                modifier =
-                                                                    Modifier
-                                                                        .background(
-                                                                            color = Color(0xFFFFF59D).copy(alpha = 0.95f),
-                                                                            shape = androidx.compose.foundation.shape.RoundedCornerShape(18.dp),
-                                                                        )
-                                                                        .padding(horizontal = 16.dp, vertical = 10.dp),
-                                                            ) {
-                                                                Chapter3SpellWordRow(
-                                                                    word = spell.word,
-                                                                    highlightIndex = spell.slotIndex,
-                                                                )
-                                                            }
+                                                            Chapter3SpellWordRow(
+                                                                word = spell.word,
+                                                                highlightIndex = spell.slotIndex,
+                                                            )
                                                         }
+                                                        Spacer(modifier = Modifier.width(10.dp))
+                                                        Text(text = emoji, fontSize = 42.sp)
                                                     }
                                                 }
                                                 if (isChapter3AudioLetterRecognitionStation) {
                                                     Text(
                                                         text = "מצא את האות שנאמרת",
-                                                        fontSize = 26.sp,
+                                                        fontSize = 39.sp,
                                                         fontWeight = FontWeight.Black,
                                                         color = Color(0xFF0B2B3D),
                                                         textAlign = TextAlign.Center,
@@ -1429,7 +1434,10 @@ fun GameScreen(
                                                         colors = ChapterNavChipStyles.outlinedButtonColors(),
                                                         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp),
                                                     ) {
-                                                        Text("חזור על האות", style = ChapterNavChipStyles.labelTextStyle())
+                                                        Text(
+                                                            "חזור על האות",
+                                                            style = ChapterNavChipStyles.labelTextStyle().copy(fontSize = 32.sp),
+                                                        )
                                                     }
                                                     Spacer(modifier = Modifier.height(16.dp))
                                                 } else if (isSagaEpisode(chapterId) && stationId == 1) {
@@ -1559,6 +1567,13 @@ fun GameScreen(
                                                                 (!(sagaUsesPickLetterAudioStaging) || isChapter3HighlightedLetterInWordStation || isChapter3AudioLetterRecognitionStation)
                                                             ) {
                                                                 ChildGameAudioHooks.onWrong()
+                                                            }
+                                                            if (audioEnabled && isChapter3AudioLetterRecognitionStation) {
+                                                                scope.launch {
+                                                                    cancelFeedbackVoice()
+                                                                    val clip = AudioClips.letterNameClip(picked) ?: return@launch
+                                                                    voice.playBlocking(clip)
+                                                                }
                                                             }
                                                             shakeEpoch += 1
                                                             wrongTapsThisQuestion += 1
@@ -1914,6 +1929,17 @@ fun GameScreen(
                                         contentKey = session.currentIndex,
                                         enabled = !inputLocked,
                                         instructionText = "איזו מילה מתאימה לתמונה של:",
+                                        onWordPressed = { choiceId ->
+                                            if (!audioEnabled) return@ImageToWordGame
+                                            cancelFeedbackVoice()
+                                            feedbackVoiceJob =
+                                                scope.launch {
+                                                    val ch3Clip = "audio/ch3_word_${choiceId}.wav"
+                                                    val clip =
+                                                        if (voice.hasAsset(ch3Clip)) ch3Clip else AudioClips.wordClipByCatalogId(choiceId)
+                                                    voice.playBlocking(clip)
+                                                }
+                                        },
                                         onAttempt = { choiceId ->
                                             if (!consumeTapCooldown()) return@ImageToWordGame false
                                             cancelFeedbackVoice()
@@ -1921,6 +1947,23 @@ fun GameScreen(
                                                 AnswerResult.Correct -> {
                                                     if (audioEnabled) ChildGameAudioHooks.onCorrect()
                                                     scope.launch {
+                                                        if (audioEnabled) {
+                                                            val ch3Clip = "audio/ch3_word_${choiceId}.wav"
+                                                            val clip =
+                                                                if (voice.hasAsset(ch3Clip)) ch3Clip else AudioClips.wordClipByCatalogId(choiceId)
+                                                            voice.playBlocking(clip)
+                                                            val praise =
+                                                                mutableListOf(
+                                                                    AudioClips.VoPraiseMetzuyan,
+                                                                    AudioClips.VoPraiseYofi,
+                                                                    AudioClips.VoPraiseHitzlacht,
+                                                                    AudioClips.VoNice1,
+                                                                    AudioClips.VoGoodJob2,
+                                                                    AudioClips.VoGoodJob1,
+                                                                )
+                                                            praise.shuffle()
+                                                            voice.playFirstAvailableBlocking(*praise.toTypedArray())
+                                                        }
                                                         val isLast = session.currentIndex >= session.totalQuestions - 1
                                                         advanceAfterRound(isLast)
                                                     }
@@ -1969,7 +2012,12 @@ fun GameScreen(
                                         compactWideSpread =
                                             isSagaEpisode(chapterId) && stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH,
                                         onWordPressed = { choiceId ->
-                                            speakNow { voice.playBlocking(AudioClips.wordClipByCatalogId(choiceId)) }
+                                            speakNow {
+                                                val ch3Clip = "audio/ch3_word_${choiceId}.wav"
+                                                val clip =
+                                                    if (voice.hasAsset(ch3Clip)) ch3Clip else AudioClips.wordClipByCatalogId(choiceId)
+                                                voice.playBlocking(clip)
+                                            }
                                         },
                                         onLetterPressed = { letter ->
                                             val clip = AudioClips.letterNameClip(letter) ?: return@MatchLetterToWordGame
@@ -2219,24 +2267,100 @@ fun GameScreen(
 }
 
 @Composable
+private fun Chapter3LevelOverlayScrim(
+    modifier: Modifier = Modifier,
+) {
+    // Teal-tinted, kid-friendly readability scrim:
+    // - Vertical gradient (top/bottom stronger, center lighter)
+    // - Soft center “window” that *reduces* the scrim
+    // - Very light edge vignette to frame the center
+    val tint = Color(0xFF081C26) // RGB(8, 28, 38)
+    Canvas(
+        modifier =
+            modifier.graphicsLayer {
+                // Required for BlendMode.DstOut to punch a soft window in the scrim.
+                compositingStrategy = CompositingStrategy.Offscreen
+            },
+    ) {
+        val w = size.width
+        val h = size.height
+
+        // Base vertical gradient: top 30%, center 18%, bottom 34%.
+        drawRect(
+            brush =
+                Brush.verticalGradient(
+                    colorStops =
+                        arrayOf(
+                            0.00f to tint.copy(alpha = 0.30f),
+                            0.50f to tint.copy(alpha = 0.18f),
+                            1.00f to tint.copy(alpha = 0.34f),
+                        ),
+                    startY = 0f,
+                    endY = h,
+                ),
+        )
+
+        // Light edge vignette (+6% alpha at sides).
+        drawRect(
+            brush =
+                Brush.horizontalGradient(
+                    colorStops =
+                        arrayOf(
+                            0.00f to tint.copy(alpha = 0.06f),
+                            0.15f to Color.Transparent,
+                            0.85f to Color.Transparent,
+                            1.00f to tint.copy(alpha = 0.06f),
+                        ),
+                    startX = 0f,
+                    endX = w,
+                ),
+        )
+
+        // Center “readability window”: subtract ~8% alpha in the center, fading out smoothly.
+        val center = Offset(w * 0.50f, h * 0.52f)
+        val rx = w * 0.55f
+        val ry = h * 0.38f
+        // Use DstOut so source alpha removes destination alpha.
+        drawOval(
+            brush =
+                Brush.radialGradient(
+                    colorStops =
+                        arrayOf(
+                            0.00f to Color.Black.copy(alpha = 0.08f),
+                            0.55f to Color.Black.copy(alpha = 0.04f),
+                            1.00f to Color.Transparent,
+                        ),
+                    center = center,
+                    radius = maxOf(rx, ry),
+                ),
+            topLeft = Offset(center.x - rx, center.y - ry),
+            size = androidx.compose.ui.geometry.Size(rx * 2f, ry * 2f),
+            blendMode = BlendMode.DstOut,
+        )
+    }
+}
+
+@Composable
 private fun Chapter3SpellWordRow(
     word: String,
     highlightIndex: Int,
     modifier: Modifier = Modifier,
 ) {
-    Row(
-        modifier = modifier.padding(vertical = 2.dp),
-        horizontalArrangement = Arrangement.Center,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        word.forEachIndexed { i, ch ->
-            Text(
-                text = ch.toString(),
-                fontSize = 40.sp,
-                fontWeight = FontWeight.Black,
-                color = if (i == highlightIndex) Color(0xFFE65100) else Color(0xFF0B2B3D),
-                modifier = Modifier.padding(horizontal = 3.dp),
-            )
+    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+        Row(
+            modifier = modifier.padding(vertical = 2.dp),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            word.forEachIndexed { i, ch ->
+                Text(
+                    text = ch.toString(),
+                    fontSize = 40.sp,
+                    fontWeight = FontWeight.Black,
+                    color = if (i == highlightIndex) Color(0xFFE65100) else Color(0xFF0B2B3D),
+                    modifier = Modifier.padding(horizontal = 3.dp),
+                )
+            }
         }
     }
 }
@@ -2390,12 +2514,21 @@ private suspend fun speakLetterPrompt(
             }
             is Question.ImageMatchQuestion -> {
                 if (chapterId == 3 && stationId == 6) {
-                    val clip = AudioClips.ImageToWordInstructions
-                    if (voice.hasAsset(clip)) {
-                        voice.playBlocking(clip)
-                    } else {
-                        // Fallback to legacy station 6 instruction.
-                        voice.playBlocking(AudioClips.MatchLetterToWordInstructions)
+                    // Episode 3 station 6: play the dedicated instruction ONLY if it exists,
+                    // and always speak the pictured word (no legacy fallback).
+                    val intro = AudioClips.ImageToWordInstructions
+                    if (voice.hasAsset(intro)) {
+                        voice.playBlocking(intro)
+                    }
+                    val ch3Word = "audio/ch3_word_${q.correctChoiceId}.wav"
+                    val wordPath =
+                        if (voice.hasAsset(ch3Word)) {
+                            ch3Word
+                        } else {
+                            AudioClips.wordClipByCatalogId(q.correctChoiceId)
+                        }
+                    if (voice.hasAsset(wordPath)) {
+                        voice.playBlocking(wordPath)
                     }
                     return
                 }
@@ -2425,12 +2558,7 @@ private suspend fun speakLetterPrompt(
                     }
                 } else if (isSagaEpisode(chapterId) && stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH) {
                     // Station 6: "ליחצו על אות והמילה שמתחילה באותה האות".
-                    // Episode 3 uses a dedicated recording; fall back to the shared file.
-                    if (chapterId == 3 && voice.hasAsset(AudioClips.Ch3MatchLetterToWordInstructions)) {
-                        voice.playBlocking(AudioClips.Ch3MatchLetterToWordInstructions)
-                    } else {
-                        voice.playBlocking(AudioClips.MatchLetterToWordInstructions)
-                    }
+                    voice.playBlocking(AudioClips.MatchLetterToWordInstructions)
                 } else {
                     speakLetterPrompt(voice, q.targetLetter)
                 }

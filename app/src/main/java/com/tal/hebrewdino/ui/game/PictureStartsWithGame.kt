@@ -162,12 +162,18 @@ fun PictureStartsWithGame(
             }
         }
         Spacer(modifier = Modifier.height(16.dp))
+        val orderedLetters =
+            if (chapterId == 3 && stationId == 1) {
+                question.optionLetters.sorted()
+            } else {
+                question.optionLetters
+            }
         FlowRow(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(20.dp, Alignment.CenterHorizontally),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            question.optionLetters.forEach { letter ->
+            orderedLetters.forEach { letter ->
                 val pop = remember(letter, question) { Animatable(1f) }
                 val flash = remember(letter, question) { Animatable(0f) }
                 LaunchedEffect(entryPulseEpoch, letter, question) {

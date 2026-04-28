@@ -54,7 +54,7 @@ fun Chapter3MidBoostScreen(
     modifier: Modifier = Modifier,
 ) {
     ChapterLobbyStoryLayout(
-        backgroundRes = R.drawable.chapter3_journey_road,
+        backgroundRes = R.drawable.ch3_journey_bg,
         title = "ממשיכים!",
         body =
             "איזה יופי! אתם מתקדמים מצוין.\n" +

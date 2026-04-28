@@ -12,7 +12,7 @@ fun Chapter3IntroScreen(
     modifier: Modifier = Modifier,
 ) {
     ChapterLobbyStoryLayout(
-        backgroundRes = R.drawable.chapter3_story_intro,
+        backgroundRes = R.drawable.ch3_story_intro_bg,
         title = "פרק 3 — בעקבות העקבות",
         body =
             "דינו ממשיך אחרי העקבות.\n" +

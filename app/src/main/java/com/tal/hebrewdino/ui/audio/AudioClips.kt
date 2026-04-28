@@ -35,8 +35,6 @@ object AudioClips {
     const val MatchLetterToWordInstructions = "audio/match_letter_to_word_instructions.wav"
     /** Station 6 (image → word): "איזו מילה מתאימה לתמונה?". */
     const val ImageToWordInstructions = "audio/image_to_word_instructions.wav"
-    /** Episode 3 station 6: separate recording (fallbacks to [MatchLetterToWordInstructions]). */
-    const val Ch3MatchLetterToWordInstructions = "audio/ch3_match_letter_to_word_instructions.wav"
 
     // Episode 3 — optional sentence-based instructions (recordings; fall back to legacy prompts if missing).
     const val Ch3St1PictureStartsWithInstruction = "audio/ch3_st1_picture_starts_with.wav"

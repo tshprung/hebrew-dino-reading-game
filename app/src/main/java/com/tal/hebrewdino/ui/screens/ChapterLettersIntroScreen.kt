@@ -78,7 +78,7 @@ fun Chapter3LettersIntroScreen(
     ChapterLettersIntroScreen(
         chapterTitle = "פרק 3 — האותיות במסע",
         letters = Chapter3Config.letters,
-        backgroundRes = R.drawable.chapter3_journey_road,
+        backgroundRes = R.drawable.ch3_journey_bg,
         letterGridRows = 2,
         lettersAreaMinHeight = 228.dp,
         onContinue = onContinue,

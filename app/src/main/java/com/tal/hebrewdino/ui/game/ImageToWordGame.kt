@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.sp
 import com.tal.hebrewdino.ui.components.learning.LessonChoiceCard
 import com.tal.hebrewdino.ui.components.learning.LessonChoiceCardPictureAspect
 import com.tal.hebrewdino.ui.components.learning.captionFontSizeForWordCard
+import com.tal.hebrewdino.ui.domain.Chapter1Station5And6ImageMatchInnerScale
 import com.tal.hebrewdino.ui.domain.LessonChoice
 import com.tal.hebrewdino.ui.domain.Question
 import com.tal.hebrewdino.ui.layout.ScreenFit
@@ -48,6 +49,7 @@ fun ImageToWordGame(
     contentKey: Int,
     enabled: Boolean,
     instructionText: String,
+    onWordPressed: ((choiceId: String) -> Unit)? = null,
     onAttempt: (choiceId: String) -> Boolean,
     modifier: Modifier = Modifier,
 ) {
@@ -69,8 +71,16 @@ fun ImageToWordGame(
         val h = maxHeight
         val density = LocalDensity.current
 
-        // Large picture card (no caption), centered.
-        val pictureCardW = (w * 0.50f).coerceIn(160.dp, 300.dp)
+        // Match the same card sizing math as PictureStartsWith/ImageMatch (Episode 1/2 station 4).
+        val cardGap = 10.dp
+        var pictureCardW =
+            ScreenFit.rowChildWidthDp(
+                rowInnerWidth = w,
+                count = 3,
+                gap = cardGap,
+                minEach = 72.dp,
+                maxEach = 168.dp,
+            )
         val pictureCardH = pictureCardW * LessonChoiceCardPictureAspect
 
         Column(
@@ -96,7 +106,7 @@ fun ImageToWordGame(
                     cardWidth = pictureCardW,
                     cardHeight = pictureCardH,
                     captionFontSize = 1.sp,
-                    innerPictureScale = 1f,
+                    innerPictureScale = Chapter1Station5And6ImageMatchInnerScale.innerScale(correctChoice),
                     onClick = { },
                 )
             } else {
@@ -106,19 +116,18 @@ fun ImageToWordGame(
             Spacer(modifier = Modifier.height(14.dp))
 
             val optionCount = question.choices.size.coerceIn(2, 6)
-            val gap = 10.dp
             val optionW =
                 ScreenFit.rowChildWidthDp(
                     rowInnerWidth = w,
                     count = optionCount,
-                    gap = gap,
+                    gap = cardGap,
                     minEach = 80.dp,
                     maxEach = 168.dp,
                 )
 
             androidx.compose.foundation.layout.Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(gap, Alignment.CenterHorizontally),
+                horizontalArrangement = Arrangement.spacedBy(cardGap, Alignment.CenterHorizontally),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 question.choices.forEach { choice ->
@@ -158,6 +167,7 @@ fun ImageToWordGame(
                                     shape = RoundedCornerShape(16.dp),
                                 )
                                 .clickable(enabled = enabled) {
+                                    onWordPressed?.invoke(choice.id)
                                     val ok = onAttempt(choice.id)
                                     if (ok) {
                                         successChoiceId = choice.id
