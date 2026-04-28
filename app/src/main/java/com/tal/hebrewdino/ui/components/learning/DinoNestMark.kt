@@ -39,8 +39,8 @@ fun DinoNestMark(
             path =
                 Path().apply {
                     moveTo(w * 0.12f, baseY)
-                    quadraticBezierTo(w * 0.08f, h * 0.52f, cx, h * 0.42f)
-                    quadraticBezierTo(w * 0.92f, h * 0.52f, w * 0.88f, baseY)
+                    quadraticTo(w * 0.08f, h * 0.52f, cx, h * 0.42f)
+                    quadraticTo(w * 0.92f, h * 0.52f, w * 0.88f, baseY)
                     close()
                 },
             brush =
@@ -58,8 +58,8 @@ fun DinoNestMark(
             path =
                 Path().apply {
                     moveTo(w * 0.18f, baseY - 4f)
-                    quadraticBezierTo(w * 0.16f, h * 0.56f, cx, h * 0.48f)
-                    quadraticBezierTo(w * 0.84f, h * 0.56f, w * 0.82f, baseY - 4f)
+                    quadraticTo(w * 0.16f, h * 0.56f, cx, h * 0.48f)
+                    quadraticTo(w * 0.84f, h * 0.56f, w * 0.82f, baseY - 4f)
                     close()
                 },
             brush =

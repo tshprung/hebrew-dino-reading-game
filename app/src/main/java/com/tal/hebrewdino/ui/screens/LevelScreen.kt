@@ -470,6 +470,8 @@ private fun generateBalloonAnchors(
 internal fun PopBalloonsOptions(
     options: List<String>,
     correctAnswer: String,
+    /** When set (Episode 3 station 3), any balloon whose letter is in this set counts as correct. */
+    correctLetterSet: Set<String>? = null,
     enabled: Boolean,
     shakePx: Float,
     /** Mixes balloon palette between questions (Episode 1 station 2). */
@@ -546,7 +548,11 @@ internal fun PopBalloonsOptions(
         val maxX = (wPx - balloonWPx - paddingPx).coerceAtLeast(minX)
         val maxY = (hPx - balloonHPx - paddingPx).coerceAtLeast(minY)
         fun remainingCorrectCount(): Int =
-            options.indices.count { i -> i < alive.size && alive[i] && options[i] == correctAnswer }
+            if (correctLetterSet != null) {
+                options.indices.count { i -> i < alive.size && alive[i] && options[i] in correctLetterSet }
+            } else {
+                options.indices.count { i -> i < alive.size && alive[i] && options[i] == correctAnswer }
+            }
 
         // Spawn anchors: full-area 2D scatter + relaxation so starts never overlap.
         val anchors =
@@ -636,8 +642,13 @@ internal fun PopBalloonsOptions(
             val xPx = xBuf[idx]
             val yPx = yBuf[idx]
             val aliveCorrectBeforeTap =
-                options.indices.count { i -> i < alive.size && alive[i] && options[i] == correctAnswer }
-            val isPotentialFinaleCorrect = letter == correctAnswer && aliveCorrectBeforeTap == 1
+                if (correctLetterSet != null) {
+                    options.indices.count { i -> i < alive.size && alive[i] && options[i] in correctLetterSet }
+                } else {
+                    options.indices.count { i -> i < alive.size && alive[i] && options[i] == correctAnswer }
+                }
+            val isCorrectLetter = correctLetterSet?.contains(letter) ?: (letter == correctAnswer)
+            val isPotentialFinaleCorrect = isCorrectLetter && aliveCorrectBeforeTap == 1
 
             key(idx) {
                 PopBalloon(
@@ -646,7 +657,7 @@ internal fun PopBalloonsOptions(
                     color = color,
                     seed = idx * 7919 + correctAnswer.hashCode(),
                     enabled = enabled && !wrongRecoverRunning,
-                    shouldPop = letter == correctAnswer,
+                    shouldPop = isCorrectLetter,
                     bobPhaseMillis = idx * 220,
                     popJuiceIndex = idx,
                     finaleCorrectPop = isPotentialFinaleCorrect,

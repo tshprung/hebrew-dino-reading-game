@@ -56,6 +56,7 @@ object Chapter1Station5And6ImageMatchInnerScale {
         val isWaffle = choice.word == "וופל" || choice.id == "w_ו_2" || choice.tileDrawable == R.drawable.lesson_pic_wafel
         val isLeg = choice.word == "רגל" || choice.id == "w_ר_3" || choice.tileDrawable == R.drawable.lesson_pic_regel
         val isRose = choice.word == "ורד" || choice.id == "w_ו_1" || choice.tileDrawable == R.drawable.lesson_pic_vered
+        val isHoney = choice.word == "דבש" || choice.id == "w_ד_4" || choice.tileDrawable == R.drawable.lesson_pic_dvash
         val isHippo = choice.word == "היפופוטם" || choice.id == "w_ה_3"
         val isMountain = choice.word == "הר" || choice.id == "w_ה_1"
         return when {
@@ -75,6 +76,8 @@ object Chapter1Station5And6ImageMatchInnerScale {
             isCurtain -> 1f
             // Feedback: shrink waffle 2x (relative to default 2f).
             isWaffle -> 1f
+            // Honey jar vector: similar to waffle — keep inner art readable inside the card frame.
+            isHoney -> 1.08f
             isLeg || isRose -> 1f
             // Feedback: hippo reads small; bump by ~20% relative to default 2f.
             isHippo -> 2.4f

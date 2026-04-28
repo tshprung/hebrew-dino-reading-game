@@ -32,8 +32,8 @@ fun CaveHomeMark(
             path =
                 Path().apply {
                     moveTo(w * 0.05f, h * 0.72f)
-                    quadraticBezierTo(w * 0.22f, h * 0.38f, w * 0.48f, h * 0.42f)
-                    quadraticBezierTo(w * 0.78f, h * 0.36f, w * 0.95f, h * 0.70f)
+                    quadraticTo(w * 0.22f, h * 0.38f, w * 0.48f, h * 0.42f)
+                    quadraticTo(w * 0.78f, h * 0.36f, w * 0.95f, h * 0.70f)
                     lineTo(w * 0.95f, h * 0.95f)
                     lineTo(w * 0.05f, h * 0.95f)
                     close()
@@ -125,8 +125,8 @@ fun CaveHomeMark(
             path =
                 Path().apply {
                     moveTo(w * 0.14f, h * 0.62f)
-                    quadraticBezierTo(w * 0.32f, h * 0.30f, mouthCx, h * 0.26f)
-                    quadraticBezierTo(w * 0.68f, h * 0.30f, w * 0.86f, h * 0.62f)
+                    quadraticTo(w * 0.32f, h * 0.30f, mouthCx, h * 0.26f)
+                    quadraticTo(w * 0.68f, h * 0.30f, w * 0.86f, h * 0.62f)
                 },
             color = Color(0xFF8D6E63).copy(alpha = 0.55f),
             style = Stroke(width = w * 0.045f),

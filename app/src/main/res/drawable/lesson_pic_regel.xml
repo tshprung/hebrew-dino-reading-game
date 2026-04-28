@@ -4,23 +4,23 @@
     android:height="96dp"
     android:viewportWidth="120"
     android:viewportHeight="96">
-    <!-- Single lower leg + foot (simpler, less \"feet photo\") -->
-    <!-- Leg -->
+    <!-- רגל — מבט מהצד: שוק נטויה, כף רגל בפרופיל (עקב שמאל, בהונות ימינה) -->
     <path
-        android:fillColor="#F4C7B6"
-        android:pathData="M52,18 C44,18 40,26 40,36 L40,66 C40,76 46,82 54,82 C62,82 68,76 68,66 L68,36 C68,26 60,18 52,18 Z" />
-    <!-- Foot -->
+        android:fillColor="#EEC4B0"
+        android:pathData="M50,8 C44,8 40,12 40,18 L38,58 C38,64 40,68 46,70 L46,74 C46,78 52,82 60,84 L98,88 C108,90 116,85 114,77 C112,71 100,66 84,64 L58,62 C54,60 52,54 52,46 L54,16 C54,10 54,8 50,8 Z" />
+    <!-- עקב וסוליה (צד) -->
     <path
-        android:fillColor="#F0BBA7"
-        android:pathData="M30,78 C30,70 38,66 52,66 C66,66 82,70 86,78 C90,86 78,92 56,92 C38,92 30,88 30,78 Z" />
-    <!-- Toes -->
-    <path android:fillColor="#EFB2A0" android:pathData="M42,74 A5,5 0 1,1 42.01,74 Z" />
-    <path android:fillColor="#EFB2A0" android:pathData="M52,72 A5,5 0 1,1 52.01,72 Z" />
-    <path android:fillColor="#EFB2A0" android:pathData="M62,72 A5,5 0 1,1 62.01,72 Z" />
-    <path android:fillColor="#EFB2A0" android:pathData="M72,74 A5,5 0 1,1 72.01,74 Z" />
-
-    <!-- Subtle shadow under feet -->
+        android:fillColor="#DCA590"
+        android:pathData="M36,70 C34,74 38,80 46,82 L96,87 C106,89 112,84 110,78 C108,73 98,69 84,67 L48,70 Z" />
+    <!-- בהונות בפרופיל -->
+    <path
+        android:fillColor="#D89A88"
+        android:pathData="M100,76 C106,74 112,76 112,80 C112,85 104,88 98,86 Z" />
+    <path
+        android:fillColor="#D89A88"
+        android:pathData="M108,78 C114,76 118,78 118,82 C118,87 110,90 106,88 Z" />
+    <!-- צל -->
     <path
         android:fillColor="#22000000"
-        android:pathData="M18,90 C18,84 102,84 102,90 C102,94 18,94 18,90 Z" />
+        android:pathData="M16,92 C16,86 112,88 112,92 C112,96 16,96 16,92 Z" />
 </vector>

@@ -40,9 +40,9 @@ fun Chapter3OutroScreen(
 ) {
     ChapterLobbyStoryLayout(
         backgroundRes = R.drawable.chapter3_story_outro,
-        title = "יש!!!",
+        title = "הנה היא!",
         body =
-            "הנה זה!\n" +
+            "הנה היא!\n" +
                 "\n" +
                 "דינו מצא עוד ביצה — והיא שלמה!\n" +
                 "\n" +

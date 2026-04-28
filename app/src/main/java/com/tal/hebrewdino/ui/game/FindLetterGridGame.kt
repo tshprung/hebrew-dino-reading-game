@@ -76,6 +76,12 @@ fun FindLetterGridGame(
     cellSideScale: Float = 1f,
     /** Moves header chip + grid down as a fraction of parent max height (e.g. 0.05f). */
     contentNudgeDownFraction: Float = 0f,
+    /** Episode 3: context word (“find a letter that appears in this word”). */
+    contextWordHint: String? = null,
+    /** When [contextWordHint] is set: hide the large explicit target letter in the header (letter is only in the grid). */
+    suppressHeaderTargetLetter: Boolean = false,
+    /** When set (Episode 1 station 3), shows an inline instruction next to the target letter. */
+    inlineInstructionText: String? = null,
     modifier: Modifier = Modifier,
 ) {
     val scope = rememberCoroutineScope()
@@ -136,7 +142,15 @@ fun FindLetterGridGame(
 
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
         val nudgeDown = maxHeight * nudgeFrac
-        val headerBoxH = if (question.columns >= 4) 74.dp else 82.dp
+        val headerBoxH =
+            when {
+                contextWordHint != null && suppressHeaderTargetLetter && question.columns >= 4 -> 88.dp
+                contextWordHint != null && suppressHeaderTargetLetter -> 96.dp
+                contextWordHint != null && question.columns >= 4 -> 118.dp
+                contextWordHint != null -> 128.dp
+                question.columns >= 4 -> 74.dp
+                else -> 82.dp
+            }
         val topPaddingH = 6.dp
         val outerW = maxWidth
         // Small safety margin so the last row never clips in landscape.
@@ -150,6 +164,16 @@ fun FindLetterGridGame(
                     .offset(y = nudgeDown),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
+        if (contextWordHint == null && inlineInstructionText != null) {
+            Text(
+                text = inlineInstructionText,
+                fontSize = if (question.columns >= 4) 27.sp else 30.sp,
+                fontWeight = FontWeight.Black,
+                color = Color(0xFF0B2B3D),
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(top = 6.dp, bottom = 6.dp),
+            )
+        }
         Box(
             modifier =
                 Modifier
@@ -168,13 +192,51 @@ fun FindLetterGridGame(
                     .padding(horizontal = 20.dp, vertical = 5.dp),
             contentAlignment = Alignment.Center,
         ) {
-            Text(
-                text = question.targetLetter,
-                fontSize = if (question.columns >= 4) 52.sp else 60.sp,
-                fontWeight = FontWeight.Black,
-                color = Color(0xFF0B2B3D),
-                textAlign = TextAlign.Center,
-            )
+            if (contextWordHint != null) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    if (suppressHeaderTargetLetter) {
+                        Text(
+                            text = "מצאו את האות שמופיעה במילה $contextWordHint",
+                            fontSize = if (question.columns >= 4) 15.sp else 16.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color(0xFF0B2B3D).copy(alpha = 0.92f),
+                            textAlign = TextAlign.Center,
+                        )
+                    } else {
+                        Text(
+                            text = "מצאו את האות שמופיעה במילה:",
+                            fontSize = if (question.columns >= 4) 14.sp else 15.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color(0xFF0B2B3D).copy(alpha = 0.92f),
+                            textAlign = TextAlign.Center,
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = contextWordHint,
+                            fontSize = if (question.columns >= 4) 26.sp else 30.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF0B2B3D),
+                            textAlign = TextAlign.Center,
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = question.targetLetter,
+                            fontSize = if (question.columns >= 4) 48.sp else 56.sp,
+                            fontWeight = FontWeight.Black,
+                            color = Color(0xFF0B2B3D),
+                            textAlign = TextAlign.Center,
+                        )
+                    }
+                }
+            } else {
+                Text(
+                    text = question.targetLetter,
+                    fontSize = if (question.columns >= 4) 52.sp else 60.sp,
+                    fontWeight = FontWeight.Black,
+                    color = Color(0xFF0B2B3D),
+                    textAlign = TextAlign.Center,
+                )
+            }
         }
         Spacer(modifier = Modifier.height(4.dp))
         Box(

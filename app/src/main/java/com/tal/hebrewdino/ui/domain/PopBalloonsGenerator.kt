@@ -34,5 +34,36 @@ class PopBalloonsGenerator(
 
         return Question.PopBalloonsQuestion(correctAnswer = correctAnswer, options = options)
     }
+
+    /**
+     * Pick-letter station with a larger option set: [correctAnswer] plus distractors from [group],
+     * without forcing every pool letter onto the board (unlike [generate] for 7 balloons).
+     */
+    fun generatePickLetterOptions(
+        rnd: Random,
+        group: List<String>,
+        correctAnswer: String,
+        optionCount: Int,
+    ): Question.PopBalloonsQuestion {
+        require(group.isNotEmpty())
+        require(correctAnswer in group)
+        require(optionCount in 3..9)
+        val base = group.distinct()
+        val others = base.filter { it != correctAnswer }.shuffled(rnd)
+        val distractorCount = (optionCount - 1).coerceAtLeast(2)
+        val picks = others.take(distractorCount.coerceAtMost(others.size))
+        val options =
+            buildList {
+                add(correctAnswer)
+                addAll(picks)
+                while (size < optionCount) {
+                    add(base.random(rnd))
+                }
+            }
+                .shuffled(rnd)
+                .shuffled(rnd)
+        require(correctAnswer in options)
+        return Question.PopBalloonsQuestion(correctAnswer = correctAnswer, options = options)
+    }
 }
 

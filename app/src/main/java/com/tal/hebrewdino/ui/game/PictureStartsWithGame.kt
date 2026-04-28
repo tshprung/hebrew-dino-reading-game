@@ -72,6 +72,8 @@ fun PictureStartsWithGame(
     /** Optional saga context for [captionFontSizeForWordCard]. */
     chapterId: Int? = null,
     stationId: Int? = null,
+    /** Hebrew prompt above the picture (Episode 3 wording tweak allowed). */
+    instructionText: String = "באיזו אות המילה מתחילה?",
     onPickLetter: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -83,7 +85,7 @@ fun PictureStartsWithGame(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
-            text = "באיזו אות המילה מתחילה?",
+            text = instructionText,
             style = MaterialTheme.typography.titleMedium.copy(fontSize = MaterialTheme.typography.titleMedium.fontSize * 2),
             color = Color(0xFF0B2B3D),
             textAlign = TextAlign.Center,

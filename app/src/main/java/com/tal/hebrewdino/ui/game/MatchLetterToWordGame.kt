@@ -72,6 +72,8 @@ fun MatchLetterToWordGame(
     choices: List<LessonChoice>,
     contentKey: Int = 0,
     enabled: Boolean,
+    /** Max picture+letter pairs shown (station 6 may use 4). */
+    choicePairLimit: Int = 3,
     /** Narrower tiles with more horizontal space between the two columns. */
     compactWideSpread: Boolean = false,
     /** Scales only the illustration inside the picture card (same idea as [ImageMatchGame]). */
@@ -101,7 +103,7 @@ fun MatchLetterToWordGame(
     stationId: Int? = null,
     modifier: Modifier = Modifier,
 ) {
-    val maxPairs = choices.take(3)
+    val maxPairs = choices.take(choicePairLimit.coerceIn(1, 6))
     var selectedLetter by remember { mutableStateOf<String?>(null) }
     var selectedChoiceId by remember { mutableStateOf<String?>(null) }
     val locked = remember { mutableStateMapOf<String, String>() } // letter -> choiceId
@@ -240,9 +242,9 @@ fun MatchLetterToWordGame(
                     // pictures row + letters row + gaps
                     onePictureCardOuterH + landscapePictureLetterGap + 88.dp + 12.dp
                 } else {
-                    // 3 stacked picture cards with captions + some spacing
+                    // stacked picture cards with captions + some spacing
                     val perItemH = onePictureCardOuterH + 12.dp
-                    (perItemH * 3) + 8.dp
+                    (perItemH * maxPairs.size.coerceAtLeast(1)) + 8.dp
                 }
             val scaleToFit = min(1f, availableH.value / rowNeeds.value)
 

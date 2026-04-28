@@ -62,7 +62,7 @@ fun Chapter3MidBoostScreen(
                 "בואו נמשיך לגלות מה מחכה לנו בהמשך.",
         eggStripCount = eggStripCount,
         companion = ChapterLobbyCompanion.DinoOnly,
-        voiceAssetPath = null,
+        voiceAssetPath = AudioClips.StoryCh3MidBoost,
         dinoContentDescription = "דינו",
         onContinue = onContinue,
         modifier = modifier,

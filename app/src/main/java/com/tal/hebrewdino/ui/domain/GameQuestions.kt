@@ -31,7 +31,7 @@ sealed class Question {
         val correctChoiceId: String,
     ) : Question() {
         init {
-            require(choices.size in 2..3)
+            require(choices.size in 2..6)
             require(choices.any { it.id == correctChoiceId })
         }
     }
@@ -42,7 +42,7 @@ sealed class Question {
         val correctLetter: String,
         val catalogEntryId: String,
         val tileDrawable: Int,
-        @ColorInt val tintArgb: Int,
+        @param:ColorInt val tintArgb: Int,
         val optionLetters: List<String>,
     ) : Question() {
         init {
@@ -67,13 +67,13 @@ data class LessonChoice(
     val id: String,
     val letter: String,
     val word: String,
-    @ColorInt val tintArgb: Int,
+    @param:ColorInt val tintArgb: Int,
     val tileDrawable: Int = R.drawable.lesson_word_tile,
 )
 
 data class PictureLetterPair(
     val imageRes: Int,
-    @ColorInt val tintArgb: Int? = null,
+    @param:ColorInt val tintArgb: Int? = null,
     /** Optional Hebrew label under the picture (gameplay secondary). */
     val caption: String?,
     val letter: String,
