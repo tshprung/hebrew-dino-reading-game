@@ -5,7 +5,7 @@ plugins {
 
 android {
     namespace = "com.tal.hebrewdino"
-    compileSdk = 34
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.tal.hebrewdino"

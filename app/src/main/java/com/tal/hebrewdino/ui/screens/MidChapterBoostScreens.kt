@@ -76,7 +76,7 @@ fun Chapter4MidBoostScreen(
     modifier: Modifier = Modifier,
 ) {
     ChapterLobbyStoryLayout(
-        backgroundRes = R.drawable.mountain_bg_chapter4,
+        backgroundRes = R.drawable.forest_bg_journey_road,
         title = "כיף לראות!",
         body =
             "אתם זוכרים ומחברים מילים ממש טוב.\n" +

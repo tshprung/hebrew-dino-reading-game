@@ -68,7 +68,6 @@ fun ImageToWordGame(
 
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
         val w = maxWidth
-        val h = maxHeight
         val density = LocalDensity.current
 
         // Match the same card sizing math as PictureStartsWith/ImageMatch (Episode 1/2 station 4).

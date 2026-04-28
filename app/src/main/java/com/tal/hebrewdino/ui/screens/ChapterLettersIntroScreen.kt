@@ -95,7 +95,7 @@ fun Chapter4LettersIntroScreen(
     ChapterLettersIntroScreen(
         chapterTitle = "פרק 4 - חיזוק חכם",
         letters = listOf("א", "מ", "ש", "ר", "ת"),
-        backgroundRes = R.drawable.mountain_bg_chapter4,
+        backgroundRes = R.drawable.forest_bg_journey_road,
         onContinue = onContinue,
         modifier = modifier,
     )
@@ -187,6 +187,13 @@ fun ChapterLettersIntroScreen(
                         text = "בפרק הזה נלמד את האותיות",
                         style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Black),
                         color = Color(0xFF0B2B3D),
+                        textAlign = TextAlign.Center,
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = chapterTitle,
+                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                        color = Color(0xFF1565C0),
                         textAlign = TextAlign.Center,
                     )
                     Spacer(modifier = Modifier.height(10.dp))

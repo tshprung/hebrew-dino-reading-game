@@ -1313,7 +1313,7 @@ fun GameScreen(
                                             }
                                         }
                                     }
-                                    if (plan.mode != com.tal.hebrewdino.ui.domain.StationQuizMode.PickLetter) {
+                                    if (plan.mode != StationQuizMode.PickLetter) {
                                         if (chapterId == 3 && sagaUsesPopBalloonsAudioStaging) {
                                             // Episode 3 station 3: no target letter chip.
                                         } else if (sagaUsesPopBalloonsAudioStaging && station2PinnedBalloonLetter != null) {
@@ -1364,7 +1364,7 @@ fun GameScreen(
                                             )
                                         }
                                     }
-                                    if (plan.mode == com.tal.hebrewdino.ui.domain.StationQuizMode.PickLetter) {
+                                    if (plan.mode == StationQuizMode.PickLetter) {
                                         Box(
                                             modifier =
                                                 Modifier
@@ -1871,7 +1871,7 @@ fun GameScreen(
                                     wrongFlashEpoch = station4WrongFlashEpoch,
                                     onPickLetter = { picked ->
                                         if (!consumeTapCooldown()) return@PictureStartsWithGame
-                                            cancelFeedbackVoice()
+                                        cancelFeedbackVoice()
                                         if (audioEnabled && chapterId == 3 && stationId == 1) {
                                             val clip = AudioClips.letterNameClip(picked)
                                             if (clip != null && voice.hasAsset(clip)) {

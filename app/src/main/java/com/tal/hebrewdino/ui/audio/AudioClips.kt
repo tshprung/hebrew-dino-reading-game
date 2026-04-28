@@ -85,7 +85,7 @@ object AudioClips {
     }
 
     /** Wrong balloon: plop first, then funny (no fallback). */
-    fun station2WrongPopPlaylist(balloonIndex: Int): Array<String> {
+    fun station2WrongPopPlaylist(@Suppress("UNUSED_PARAMETER") balloonIndex: Int): Array<String> {
         return arrayOf(SfxStation2PopPlop, SfxBalloonPopWrongFunny)
     }
     const val SfxCorrect = "audio/sfx_correct.wav"

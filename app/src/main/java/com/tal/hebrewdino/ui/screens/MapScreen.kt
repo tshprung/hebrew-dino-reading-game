@@ -52,7 +52,8 @@ fun MapScreen(
 
     Box(modifier = modifier.fillMaxSize()) {
         Image(
-            painter = painterResource(id = R.drawable.bg_beach),
+            // No "beach chapter" anymore; reuse the journey road background.
+            painter = painterResource(id = R.drawable.forest_bg_journey_road),
             contentDescription = null,
             modifier = Modifier.fillMaxSize(),
             contentScale = ContentScale.Crop,

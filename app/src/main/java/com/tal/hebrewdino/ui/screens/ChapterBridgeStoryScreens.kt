@@ -66,7 +66,7 @@ fun Chapter4IntroScreen(
     modifier: Modifier = Modifier,
 ) {
     ChapterLobbyStoryLayout(
-        backgroundRes = R.drawable.mountain_bg_chapter4,
+        backgroundRes = R.drawable.forest_bg_journey_road,
         title = "פרק 4",
         body =
             "בוא נחזיר את הביצים לאמא. היא מחכה בקן.\n" +

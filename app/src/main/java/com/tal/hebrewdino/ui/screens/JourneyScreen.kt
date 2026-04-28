@@ -227,7 +227,7 @@ fun JourneyScreen(
         playableLevels < totalLevels &&
             allPlayableComplete
 
-    val scope = rememberCoroutineScope()
+    rememberCoroutineScope()
     var walking by remember { mutableStateOf(false) }
     var walkFrame by remember { mutableIntStateOf(0) }
     // Persist dino position across navigating into/out of stations.

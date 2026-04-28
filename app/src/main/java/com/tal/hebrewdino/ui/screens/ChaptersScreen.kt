@@ -112,7 +112,11 @@ private val ChaptersMapPathHeight =
  * Upright egg silhouette (close to a dinosaur egg photo): rounded bottom, narrower top, slight asymmetry.
  */
 private object ChapterEggShape : Shape {
-    override fun createOutline(size: Size, layoutDirection: LayoutDirection, density: Density): Outline {
+    override fun createOutline(
+        size: Size,
+        @Suppress("UNUSED_PARAMETER") layoutDirection: LayoutDirection,
+        @Suppress("UNUSED_PARAMETER") density: Density,
+    ): Outline {
         val w = size.width
         val h = size.height
         val cx = w * 0.5f
@@ -219,7 +223,11 @@ fun ChaptersScreen(
 }
 
 private object ChapterHexShape : Shape {
-    override fun createOutline(size: Size, layoutDirection: LayoutDirection, density: Density): Outline {
+    override fun createOutline(
+        size: Size,
+        @Suppress("UNUSED_PARAMETER") layoutDirection: LayoutDirection,
+        @Suppress("UNUSED_PARAMETER") density: Density,
+    ): Outline {
         val w = size.width
         val h = size.height
         val r = minOf(w, h) / 2f
@@ -251,7 +259,6 @@ private fun ChaptersHexHoneycomb(
 ) {
     BoxWithConstraints(modifier = modifier) {
         val tile = (maxWidth / 3.1f).coerceIn(128.dp, 190.dp)
-        val h = tile
         val w = tile
         val rowGap = (tile * 0.12f).coerceIn(10.dp, 22.dp)
         val colGap = (tile * 0.08f).coerceIn(8.dp, 18.dp)
@@ -287,7 +294,7 @@ private fun ChaptersHexHoneycomb(
                                 when (ch.id) {
                                     2 -> R.drawable.chapter2_journey_road
                                     3 -> R.drawable.ch3_journey_bg
-                                    4 -> R.drawable.mountain_bg_chapter4
+                                    4 -> R.drawable.forest_bg_journey_road
                                     else -> R.drawable.forest_bg_journey_road
                                 },
                             state = state,

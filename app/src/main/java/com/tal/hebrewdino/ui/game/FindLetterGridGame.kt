@@ -166,121 +166,121 @@ fun FindLetterGridGame(
                     .offset(y = nudgeDown),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-        if (contextWordHint == null && inlineInstructionText != null) {
-            Text(
-                text = inlineInstructionText,
-                fontSize = if (question.columns >= 4) 27.sp else 30.sp,
-                fontWeight = FontWeight.Black,
-                color = Color(0xFF0B2B3D),
-                textAlign = TextAlign.Center,
-                modifier =
-                    Modifier
-                        .padding(top = 6.dp, bottom = 6.dp)
-                        .then(
-                            if (chapterId == 3) {
-                                Modifier
-                                    .background(Color.White.copy(alpha = 0.72f), RoundedCornerShape(18.dp))
-                                    .padding(horizontal = 14.dp, vertical = 8.dp)
-                            } else {
-                                Modifier
-                            },
-                        ),
-            )
-        }
-        Box(
-            modifier =
-                Modifier
-                    .scale(headerScale.value)
-                    .clip(RoundedCornerShape(18.dp))
-                    .background(
-                        brush =
-                            Brush.verticalGradient(
-                                listOf(
-                                    Color(0xFFFFF59D).copy(alpha = 0.95f),
-                                    Color(0xFFFFE082).copy(alpha = 0.88f),
-                                ),
-                            ),
-                    )
-                    .border(2.dp, Color(0xFFFFA000).copy(alpha = 0.45f), RoundedCornerShape(18.dp))
-                    .padding(horizontal = 20.dp, vertical = 5.dp),
-            contentAlignment = Alignment.Center,
-        ) {
-            if (contextWordHint != null) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    if (suppressHeaderTargetLetter) {
-                        Text(
-                            text = "מצאו את האות שמופיעה במילה $contextWordHint",
-                            fontSize = if (question.columns >= 4) 15.sp else 16.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = Color(0xFF0B2B3D).copy(alpha = 0.92f),
-                            textAlign = TextAlign.Center,
-                        )
-                    } else {
-                        Text(
-                            text = "מצאו את האות שמופיעה במילה:",
-                            fontSize = if (question.columns >= 4) 14.sp else 15.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = Color(0xFF0B2B3D).copy(alpha = 0.92f),
-                            textAlign = TextAlign.Center,
-                        )
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(
-                            text = contextWordHint,
-                            fontSize = if (question.columns >= 4) 26.sp else 30.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF0B2B3D),
-                            textAlign = TextAlign.Center,
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = question.targetLetter,
-                            fontSize = if (question.columns >= 4) 48.sp else 56.sp,
-                            fontWeight = FontWeight.Black,
-                            color = Color(0xFF0B2B3D),
-                            textAlign = TextAlign.Center,
-                        )
-                    }
-                }
-            } else {
+            if (contextWordHint == null && inlineInstructionText != null) {
                 Text(
-                    text = question.targetLetter,
-                    fontSize = if (question.columns >= 4) 52.sp else 60.sp,
+                    text = inlineInstructionText,
+                    fontSize = if (question.columns >= 4) 27.sp else 30.sp,
                     fontWeight = FontWeight.Black,
                     color = Color(0xFF0B2B3D),
                     textAlign = TextAlign.Center,
+                    modifier =
+                        Modifier
+                            .padding(top = 6.dp, bottom = 6.dp)
+                            .then(
+                                if (chapterId == 3) {
+                                    Modifier
+                                        .background(Color.White.copy(alpha = 0.72f), RoundedCornerShape(18.dp))
+                                        .padding(horizontal = 14.dp, vertical = 8.dp)
+                                } else {
+                                    Modifier
+                                },
+                            ),
                 )
             }
-        }
-        Spacer(modifier = Modifier.height(4.dp))
-        Box(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .height(availableForGrid)
-                    .padding(horizontal = gridHorizontalPadding)
-                    .scale(gridScale.value),
-        ) {
-            val cols = question.columns
-            val rows = question.rows
-            val safeMaxHeight = availableForGrid
-            val cellSideByWidth = (outerW - gridHorizontalPadding * 2 - gap * (cols - 1)) / cols
-            val cellSideByHeight = (safeMaxHeight - gap * (rows - 1)) / rows
-            val cellSide =
-                // Fill the shorter dimension (width/height) while staying symmetric.
-                minOf(cellSideByWidth, cellSideByHeight).coerceAtLeast(32.dp) * cellScale
-            val gridW = cellSide * cols + gap * (cols - 1)
-            val gridH = cellSide * rows + gap * (rows - 1)
-            // Keep letters readable; shrink the *squares* to fit landscape. Scale glyphs only via [gridLetterSizeMultiplier].
-            val letterSp =
-                ((if (cols >= 4) 34f else 40f) * gridLetterSizeMultiplier.coerceIn(0.75f, 1.75f)).sp
-
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(cols),
-                horizontalArrangement = Arrangement.spacedBy(gap, Alignment.CenterHorizontally),
-                verticalArrangement = Arrangement.spacedBy(gap, Alignment.CenterVertically),
-                userScrollEnabled = false,
-                modifier = Modifier.align(Alignment.TopCenter).size(gridW, gridH),
+            Box(
+                modifier =
+                    Modifier
+                        .scale(headerScale.value)
+                        .clip(RoundedCornerShape(18.dp))
+                        .background(
+                            brush =
+                                Brush.verticalGradient(
+                                    listOf(
+                                        Color(0xFFFFF59D).copy(alpha = 0.95f),
+                                        Color(0xFFFFE082).copy(alpha = 0.88f),
+                                    ),
+                                ),
+                        )
+                        .border(2.dp, Color(0xFFFFA000).copy(alpha = 0.45f), RoundedCornerShape(18.dp))
+                        .padding(horizontal = 20.dp, vertical = 5.dp),
+                contentAlignment = Alignment.Center,
             ) {
+                if (contextWordHint != null) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        if (suppressHeaderTargetLetter) {
+                            Text(
+                                text = "מצאו את האות שמופיעה במילה $contextWordHint",
+                                fontSize = if (question.columns >= 4) 15.sp else 16.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Color(0xFF0B2B3D).copy(alpha = 0.92f),
+                                textAlign = TextAlign.Center,
+                            )
+                        } else {
+                            Text(
+                                text = "מצאו את האות שמופיעה במילה:",
+                                fontSize = if (question.columns >= 4) 14.sp else 15.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Color(0xFF0B2B3D).copy(alpha = 0.92f),
+                                textAlign = TextAlign.Center,
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = contextWordHint,
+                                fontSize = if (question.columns >= 4) 26.sp else 30.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF0B2B3D),
+                                textAlign = TextAlign.Center,
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = question.targetLetter,
+                                fontSize = if (question.columns >= 4) 48.sp else 56.sp,
+                                fontWeight = FontWeight.Black,
+                                color = Color(0xFF0B2B3D),
+                                textAlign = TextAlign.Center,
+                            )
+                        }
+                    }
+                } else {
+                    Text(
+                        text = question.targetLetter,
+                        fontSize = if (question.columns >= 4) 52.sp else 60.sp,
+                        fontWeight = FontWeight.Black,
+                        color = Color(0xFF0B2B3D),
+                        textAlign = TextAlign.Center,
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(4.dp))
+            Box(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .height(availableForGrid)
+                        .padding(horizontal = gridHorizontalPadding)
+                        .scale(gridScale.value),
+            ) {
+                val cols = question.columns
+                val rows = question.rows
+                val safeMaxHeight = availableForGrid
+                val cellSideByWidth = (outerW - gridHorizontalPadding * 2 - gap * (cols - 1)) / cols
+                val cellSideByHeight = (safeMaxHeight - gap * (rows - 1)) / rows
+                val cellSide =
+                    // Fill the shorter dimension (width/height) while staying symmetric.
+                    minOf(cellSideByWidth, cellSideByHeight).coerceAtLeast(32.dp) * cellScale
+                val gridW = cellSide * cols + gap * (cols - 1)
+                val gridH = cellSide * rows + gap * (rows - 1)
+                // Keep letters readable; shrink the *squares* to fit landscape. Scale glyphs only via [gridLetterSizeMultiplier].
+                val letterSp =
+                    ((if (cols >= 4) 34f else 40f) * gridLetterSizeMultiplier.coerceIn(0.75f, 1.75f)).sp
+
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(cols),
+                    horizontalArrangement = Arrangement.spacedBy(gap, Alignment.CenterHorizontally),
+                    verticalArrangement = Arrangement.spacedBy(gap, Alignment.CenterVertically),
+                    userScrollEnabled = false,
+                    modifier = Modifier.align(Alignment.TopCenter).size(gridW, gridH),
+                ) {
                 itemsIndexed(question.cells, key = { i, _ -> "${contentKey}_$i" }) { index, letter ->
                     val done = index in found
                     val scale = scales[index]

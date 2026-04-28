@@ -678,7 +678,7 @@ internal fun PopBalloonsOptions(
                         }
                     },
                     onPop = {
-                        val poppedColor = balloonColors.getOrElse(idx) { Color(0xFFFF6B6B) }
+                        balloonColors.getOrElse(idx) { Color(0xFFFF6B6B) }
                         if (letter != correctAnswer) {
                             onWrongPick()
                         }
@@ -782,11 +782,10 @@ internal fun PopBalloon(
     if (!visible) return
 
     val interaction = remember(instanceKey) { MutableInteractionSource() }
-    val shardAngles =
-        remember(seed) {
-            val r = Random(seed)
-            List(10) { r.nextFloat() * 2f * PI.toFloat() }
-        }
+    remember(seed) {
+        val r = Random(seed)
+        List(10) { r.nextFloat() * 2f * PI.toFloat() }
+    }
     val popFrags =
         remember(seed) {
             // More “real” confetti-like balloon pieces: different sizes, angles, speeds and slight spin.
@@ -966,18 +965,18 @@ internal fun PopBalloon(
 
 private fun playSuccessAnimation(
     scope: CoroutineScope,
-    dinoScale: androidx.compose.animation.core.Animatable<Float, androidx.compose.animation.core.AnimationVector1D>,
+    dinoScale: Animatable<Float, AnimationVector1D>,
     showConfetti: MutableState<Boolean>,
 ): Job = scope.launch {
     showConfetti.value = true
     dinoScale.snapTo(1f)
     dinoScale.animateTo(
         targetValue = 1.18f,
-        animationSpec = androidx.compose.animation.core.tween(durationMillis = 140),
+        animationSpec = tween(durationMillis = 140),
     )
     dinoScale.animateTo(
         targetValue = 1f,
-        animationSpec = androidx.compose.animation.core.spring(dampingRatio = 0.45f, stiffness = 600f),
+        animationSpec = spring(dampingRatio = 0.45f, stiffness = 600f),
     )
     delay(450)
     showConfetti.value = false
@@ -985,17 +984,17 @@ private fun playSuccessAnimation(
 
 private fun playMistakeAnimation(
     scope: CoroutineScope,
-    optionsShake: androidx.compose.animation.core.Animatable<Float, androidx.compose.animation.core.AnimationVector1D>,
+    optionsShake: Animatable<Float, AnimationVector1D>,
 ): Job = scope.launch {
     optionsShake.snapTo(0f)
     val amp = 18f
     repeat(5) { i ->
         optionsShake.animateTo(
             targetValue = if (i % 2 == 0) amp else -amp,
-            animationSpec = androidx.compose.animation.core.tween(durationMillis = 45),
+            animationSpec = tween(durationMillis = 45),
         )
     }
-    optionsShake.animateTo(0f, animationSpec = androidx.compose.animation.core.tween(durationMillis = 60))
+    optionsShake.animateTo(0f, animationSpec = tween(durationMillis = 60))
 }
 
 @Composable
@@ -1017,7 +1016,7 @@ internal fun ConfettiOverlay(modifier: Modifier = Modifier) {
                     .align(Alignment.TopStart)
                     .offset(x.dp * 3, y.dp * 5)
                     .size(18.dp)
-                    .background(color, shape = androidx.compose.foundation.shape.CircleShape),
+                    .background(color, shape = CircleShape),
             )
         }
     }

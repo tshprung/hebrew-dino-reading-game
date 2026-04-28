@@ -58,18 +58,12 @@ fun AppNav() {
     val prefs = CharacterPrefs(context)
     val progress = ProgressPrefs(context)
     val scope = rememberCoroutineScope()
-    val beachIntroSeen by progress.beachIntroSeenFlow.collectAsState(initial = false)
     val beachOutroSeen by progress.beachOutroSeenFlow.collectAsState(initial = false)
-    val chapter1LettersIntroSeen by progress.chapter1LettersIntroSeenFlow.collectAsState(initial = false)
     val chapter1MidBoostSeen by progress.chapter1MidBoostSeenFlow.collectAsState(initial = false)
-    val chapter2IntroSeen by progress.chapter2IntroSeenFlow.collectAsState(initial = false)
-    val chapter2LettersIntroSeen by progress.chapter2LettersIntroSeenFlow.collectAsState(initial = false)
     val chapter2MidBoostSeen by progress.chapter2MidBoostSeenFlow.collectAsState(initial = false)
     val chapter2UnlockedStation by progress.chapter2UnlockedStationFlow.collectAsState(initial = 1)
     val chapter2CompletedStations by progress.chapter2CompletedStationsFlow.collectAsState(initial = emptySet())
     val chapter2Completed by progress.chapter2CompletedFlow.collectAsState(initial = false)
-    val chapter3IntroSeen by progress.chapter3IntroSeenFlow.collectAsState(initial = false)
-    val chapter3LettersIntroSeen by progress.chapter3LettersIntroSeenFlow.collectAsState(initial = false)
     val chapter3MidBoostSeen by progress.chapter3MidBoostSeenFlow.collectAsState(initial = false)
     val chapter3UnlockedStation by progress.chapter3UnlockedStationFlow.collectAsState(initial = 1)
     val chapter3CompletedStations by progress.chapter3CompletedStationsFlow.collectAsState(initial = emptySet())
@@ -290,7 +284,7 @@ fun AppNav() {
                 headerTitle = "פרק 3 - מצא את הביצה הורודה",
                 collectedEggStripCount = collectedEggStripCount,
                 endMarker = JourneyEndMarker.PinkEgg,
-                backgroundRes = R.drawable.chapter3_journey_road,
+                backgroundRes = R.drawable.ch3_journey_bg,
                 onPlayLevel = { stationId ->
                     navController.navigate("${NavRoutes.Ch3Level}/$stationId")
                 },
@@ -641,7 +635,7 @@ fun AppNav() {
                 levelId = stationId,
                 correct = correct,
                 mistakes = mistakes,
-                backgroundRes = R.drawable.chapter3_reward,
+                backgroundRes = R.drawable.ch3_reward_bg,
                 onBackToMap = backToMap,
             )
         }
@@ -691,7 +685,7 @@ fun AppNav() {
                 headerSubtitleCompact = true,
                 collectedEggStripCount = collectedEggStripCount,
                 endMarker = JourneyEndMarker.BigEgg,
-                backgroundRes = R.drawable.mountain_bg_chapter4,
+                backgroundRes = R.drawable.forest_bg_journey_road,
                 onPlayLevel = { stationId ->
                     navController.navigate("${NavRoutes.Ch4Level}/$stationId")
                 },

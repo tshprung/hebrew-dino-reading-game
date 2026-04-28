@@ -27,6 +27,7 @@ class MainActivity : ComponentActivity() {
 
 @Preview(showBackground = true, widthDp = 800, heightDp = 450)
 @Composable
+@Suppress("unused")
 private fun PreviewApp() {
     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
         AppNav()

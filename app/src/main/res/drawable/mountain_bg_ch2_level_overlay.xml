@@ -2,4 +2,4 @@
 <!-- View/XML layouts only. Jetpack Compose painterResource needs @drawable/mountain_bg_chapter2 (PNG), not this <bitmap> wrapper. -->
 <bitmap xmlns:android="http://schemas.android.com/apk/res/android"
     android:gravity="fill"
-    android:src="@drawable/mountain_bg_chapter2" />
+    android:src="@drawable/chapter2_level_overlay" />

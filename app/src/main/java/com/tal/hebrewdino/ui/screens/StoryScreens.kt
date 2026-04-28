@@ -43,7 +43,8 @@ fun BeachIntroScreen(
     modifier: Modifier = Modifier,
 ) {
     StoryScreenScaffold(
-        backgroundRes = R.drawable.bg_beach,
+        // No "beach chapter" anymore; reuse the forest story intro background.
+        backgroundRes = R.drawable.forest_bg_story_intro,
         character = character,
         title = "פרק 1: החוף",
         body =

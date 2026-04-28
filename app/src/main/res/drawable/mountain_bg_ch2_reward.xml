@@ -2,4 +2,4 @@
 <!-- View/XML layouts only. Compose: use @drawable/mountain_bg_chapter2 instead of this <bitmap> wrapper. -->
 <bitmap xmlns:android="http://schemas.android.com/apk/res/android"
     android:gravity="fill"
-    android:src="@drawable/mountain_bg_chapter2" />
+    android:src="@drawable/chapter2_reward" />
