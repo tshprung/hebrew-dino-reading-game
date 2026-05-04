@@ -86,7 +86,7 @@ import com.tal.hebrewdino.ui.components.learning.StoryEggStrip
 import com.tal.hebrewdino.ui.components.learning.storyEggStripVerticalHeight
 import com.tal.hebrewdino.ui.feedback.GameFeedback
 import com.tal.hebrewdino.ui.game.ChildGameAudioHooks
-import com.tal.hebrewdino.ui.game.FindLetterGridGame
+import com.tal.hebrewdino.ui.components.station.FindLetterGridStationContent
 import com.tal.hebrewdino.ui.game.FinaleGame
 import com.tal.hebrewdino.ui.game.ImageToWordGame
 import com.tal.hebrewdino.ui.game.ImageMatchGame
@@ -1244,63 +1244,49 @@ fun GameScreen(
                         }
                     } else {
                         when (current) {
-                            is Question.FindLetterGridQuestion ->
-                                FindLetterGridGame(
+                            is Question.FindLetterGridQuestion -> {
+                                val isSagaRevealStation =
+                                    isSagaEpisode(chapterId) &&
+                                        stationId == Chapter1StationOrder.REVEAL_THEN_CHOOSE
+                                FindLetterGridStationContent(
                                     question = current,
+                                    modifier = Modifier.fillMaxSize(),
                                     chapterId = chapterId,
-                                    hideListenOnlyHeaderTargetLetter =
-                                        stationUiSpec.findGridHideListenOnlyHeaderTargetLetter,
-                                    floatingTargetLetterHint =
-                                        if (episode4HelpSt15 && stationId == Chapter1StationOrder.REVEAL_THEN_CHOOSE) {
-                                            episode4HelpActiveHintLetter
-                                        } else {
-                                            null
-                                        },
-                                    episode4TargetCellsHintEpoch =
-                                        if (episode4HelpSt15 && stationId == Chapter1StationOrder.REVEAL_THEN_CHOOSE) {
-                                            episode4Station3GridHintEpoch
-                                        } else {
-                                            0
-                                        },
-                                    contextWordHint =
+                                    listenOnly = listenOnly,
+                                    isSagaRevealStation = isSagaRevealStation,
+                                    sagaUsesFindGridAudioStaging = sagaUsesFindGridAudioStaging,
+                                    stationUiSpec = stationUiSpec,
+                                    chapter3ContextWordHint =
                                         if (chapterId == 3 && sagaUsesFindGridAudioStaging) {
                                             Chapter3EpisodeContent.gridHintWord(session.currentIndex)
                                         } else {
                                             null
                                         },
-                                    suppressHeaderTargetLetter =
-                                        sagaUsesFindGridAudioStaging &&
-                                            stationUiSpec.findGridSuppressHeaderTargetLetter,
-                                    inlineInstructionText =
-                                        if (isSagaEpisode(chapterId) && stationId == Chapter1StationOrder.REVEAL_THEN_CHOOSE) {
-                                            stationUiSpec.findGridInlineInstructionOverride
-                                                ?: if (listenOnly) {
-                                                    "מצאו את האות שנשמעת:"
-                                                } else {
-                                                    "מצא את האות:"
-                                                }
+                                    floatingTargetLetterHint =
+                                        if (episode4HelpSt15 &&
+                                            stationId == Chapter1StationOrder.REVEAL_THEN_CHOOSE
+                                        ) {
+                                            episode4HelpActiveHintLetter
                                         } else {
                                             null
                                         },
-                                    inlineInstructionReadablePanel =
-                                        stationUiSpec.findGridInlineReadablePanel,
-                                    cellSideScale =
-                                        if (isSagaEpisode(chapterId) && stationId == Chapter1StationOrder.REVEAL_THEN_CHOOSE) {
-                                            0.9f
+                                    episode4TargetCellsHintEpoch =
+                                        if (episode4HelpSt15 &&
+                                            stationId == Chapter1StationOrder.REVEAL_THEN_CHOOSE
+                                        ) {
+                                            episode4Station3GridHintEpoch
                                         } else {
-                                            1f
+                                            0
                                         },
-                                    contentNudgeDownFraction =
-                                        if (isSagaEpisode(chapterId) && stationId == Chapter1StationOrder.REVEAL_THEN_CHOOSE) {
-                                            0.05f
-                                        } else {
-                                            0f
-                                        },
-                                    // Station 3 (six-station arc): SoundPool voice per tap for low-latency feedback.
-                                    onLetterTapped =
+                                    hintPulseEpoch = hintPulseEpoch,
+                                    enabled = gameChoicesEnabled,
+                                    contentKey = session.currentIndex,
+                                    entryPulseScale = entryPulseScale.value,
+                                    optionsShakePx = optionsShake.value,
+                                    onSagaGridLetterTapped =
                                         if (sagaUsesFindGridAudioStaging) {
-                                            { tapped ->
-                                                if (!audioEnabled) return@FindLetterGridGame
+                                            sagaLetterTap@{ tapped ->
+                                                if (!audioEnabled) return@sagaLetterTap
                                                 // Cut any in-flight round intro / previous letter stream (ids are not tracked for intro).
                                                 sfx.stopAllStreams()
                                                 station3VoiceStreamId = 0
@@ -1342,13 +1328,8 @@ fun GameScreen(
                                         } else {
                                             null
                                         },
-                                    hintPulseEpoch = hintPulseEpoch,
-                                    hintHeaderPeakScale = if (sagaUsesFindGridAudioStaging) 1.30f else 1.12f,
-                                    // Episode 1 station 3: bigger letters inside same boxes.
-                                    gridLetterSizeMultiplier = if (sagaUsesFindGridAudioStaging) 1.5f else 1f,
-                                    correctCellPeakScale = if (sagaUsesFindGridAudioStaging) 1.30f else 1.12f,
-                                    onCellTapped = { index ->
-                                        if (!consumeTapCooldown()) return@FindLetterGridGame
+                                    onCellTapped = gridCellTap@{ index ->
+                                        if (!consumeTapCooldown()) return@gridCellTap
                                         // Station 3: wrong-tap voice is scheduled in onLetterTapped; cancel here would cut it off.
                                         if (!(sagaUsesFindGridAudioStaging)) {
                                             cancelFeedbackVoice()
@@ -1365,8 +1346,8 @@ fun GameScreen(
                                             )
                                         }
                                     },
-                                    onCompleted = {
-                                        if (!consumeTapCooldown()) return@FindLetterGridGame
+                                    onCompleted = gridComplete@{
+                                        if (!consumeTapCooldown()) return@gridComplete
                                         scope.launch {
                                             when (session.completeCurrentRound()) {
                                                 AnswerResult.Correct -> {
@@ -1377,14 +1358,8 @@ fun GameScreen(
                                             }
                                         }
                                     },
-                                    enabled = gameChoicesEnabled,
-                                    contentKey = session.currentIndex,
-                                    modifier =
-                                        Modifier
-                                            .fillMaxSize()
-                                            .scale(entryPulseScale.value)
-                                            .offset { IntOffset(optionsShake.value.toInt(), 0) },
                                 )
+                            }
                             is Question.PopBalloonsQuestion ->
                                 Column(
                                     modifier =
