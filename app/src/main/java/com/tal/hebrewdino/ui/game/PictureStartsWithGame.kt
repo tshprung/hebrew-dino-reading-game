@@ -2,6 +2,8 @@ package com.tal.hebrewdino.ui.game
 
 import androidx.compose.foundation.border
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -31,6 +33,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.tal.hebrewdino.R
+import com.tal.hebrewdino.ui.components.TargetLetterHeaderChip
 import com.tal.hebrewdino.ui.components.learning.LessonChoiceCard
 import com.tal.hebrewdino.ui.components.learning.LessonChoiceCardPictureAspect
 import com.tal.hebrewdino.ui.components.learning.captionFontSizeForWordCard
@@ -75,6 +78,14 @@ fun PictureStartsWithGame(
     stationId: Int? = null,
     /** Hebrew prompt above the picture (Episode 3 wording tweak allowed). */
     instructionText: String = "באיזו אות המילה מתחילה?",
+    /** Episode 4 station 4: white readability panel behind instruction (same treatment as Episode 3). */
+    instructionReadablePanel: Boolean = false,
+    /** When false, picture card shows image only (episode 4–5 listen-first station 4). */
+    showWordCaption: Boolean = true,
+    /** Episode 4 station 4: tapping the picture replays the word audio (same as help "שוב"). */
+    onPictureTapReplayWord: (() -> Unit)? = null,
+    /** Episode 4 help רמז: briefly show the word’s starting letter above the picture. */
+    temporaryStartingLetterHint: String? = null,
     onPickLetter: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -91,7 +102,7 @@ fun PictureStartsWithGame(
             color = Color(0xFF0B2B3D),
             textAlign = TextAlign.Center,
             modifier =
-                if (chapterId == 3) {
+                if (chapterId == 3 || instructionReadablePanel) {
                     Modifier
                         .background(Color.White.copy(alpha = 0.72f), RoundedCornerShape(18.dp))
                         .padding(horizontal = 14.dp, vertical = 8.dp)
@@ -100,7 +111,7 @@ fun PictureStartsWithGame(
                 },
         )
         Spacer(modifier = Modifier.height(12.dp))
-        BoxWithConstraints(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+        BoxWithConstraints(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
             val rowInnerWidth = maxWidth
             val frameCap =
                 pictureFrameMaxWidthFraction?.let { f ->
@@ -122,6 +133,13 @@ fun PictureStartsWithGame(
                         .padding(horizontal = 0.dp, vertical = 0.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
+                if (temporaryStartingLetterHint != null) {
+                    TargetLetterHeaderChip(
+                        letter = temporaryStartingLetterHint,
+                        fontSize = if (rowInnerWidth < 380.dp) 48.sp else 54.sp,
+                        modifier = Modifier.padding(bottom = 8.dp),
+                    )
+                }
                 val choice =
                     LessonChoice(
                         id = question.catalogEntryId,
@@ -155,18 +173,19 @@ fun PictureStartsWithGame(
                         chapterId = chapterId,
                         stationId = stationId,
                     )
+                val pictureTapReplays = onPictureTapReplayWord != null
                 LessonChoiceCard(
                     choice = choice,
-                    enabled = false,
+                    enabled = enabled && pictureTapReplays,
                     scale = 1f,
-                    showWordCaption = true,
+                    showWordCaption = showWordCaption,
                     cardWidth = cardW,
                     // Use station-5 aspect ratio; this also fixes "too tall" without a custom frame.
                     cardHeight = cardH,
                     captionFontSize = captionSp,
                     innerPictureScale = innerPictureScale,
                     isCorrectPick = false,
-                    onClick = {},
+                    onClick = { if (pictureTapReplays) onPictureTapReplayWord?.invoke() },
                 )
             }
         }

@@ -38,6 +38,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.Image
 import com.tal.hebrewdino.R
 import com.tal.hebrewdino.ui.domain.Chapter3Config
+import com.tal.hebrewdino.ui.domain.Chapter4Config
+import com.tal.hebrewdino.ui.domain.Chapter5Config
 import com.tal.hebrewdino.ui.components.learning.LetterChoiceTile
 import com.tal.hebrewdino.ui.audio.AudioClips
 import com.tal.hebrewdino.ui.audio.VoicePlayer
@@ -93,8 +95,22 @@ fun Chapter4LettersIntroScreen(
     modifier: Modifier = Modifier,
 ) {
     ChapterLettersIntroScreen(
-        chapterTitle = "פרק 4 - חיזוק חכם",
-        letters = listOf("א", "מ", "ש", "ר", "ת"),
+        chapterTitle = "פרק 4 - סיבוך בדרך",
+        letters = Chapter4Config.letters,
+        backgroundRes = R.drawable.forest_bg_journey_road,
+        onContinue = onContinue,
+        modifier = modifier,
+    )
+}
+
+@Composable
+fun Chapter5LettersIntroScreen(
+    onContinue: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    ChapterLettersIntroScreen(
+        chapterTitle = "פרק 5 - הביצה השלישית",
+        letters = Chapter5Config.letters,
         backgroundRes = R.drawable.forest_bg_journey_road,
         onContinue = onContinue,
         modifier = modifier,

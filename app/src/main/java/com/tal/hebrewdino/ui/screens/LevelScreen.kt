@@ -77,6 +77,7 @@ import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -148,6 +149,8 @@ fun LevelScreen(
 internal fun Station2PinnedBalloonMini(
     letter: String,
     balloonColor: Color,
+    /** When false (listen-only episodes), the mini keeps color only—no letter glyph. */
+    showLetter: Boolean = true,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
@@ -169,13 +172,15 @@ internal fun Station2PinnedBalloonMini(
                     .border(2.dp, Color(0xFF0B2B3D).copy(alpha = 0.2f), CircleShape),
             contentAlignment = Alignment.Center,
         ) {
-            Text(
-                text = letter,
-                fontSize = 28.sp,
-                fontWeight = FontWeight.Black,
-                color = Color(0xFF0B2B3D),
-                textAlign = TextAlign.Center,
-            )
+            if (showLetter) {
+                Text(
+                    text = letter,
+                    fontSize = 28.sp,
+                    fontWeight = FontWeight.Black,
+                    color = Color(0xFF0B2B3D),
+                    textAlign = TextAlign.Center,
+                )
+            }
         }
         Spacer(modifier = Modifier.height(2.dp))
         Box(
@@ -483,6 +488,13 @@ internal fun PopBalloonsOptions(
     onWrongPick: () -> Unit,
     /** Invoked when every correct-letter balloon is popped; [poppedBalloonColor] is the last balloon’s fill. */
     onAllCorrectPopped: (correctLetter: String, poppedBalloonColor: Color) -> Unit,
+    /** Episode 4 station 2 help: increment to softly pulse balloons that match [correctAnswer] (or [correctLetterSet]). */
+    episode4CorrectBalloonHintEpoch: Int = 0,
+    /**
+     * Episode 4 station 2: inset from layout **start** so balloons stay clear of the on-screen help column
+     * (RTL: start = physical right where saga help buttons live).
+     */
+    helpSideInsetDp: Dp = 0.dp,
 ) {
     val alive =
         remember(options, correctAnswer) {
@@ -533,6 +545,7 @@ internal fun PopBalloonsOptions(
         modifier =
             Modifier
                 .fillMaxWidth()
+                .padding(start = helpSideInsetDp)
                 .height(ScreenFit.popBalloonsAreaHeightDp())
                 .offset { IntOffset(shakePx.roundToInt(), 0) },
     ) {
@@ -649,6 +662,15 @@ internal fun PopBalloonsOptions(
                 }
             val isCorrectLetter = correctLetterSet?.contains(letter) ?: (letter == correctAnswer)
             val isPotentialFinaleCorrect = isCorrectLetter && aliveCorrectBeforeTap == 1
+            val hintBoost = remember(idx, options, correctAnswer) { Animatable(1f) }
+            LaunchedEffect(episode4CorrectBalloonHintEpoch, idx, letter, options, correctAnswer, correctLetterSet) {
+                if (episode4CorrectBalloonHintEpoch <= 0) return@LaunchedEffect
+                if (!isCorrectLetter) return@LaunchedEffect
+                hintBoost.snapTo(1f)
+                hintBoost.animateTo(1.065f, tween(180))
+                hintBoost.animateTo(1.03f, tween(520))
+                hintBoost.animateTo(1f, tween(380))
+            }
 
             key(idx) {
                 PopBalloon(
@@ -663,7 +685,7 @@ internal fun PopBalloonsOptions(
                     finaleCorrectPop = isPotentialFinaleCorrect,
                     driftXPx = xPx,
                     driftYPx = yPx,
-                    modifier = Modifier.zIndex(yPx * 1000f + xPx),
+                    modifier = Modifier.scale(hintBoost.value).zIndex(yPx * 1000f + xPx),
                     onTapCorrect = {
                         // Make the pop feel connected: start SFX/voice immediately on tap (not after animation).
                         // Keep visual pop (onPop) responsible for removing the balloon.

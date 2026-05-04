@@ -17,6 +17,7 @@ import com.tal.hebrewdino.ui.domain.CollectedEggs
 import com.tal.hebrewdino.ui.domain.Chapter2Config
 import com.tal.hebrewdino.ui.domain.Chapter3Config
 import com.tal.hebrewdino.ui.domain.Chapter4Config
+import com.tal.hebrewdino.ui.domain.Chapter5Config
 import com.tal.hebrewdino.ui.data.CharacterPrefs
 import com.tal.hebrewdino.ui.data.DinoCharacter
 import com.tal.hebrewdino.ui.data.ProgressPrefs
@@ -38,6 +39,11 @@ import com.tal.hebrewdino.ui.screens.Chapter1MidBoostScreen
 import com.tal.hebrewdino.ui.screens.Chapter2MidBoostScreen
 import com.tal.hebrewdino.ui.screens.Chapter3MidBoostScreen
 import com.tal.hebrewdino.ui.screens.Chapter4MidBoostScreen
+import com.tal.hebrewdino.ui.screens.Chapter5IntroScreen
+import com.tal.hebrewdino.ui.screens.Chapter5LettersIntroScreen
+import com.tal.hebrewdino.ui.screens.Chapter5LevelScreen
+import com.tal.hebrewdino.ui.screens.Chapter5MidBoostScreen
+import com.tal.hebrewdino.ui.screens.Chapter5OutroScreen
 import com.tal.hebrewdino.ui.screens.ForestIntroScreen
 import com.tal.hebrewdino.ui.screens.ForestOutroScreen
 import com.tal.hebrewdino.ui.screens.JourneyEndMarker
@@ -74,6 +80,12 @@ fun AppNav() {
     val chapter4UnlockedStation by progress.chapter4UnlockedStationFlow.collectAsState(initial = 1)
     val chapter4CompletedStations by progress.chapter4CompletedStationsFlow.collectAsState(initial = emptySet())
     val chapter4Completed by progress.chapter4CompletedFlow.collectAsState(initial = false)
+    val chapter5IntroSeen by progress.chapter5IntroSeenFlow.collectAsState(initial = false)
+    val chapter5LettersIntroSeen by progress.chapter5LettersIntroSeenFlow.collectAsState(initial = false)
+    val chapter5MidBoostSeen by progress.chapter5MidBoostSeenFlow.collectAsState(initial = false)
+    val chapter5UnlockedStation by progress.chapter5UnlockedStationFlow.collectAsState(initial = 1)
+    val chapter5CompletedStations by progress.chapter5CompletedStationsFlow.collectAsState(initial = emptySet())
+    val chapter5Completed by progress.chapter5CompletedFlow.collectAsState(initial = false)
     val unlockedLevel by progress.unlockedLevelFlow.collectAsState(initial = 1)
     val completedLevels by progress.completedLevelsFlow.collectAsState(initial = emptySet())
     val chapter1AllStationsComplete =
@@ -84,18 +96,21 @@ fun AppNav() {
         (1..Chapter3Config.STATION_COUNT).all { station -> chapter3CompletedStations.contains(station) }
     val chapter4AllStationsComplete =
         (1..Chapter4Config.STATION_COUNT).all { station -> chapter4CompletedStations.contains(station) }
+    val chapter5AllStationsComplete =
+        (1..Chapter5Config.STATION_COUNT).all { station -> chapter5CompletedStations.contains(station) }
     /** First-egg / chapter-1 “done” for strip: outro seen, or all six stations finished (even before outro). */
     val chapter1ProgressForStrip = beachOutroSeen || chapter1AllStationsComplete
     val collectedEggStripCount =
         CollectedEggs.stripCount(
             beachOutroSeen = chapter1ProgressForStrip,
             chapter3Completed = chapter3Completed,
-            chapter4Completed = chapter4Completed,
+            chapter5Completed = chapter5Completed,
         )
 
     val unlockedChapter =
         when {
-            chapter4Completed -> 4
+            chapter5Completed -> 5
+            chapter4Completed -> 5
             chapter3Completed -> 4
             chapter2Completed -> 3
             beachOutroSeen || chapter1AllStationsComplete -> 2
@@ -103,7 +118,14 @@ fun AppNav() {
         }
     /** Chapter 4 story unlocks after chapter 3 is finished; “בקרוב” shows until then. */
     val chapter4ComingSoon = !chapter3Completed
-    val maxSelectableChapterId = if (chapter3Completed) 4 else 3
+    /** Chapter 5 unlocks after chapter 4 is finished. */
+    val chapter5ComingSoon = !chapter4Completed
+    val maxSelectableChapterId =
+        when {
+            chapter4Completed -> 5
+            chapter3Completed -> 4
+            else -> 3
+        }
 
     val startDestination = NavRoutes.Chapters
 
@@ -111,6 +133,7 @@ fun AppNav() {
         progress.repairChapter2ProgressIfNeeded()
         progress.repairChapter3ProgressIfNeeded()
         progress.repairChapter4ProgressIfNeeded()
+        progress.repairChapter5ProgressIfNeeded()
         prefs.setCharacter(DinoCharacter.Dino)
     }
 
@@ -119,6 +142,7 @@ fun AppNav() {
             ChaptersScreen(
                 unlockedChapter = unlockedChapter,
                 chapter4ComingSoon = chapter4ComingSoon,
+                chapter5ComingSoon = chapter5ComingSoon,
                 maxSelectableChapterId = maxSelectableChapterId,
                 chaptersProgress =
                     ChaptersProgress(
@@ -126,6 +150,7 @@ fun AppNav() {
                         chapter2Completed = chapter2Completed,
                         chapter3Completed = chapter3Completed,
                         chapter4Completed = chapter4Completed,
+                        chapter5Completed = chapter5Completed,
                     ),
                 onOpenSettings = { navController.navigate(NavRoutes.Settings) },
                 onOpenChapter = { chapterId ->
@@ -160,7 +185,18 @@ fun AppNav() {
                                 navController.navigate(next)
                             }
                         }
-                        in 5..10 -> Unit
+                        5 -> {
+                            if (chapter4Completed) {
+                                val next =
+                                    when {
+                                        !chapter5IntroSeen -> NavRoutes.Ch5Intro
+                                        !chapter5LettersIntroSeen -> NavRoutes.Ch5Letters
+                                        else -> NavRoutes.Ch5Journey
+                                    }
+                                navController.navigate(next)
+                            }
+                        }
+                        in 6..10 -> Unit
                     }
                 },
             )
@@ -680,11 +716,11 @@ fun AppNav() {
                 completedLevels = chapter4CompletedStations,
                 endMarkerReached = chapter4Completed || chapter4AllStationsComplete,
                 totalLevels = Chapter4Config.STATION_COUNT,
-                headerTitle = "פרק 4 - חיזוק חכם",
-                headerSubtitle = "אותיות ומילים — ${Chapter4Config.STATION_COUNT} תחנות",
+                headerTitle = "פרק 4 - סיבוך בדרך",
+                headerSubtitle = "שומעים ובוחרים — ${Chapter4Config.STATION_COUNT} תחנות",
                 headerSubtitleCompact = true,
                 collectedEggStripCount = collectedEggStripCount,
-                endMarker = JourneyEndMarker.BigEgg,
+                endMarker = JourneyEndMarker.ClueLetterPe,
                 backgroundRes = R.drawable.forest_bg_journey_road,
                 onPlayLevel = { stationId ->
                     navController.navigate("${NavRoutes.Ch4Level}/$stationId")
@@ -798,6 +834,165 @@ fun AppNav() {
             )
         }
 
+        composable(NavRoutes.Ch5MidBoost) {
+            Chapter5MidBoostScreen(
+                eggStripCount = collectedEggStripCount,
+                onContinue = {
+                    scope.launch { progress.markChapter5MidBoostSeen() }
+                    navController.navigate(NavRoutes.Ch5Journey) {
+                        popUpTo(NavRoutes.Ch5MidBoost) { inclusive = true }
+                    }
+                },
+            )
+        }
+
+        composable(NavRoutes.Ch5Intro) {
+            Chapter5IntroScreen(
+                eggStripCount = collectedEggStripCount,
+                onContinue = {
+                    scope.launch { progress.markChapter5IntroSeen() }
+                    navController.navigate(NavRoutes.Ch5Letters) {
+                        popUpTo(NavRoutes.Ch5Intro) { inclusive = true }
+                    }
+                },
+            )
+        }
+
+        composable(NavRoutes.Ch5Letters) {
+            Chapter5LettersIntroScreen(
+                onContinue = {
+                    scope.launch { progress.markChapter5LettersIntroSeen() }
+                    navController.navigate(NavRoutes.Ch5Journey) {
+                        popUpTo(NavRoutes.Ch5Letters) { inclusive = true }
+                    }
+                },
+            )
+        }
+
+        composable(NavRoutes.Ch5Journey) {
+            JourneyScreen(
+                unlockedLevel = chapter5UnlockedStation,
+                completedLevels = chapter5CompletedStations,
+                endMarkerReached = chapter5Completed || chapter5AllStationsComplete,
+                totalLevels = Chapter5Config.STATION_COUNT,
+                headerTitle = "פרק 5 - הביצה השלישית",
+                headerSubtitle = "שומעים ובוחרים — ${Chapter5Config.STATION_COUNT} תחנות",
+                headerSubtitleCompact = true,
+                collectedEggStripCount = collectedEggStripCount,
+                endMarker = JourneyEndMarker.BigEgg,
+                backgroundRes = R.drawable.forest_bg_journey_road,
+                onPlayLevel = { stationId ->
+                    navController.navigate("${NavRoutes.Ch5Level}/$stationId")
+                },
+                onBack = { navController.navigate(NavRoutes.Chapters) { popUpTo(NavRoutes.Ch5Journey) { inclusive = true } } },
+                onLettersHelp = {
+                    navController.navigate(NavRoutes.Ch5Letters) { launchSingleTop = true }
+                },
+                onDebugUnlockNext =
+                    if (isDebuggable) {
+                        {
+                            scope.launch {
+                                val completedStationId = progress.debugUnlockNextChapter5Station()
+                                when {
+                                    completedStationId == 3 && !chapter5MidBoostSeen -> {
+                                        navController.navigate(NavRoutes.Ch5MidBoost) {
+                                            popUpTo(NavRoutes.Ch5Journey) { inclusive = false }
+                                        }
+                                    }
+                                    completedStationId >= Chapter5Config.STATION_COUNT -> {
+                                        navController.navigate(NavRoutes.Ch5Outro) {
+                                            popUpTo(NavRoutes.Ch5Journey) { inclusive = true }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        null
+                    },
+            )
+        }
+
+        composable(
+            route = "${NavRoutes.Ch5Level}/{stationId}",
+            arguments = listOf(navArgument("stationId") { type = NavType.IntType }),
+        ) { backStackEntry ->
+            val stationId = backStackEntry.arguments?.getInt("stationId") ?: 1
+            Chapter5LevelScreen(
+                stationId = stationId,
+                onBack = { navController.popBackStack() },
+                onLettersHelp = {
+                    navController.navigate(NavRoutes.Ch5Letters) { launchSingleTop = true }
+                },
+                onDebugStationAdvance =
+                    if (isDebuggable) {
+                        { scope.launch { progress.debugUnlockNextChapter5Station() } }
+                    } else {
+                        null
+                    },
+                collectedEggStripCount = collectedEggStripCount,
+                suppressInGameDinoProgress = chapter5CompletedStations.contains(stationId),
+                onComplete = { completedStationId, correctCount, mistakeCount ->
+                    scope.launch {
+                        progress.markChapter5CompletedStation(completedStationId)
+                        progress.unlockChapter5AtLeast(completedStationId + 1)
+                        if (completedStationId >= Chapter5Config.STATION_COUNT) {
+                            progress.markChapter5Completed()
+                        }
+                    }
+                    navController.navigate("${NavRoutes.Ch5Reward}/$completedStationId/$correctCount/$mistakeCount")
+                },
+            )
+        }
+
+        composable(
+            route = "${NavRoutes.Ch5Reward}/{stationId}/{correct}/{mistakes}",
+            arguments = listOf(
+                navArgument("stationId") { type = NavType.IntType },
+                navArgument("correct") { type = NavType.IntType },
+                navArgument("mistakes") { type = NavType.IntType },
+            ),
+        ) { backStackEntry ->
+            val stationId = backStackEntry.arguments?.getInt("stationId") ?: 1
+            val correct = backStackEntry.arguments?.getInt("correct") ?: 0
+            val mistakes = backStackEntry.arguments?.getInt("mistakes") ?: 0
+            val backToMap: () -> Unit = backToMap@{
+                if (stationId == 3 && !chapter5MidBoostSeen) {
+                    navController.navigate(NavRoutes.Ch5MidBoost) {
+                        popUpTo("${NavRoutes.Ch5Reward}/$stationId/$correct/$mistakes") { inclusive = true }
+                    }
+                    return@backToMap
+                }
+                if (stationId >= Chapter5Config.STATION_COUNT) {
+                    navController.navigate(NavRoutes.Ch5Outro) {
+                        popUpTo(NavRoutes.Ch5Journey) { inclusive = true }
+                    }
+                } else {
+                    navController.navigate(NavRoutes.Ch5Journey) {
+                        popUpTo(NavRoutes.Ch5Journey) { inclusive = true }
+                    }
+                }
+            }
+            BackHandler { backToMap() }
+            RewardScreen(
+                levelId = stationId,
+                correct = correct,
+                mistakes = mistakes,
+                onBackToMap = backToMap,
+            )
+        }
+
+        composable(NavRoutes.Ch5Outro) {
+            Chapter5OutroScreen(
+                eggStripCount = collectedEggStripCount,
+                onContinue = {
+                    navController.navigate(NavRoutes.Chapters) {
+                        popUpTo(NavRoutes.Ch5Outro) { inclusive = true }
+                    }
+                },
+            )
+        }
+
         composable(NavRoutes.StoryOutro) {
             ForestOutroScreen(
                 character = DinoCharacter.Dino,
@@ -816,6 +1011,14 @@ fun AppNav() {
                     scope.launch {
                         progress.resetAll()
                         prefs.setCharacter(DinoCharacter.Dino)
+                        navController.navigate(NavRoutes.Chapters) {
+                            popUpTo(NavRoutes.Settings) { inclusive = true }
+                        }
+                    }
+                },
+                onResetChapters = { chapterIds ->
+                    scope.launch {
+                        progress.resetChapters(chapterIds)
                         navController.navigate(NavRoutes.Chapters) {
                             popUpTo(NavRoutes.Settings) { inclusive = true }
                         }

@@ -71,6 +71,8 @@ fun ChapterLobbyStoryLayout(
     voiceAssetPath: String? = null,
     dinoContentDescription: String,
     onContinue: () -> Unit,
+    /** Optional content between title and body (e.g. Episode 4 clue row). */
+    betweenTitleAndBody: (@Composable () -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
@@ -135,6 +137,10 @@ fun ChapterLobbyStoryLayout(
                             textAlign = TextAlign.Center,
                         )
                         Spacer(modifier = Modifier.height(10.dp))
+                        if (betweenTitleAndBody != null) {
+                            betweenTitleAndBody()
+                            Spacer(modifier = Modifier.height(10.dp))
+                        }
                         Text(
                             text = body,
                             style = MaterialTheme.typography.titleLarge,

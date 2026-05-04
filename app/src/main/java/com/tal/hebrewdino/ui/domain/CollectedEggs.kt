@@ -5,6 +5,6 @@ object CollectedEggs {
     fun stripCount(
         beachOutroSeen: Boolean,
         chapter3Completed: Boolean,
-        chapter4Completed: Boolean,
-    ): Int = listOf(beachOutroSeen, chapter3Completed, chapter4Completed).count { it }
+        chapter5Completed: Boolean,
+    ): Int = listOf(beachOutroSeen, chapter3Completed, chapter5Completed).count { it }
 }

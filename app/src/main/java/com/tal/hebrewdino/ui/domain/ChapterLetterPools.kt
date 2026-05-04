@@ -16,3 +16,7 @@ object Chapter3LetterPoolSpec : LetterPoolSpec {
 object Chapter4LetterPoolSpec : LetterPoolSpec {
     override val groups: List<List<String>> = listOf(Chapter4Config.letters)
 }
+
+object Chapter5LetterPoolSpec : LetterPoolSpec {
+    override val groups: List<List<String>> = listOf(Chapter5Config.letters)
+}

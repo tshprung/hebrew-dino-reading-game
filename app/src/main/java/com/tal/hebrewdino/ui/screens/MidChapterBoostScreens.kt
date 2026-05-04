@@ -84,7 +84,29 @@ fun Chapter4MidBoostScreen(
                 "בואו נמשיך ביחד!",
         eggStripCount = eggStripCount,
         companion = ChapterLobbyCompanion.DinoOnly,
-        voiceAssetPath = null,
+        voiceAssetPath = AudioClips.StoryCh4MidBoost,
+        dinoContentDescription = "דינו",
+        onContinue = onContinue,
+        modifier = modifier,
+    )
+}
+
+@Composable
+fun Chapter5MidBoostScreen(
+    eggStripCount: Int,
+    onContinue: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    ChapterLobbyStoryLayout(
+        backgroundRes = R.drawable.forest_bg_journey_road,
+        title = "ממשיכים!",
+        body =
+            "אתם כבר מקשיבים וקוראים כמו מצודפים אמיתיים.\n" +
+                "עוד קצת — ואולי נגיע לביצה השלישית.\n" +
+                "בואו נסיים את המסע!",
+        eggStripCount = eggStripCount,
+        companion = ChapterLobbyCompanion.DinoOnly,
+        voiceAssetPath = AudioClips.StoryCh5MidBoost,
         dinoContentDescription = "דינו",
         onContinue = onContinue,
         modifier = modifier,

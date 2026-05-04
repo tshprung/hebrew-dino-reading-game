@@ -74,10 +74,14 @@ fun ImageMatchGame(
     headerPromptWord: String? = null,
     /** When false, hides the large letter chip (word-only header). */
     showTargetLetterChip: Boolean = true,
+    /** Listen-first help: show this letter in the header chip briefly (e.g. Episode 4 station 5 רמז). */
+    listenOnlyTemporaryHintLetter: String? = null,
     /** Adjusts the letter chip vertical placement (Episode 1 station 5). */
     targetLetterChipOffsetYDp: Int = -10,
     /** Adds extra top padding before header (Episode 1 station 5). */
     headerTopPaddingDp: Int = 0,
+    /** Episode 4 station 5: white readability panel behind header instruction (matches Episode 3). */
+    readableInstructionHeaderPanel: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     val scope = rememberCoroutineScope()
@@ -124,7 +128,18 @@ fun ImageMatchGame(
                             ),
                         color = Color(0xFF0B2B3D),
                         textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(horizontal = 8.dp),
+                        modifier =
+                            Modifier
+                                .padding(horizontal = 8.dp)
+                                .then(
+                                    if (readableInstructionHeaderPanel) {
+                                        Modifier
+                                            .background(Color.White.copy(alpha = 0.72f), RoundedCornerShape(18.dp))
+                                            .padding(horizontal = 14.dp, vertical = 8.dp)
+                                    } else {
+                                        Modifier
+                                    },
+                                ),
                     )
                     Spacer(modifier = Modifier.height(6.dp))
                 }
@@ -146,6 +161,15 @@ fun ImageMatchGame(
                     // Station 5 (all chapters): match station 3 target-letter chip style, and sit a bit lower.
                     TargetLetterHeaderChip(
                         letter = question.targetLetter,
+                        fontSize = if (rowInnerWidth < 420.dp) 52.sp else 56.sp,
+                        modifier =
+                            Modifier
+                                .padding(top = 2.dp)
+                                .offset(y = targetLetterChipOffsetYDp.dp),
+                    )
+                } else if (listenOnlyTemporaryHintLetter != null) {
+                    TargetLetterHeaderChip(
+                        letter = listenOnlyTemporaryHintLetter,
                         fontSize = if (rowInnerWidth < 420.dp) 52.sp else 56.sp,
                         modifier =
                             Modifier

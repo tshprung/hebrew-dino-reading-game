@@ -1,7 +1,16 @@
 package com.tal.hebrewdino.ui.screens
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.tal.hebrewdino.R
 import com.tal.hebrewdino.ui.audio.AudioClips
 
@@ -67,13 +76,15 @@ fun Chapter4IntroScreen(
 ) {
     ChapterLobbyStoryLayout(
         backgroundRes = R.drawable.forest_bg_journey_road,
-        title = "פרק 4",
+        title = "פרק 4 - סיבוך בדרך",
         body =
-            "בוא נחזיר את הביצים לאמא. היא מחכה בקן.\n" +
+            "המסע אחרי הביצה השנייה ממשיך…\n" +
                 "\n" +
-                "אבל בדרך יש לנו לעבור את הביצה הגדולה.\n" +
+                "הדרך מתפתלת: יש רמזים חדשים, וגם סיבוך קטן בדרך.\n" +
                 "\n" +
-                "תעזור/י לי?",
+                "עדיין לא מצאנו את הביצה השלישית — אבל כל תחנה מקרבת אותנו.\n" +
+                "\n" +
+                "בואו נאזין היטב ונמשיך יחד.",
         eggStripCount = eggStripCount,
         companion = ChapterLobbyCompanion.DinoOnly,
         narrationPlaying = false,
@@ -91,19 +102,85 @@ fun Chapter4OutroScreen(
     modifier: Modifier = Modifier,
 ) {
     ChapterLobbyStoryLayout(
-        backgroundRes = R.drawable.forest_bg_story_outro_egg,
-        title = "איזה כיף!",
+        backgroundRes = R.drawable.forest_bg_journey_road,
+        title = "מצאנו רמז!",
         body =
-            "כל הביצים חזרו הביתה!\n" +
+            "מצאנו רמז! האות פ… הביצה בטח קרובה!\n" +
                 "\n" +
-                "אמא מחבקת ואומרת:\n" +
-                "\"תודה שעזרת לי!\"\n" +
+                "דינו ממשיך קדימה — עקבים מובילים הלאה, והמסע עוד לא נגמר.",
+        eggStripCount = eggStripCount,
+        companion = ChapterLobbyCompanion.DinoOnly,
+        narrationPlaying = false,
+        voiceAssetPath = AudioClips.StoryCh4ClueOutro,
+        dinoContentDescription = "דינו",
+        onContinue = onContinue,
+        betweenTitleAndBody = {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = "👣  👣  👣",
+                    fontSize = 28.sp,
+                    textAlign = TextAlign.Center,
+                )
+                Text(
+                    text = "פ",
+                    fontSize = 56.sp,
+                    fontWeight = FontWeight.Black,
+                    color = Color(0xFF0B2B3D),
+                )
+            }
+        },
+        modifier = modifier,
+    )
+}
+
+@Composable
+fun Chapter5IntroScreen(
+    eggStripCount: Int,
+    onContinue: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    ChapterLobbyStoryLayout(
+        backgroundRes = R.drawable.forest_bg_journey_road,
+        title = "פרק 5 - הביצה השלישית",
+        body =
+            "אחרי כל הרמזים והדרך הארוכה —\n" +
+                "הביצה השלישית כבר מרגישה קרובה.\n" +
+                "\n" +
+                "עוד קצת קשב, עוד קצת חיזוק…\n" +
+                "ואולי הפעם נמצא אותה.",
+        eggStripCount = eggStripCount,
+        companion = ChapterLobbyCompanion.DinoOnly,
+        narrationPlaying = false,
+        voiceAssetPath = AudioClips.StoryCh5Intro,
+        dinoContentDescription = "דינו",
+        onContinue = onContinue,
+        modifier = modifier,
+    )
+}
+
+@Composable
+fun Chapter5OutroScreen(
+    eggStripCount: Int,
+    onContinue: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    ChapterLobbyStoryLayout(
+        backgroundRes = R.drawable.forest_bg_story_outro_egg,
+        title = "יש!",
+        body =
+            "מצאנו את הביצה השלישית!\n" +
+                "\n" +
+                "דינו אוסף אותה בזהירות.\n" +
+                "עכשיו אפשר לחשוב על הדרך חזרה הביתה…\n" +
                 "\n" +
                 "כל הכבוד! 🎉",
         eggStripCount = eggStripCount,
-        companion = ChapterLobbyCompanion.DinoAndMom,
+        companion = ChapterLobbyCompanion.DinoOnly,
         narrationPlaying = false,
-        voiceAssetPath = AudioClips.StoryCh4HomeOutro,
+        voiceAssetPath = AudioClips.StoryCh5ThirdEggOutro,
         dinoContentDescription = "דינו",
         onContinue = onContinue,
         modifier = modifier,

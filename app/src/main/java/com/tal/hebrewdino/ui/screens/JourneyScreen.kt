@@ -68,6 +68,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.tal.hebrewdino.R
 import com.tal.hebrewdino.ui.components.ChapterNavChipStyles
 import com.tal.hebrewdino.ui.components.learning.DinoNestMark
@@ -134,6 +135,8 @@ enum class JourneyEndMarker {
     Tracks,
     /** Chapter 4: distinct goal after all six stations (smart reinforcement arc). */
     BigEgg,
+    /** Chapter 4: Hebrew letter פ as story clue (no egg) — shown only after station 6 is complete. */
+    ClueLetterPe,
 }
 
 private fun xyAlongRoad(f: Float, points: List<Pair<Float, Float>>): Pair<Float, Float> {
@@ -443,6 +446,7 @@ fun JourneyScreen(
                         completedLevels = completedLevels,
                         nextSuggested = nextPlayableSuggested,
                         completedPlayableCount = completedPlayableCount,
+                        allPlayableComplete = allPlayableComplete,
                         goalSegmentComplete = goalSegmentComplete,
                         walking = walking,
                         navigationLocked = journeyNavigationLocked,
@@ -470,6 +474,8 @@ private fun JourneyRoadStrip(
     completedLevels: Set<Int>,
     nextSuggested: Int,
     completedPlayableCount: Int,
+    /** All stations in [1..playableLevels] are completed (used for Chapter 4 clue marker visibility). */
+    allPlayableComplete: Boolean,
     /** All playable stations finished while more stations exist on the map (e.g. chapter 3). */
     goalSegmentComplete: Boolean,
     walking: Boolean,
@@ -611,6 +617,8 @@ private fun JourneyRoadStrip(
                     ),
                 label = "goalPulse",
             )
+            val showGoalAtRoadEnd = endMarker != JourneyEndMarker.ClueLetterPe || allPlayableComplete
+            if (showGoalAtRoadEnd) {
             Box(
                 modifier =
                     Modifier
@@ -668,7 +676,20 @@ private fun JourneyRoadStrip(
                             modifier = Modifier.size(118.dp).scale(goalPulse),
                             contentScale = ContentScale.Fit,
                         )
+                    JourneyEndMarker.ClueLetterPe ->
+                        Text(
+                            text = "פ",
+                            style = MaterialTheme.typography.displaySmall.copy(fontWeight = FontWeight.Black),
+                            color = Color(0xFF0B2B3D),
+                            textAlign = TextAlign.Center,
+                            modifier =
+                                Modifier
+                                    .background(Color(0xFFFFF59D).copy(alpha = 0.95f), RoundedCornerShape(16.dp))
+                                    .padding(horizontal = 22.dp, vertical = 10.dp)
+                                    .scale(goalPulse),
+                        )
                 }
+            }
             }
 
             for (levelId in 1..totalLevels) {
@@ -797,9 +818,11 @@ private fun JourneyStationMarker(
 ) {
     val isFutureTrack = levelId > playableLevels
     val gatedOff = !interactive && !completed && !isFutureTrack
+    val showClueLetterPe = isLast && completed && endMarker == JourneyEndMarker.ClueLetterPe
     val markerRes =
         when {
             gatedOff || isFutureTrack -> null
+            showClueLetterPe -> null
             isLast && completed ->
                 when (endMarker) {
                     JourneyEndMarker.Egg -> R.drawable.egg_white
@@ -808,6 +831,7 @@ private fun JourneyStationMarker(
                     JourneyEndMarker.PurpleEgg -> R.drawable.egg_purple
                     JourneyEndMarker.Tracks -> R.drawable.finish_marker_tracks
                     JourneyEndMarker.BigEgg -> R.drawable.finish_marker_big_egg
+                    JourneyEndMarker.ClueLetterPe -> null
                 }
             completed -> R.drawable.egg_found
             else -> R.drawable.stop_marker
@@ -857,7 +881,15 @@ private fun JourneyStationMarker(
                     .clickable(enabled = interactive, onClick = onClick),
         ) {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                if (markerRes != null) {
+                if (showClueLetterPe) {
+                    Text(
+                        text = "פ",
+                        style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Black),
+                        color = Color(0xFF0B2B3D),
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.offset(y = (-2).dp),
+                    )
+                } else if (markerRes != null) {
                     Image(
                         painter = painterResource(id = markerRes),
                         contentDescription = null,

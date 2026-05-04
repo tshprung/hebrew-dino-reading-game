@@ -1,5 +1,6 @@
 package com.tal.hebrewdino.ui.feedback
 
+import android.os.Build
 import android.view.HapticFeedbackConstants
 import android.view.View
 import com.tal.hebrewdino.ui.audio.AudioClips
@@ -14,8 +15,17 @@ class GameFeedback(
     private val sfx: SoundPoolPlayer,
     private val view: View?,
 ) {
+    // CONFIRM is API 30+; minSdk 26 — KEYBOARD_TAP on older releases.
+    private fun View.performConfirmLikeHaptic() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+        } else {
+            performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+        }
+    }
+
     fun playCorrect() {
-        view?.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+        view?.performConfirmLikeHaptic()
         scope.launch {
             sfx.playFirstAvailable(AudioClips.SfxCorrect, volume = 0.58f)
         }
@@ -30,7 +40,7 @@ class GameFeedback(
 
     /** End-of-question / station climax: louder SFX + short stagger (confetti handled in UI). */
     fun playSuccessBig() {
-        view?.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+        view?.performConfirmLikeHaptic()
         scope.launch {
             sfx.playFirstAvailable(AudioClips.SfxCorrect, volume = 0.84f)
             delay(95)

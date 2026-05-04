@@ -45,6 +45,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.tal.hebrewdino.ui.components.TargetLetterHeaderChip
 import com.tal.hebrewdino.ui.domain.Question
 import kotlin.math.roundToInt
 import kotlinx.coroutines.delay
@@ -82,8 +83,19 @@ fun FindLetterGridGame(
     suppressHeaderTargetLetter: Boolean = false,
     /** When set (Episode 1 station 3), shows an inline instruction next to the target letter. */
     inlineInstructionText: String? = null,
+    /** Episode 4 station 3: white readability panel behind [inlineInstructionText] (same as Episode 3). */
+    inlineInstructionReadablePanel: Boolean = false,
     /** Optional saga context for chapter-specific UI tweaks. */
     chapterId: Int? = null,
+    /**
+     * Episode 4 station 3: hide the large target letter in the yellow header while listen-only;
+     * instruction text stays above. Does not affect Episode 3 (uses [contextWordHint]) or other chapters.
+     */
+    hideListenOnlyHeaderTargetLetter: Boolean = false,
+    /** When non-null, shows a brief target-letter chip above the grid (Episode 4 help רמז). */
+    floatingTargetLetterHint: String? = null,
+    /** Increment to softly pulse all target-letter cells (Episode 4 help רמז). */
+    episode4TargetCellsHintEpoch: Int = 0,
     modifier: Modifier = Modifier,
 ) {
     val scope = rememberCoroutineScope()
@@ -119,6 +131,20 @@ fun FindLetterGridGame(
         headerScale.animateTo(1f, spring(dampingRatio = 0.55f, stiffness = 420f))
     }
 
+    LaunchedEffect(episode4TargetCellsHintEpoch, question, contentKey) {
+        if (episode4TargetCellsHintEpoch <= 0 || completionFired) return@LaunchedEffect
+        coroutineScope {
+            targetIndices.forEachIndexed { order, idx ->
+                launch {
+                    delay((order * 45L).coerceAtMost(180L))
+                    scales[idx].snapTo(1f)
+                    scales[idx].animateTo(1.07f, tween(140))
+                    scales[idx].animateTo(1f, spring(dampingRatio = 0.62f, stiffness = 440f))
+                }
+            }
+        }
+    }
+
     LaunchedEffect(found, question, contentKey) {
         if (found.isEmpty() || found != targetIndices || completionFired) return@LaunchedEffect
         completionFired = true
@@ -146,6 +172,7 @@ fun FindLetterGridGame(
         val nudgeDown = maxHeight * nudgeFrac
         val headerBoxH =
             when {
+                hideListenOnlyHeaderTargetLetter && contextWordHint == null -> 0.dp
                 contextWordHint != null && suppressHeaderTargetLetter && question.columns >= 4 -> 88.dp
                 contextWordHint != null && suppressHeaderTargetLetter -> 96.dp
                 contextWordHint != null && question.columns >= 4 -> 118.dp
@@ -177,7 +204,7 @@ fun FindLetterGridGame(
                         Modifier
                             .padding(top = 6.dp, bottom = 6.dp)
                             .then(
-                                if (chapterId == 3) {
+                                if (chapterId == 3 || inlineInstructionReadablePanel) {
                                     Modifier
                                         .background(Color.White.copy(alpha = 0.72f), RoundedCornerShape(18.dp))
                                         .padding(horizontal = 14.dp, vertical = 8.dp)
@@ -187,6 +214,14 @@ fun FindLetterGridGame(
                             ),
                 )
             }
+            if (floatingTargetLetterHint != null) {
+                TargetLetterHeaderChip(
+                    letter = floatingTargetLetterHint,
+                    fontSize = if (question.columns >= 4) 48.sp else 54.sp,
+                    modifier = Modifier.padding(top = 4.dp, bottom = 6.dp),
+                )
+            }
+            if (!(hideListenOnlyHeaderTargetLetter && contextWordHint == null)) {
             Box(
                 modifier =
                     Modifier
@@ -250,6 +285,7 @@ fun FindLetterGridGame(
                         textAlign = TextAlign.Center,
                     )
                 }
+            }
             }
             Spacer(modifier = Modifier.height(4.dp))
             Box(

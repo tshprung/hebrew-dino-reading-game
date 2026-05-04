@@ -3,14 +3,14 @@ package com.tal.hebrewdino.ui.screens
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.tal.hebrewdino.R
-import com.tal.hebrewdino.ui.domain.Chapter4Config
-import com.tal.hebrewdino.ui.domain.Chapter4LetterPoolSpec
+import com.tal.hebrewdino.ui.domain.Chapter5Config
+import com.tal.hebrewdino.ui.domain.Chapter5LetterPoolSpec
 import com.tal.hebrewdino.ui.domain.StationQuizPlans
 
-private const val Ch4Title = "פרק 4 - סיבוך בדרך"
+private const val Ch5Title = "פרק 5 - הביצה השלישית"
 
 @Composable
-fun Chapter4LevelScreen(
+fun Chapter5LevelScreen(
     stationId: Int,
     onBack: () -> Unit,
     onComplete: (stationId: Int, correctCount: Int, mistakeCount: Int) -> Unit,
@@ -20,14 +20,14 @@ fun Chapter4LevelScreen(
     collectedEggStripCount: Int = 0,
     modifier: Modifier = Modifier,
 ) {
-    val station = stationId.coerceIn(1, Chapter4Config.STATION_COUNT)
+    val station = stationId.coerceIn(1, Chapter5Config.STATION_COUNT)
     LetterQuizStationScreen(
         stationId = station,
-        chapterId = 4,
-        chapterTitle = Ch4Title,
+        chapterId = 5,
+        chapterTitle = Ch5Title,
         stageLabel = "תחנה $station",
-        plan = StationQuizPlans.chapter4(station),
-        letterPoolSpec = Chapter4LetterPoolSpec,
+        plan = StationQuizPlans.chapter5(station),
+        letterPoolSpec = Chapter5LetterPoolSpec,
         backgroundRes = R.drawable.forest_bg_journey_road,
         onBack = onBack,
         onComplete = onComplete,

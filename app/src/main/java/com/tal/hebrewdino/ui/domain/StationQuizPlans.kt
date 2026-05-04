@@ -29,6 +29,15 @@ data class StationQuizPlan(
     val chapter3AudioLetterRecognition: Boolean = false,
     /** Chapter 1 station 6: forbid showing both "אוטו" and "מכונית" in the same round. */
     val chapter1Station6ForbidAutoAndCarTogether: Boolean = false,
+    /**
+     * Six-station arc (chapters 4–5): hide the written target letter/word where episode 1–2 would show it;
+     * prompts rely on pre-recorded letter/word audio instead.
+     */
+    val listenOnlyTargetPrompt: Boolean = false,
+    /**
+     * When set (Episode 4 station 3 only), caps how many target-letter cells appear in the find-grid question.
+     */
+    val findLetterGridMaxTargetCount: Int? = null,
 )
 
 object StationQuizPlans {
@@ -40,5 +49,15 @@ object StationQuizPlans {
 
     fun chapter3(stationId: Int): StationQuizPlan = Chapter3StationOrder.quizPlan(stationId)
 
-    fun chapter4(stationId: Int): StationQuizPlan = Chapter1StationOrder.quizPlan(stationId)
+    fun chapter4(stationId: Int): StationQuizPlan {
+        val base = Chapter1StationOrder.quizPlan(stationId).copy(listenOnlyTargetPrompt = true)
+        return if (stationId == Chapter1StationOrder.REVEAL_THEN_CHOOSE) {
+            base.copy(findLetterGridMaxTargetCount = 4)
+        } else {
+            base
+        }
+    }
+
+    fun chapter5(stationId: Int): StationQuizPlan =
+        Chapter1StationOrder.quizPlan(stationId).copy(listenOnlyTargetPrompt = true)
 }

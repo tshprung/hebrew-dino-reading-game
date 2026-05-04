@@ -4,6 +4,8 @@ object AudioClips {
     // System voice lines
     const val VoStart = "audio/vo_start.wav"
     const val VoChooseLetter = "audio/vo_choose_letter.wav"
+    /** Episode 4 station 1: spoken "בחור את האות" (then letter name clip). Add `assets/audio/vo_bachor_et_haot.wav`; falls back to [VoChooseLetter] if missing. */
+    const val VoBachorEtHaot = "audio/vo_bachor_et_haot.wav"
     /** Optional "מצא את האות"; station 1 intro may alternate with [VoChooseLetter]. */
     const val VoFindLetter = "audio/vo_find_letter.wav"
     const val VoClickLetter = "audio/vo_click_letter.wav"
@@ -102,11 +104,18 @@ object AudioClips {
     const val StoryMountainPathOutro = "audio/story_mountain_path_outro.wav"
     const val StoryCh4Intro = "audio/story_ch4_intro.wav"
     const val StoryCh4HomeOutro = "audio/story_ch4_home_outro.wav"
+    /** Episode 4 finale: clue narration (record `audio/story_ch4_clue_outro.wav`; optional until present). */
+    const val StoryCh4ClueOutro = "audio/story_ch4_clue_outro.wav"
+    /** Episode 5 (optional narration). */
+    const val StoryCh5Intro = "audio/story_ch5_intro.wav"
+    const val StoryCh5ThirdEggOutro = "audio/story_ch5_third_egg_outro.wav"
     // Mid-chapter boost (after station 3)
     const val StoryCh1MidBoost = "audio/story_ch1_mid_boost.wav"
     const val StoryCh2MidBoost = "audio/story_ch2_mid_boost.wav"
     /** Episode 3: mid-chapter encouragement after station 3. */
     const val StoryCh3MidBoost = "audio/story_ch3_mid_boost.wav"
+    const val StoryCh4MidBoost = "audio/story_ch4_mid_boost.wav"
+    const val StoryCh5MidBoost = "audio/story_ch5_mid_boost.wav"
 
     /**
      * Optional per-word voice lines, keyed by catalog entry id (e.g. `w_ב_1`).

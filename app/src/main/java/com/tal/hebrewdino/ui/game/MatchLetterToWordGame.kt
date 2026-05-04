@@ -101,6 +101,11 @@ fun MatchLetterToWordGame(
     /** Optional saga context for [captionFontSizeForWordCard]. */
     chapterId: Int? = null,
     stationId: Int? = null,
+    /**
+     * When set, controls the white instruction header panel; when null, uses legacy
+     * `(chapterId == 3 || (chapterId == 4 && stationId == 6))`.
+     */
+    instructionReadablePanelOverride: Boolean? = null,
     modifier: Modifier = Modifier,
 ) {
     val maxPairs = choices.take(choicePairLimit.coerceIn(1, 6))
@@ -215,21 +220,20 @@ fun MatchLetterToWordGame(
         val headerPadTop = 6.dp
         val headerPadBottom = 10.dp
         val headerFont = if (compactWideSpread) 22.sp else 26.sp
-        val headerH = headerPadTop + headerPadBottom + if (compactWideSpread) 34.dp else 40.dp
+        val instructionReadablePanel =
+            instructionReadablePanelOverride
+                ?: (chapterId == 3 || (chapterId == 4 && stationId == 6))
+        val headerH =
+            headerPadTop + headerPadBottom + if (compactWideSpread) 34.dp else 40.dp
         val bottomSafe = 18.dp
 
         Column(modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(
-                text = instructions,
-                fontSize = headerFont,
-                fontWeight = FontWeight.Black,
-                color = Color(0xFF0B2B3D),
-                textAlign = TextAlign.Center,
+            Column(
                 modifier =
                     Modifier
                         .padding(top = headerPadTop, bottom = headerPadBottom, start = 12.dp, end = 12.dp)
                         .then(
-                            if (chapterId == 3) {
+                            if (instructionReadablePanel) {
                                 Modifier
                                     .background(Color.White.copy(alpha = 0.72f), RoundedCornerShape(18.dp))
                                     .padding(horizontal = 14.dp, vertical = 8.dp)
@@ -237,7 +241,16 @@ fun MatchLetterToWordGame(
                                 Modifier
                             },
                         ),
-            )
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Text(
+                    text = instructions,
+                    fontSize = headerFont,
+                    fontWeight = FontWeight.Black,
+                    color = Color(0xFF0B2B3D),
+                    textAlign = TextAlign.Center,
+                )
+            }
 
             val availableH = (innerH - headerH - bottomSafe).coerceAtLeast(1.dp)
 

@@ -102,6 +102,7 @@ data class ChaptersProgress(
     val chapter2Completed: Boolean,
     val chapter3Completed: Boolean,
     val chapter4Completed: Boolean = false,
+    val chapter5Completed: Boolean = false,
 )
 
 /** Must match [ChapterVerticalPath] map height for initial scroll math. */
@@ -160,6 +161,7 @@ private val DinoEggGap = 10.dp
 fun ChaptersScreen(
     unlockedChapter: Int,
     chapter4ComingSoon: Boolean = false,
+    chapter5ComingSoon: Boolean = false,
     /** Highest chapter tile (1–10) that can be opened from the map when unlocked. */
     maxSelectableChapterId: Int = 3,
     chaptersProgress: ChaptersProgress,
@@ -176,8 +178,13 @@ fun ChaptersScreen(
             ChapterCard(3, "פרק 3 - מצא את הביצה הורודה", "בדרך לביצה הורודה — תחנות כמו בפרק 1"),
             ChapterCard(
                 4,
-                "פרק 4 - חיזוק חכם",
-                if (chapter4ComingSoon) "בקרוב" else "תחנות כמו בפרק 1 — אותיות חוזרות בחוכמה",
+                "פרק 4 - סיבוך בדרך",
+                if (chapter4ComingSoon) "בקרוב" else "אותיות חדשות — שומעים את השם ובוחרים",
+            ),
+            ChapterCard(
+                5,
+                "פרק 5 - הביצה השלישית",
+                if (chapter5ComingSoon) "בקרוב" else "אותיות מעורבות — שומעים ובוחרים",
             ),
         )
 
@@ -295,6 +302,7 @@ private fun ChaptersHexHoneycomb(
                                     2 -> R.drawable.chapter2_journey_road
                                     3 -> R.drawable.ch3_journey_bg
                                     4 -> R.drawable.forest_bg_journey_road
+                                    5 -> R.drawable.forest_bg_journey_road
                                     else -> R.drawable.forest_bg_journey_road
                                 },
                             state = state,
@@ -454,11 +462,13 @@ private fun ChapterVerticalPath(
     val bump2 = remember { mutableIntStateOf(0) }
     val bump3 = remember { mutableIntStateOf(0) }
     val bump4 = remember { mutableIntStateOf(0) }
+    val bump5 = remember { mutableIntStateOf(0) }
     LaunchedEffect(chaptersProgress) {
         if (!prevProgress.chapter1Completed && chaptersProgress.chapter1Completed) bump1.intValue++
         if (!prevProgress.chapter2Completed && chaptersProgress.chapter2Completed) bump2.intValue++
         if (!prevProgress.chapter3Completed && chaptersProgress.chapter3Completed) bump3.intValue++
         if (!prevProgress.chapter4Completed && chaptersProgress.chapter4Completed) bump4.intValue++
+        if (!prevProgress.chapter5Completed && chaptersProgress.chapter5Completed) bump5.intValue++
         prevProgress = chaptersProgress
     }
 
@@ -539,6 +549,7 @@ private fun ChapterVerticalPath(
                         2 -> bump2.intValue
                         3 -> bump3.intValue
                         4 -> bump4.intValue
+                        5 -> bump5.intValue
                         else -> 0
                     }
 
@@ -1061,7 +1072,12 @@ private fun chapterEggState(
     unlockedChapter: Int,
     progress: ChaptersProgress,
 ): ChapterEggState {
-    if (chapterId >= 5) return ChapterEggState.Locked
+    if (chapterId >= 6) return ChapterEggState.Locked
+    if (chapterId == 5) {
+        if (!progress.chapter4Completed) return ChapterEggState.Locked
+        if (progress.chapter5Completed) return ChapterEggState.Completed
+        return ChapterEggState.Unlocked
+    }
     if (chapterId == 4) {
         if (!progress.chapter3Completed) return ChapterEggState.Locked
         if (progress.chapter4Completed) return ChapterEggState.Completed

@@ -77,6 +77,7 @@ class LevelSession(
             Chapter2LetterPoolSpec -> Chapter2Config.letters
             Chapter3LetterPoolSpec -> Chapter3Config.letters
             Chapter4LetterPoolSpec -> Chapter4Config.letters
+            Chapter5LetterPoolSpec -> Chapter5Config.letters
             else -> letterPoolSpec.groups.flatten().distinct()
         }
 
@@ -104,6 +105,7 @@ class LevelSession(
                                 targetLetter = targetLetter,
                                 maxTargetCount =
                                     when {
+                                        plan.findLetterGridMaxTargetCount != null -> plan.findLetterGridMaxTargetCount
                                         letterPoolSpec === Chapter3LetterPoolSpec -> 4
                                         letterPoolSpec === Chapter1LetterPoolSpec ||
                                             letterPoolSpec === Chapter2LetterPoolSpec -> 4
