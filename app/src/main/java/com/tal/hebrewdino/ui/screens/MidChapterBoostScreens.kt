@@ -101,7 +101,7 @@ fun Chapter5MidBoostScreen(
         backgroundRes = R.drawable.forest_bg_journey_road,
         title = "ממשיכים!",
         body =
-            "אתם כבר מקשיבים וקוראים כמו מצודפים אמיתיים.\n" +
+            "אתם כבר מקשיבים וקוראים כמו בלשים אמיתיים.\n" +
                 "עוד קצת — ואולי נגיע לביצה השלישית.\n" +
                 "בואו נסיים את המסע!",
         eggStripCount = eggStripCount,

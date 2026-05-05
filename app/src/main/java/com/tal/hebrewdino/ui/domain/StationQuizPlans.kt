@@ -59,5 +59,14 @@ object StationQuizPlans {
     }
 
     fun chapter5(stationId: Int): StationQuizPlan =
-        Chapter1StationOrder.quizPlan(stationId).copy(listenOnlyTargetPrompt = true)
+        Chapter1StationOrder.quizPlan(stationId)
+            .copy(listenOnlyTargetPrompt = true)
+            .let { base ->
+                // Chapter 5 station 3: cap target-letter repeats to 4 (same as chapter 4 grid tuning).
+                if (stationId == Chapter1StationOrder.REVEAL_THEN_CHOOSE) {
+                    base.copy(findLetterGridMaxTargetCount = 4)
+                } else {
+                    base
+                }
+            }
 }

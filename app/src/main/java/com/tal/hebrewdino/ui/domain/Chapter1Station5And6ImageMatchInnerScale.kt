@@ -57,6 +57,13 @@ object Chapter1Station5And6ImageMatchInnerScale {
         val isLeg = choice.word == "רגל" || choice.id == "w_ר_3" || choice.tileDrawable == R.drawable.lesson_pic_regel
         val isRose = choice.word == "ורד" || choice.id == "w_ו_1" || choice.tileDrawable == R.drawable.lesson_pic_vered
         val isHoney = choice.word == "דבש" || choice.id == "w_ד_4" || choice.tileDrawable == R.drawable.lesson_pic_dvash
+        val isWindow = choice.word == "חלון" || choice.id == "w_ח_3" || choice.tileDrawable == R.drawable.lesson_pic_halon
+        val isButterfly = choice.word == "פרפר" || choice.id == "w_פ_4" || choice.tileDrawable == R.drawable.lesson_pic_parpar
+        val isTrainEngine = choice.word == "קטר" || choice.id == "w_ק_3"
+        val isMonkey = choice.word == "קוף" || choice.id == "w_ק_1"
+        val isPlate = choice.word == "צלחת" || choice.id == "w_צ_4"
+        val isAnt = choice.word == "נמלה" || choice.id == "w_נ_1"
+        val isFrog = choice.word == "צפרדע" || choice.id == "w_צ_3"
         val isHippo = choice.word == "היפופוטם" || choice.id == "w_ה_3"
         val isMountain = choice.word == "הר" || choice.id == "w_ה_1"
         return when {
@@ -78,6 +85,14 @@ object Chapter1Station5And6ImageMatchInnerScale {
             isWaffle -> 1f
             // Honey jar vector: similar to waffle — keep inner art readable inside the card frame.
             isHoney -> 1.08f
+            // Episode 4 feedback: window picture ~20% smaller.
+            isWindow -> 1.6f
+            // Episode 5 feedback: butterfly should read much larger.
+            isButterfly -> 2.0f
+            // Episode 5 feedback: locomotive + dish + ant + frog — emoji art at default card inner scale.
+            isTrainEngine || isPlate || isAnt || isFrog -> 2f
+            // Episode 5 feedback: monkey illustration 2× vs default inner scale; caption sized separately.
+            isMonkey -> 4f
             isLeg || isRose -> 1f
             // Feedback: hippo reads small; bump by ~20% relative to default 2f.
             isHippo -> 2.4f

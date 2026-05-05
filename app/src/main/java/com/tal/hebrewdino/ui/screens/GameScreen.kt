@@ -234,6 +234,7 @@ fun GameScreen(
     var correctTapPulseLetter by remember(stationId) { mutableStateOf<String?>(null) }
     var station4WrongFlashEpoch by remember(stationId, session.currentIndex) { mutableIntStateOf(0) }
     var station4WrongFlashLetter by remember(stationId, session.currentIndex) { mutableStateOf<String?>(null) }
+    var station4PinnedCorrectLetter by remember(stationId, session.currentIndex) { mutableStateOf<String?>(null) }
     var feedbackVoiceJob by remember(stationId) { mutableStateOf<Job?>(null) }
     var promptVoiceJob by remember(stationId) { mutableStateOf<Job?>(null) }
     var station1VoiceStreamId by remember(stationId) { mutableIntStateOf(0) }
@@ -447,6 +448,7 @@ fun GameScreen(
         wrongTapsThisQuestion = 0
         correctTapPulseLetter = null
         station4WrongFlashLetter = null
+        station4PinnedCorrectLetter = null
         episode4Help.resetForNewQuestion()
         station1PinnedCorrectLetter = null
         station2PinnedBalloonLetter = null
@@ -502,7 +504,7 @@ fun GameScreen(
                             if (target != null) {
                                 val letterClip = AudioClips.letterNameClip(target)
                                 val intro =
-                                    if (chapterId == 4 && stationId == Chapter1StationOrder.TAP_LETTER) {
+                                    if ((chapterId == 4 || chapterId == 5) && stationId == Chapter1StationOrder.TAP_LETTER) {
                                         if (voice.hasAsset(AudioClips.VoBachorEtHaot)) {
                                             AudioClips.VoBachorEtHaot
                                         } else {
@@ -529,7 +531,7 @@ fun GameScreen(
                                 }
                             }
                         } else if (sagaUsesFindGridAudioStaging && q is Question.FindLetterGridQuestion) {
-                            playSagaFindGridIntroSoundPool(sfx, voice, q, StationIntroLetterLeadFraction)
+                            playSagaFindGridIntroSoundPool(sfx, voice, q, chapterId, StationIntroLetterLeadFraction)
                         } else if (chapterId == 3 && stationId == 1 && q is Question.PictureStartsWithQuestion) {
                             sfx.stopAllStreams()
                             // Episode 3 station 1: reuse Episode 1 station 4 instruction voice.
@@ -927,7 +929,16 @@ fun GameScreen(
                 cancelFeedbackVoice()
                 feedbackVoiceJob =
                     scope.launch {
-                        delay(110)
+                        val feedbackDelayMs =
+                            when {
+                                // Episode 4 feedback: station 1 and station 4 should feel near-instant on tap.
+                                chapterId == 4 && stationId == Chapter1StationOrder.TAP_LETTER -> 12L
+                                chapterId == 4 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE -> 12L
+                                // Episode 5 feedback: station 4 wrong response should feel near-instant.
+                                chapterId == 5 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE -> 12L
+                                else -> 110L
+                            }
+                        delay(feedbackDelayMs)
                         if (wrongWordCatalogId != null && !wrongWordAlreadySpoken) {
                             // One try-again line only ([playSequenceBlocking] would play every clip, so both try WAVs).
                             voice.playSequenceBlocking(
@@ -1523,7 +1534,9 @@ fun GameScreen(
                                             },
                                             onAllCorrectPopped = { lastLetter, poppedBalloonColor ->
                                                 val ch1St2 = sagaUsesPopBalloonsAudioStaging
-                                                if (ch1St2 && chapterId != 4) {
+                                                // Episode 1 station 2: show the last popped balloon beside the header chip.
+                                                // Episodes 4–5 feedback: do not pin the last balloon in the header.
+                                                if (ch1St2 && chapterId != 4 && chapterId != 5) {
                                                     station2PinnedBalloonLetter = lastLetter
                                                     station2PinnedBalloonColor = poppedBalloonColor
                                                 } else if (!ch1St2) {
@@ -1572,7 +1585,7 @@ fun GameScreen(
                                         stationUiSpec.pictureStartsWithInstructionOverride != null ->
                                             stationUiSpec.pictureStartsWithInstructionOverride
                                         listenOnly && isSagaEpisode(chapterId) && stationId == Chapter1StationOrder.PICTURE_PICK_ONE ->
-                                            "באיזו אות המילה מתחילה? (שמעו את המילה)"
+                                            "באיזו אות המילה מתחילה?"
                                         else ->
                                             "באיזו אות מתחילה המילה?"
                                     }
@@ -1603,6 +1616,12 @@ fun GameScreen(
                                     temporaryStartingLetterHint =
                                         if (episode4HelpSt15 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
                                             episode4Help.activeHintLetter
+                                        } else {
+                                            null
+                                        },
+                                    pinnedCorrectLetter =
+                                        if (chapterId == 4 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
+                                            station4PinnedCorrectLetter
                                         } else {
                                             null
                                         },
@@ -1654,6 +1673,9 @@ fun GameScreen(
                                         when (session.submitPictureStartsWith(picked)) {
                                             AnswerResult.Correct -> {
                                                 if (audioEnabled) ChildGameAudioHooks.onCorrect()
+                                                if (chapterId == 4 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
+                                                    station4PinnedCorrectLetter = picked
+                                                }
                                                 if (isSagaEpisode(chapterId) && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
                                                     scope.launch {
                                                         correctTapPulseLetter = picked

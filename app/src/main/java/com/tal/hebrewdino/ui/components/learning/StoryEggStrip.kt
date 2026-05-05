@@ -50,7 +50,7 @@ fun StoryEggStrip(
                 when (index) {
                     0 -> R.drawable.egg_white_up
                     1 -> R.drawable.egg_pink_up
-                    else -> R.drawable.egg_cream_up
+                    else -> R.drawable.egg_purple_up
                 }
             Image(
                 painter = painterResource(id = res),

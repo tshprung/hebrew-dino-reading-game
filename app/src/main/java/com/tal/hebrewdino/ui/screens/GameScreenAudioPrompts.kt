@@ -15,7 +15,9 @@ private val SagaChapterRangeForAudioPrompts = 1..5
 private fun isSagaEpisodeForPrompt(chapterId: Int): Boolean = chapterId in SagaChapterRangeForAudioPrompts
 
 /** Station 3 find-letter intro: stretch the intro→letter delay by this factor (e.g. 1.10 = 10% more space before the letter). */
-private const val Station3IntroToLetterLeadStretch = 1.10f
+private const val Station3IntroToLetterLeadStretchDefault = 1.10f
+/** Episode 4 station 3 feedback: add ~20% more space before the letter (vs the default saga overlap). */
+private const val Station3IntroToLetterLeadStretchEpisode4 = 1.20f
 /** Station 3 intro on SoundPool: if [SoundPoolPlayer.durationMs] is 0, wait this long so the line is audible. */
 private const val Station3InstructionFallbackDurationMs = 1300L
 /**
@@ -37,6 +39,7 @@ internal suspend fun playSagaFindGridIntroSoundPool(
     sfx: SoundPoolPlayer,
     voice: VoicePlayer,
     q: Question.FindLetterGridQuestion,
+    chapterId: Int,
     introLetterLeadFraction: Float,
 ) {
     sfx.stopAllStreams()
@@ -55,8 +58,14 @@ internal suspend fun playSagaFindGridIntroSoundPool(
     if (letter != null && introPair != null) {
         val (intro, introMs) = introPair
         sfx.playReturningStreamId(intro, volume = 1f)
+        val stretch =
+            if (chapterId == 4) {
+                Station3IntroToLetterLeadStretchEpisode4
+            } else {
+                Station3IntroToLetterLeadStretchDefault
+            }
         val lead =
-            (introMs * introLetterLeadFraction * Station3IntroToLetterLeadStretch)
+            (introMs * introLetterLeadFraction * stretch)
                 .toLong()
                 .coerceIn(16L, introMs)
         delay(lead)
@@ -301,7 +310,8 @@ internal suspend fun speakPromptForQuestion(
                         (introMs * whichWordLeadFrac)
                             .toLong()
                             .coerceIn(16L, introMs)
-                    delay(lead + Station5WhichWordIntroToLetterExtraPauseMs)
+                    val delayScale = if (chapterId == 4) 1.10f else 1f
+                    delay(((lead + Station5WhichWordIntroToLetterExtraPauseMs) * delayScale).toLong())
                     sfx.playReturningStreamId(letterName, volume = 1f)
                 } else {
                     voice.playBlocking(intro)

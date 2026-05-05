@@ -78,7 +78,7 @@ fun Chapter4IntroScreen(
         backgroundRes = R.drawable.forest_bg_journey_road,
         title = "פרק 4 - סיבוך בדרך",
         body =
-            "המסע אחרי הביצה השנייה ממשיך…\n" +
+            "המסע אחרי הביצה השלישית ממשיך…\n" +
                 "\n" +
                 "הדרך מתפתלת: יש רמזים חדשים, וגם סיבוך קטן בדרך.\n" +
                 "\n" +
@@ -107,7 +107,7 @@ fun Chapter4OutroScreen(
         body =
             "מצאנו רמז! האות פ… הביצה בטח קרובה!\n" +
                 "\n" +
-                "דינו ממשיך קדימה — עקבים מובילים הלאה, והמסע עוד לא נגמר.",
+                "דינו ממשיך קדימה — העקבות מובילות הלאה, והמסע עוד לא נגמר.",
         eggStripCount = eggStripCount,
         companion = ChapterLobbyCompanion.DinoOnly,
         narrationPlaying = false,

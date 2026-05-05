@@ -3,8 +3,8 @@ package com.tal.hebrewdino.ui.domain
 /**
  * Episode 4 stations 1–5 help column / hint replay — pure helpers only (no audio, no timing).
  *
- * GameScreen gates UI with [chapterId] and [StationUiSpec.helpControlsEnabled]; registry sets
- * `helpControlsEnabled = false` for non-Ep4 chapters and for Episode 4 station 6.
+ * GameScreen gates UI with [chapterId] and [StationUiSpec.helpControlsEnabled]; registry enables
+ * help for Episode 4 stations 1–5 and Chapter 5 stations 1–5 (finale off).
  */
 object Episode4Help {
     /** Fallback when [StationUiSpec.hintDurationMs] is null (matches legacy GameScreen constant). */
@@ -12,10 +12,10 @@ object Episode4Help {
 
     /**
      * True when the Episode 4-style right-side help column should be shown (chapter + spec).
-     * Same condition as legacy `episode4HelpSt15`: chapter 4 and registry help flag.
+     * Chapters 4–5 use the same help column when [StationUiSpec.helpControlsEnabled] is on.
      */
     fun isHelpColumnActive(chapterId: Int, stationUiSpec: StationUiSpec): Boolean =
-        chapterId == 4 && stationUiSpec.helpControlsEnabled
+        (chapterId == 4 || chapterId == 5) && stationUiSpec.helpControlsEnabled
 
     /**
      * Temporary hint letter shown during רמז for stations 1–3 and 5 (same `when` as legacy hint dispatch).

@@ -86,6 +86,8 @@ fun PictureStartsWithGame(
     onPictureTapReplayWord: (() -> Unit)? = null,
     /** Episode 4 help רמז: briefly show the word’s starting letter above the picture. */
     temporaryStartingLetterHint: String? = null,
+    /** Episode 4 station 4: after correct pick, hide other letter buttons for clarity. */
+    pinnedCorrectLetter: String? = null,
     onPickLetter: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -196,12 +198,18 @@ fun PictureStartsWithGame(
             } else {
                 question.optionLetters
             }
+        val displayLetters =
+            if (pinnedCorrectLetter != null) {
+                listOf(pinnedCorrectLetter)
+            } else {
+                orderedLetters
+            }
         FlowRow(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(20.dp, Alignment.CenterHorizontally),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            orderedLetters.forEach { letter ->
+            displayLetters.forEach { letter ->
                 val pop = remember(letter, question) { Animatable(1f) }
                 val flash = remember(letter, question) { Animatable(0f) }
                 LaunchedEffect(entryPulseEpoch, letter, question) {

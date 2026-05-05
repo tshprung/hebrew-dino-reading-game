@@ -82,10 +82,11 @@ class StationBehaviorRegistryTest {
     }
 
     @Test
-    fun chapter5_doesNotInheritEpisode4HelpControls() {
-        for (s in 1..Chapter5Config.STATION_COUNT) {
-            assertFalse(StationBehaviorRegistry.getStationUiSpec(5, s).helpControlsEnabled)
+    fun chapter5_st1_to_5_helpControlsEnabled_true_st6_false() {
+        for (s in 1..5) {
+            assertTrue(StationBehaviorRegistry.getStationUiSpec(5, s).helpControlsEnabled)
         }
+        assertFalse(StationBehaviorRegistry.getStationUiSpec(5, 6).helpControlsEnabled)
     }
 
     @Test
@@ -119,9 +120,9 @@ class StationBehaviorRegistryTest {
     }
 
     @Test
-    fun chapter5_station1_listenOnlyPickLetterShortcutDisabled() {
+    fun chapter5_station1_listenOnlyPickLetter_noPinnedShortcut_noSeparateListenPanel() {
         val spec = StationBehaviorRegistry.getStationUiSpec(5, TAP_LETTER)
-        assertTrue(spec.pickLetterListenOnlyHebrewPanel)
+        assertFalse(spec.pickLetterListenOnlyHebrewPanel)
         assertFalse(spec.pickLetterAllowPinnedCorrectShortcut)
     }
 

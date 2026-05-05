@@ -23,6 +23,12 @@ fun captionFontSizeForWordCard(
         val codePoints = word.codePointCount(0, word.length)
         val wordTight =
             when {
+                // Episode 4 feedback: window caption ~20% smaller.
+                word == "חלון" -> 0.80f
+                // Episode 4 feedback: bag caption ~20% smaller.
+                word == "תיק" -> 0.80f
+                // Episode 5 feedback: monkey caption ~20% smaller (illustration enlarged).
+                word == "קוף" -> 0.80f
                 // Chapter 2 station 5: "שעון" caption −15%.
                 chapterId == 2 &&
                     stationId == Chapter1StationOrder.PICTURE_PICK_ALL &&

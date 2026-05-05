@@ -9,7 +9,7 @@ import org.junit.Test
 class Episode4HelpTest {
 
     @Test
-    fun helpColumnActive_onlyChapter4WithRegistryFlag() {
+    fun helpColumnActive_chapters4And5WithRegistryFlag() {
         val ep4 =
             StationUiSpec(
                 chapterId = 4,
@@ -18,8 +18,9 @@ class Episode4HelpTest {
                 helpControlsEnabled = true,
             )
         assertTrue(Episode4Help.isHelpColumnActive(4, ep4))
-        assertFalse(Episode4Help.isHelpColumnActive(5, ep4))
+        assertTrue(Episode4Help.isHelpColumnActive(5, ep4))
         assertFalse(Episode4Help.isHelpColumnActive(4, ep4.copy(helpControlsEnabled = false)))
+        assertFalse(Episode4Help.isHelpColumnActive(3, ep4))
     }
 
     @Test

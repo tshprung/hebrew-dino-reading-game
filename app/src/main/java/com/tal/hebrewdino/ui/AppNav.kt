@@ -176,24 +176,14 @@ fun AppNav() {
                         }
                         4 -> {
                             if (chapter3Completed) {
-                                val next =
-                                    when {
-                                        !chapter4IntroSeen -> NavRoutes.Ch4Intro
-                                        !chapter4LettersIntroSeen -> NavRoutes.Ch4Letters
-                                        else -> NavRoutes.Ch4Journey
-                                    }
-                                navController.navigate(next)
+                                // Always show chapter intro on entry, then letters (same behavior as chapters 1–3).
+                                navController.navigate(NavRoutes.Ch4Intro)
                             }
                         }
                         5 -> {
                             if (chapter4Completed) {
-                                val next =
-                                    when {
-                                        !chapter5IntroSeen -> NavRoutes.Ch5Intro
-                                        !chapter5LettersIntroSeen -> NavRoutes.Ch5Letters
-                                        else -> NavRoutes.Ch5Journey
-                                    }
-                                navController.navigate(next)
+                                // Always show chapter intro on entry, then letters (same behavior as chapters 1–3).
+                                navController.navigate(NavRoutes.Ch5Intro)
                             }
                         }
                         in 6..10 -> Unit
@@ -717,7 +707,7 @@ fun AppNav() {
                 endMarkerReached = chapter4Completed || chapter4AllStationsComplete,
                 totalLevels = Chapter4Config.STATION_COUNT,
                 headerTitle = "פרק 4 - סיבוך בדרך",
-                headerSubtitle = "שומעים ובוחרים — ${Chapter4Config.STATION_COUNT} תחנות",
+                headerSubtitle = null,
                 headerSubtitleCompact = true,
                 collectedEggStripCount = collectedEggStripCount,
                 endMarker = JourneyEndMarker.ClueLetterPe,
@@ -876,10 +866,11 @@ fun AppNav() {
                 endMarkerReached = chapter5Completed || chapter5AllStationsComplete,
                 totalLevels = Chapter5Config.STATION_COUNT,
                 headerTitle = "פרק 5 - הביצה השלישית",
-                headerSubtitle = "שומעים ובוחרים — ${Chapter5Config.STATION_COUNT} תחנות",
+                headerSubtitle = null,
                 headerSubtitleCompact = true,
                 collectedEggStripCount = collectedEggStripCount,
-                endMarker = JourneyEndMarker.BigEgg,
+                // Third egg on the map should match the purple egg asset.
+                endMarker = JourneyEndMarker.PurpleEgg,
                 backgroundRes = R.drawable.forest_bg_journey_road,
                 onPlayLevel = { stationId ->
                     navController.navigate("${NavRoutes.Ch5Level}/$stationId")
