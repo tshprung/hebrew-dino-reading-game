@@ -291,6 +291,8 @@ internal fun LetterOptions(
     shakePx: Float,
     correctPulseLetter: String? = null,
     correctPulseEpoch: Int = 0,
+    /** Deeper press squish + larger bounce (e.g. Ch3 st5 “מצא את האות שנאמרת”). */
+    strongPressFeedback: Boolean = false,
     onPick: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -309,11 +311,23 @@ internal fun LetterOptions(
             LaunchedEffect(correctPulseEpoch, correctPulseLetter) {
                 if (correctPulseEpoch <= 0 || correctPulseLetter != letter) return@LaunchedEffect
                 pop.snapTo(1f)
-                pop.animateTo(0.88f, tween(durationMillis = 70))
-                pop.animateTo(1.32f, tween(durationMillis = 110))
-                pop.animateTo(1f, spring(dampingRatio = 0.5f, stiffness = 500f))
+                if (strongPressFeedback) {
+                    pop.animateTo(0.82f, tween(durationMillis = 55))
+                    pop.animateTo(1.48f, tween(durationMillis = 140))
+                    pop.animateTo(1f, spring(dampingRatio = 0.52f, stiffness = 420f))
+                } else {
+                    pop.animateTo(0.88f, tween(durationMillis = 70))
+                    pop.animateTo(1.32f, tween(durationMillis = 110))
+                    pop.animateTo(1f, spring(dampingRatio = 0.5f, stiffness = 500f))
+                }
             }
-            val pressSquish = if (pressed) 0.94f else 1f
+            val pressSquish =
+                if (pressed) {
+                    if (strongPressFeedback) 0.84f else 0.94f
+                } else {
+                    1f
+                }
+            val letterFontSize = if (strongPressFeedback) 46.sp else 42.sp
             Button(
                 onClick = { onPick(letter) },
                 enabled = enabled,
@@ -321,7 +335,7 @@ internal fun LetterOptions(
             ) {
                 Text(
                     text = letter,
-                    fontSize = 42.sp,
+                    fontSize = letterFontSize,
                     fontWeight = FontWeight.Black,
                     modifier = Modifier.scale(pressSquish * pop.value),
                 )

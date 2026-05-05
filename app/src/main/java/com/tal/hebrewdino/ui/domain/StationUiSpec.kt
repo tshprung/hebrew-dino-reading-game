@@ -41,7 +41,7 @@ data class StationUiSpec(
     val helpControlsEnabled: Boolean = false,
     /** WIRED: hint lock duration when help controls apply (Ep4 st1–5). */
     val hintDurationMs: Long? = null,
-    /** [DOCS] Intended replay semantics; high-level dispatch may use later — compare tests for Ep4. */
+    /** WIRED: Registry + [StationBehaviorRegistryTest]; Episode 4 stations 1–5 replay semantics (help replay uses legacy paths in GameScreen). */
     val replayMode: StationReplayMode = StationReplayMode.None,
     /** [DOCS] Hint interaction style; Ep4 uses Temporary* values for product clarity. */
     val hintMode: StationHintMode = StationHintMode.ExistingStationSpecific,
