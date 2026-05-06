@@ -13,9 +13,9 @@ enum class StationVariant {
 
     Episode4Help,
 
-    Chapter3HighlightedLetter,
+    HighlightedLetterInWord,
     Chapter3AudioLetterRecognition,
-    Chapter3PopAllLettersInWord,
+    PopAllLettersInWord,
     Chapter3ImageToWord,
 
     Finale,

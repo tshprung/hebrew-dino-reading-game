@@ -39,6 +39,12 @@ object NavRoutes {
     const val Ch5Level = "ch5_level"
     const val Ch5Reward = "ch5_reward"
     const val Ch5Outro = "ch5_outro"
+    const val Ch6Intro = "ch6_intro"
+    const val Ch6Letters = "ch6_letters"
+    const val Ch6Journey = "ch6_journey"
+    const val Ch6Level = "ch6_level"
+    const val Ch6Reward = "ch6_reward"
+    const val Ch6Outro = "ch6_outro"
     const val StoryOutro = "story_outro"
     const val Settings = "settings"
 }

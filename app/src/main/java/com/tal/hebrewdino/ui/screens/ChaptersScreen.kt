@@ -103,6 +103,7 @@ data class ChaptersProgress(
     val chapter3Completed: Boolean,
     val chapter4Completed: Boolean = false,
     val chapter5Completed: Boolean = false,
+    val chapter6Completed: Boolean = false,
 )
 
 /** Must match [ChapterVerticalPath] map height for initial scroll math. */
@@ -162,6 +163,7 @@ fun ChaptersScreen(
     unlockedChapter: Int,
     chapter4ComingSoon: Boolean = false,
     chapter5ComingSoon: Boolean = false,
+    chapter6ComingSoon: Boolean = false,
     /** Highest chapter tile (1–10) that can be opened from the map when unlocked. */
     maxSelectableChapterId: Int = 3,
     chaptersProgress: ChaptersProgress,
@@ -186,6 +188,11 @@ fun ChaptersScreen(
                 "פרק 5 - הביצה השלישית",
                 if (chapter5ComingSoon) "בקרוב" else "אותיות מעורבות — שומעים ובוחרים",
             ),
+            ChapterCard(
+                6,
+                "פרק 6 - חוזרים הביתה",
+                if (chapter6ComingSoon) "בקרוב" else "חוזרים הביתה — מתרגלים את כל מה שלמדנו",
+            ),
         )
 
     Box(modifier = modifier.fillMaxSize()) {
@@ -199,7 +206,15 @@ fun ChaptersScreen(
                     .padding(start = 12.dp, end = 12.dp, top = 16.dp, bottom = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Spacer(modifier = Modifier.height(6.dp))
+            Spacer(modifier = Modifier.height(10.dp))
+
+            Text(
+                text = "עונה 1 - המסע של דינו",
+                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.ExtraBold),
+                color = Color(0xFF0B2B3D),
+                textAlign = TextAlign.Center,
+            )
+            Spacer(modifier = Modifier.height(10.dp))
             ChaptersHexHoneycomb(
                 chapters = chapters,
                 unlockedChapter = unlockedChapter,
@@ -208,6 +223,25 @@ fun ChaptersScreen(
                 onOpenChapter = onOpenChapter,
                 modifier = Modifier.fillMaxWidth(),
             )
+            Spacer(modifier = Modifier.height(20.dp))
+
+            Text(
+                text = "אימון וחזרה",
+                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black),
+                color = Color(0xFF0B2B3D),
+                textAlign = TextAlign.Center,
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+                TrainingComingSoonCard(
+                    title = "אימון קצר",
+                    subtitle = "אותיות ומילים מכל הפרקים",
+                    modifier =
+                        Modifier
+                            .width(maxWidth * 0.65f)
+                            .align(Alignment.Center),
+                )
+            }
             Spacer(modifier = Modifier.height(18.dp))
         }
 
@@ -225,6 +259,56 @@ fun ChaptersScreen(
             ) {
                 Text("הגדרות", style = ChapterNavChipStyles.labelTextStyle())
             }
+        }
+    }
+}
+
+@Composable
+private fun TrainingComingSoonCard(
+    title: String,
+    subtitle: String,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier =
+            modifier
+                .clip(RoundedCornerShape(22.dp))
+                .background(Color.White.copy(alpha = 0.72f))
+                .border(2.dp, Color(0xFF0B2B3D).copy(alpha = 0.10f), RoundedCornerShape(22.dp))
+                .padding(horizontal = 14.dp, vertical = 12.dp),
+    ) {
+        // Corner status pill so it reads like a state, not an action.
+        Box(
+            modifier =
+                Modifier
+                    .align(Alignment.TopStart)
+                    .background(Color(0xFF0B2B3D).copy(alpha = 0.06f), RoundedCornerShape(999.dp))
+                    .padding(horizontal = 10.dp, vertical = 4.dp),
+        ) {
+            Text(
+                text = "בקרוב",
+                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Black),
+                color = Color(0xFF0B2B3D).copy(alpha = 0.70f),
+            )
+        }
+
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.ExtraBold),
+                color = Color(0xFF0B2B3D).copy(alpha = 0.82f),
+                textAlign = TextAlign.Center,
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                color = Color(0xFF0B2B3D).copy(alpha = 0.68f),
+                textAlign = TextAlign.Center,
+            )
         }
     }
 }
@@ -265,29 +349,26 @@ private fun ChaptersHexHoneycomb(
     modifier: Modifier = Modifier,
 ) {
     BoxWithConstraints(modifier = modifier) {
-        val tile = (maxWidth / 3.1f).coerceIn(128.dp, 190.dp)
+        val tile = (maxWidth / 3.25f).coerceIn(128.dp, 190.dp)
         val w = tile
-        val rowGap = (tile * 0.12f).coerceIn(10.dp, 22.dp)
         val colGap = (tile * 0.08f).coerceIn(8.dp, 18.dp)
+        val rowGap = (tile * 0.12f).coerceIn(10.dp, 22.dp)
 
-        // 3-2-3 honeycomb like the reference screenshot.
-        val rows = listOf(3, 2, 3, 2)
-        val maxCount = rows.sum()
-        val shown = chapters.take(maxCount)
+        // Layout goal (Hebrew): 1–3 on one row, 4–6 on next row.
+        // Keep the map feeling stable as we add chapters: fill rows of 3.
+        val shown = chapters.take(6)
+        val rows: List<List<ChapterCard>> = shown.chunked(3)
 
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            var idx = 0
-            rows.forEachIndexed { rowIdx, count ->
+            rows.forEachIndexed { rowIdx, row ->
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(colGap),
+                    horizontalArrangement = Arrangement.spacedBy(colGap, Alignment.CenterHorizontally),
                     modifier =
                         Modifier
-                            .padding(top = if (rowIdx == 0) 0.dp else rowGap)
-                            .offset(x = if (count == 2) (w * 0.52f) else 0.dp),
+                            .fillMaxWidth()
+                            .padding(top = if (rowIdx == 0) 0.dp else rowGap),
                 ) {
-                    repeat(count) {
-                        val ch = shown.getOrNull(idx++)
-                        if (ch == null) return@repeat
+                    row.forEach { ch ->
                         val state =
                             chapterEggState(
                                 chapterId = ch.id,
@@ -303,6 +384,7 @@ private fun ChaptersHexHoneycomb(
                                     3 -> R.drawable.ch3_journey_bg
                                     4 -> R.drawable.forest_bg_journey_road
                                     5 -> R.drawable.forest_bg_journey_road
+                                    6 -> R.drawable.forest_bg_journey_road
                                     else -> R.drawable.forest_bg_journey_road
                                 },
                             state = state,
@@ -463,12 +545,14 @@ private fun ChapterVerticalPath(
     val bump3 = remember { mutableIntStateOf(0) }
     val bump4 = remember { mutableIntStateOf(0) }
     val bump5 = remember { mutableIntStateOf(0) }
+    val bump6 = remember { mutableIntStateOf(0) }
     LaunchedEffect(chaptersProgress) {
         if (!prevProgress.chapter1Completed && chaptersProgress.chapter1Completed) bump1.intValue++
         if (!prevProgress.chapter2Completed && chaptersProgress.chapter2Completed) bump2.intValue++
         if (!prevProgress.chapter3Completed && chaptersProgress.chapter3Completed) bump3.intValue++
         if (!prevProgress.chapter4Completed && chaptersProgress.chapter4Completed) bump4.intValue++
         if (!prevProgress.chapter5Completed && chaptersProgress.chapter5Completed) bump5.intValue++
+        if (!prevProgress.chapter6Completed && chaptersProgress.chapter6Completed) bump6.intValue++
         prevProgress = chaptersProgress
     }
 
@@ -550,6 +634,7 @@ private fun ChapterVerticalPath(
                         3 -> bump3.intValue
                         4 -> bump4.intValue
                         5 -> bump5.intValue
+                        6 -> bump6.intValue
                         else -> 0
                     }
 
@@ -1072,7 +1157,12 @@ private fun chapterEggState(
     unlockedChapter: Int,
     progress: ChaptersProgress,
 ): ChapterEggState {
-    if (chapterId >= 6) return ChapterEggState.Locked
+    if (chapterId >= 7) return ChapterEggState.Locked
+    if (chapterId == 6) {
+        if (!progress.chapter5Completed) return ChapterEggState.Locked
+        if (progress.chapter6Completed) return ChapterEggState.Completed
+        return ChapterEggState.Unlocked
+    }
     if (chapterId == 5) {
         if (!progress.chapter4Completed) return ChapterEggState.Locked
         if (progress.chapter5Completed) return ChapterEggState.Completed

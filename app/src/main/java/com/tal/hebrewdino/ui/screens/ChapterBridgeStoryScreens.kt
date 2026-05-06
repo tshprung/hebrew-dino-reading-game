@@ -186,3 +186,52 @@ fun Chapter5OutroScreen(
         modifier = modifier,
     )
 }
+
+@Composable
+fun Chapter6IntroScreen(
+    eggStripCount: Int,
+    onContinue: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    ChapterLobbyStoryLayout(
+        backgroundRes = R.drawable.forest_bg_journey_road,
+        title = "פרק 6 - חוזרים הביתה",
+        body =
+            "דינו מצא את שלוש הביצים.\n" +
+                "עכשיו צריך לחזור הביתה לאמא.\n" +
+                "\n" +
+                "בדרך נתרגל את כל האותיות והמילים שלמדנו.",
+        eggStripCount = eggStripCount,
+        companion = ChapterLobbyCompanion.DinoOnly,
+        narrationPlaying = false,
+        voiceAssetPath = AudioClips.StoryCh5ThirdEggOutro,
+        dinoContentDescription = "דינו",
+        onContinue = onContinue,
+        modifier = modifier,
+    )
+}
+
+@Composable
+fun Chapter6OutroScreen(
+    eggStripCount: Int,
+    onContinue: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    ChapterLobbyStoryLayout(
+        backgroundRes = R.drawable.forest_bg_story_outro_egg,
+        title = "חזרנו הביתה!",
+        body =
+            "דינו חזר לאמא עם שלוש הביצים.\n" +
+                "אמא שמחה מאוד.\n" +
+                "\n" +
+                "כל הכבוד — עזרתם לדינו לקרוא,\n" +
+                "להקשיב ולמצוא את הדרך הביתה!",
+        eggStripCount = eggStripCount,
+        companion = ChapterLobbyCompanion.DinoOnly,
+        narrationPlaying = false,
+        voiceAssetPath = AudioClips.StoryCh5ThirdEggOutro,
+        dinoContentDescription = "דינו",
+        onContinue = onContinue,
+        modifier = modifier,
+    )
+}

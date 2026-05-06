@@ -24,10 +24,7 @@ class LevelSession(
 
     /** Episode 3 station 3 (balloons): pick 5 unique words once per station run. */
     private val chapter3PopAllLettersWords: List<Pair<String, String>>? =
-        if (letterPoolSpec === Chapter3LetterPoolSpec &&
-            plan.mode == StationQuizMode.PopBalloons &&
-            plan.chapter3PopAllLettersInWord
-        ) {
+        if (plan.mode == StationQuizMode.PopBalloons && plan.popAllLettersInWord) {
             val all = Chapter3EpisodeContent.balloonWordCatalogPairs()
             require(all.size >= 5) { "Chapter 3 balloons needs at least 5 words; got ${all.size}" }
             all.shuffled(rnd).distinctBy { it.first }.take(5)
@@ -126,7 +123,7 @@ class LevelSession(
                                         correctAnswer = correct,
                                         optionCount = optionCount,
                                     )
-                                } else if (plan.chapter3HighlightedLetterInWordPickLetter) {
+                                } else if (plan.highlightedLetterInWordPickLetter) {
                                     val round = Chapter3EpisodeContent.pickSpellRound(currentIndex)
                                     val options =
                                         buildList {
@@ -180,7 +177,7 @@ class LevelSession(
                                 }
                             } else {
                                 val correct = nextBalancedCorrect(group)
-                                popGenerator.generate(
+                                popGenerator.generatePickLetterOptions(
                                     rnd = rnd,
                                     group = group,
                                     correctAnswer = correct,
@@ -189,13 +186,13 @@ class LevelSession(
                             }
                         }
                         StationQuizMode.PopBalloons -> {
-                            if (letterPoolSpec === Chapter3LetterPoolSpec && plan.chapter3PopAllLettersInWord) {
+                            if (plan.popAllLettersInWord) {
                                 val (word, _) =
                                     chapter3PopAllLettersCurrentWord()
                                         ?: error("Expected Chapter 3 pop-all-letters words to be initialized")
                                 // Chapter 3 station 3: balloons must include letter occurrences (e.g. "שמש" has two "ש").
                                 val correctBalloons = word.toCharArray().map { it.toString() }
-                                val optionCount = 8
+                                val optionCount = 10
                                 val inWord = correctBalloons.toSet()
                                 val distractors =
                                     Chapter3Config.letters
@@ -204,8 +201,8 @@ class LevelSession(
                                         .take((optionCount - correctBalloons.size).coerceAtLeast(1))
                                 val options = (correctBalloons + distractors).take(optionCount).shuffled(rnd)
                                 Question.PopBalloonsQuestion(
-                                    // Not used in Episode 3 station 3; UI supplies a multi-correct set.
-                                    correctAnswer = options.first(),
+                                    // Used for help-hint (one of the in-word letters); multi-correct lives in UI.
+                                    correctAnswer = correctBalloons.firstOrNull().orEmpty(),
                                     options = options,
                                 )
                             } else {

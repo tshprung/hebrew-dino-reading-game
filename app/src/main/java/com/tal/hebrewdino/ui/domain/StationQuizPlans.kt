@@ -19,12 +19,12 @@ data class StationQuizPlan(
     val pickLetterOptionCount: Int? = null,
     /** Episode 3 station 2: word-analysis rounds (custom prompt/UI tweaks, but still single-pick). */
     val chapter3WordAnalysisPickLetter: Boolean = false,
-    /** Episode 3 station 2: highlighted-letter-in-word rounds (single-pick per highlighted letter). */
-    val chapter3HighlightedLetterInWordPickLetter: Boolean = false,
+    /** Highlighted-letter-in-word rounds (single-pick per highlighted letter). */
+    val highlightedLetterInWordPickLetter: Boolean = false,
     /** Episode 3 station 3: any-letter-in-word (multiple answers accepted in UI, but still single pick). */
     val chapter3FindAnyLetterInWordPickLetter: Boolean = false,
-    /** Episode 3 station 3: pop ALL letters that appear in the word (flattened into sequential PopBalloons rounds). */
-    val chapter3PopAllLettersInWord: Boolean = false,
+    /** Pop ALL letters that appear in the word (flattened into sequential PopBalloons rounds). */
+    val popAllLettersInWord: Boolean = false,
     /** Episode 3 station 5: audio-only letter recognition (play a letter, user taps it). */
     val chapter3AudioLetterRecognition: Boolean = false,
     /** Chapter 1 station 6: forbid showing both "אוטו" and "מכונית" in the same round. */
@@ -67,11 +67,17 @@ object StationQuizPlans {
         Chapter1StationOrder.quizPlan(stationId)
             .copy(listenOnlyTargetPrompt = true)
             .let { base ->
+                if (stationId == Chapter1StationOrder.TAP_LETTER) {
+                    base.copy(pickLetterOptionCount = Chapter5Config.letters.size.coerceIn(3, 9))
+                } else {
                 // Chapter 5 station 3: cap target-letter repeats to 4 (same as chapter 4 grid tuning).
                 if (stationId == Chapter1StationOrder.REVEAL_THEN_CHOOSE) {
                     base.copy(findLetterGridMaxTargetCount = 4)
                 } else {
                     base
                 }
+                }
             }
+
+    fun chapter6(stationId: Int): StationQuizPlan = Chapter6StationOrder.quizPlan(stationId)
 }

@@ -35,7 +35,7 @@ object Chapter3StationOrder {
                     // Product request: 5 unique words per run; each word appears once.
                     questionCount = 5,
                     initialGroupIndex = 0,
-                    chapter3PopAllLettersInWord = true,
+                    popAllLettersInWord = true,
                 )
             4 ->
                 StationQuizPlan(
@@ -43,7 +43,7 @@ object Chapter3StationOrder {
                     questionCount = 9,
                     initialGroupIndex = 0,
                     pickLetterOptionCount = 6,
-                    chapter3HighlightedLetterInWordPickLetter = true,
+                    highlightedLetterInWordPickLetter = true,
                     imageMatchCaptionSizeMultiplier = 1.5f,
                     imageMatchPictureSizeMultiplier = 1f,
                 )

@@ -40,6 +40,7 @@ import com.tal.hebrewdino.R
 import com.tal.hebrewdino.ui.domain.Chapter3Config
 import com.tal.hebrewdino.ui.domain.Chapter4Config
 import com.tal.hebrewdino.ui.domain.Chapter5Config
+import com.tal.hebrewdino.ui.domain.Chapter6Config
 import com.tal.hebrewdino.ui.components.learning.LetterChoiceTile
 import com.tal.hebrewdino.ui.audio.AudioClips
 import com.tal.hebrewdino.ui.audio.VoicePlayer
@@ -118,12 +119,34 @@ fun Chapter5LettersIntroScreen(
 }
 
 @Composable
+fun Chapter6LettersIntroScreen(
+    onContinue: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    ChapterLettersIntroScreen(
+        chapterTitle = "פרק 6 - חוזרים הביתה",
+        letters = Chapter6Config.letters,
+        backgroundRes = R.drawable.forest_bg_journey_road,
+        introHeadline = "בפרק הזה נחזור על אותיות שכבר למדנו.",
+        introSubhead = "נעזור לדינו לחזור הביתה עם שלוש הביצים.",
+        letterGridRows = 2,
+        letterTileSize = 76.dp,
+        lettersAreaMinHeight = 280.dp,
+        onContinue = onContinue,
+        modifier = modifier,
+    )
+}
+
+@Composable
 fun ChapterLettersIntroScreen(
     chapterTitle: String,
     letters: List<String>,
     backgroundRes: Int,
+    introHeadline: String = "בפרק הזה נלמד את האותיות",
+    introSubhead: String? = null,
     /** 2 = two horizontal rows of letter tiles (Episode 3 layout). */
     letterGridRows: Int = 1,
+    letterTileSize: Dp = 88.dp,
     /** Ensures enough vertical space so rows do not overlap. */
     lettersAreaMinHeight: Dp? = null,
     onContinue: () -> Unit,
@@ -200,11 +223,20 @@ fun ChapterLettersIntroScreen(
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
-                        text = "בפרק הזה נלמד את האותיות",
+                        text = introHeadline,
                         style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Black),
                         color = Color(0xFF0B2B3D),
                         textAlign = TextAlign.Center,
                     )
+                    if (introSubhead != null) {
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = introSubhead,
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                            color = Color(0xFF0B2B3D).copy(alpha = 0.82f),
+                            textAlign = TextAlign.Center,
+                        )
+                    }
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
                         text = chapterTitle,
@@ -236,7 +268,7 @@ fun ChapterLettersIntroScreen(
                                 rowLetters.forEach { l ->
                                     LetterChoiceTile(
                                         letter = l,
-                                        tileSize = 88.dp,
+                                        tileSize = letterTileSize,
                                         haloActive = highlightedLetter == l,
                                         enabled = false,
                                         onClick = { },

@@ -61,6 +61,8 @@ object Chapter1Station5And6ImageMatchInnerScale {
         val isButterfly = choice.word == "פרפר" || choice.id == "w_פ_4" || choice.tileDrawable == R.drawable.lesson_pic_parpar
         val isTrainEngine = choice.word == "קטר" || choice.id == "w_ק_3"
         val isMonkey = choice.word == "קוף" || choice.id == "w_ק_1"
+        val isCube = choice.word == "קוביה" || choice.id == "w_ק_2" || choice.tileDrawable == R.drawable.lesson_pic_cube
+        val isToast = choice.word == "טוסט" || choice.id == "w_ט_1" || choice.tileDrawable == R.drawable.lesson_pic_toast
         val isPlate = choice.word == "צלחת" || choice.id == "w_צ_4"
         val isAnt = choice.word == "נמלה" || choice.id == "w_נ_1"
         val isFrog = choice.word == "צפרדע" || choice.id == "w_צ_3"
@@ -93,6 +95,10 @@ object Chapter1Station5And6ImageMatchInnerScale {
             isTrainEngine || isPlate || isAnt || isFrog -> 2f
             // Episode 5 feedback: monkey illustration should be ~25% smaller vs prior (caption sized separately).
             isMonkey -> 3f
+            // Episode 5 feedback: cube illustration ~25% smaller.
+            isCube -> 2.66f
+            // Episode 4 feedback: toast illustration ~50% smaller.
+            isToast -> 4f
             isLeg || isRose -> 1f
             // Feedback: hippo reads small; bump by ~20% relative to default 2f.
             isHippo -> 2.4f

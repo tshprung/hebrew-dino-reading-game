@@ -54,6 +54,7 @@ import com.tal.hebrewdino.ui.domain.StationReplayMode
 import com.tal.hebrewdino.ui.domain.StationTemplateId
 import com.tal.hebrewdino.ui.domain.StationVariant
 import com.tal.hebrewdino.ui.domain.hasVariant
+import com.tal.hebrewdino.ui.screens.StationHeaderMode
 import com.tal.hebrewdino.ui.domain.Episode4Help
 import com.tal.hebrewdino.ui.domain.StationQuizPlan
 import com.tal.hebrewdino.ui.components.Episode4Stations15HelpColumn
@@ -197,9 +198,9 @@ fun GameScreen(
     val sagaUsesFindGridAudioStaging = isSagaEpisode(chapterId) && plan.mode == StationQuizMode.FindLetterGrid
     val isChapter3HighlightedLetterInWordStation =
         stationUiSpec.templateId == StationTemplateId.PickLetter &&
-            stationUiSpec.hasVariant(StationVariant.Chapter3HighlightedLetter) &&
+            stationUiSpec.hasVariant(StationVariant.HighlightedLetterInWord) &&
             plan.mode == StationQuizMode.PickLetter &&
-            plan.chapter3HighlightedLetterInWordPickLetter
+            plan.highlightedLetterInWordPickLetter
 
     val isChapter3AudioLetterRecognitionStation =
         stationUiSpec.templateId == StationTemplateId.PickLetter &&
@@ -209,9 +210,9 @@ fun GameScreen(
 
     val isChapter3PopAllLettersStation =
         stationUiSpec.templateId == StationTemplateId.PopBalloons &&
-            stationUiSpec.hasVariant(StationVariant.Chapter3PopAllLettersInWord) &&
+            stationUiSpec.hasVariant(StationVariant.PopAllLettersInWord) &&
             plan.mode == StationQuizMode.PopBalloons &&
-            plan.chapter3PopAllLettersInWord
+            plan.popAllLettersInWord
     val scope = rememberCoroutineScope()
     val episode4Help = rememberEpisode4HelpController(stationId = stationId, scope = scope)
     val context = LocalContext.current
@@ -312,6 +313,14 @@ fun GameScreen(
         }
         feedbackVoiceJob =
             scope.launch {
+                if (plan.popAllLettersInWord && q is Question.PopBalloonsQuestion) {
+                    val catalogId = session.chapter3PopAllLettersCurrentWord()?.second
+                    if (!catalogId.isNullOrBlank()) {
+                        val wordPath = AudioClips.wordClipByCatalogId(catalogId)
+                        if (voice.hasAsset(wordPath)) voice.playBlocking(wordPath)
+                    }
+                    return@launch
+                }
                 when (stationUiSpec.replayMode) {
                     StationReplayMode.TargetLetterOnly -> {
                         val letter = Episode4Help.targetLetterForHelpHint(q) ?: return@launch
@@ -596,13 +605,14 @@ fun GameScreen(
                             } else {
                                 voice.playSequenceBlocking(intro, wordPath)
                             }
-                        } else if (sagaUsesPopBalloonsAudioStaging && q is Question.PopBalloonsQuestion) {
-                            if (chapterId == 3) {
+                        } else if ((sagaUsesPopBalloonsAudioStaging || plan.popAllLettersInWord) && q is Question.PopBalloonsQuestion) {
+                            if (plan.popAllLettersInWord) {
+                                // Pop-all-letters-in-word: play the correct instruction, then the word (not a single letter).
                                 sfx.stopAllStreams()
                                 val clip = AudioClips.Ch3St3PopAllLettersInWordInstruction
                                 val (_, catalogId) =
                                     session.chapter3PopAllLettersCurrentWord()
-                                        ?: error("Missing Chapter 3 balloons word for index ${session.currentIndex}")
+                                        ?: error("Missing pop-all letters word for index ${session.currentIndex}")
                                 val wordPath = AudioClips.wordClipByCatalogId(catalogId)
                                 if (voice.hasAsset(clip)) voice.playBlocking(clip)
                                 if (voice.hasAsset(wordPath)) voice.playBlocking(wordPath)
@@ -987,6 +997,16 @@ fun GameScreen(
                         }
 
                         if (wrongPickedLetter != null) {
+                            // Episode 5 station 4 UX: immediately say the tapped letter, then one try-again line.
+                            // Avoid "זה" prefix here; keep it short and don't overlap the letter audio.
+                            if (chapterId == 5 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
+                                val lc = AudioClips.letterNameClip(wrongPickedLetter)
+                                if (lc != null && voice.hasAsset(lc)) {
+                                    voice.playBlocking(lc)
+                                }
+                                voice.playFirstAvailableBlocking(AudioClips.VoTryAgain2, AudioClips.VoTryAgain1)
+                                return@launch
+                            }
                             // Prefer a single combined clip: "זה <letter>, נסה שוב" (sounds most connected).
                             val combined = AudioClips.wrongSentenceClip(wrongPickedLetter)
                             if (combined != null && !wrongPickedLetterAlreadySpoken) {
@@ -1021,11 +1041,12 @@ fun GameScreen(
         )
 
         // Station screens: keep the top bar fixed (like Journey). Do not show collected eggs/letters/debug inside stations.
-        val contentTopInset = 40.dp
+        val contentTopInset = (stationUiSpec.contentTopInsetDp?.dp ?: 40.dp)
         GameScreenTopChrome(
             onBack = onBack,
             questionNumber = session.questionNumber,
             totalQuestions = session.totalQuestions,
+            stationHeaderMode = StationHeaderMode.None,
             modifier =
                 Modifier
                     .fillMaxWidth()
@@ -1064,6 +1085,12 @@ fun GameScreen(
                         if (!(stationId == 6 && current is Question.ImageMatchQuestion) &&
                             // Station 1: don't show blinking letter between rounds.
                             !(sagaUsesPickLetterAudioStaging) &&
+                            // Generic: listen-first pick-letter shouldn't flash the answer (review/hidden target).
+                            !(plan.listenOnlyTargetPrompt && plan.mode == StationQuizMode.PickLetter) &&
+                            // Generic: highlighted-letter-in-word station should not flash the answer.
+                            !(plan.highlightedLetterInWordPickLetter && plan.mode == StationQuizMode.PickLetter) &&
+                            // Generic: pop-all-letters-in-word station has its own banner; no flashing letter intro.
+                            !(plan.popAllLettersInWord && plan.mode == StationQuizMode.PopBalloons) &&
                             // Episode 1/2 station 2 (balloons): no blinking letter intro.
                             !(isSagaEpisode(chapterId) && stationId == 2 && current is Question.PopBalloonsQuestion) &&
                             // Station 4: don't blink the word; keep it readable/stable.
@@ -1210,7 +1237,7 @@ fun GameScreen(
                                     horizontalAlignment = Alignment.CenterHorizontally,
                                     verticalArrangement = Arrangement.Top,
                                 ) {
-                                    if (chapterId == 3 && sagaUsesPopBalloonsAudioStaging) {
+                                    if (plan.popAllLettersInWord) {
                                         Chapter3SagaPopBalloonsWordBanner(
                                             popAllLettersWord =
                                                 session.chapter3PopAllLettersCurrentWord()?.first.orEmpty(),
@@ -2133,7 +2160,6 @@ fun GameScreen(
                         }
                     if (phase == GamePhase.Play &&
                         episode4HelpSt15 &&
-                        (stationId == Chapter1StationOrder.TAP_LETTER || stationId == Chapter1StationOrder.BALLOON_POP) &&
                         episode4Help.activeHintLetter != null &&
                         current is Question.PopBalloonsQuestion &&
                         !stationUiSpec.excludeFullScreenBalloonHintOverlay

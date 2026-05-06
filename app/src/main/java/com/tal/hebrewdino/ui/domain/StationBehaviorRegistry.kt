@@ -31,6 +31,7 @@ object StationBehaviorRegistry {
                 3 -> StationQuizPlans.chapter3(sid)
                 4 -> StationQuizPlans.chapter4(sid)
                 5 -> StationQuizPlans.chapter5(sid)
+                6 -> StationQuizPlans.chapter6(stationId.coerceIn(1, Chapter6Config.STATION_COUNT))
                 else -> error("Unsupported chapterId=$chapterId")
             }
         return when (chapterId) {
@@ -39,6 +40,7 @@ object StationBehaviorRegistry {
             3 -> chapter3UiSpec(sid, plan)
             4 -> episode4UiSpec(sid, plan)
             5 -> sixStationUiSpec(chapterId = 5, sid, plan)
+            6 -> chapter6UiSpec(stationId.coerceIn(1, Chapter6Config.STATION_COUNT), plan)
             else -> error("Unsupported chapterId=$chapterId")
         }
     }
@@ -151,10 +153,14 @@ object StationBehaviorRegistry {
                         },
                     hintDurationMs = if (chapterId == 5) 2100L else null,
                     findGridInlineInstructionOverride =
-                        if (listenOnly) {
-                            StationInstructionCopy.FindGridListenFirst
+                        if (chapterId == 5) {
+                            "מצא את האות"
                         } else {
-                            StationInstructionCopy.FindGridVisibleTarget
+                            if (listenOnly) {
+                                StationInstructionCopy.FindGridListenFirst
+                            } else {
+                                StationInstructionCopy.FindGridVisibleTarget
+                            }
                         },
                     findGridInlineInstructionPanelStyle =
                         if (chapterId == 5 && listenOnly) {
@@ -299,7 +305,7 @@ object StationBehaviorRegistry {
                     chapterId = 3,
                     stationId = stationId,
                     templateId = StationTemplateId.PopBalloons,
-                    variants = variantsFor(listenOnly = false, StationVariant.Chapter3PopAllLettersInWord),
+                    variants = variantsFor(listenOnly = false, StationVariant.PopAllLettersInWord),
                     quizMode = plan.mode,
                     findGridMaxTargetCount = plan.findLetterGridMaxTargetCount,
                     helpControlsEnabled = false,
@@ -315,7 +321,7 @@ object StationBehaviorRegistry {
                     chapterId = 3,
                     stationId = stationId,
                     templateId = StationTemplateId.PickLetter,
-                    variants = variantsFor(listenOnly = false, StationVariant.Chapter3HighlightedLetter),
+                    variants = variantsFor(listenOnly = false, StationVariant.HighlightedLetterInWord),
                     quizMode = plan.mode,
                     findGridMaxTargetCount = plan.findLetterGridMaxTargetCount,
                     helpControlsEnabled = false,
@@ -475,6 +481,103 @@ object StationBehaviorRegistry {
                     riskNotes = "No right-side help column; letter not shown in header (match task).",
                 )
             else -> error("Unexpected Ep4 stationId=$stationId")
+        }
+    }
+
+    private fun chapter6UiSpec(stationId: Int, plan: StationQuizPlan): StationUiSpec {
+        val listenOnly = plan.listenOnlyTargetPrompt
+        return when (stationId) {
+            1 ->
+                StationUiSpec(
+                    chapterId = 6,
+                    stationId = stationId,
+                    templateId = StationTemplateId.PickLetter,
+                    variants = variantsFor(listenOnly, StationVariant.Episode4Help),
+                    quizMode = plan.mode,
+                    findGridMaxTargetCount = plan.findLetterGridMaxTargetCount,
+                    helpControlsEnabled = true,
+                    replayMode = StationReplayMode.TargetLetterOnly,
+                    hintMode = StationHintMode.TemporaryTargetLetter,
+                    hintDurationMs = 2100L,
+                    pickLetterInstructionOverride = "בחר את האות:",
+                    pickLetterAllowPinnedCorrectShortcut = false,
+                    contentTopInsetDp = 72f,
+                    riskNotes = "Ch6 st1 listen-first pick letter (review).",
+                )
+            2 ->
+                StationUiSpec(
+                    chapterId = 6,
+                    stationId = stationId,
+                    templateId = StationTemplateId.PickLetter,
+                    variants = variantsFor(listenOnly, StationVariant.HighlightedLetterInWord),
+                    quizMode = plan.mode,
+                    findGridMaxTargetCount = plan.findLetterGridMaxTargetCount,
+                    helpControlsEnabled = false,
+                    replayMode = StationReplayMode.ExistingStationSpecific,
+                    hintMode = StationHintMode.ExistingStationSpecific,
+                    pickLetterHighlightedInWordInstruction = StationInstructionCopy.PickLetterHighlightedInWord,
+                    contentTopInsetDp = 56f,
+                    riskNotes = "Ch6 st2 highlighted letter in word (reuses Ch3 st4 behavior).",
+                )
+            3 ->
+                StationUiSpec(
+                    chapterId = 6,
+                    stationId = stationId,
+                    templateId = StationTemplateId.PopBalloons,
+                    variants = variantsFor(listenOnly = false, StationVariant.PopAllLettersInWord, StationVariant.Episode4Help),
+                    quizMode = plan.mode,
+                    findGridMaxTargetCount = plan.findLetterGridMaxTargetCount,
+                    helpControlsEnabled = true,
+                    replayMode = StationReplayMode.ExistingStationSpecific,
+                    hintMode = StationHintMode.TemporaryTargetLetter,
+                    hintDurationMs = 2100L,
+                    popBalloonsSkipInstructionHeaderBlock = true,
+                    popBalloonsPopAllLettersBannerInstruction =
+                        StationInstructionCopy.PopBalloonsPopAllLettersInWord,
+                    contentTopInsetDp = 56f,
+                    riskNotes = "Ch6 st3 pop-all letters in word (reuses Ch3 st3 behavior).",
+                )
+            4 ->
+                StationUiSpec(
+                    chapterId = 6,
+                    stationId = stationId,
+                    templateId = StationTemplateId.PictureStartsWith,
+                    variants = variantsFor(listenOnly),
+                    quizMode = plan.mode,
+                    findGridMaxTargetCount = plan.findLetterGridMaxTargetCount,
+                    helpControlsEnabled = false,
+                    replayMode = StationReplayMode.ExistingStationSpecific,
+                    hintMode = StationHintMode.ExistingStationSpecific,
+                    riskNotes = "Ch6 st4 picture starts-with (review).",
+                )
+            5 ->
+                StationUiSpec(
+                    chapterId = 6,
+                    stationId = stationId,
+                    templateId = StationTemplateId.ImageMatch,
+                    variants = variantsFor(listenOnly),
+                    quizMode = plan.mode,
+                    findGridMaxTargetCount = plan.findLetterGridMaxTargetCount,
+                    helpControlsEnabled = false,
+                    replayMode = StationReplayMode.ExistingStationSpecific,
+                    hintMode = StationHintMode.ExistingStationSpecific,
+                    riskNotes = "Ch6 st5 image match (review).",
+                )
+            6 ->
+                StationUiSpec(
+                    chapterId = 6,
+                    stationId = stationId,
+                    templateId = StationTemplateId.MatchLetterToWord,
+                    variants = variantsFor(listenOnly = false, StationVariant.Finale),
+                    quizMode = plan.mode,
+                    findGridMaxTargetCount = plan.findLetterGridMaxTargetCount,
+                    helpControlsEnabled = false,
+                    replayMode = StationReplayMode.ExistingStationSpecific,
+                    hintMode = StationHintMode.ExistingStationSpecific,
+                    matchLetterInstructionText = StationInstructionCopy.MatchLetterFinale,
+                    riskNotes = "Ch6 st6 finale match (homecoming narrative via story screens).",
+                )
+            else -> error("Unexpected Ch6 stationId=$stationId")
         }
     }
 }

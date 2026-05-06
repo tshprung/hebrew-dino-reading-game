@@ -17,7 +17,7 @@ class StationBehaviorRegistryTest {
 
     @Test
     fun everyChapterStationPair_hasSpecAlignedWithQuizPlan() {
-        for (chapterId in 1..5) {
+        for (chapterId in 1..6) {
             val last =
                 when (chapterId) {
                     1 -> Chapter1Config.STATION_COUNT
@@ -25,6 +25,7 @@ class StationBehaviorRegistryTest {
                     3 -> Chapter3Config.STATION_COUNT
                     4 -> Chapter4Config.STATION_COUNT
                     5 -> Chapter5Config.STATION_COUNT
+                    6 -> Chapter6Config.STATION_COUNT
                     else -> error("unexpected")
                 }
             for (stationId in 1..last) {
@@ -35,6 +36,7 @@ class StationBehaviorRegistryTest {
                         3 -> StationQuizPlans.chapter3(stationId)
                         4 -> StationQuizPlans.chapter4(stationId)
                         5 -> StationQuizPlans.chapter5(stationId)
+                        6 -> StationQuizPlans.chapter6(stationId)
                         else -> error("unexpected")
                     }
                 val spec = StationBehaviorRegistry.getStationUiSpec(chapterId, stationId)
@@ -70,16 +72,47 @@ class StationBehaviorRegistryTest {
         assertEquals(StationTemplateId.MatchLetterToWord, StationBehaviorRegistry.getStationUiSpec(3, 2).templateId)
         val s3 = StationBehaviorRegistry.getStationUiSpec(3, 3)
         assertEquals(StationTemplateId.PopBalloons, s3.templateId)
-        assertTrue(s3.variants.contains(StationVariant.Chapter3PopAllLettersInWord))
+        assertTrue(s3.variants.contains(StationVariant.PopAllLettersInWord))
         val s4 = StationBehaviorRegistry.getStationUiSpec(3, 4)
         assertEquals(StationTemplateId.PickLetter, s4.templateId)
-        assertTrue(s4.variants.contains(StationVariant.Chapter3HighlightedLetter))
+        assertTrue(s4.variants.contains(StationVariant.HighlightedLetterInWord))
         val s5 = StationBehaviorRegistry.getStationUiSpec(3, 5)
         assertEquals(StationTemplateId.PickLetter, s5.templateId)
         assertTrue(s5.variants.contains(StationVariant.Chapter3AudioLetterRecognition))
         val s6 = StationBehaviorRegistry.getStationUiSpec(3, 6)
         assertEquals(StationTemplateId.ImageToWord, s6.templateId)
         assertTrue(s6.variants.contains(StationVariant.Chapter3ImageToWord))
+    }
+
+    @Test
+    fun chapter6_templates_and_variants_are_explicit() {
+        val s1 = StationBehaviorRegistry.getStationUiSpec(6, 1)
+        assertEquals(StationTemplateId.PickLetter, s1.templateId)
+        assertTrue(s1.variants.contains(StationVariant.ListenFirst))
+        assertTrue(s1.variants.contains(StationVariant.Episode4Help))
+        assertTrue(s1.helpControlsEnabled)
+        assertEquals(StationReplayMode.TargetLetterOnly, s1.replayMode)
+        assertEquals(StationHintMode.TemporaryTargetLetter, s1.hintMode)
+        assertEquals(2100L, s1.hintDurationMs)
+        assertEquals("בחר את האות:", s1.pickLetterInstructionOverride)
+        val p1 = StationQuizPlans.chapter6(1)
+        assertTrue(p1.listenOnlyTargetPrompt)
+        assertEquals(6, p1.pickLetterOptionCount)
+
+        val s2 = StationBehaviorRegistry.getStationUiSpec(6, 2)
+        assertEquals(StationTemplateId.PickLetter, s2.templateId)
+        assertTrue(s2.variants.contains(StationVariant.HighlightedLetterInWord))
+        val p2 = StationQuizPlans.chapter6(2)
+        assertTrue((p2.pickLetterOptionCount ?: 99) <= 8)
+        val s3 = StationBehaviorRegistry.getStationUiSpec(6, 3)
+        assertEquals(StationTemplateId.PopBalloons, s3.templateId)
+        assertTrue(s3.variants.contains(StationVariant.PopAllLettersInWord))
+        assertEquals(StationInstructionCopy.PopBalloonsPopAllLettersInWord, s3.popBalloonsPopAllLettersBannerInstruction)
+        assertEquals(StationTemplateId.PictureStartsWith, StationBehaviorRegistry.getStationUiSpec(6, 4).templateId)
+        assertEquals(StationTemplateId.ImageMatch, StationBehaviorRegistry.getStationUiSpec(6, 5).templateId)
+        val s6 = StationBehaviorRegistry.getStationUiSpec(6, 6)
+        assertEquals(StationTemplateId.MatchLetterToWord, s6.templateId)
+        assertTrue(s6.variants.contains(StationVariant.Finale))
     }
 
     @Test
