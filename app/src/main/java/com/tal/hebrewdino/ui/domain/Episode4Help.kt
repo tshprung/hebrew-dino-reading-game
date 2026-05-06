@@ -11,11 +11,10 @@ object Episode4Help {
     const val HINT_REVEAL_FALLBACK_MS = 3000L
 
     /**
-     * True when the Episode 4-style right-side help column should be shown (chapter + spec).
-     * Chapters 4–5 use the same help column when [StationUiSpec.helpControlsEnabled] is on.
+     * True when the right-side help column should be shown (spec-driven).
      */
     fun isHelpColumnActive(chapterId: Int, stationUiSpec: StationUiSpec): Boolean =
-        (chapterId == 4 || chapterId == 5) && stationUiSpec.helpControlsEnabled
+        stationUiSpec.helpControlsEnabled && stationUiSpec.variants.contains(StationVariant.Episode4Help)
 
     /**
      * Temporary hint letter shown during רמז for stations 1–3 and 5 (same `when` as legacy hint dispatch).

@@ -50,6 +50,10 @@ import com.tal.hebrewdino.ui.domain.InstructionPanelStyle
 import com.tal.hebrewdino.ui.domain.StationBehaviorRegistry
 import com.tal.hebrewdino.ui.domain.StationInstructionCopy
 import com.tal.hebrewdino.ui.domain.StationQuizMode
+import com.tal.hebrewdino.ui.domain.StationReplayMode
+import com.tal.hebrewdino.ui.domain.StationTemplateId
+import com.tal.hebrewdino.ui.domain.StationVariant
+import com.tal.hebrewdino.ui.domain.hasVariant
 import com.tal.hebrewdino.ui.domain.Episode4Help
 import com.tal.hebrewdino.ui.domain.StationQuizPlan
 import com.tal.hebrewdino.ui.components.Episode4Stations15HelpColumn
@@ -192,20 +196,20 @@ fun GameScreen(
     val sagaUsesPopBalloonsAudioStaging = isSagaEpisode(chapterId) && plan.mode == StationQuizMode.PopBalloons
     val sagaUsesFindGridAudioStaging = isSagaEpisode(chapterId) && plan.mode == StationQuizMode.FindLetterGrid
     val isChapter3HighlightedLetterInWordStation =
-        chapterId == 3 &&
-            stationId == 4 &&
+        stationUiSpec.templateId == StationTemplateId.PickLetter &&
+            stationUiSpec.hasVariant(StationVariant.Chapter3HighlightedLetter) &&
             plan.mode == StationQuizMode.PickLetter &&
             plan.chapter3HighlightedLetterInWordPickLetter
 
     val isChapter3AudioLetterRecognitionStation =
-        chapterId == 3 &&
-            stationId == 5 &&
+        stationUiSpec.templateId == StationTemplateId.PickLetter &&
+            stationUiSpec.hasVariant(StationVariant.Chapter3AudioLetterRecognition) &&
             plan.mode == StationQuizMode.PickLetter &&
             plan.chapter3AudioLetterRecognition
 
     val isChapter3PopAllLettersStation =
-        chapterId == 3 &&
-            stationId == 3 &&
+        stationUiSpec.templateId == StationTemplateId.PopBalloons &&
+            stationUiSpec.hasVariant(StationVariant.Chapter3PopAllLettersInWord) &&
             plan.mode == StationQuizMode.PopBalloons &&
             plan.chapter3PopAllLettersInWord
     val scope = rememberCoroutineScope()
@@ -308,7 +312,28 @@ fun GameScreen(
         }
         feedbackVoiceJob =
             scope.launch {
-                replayEpisode4Stations15RoundAudio(sfx = sfx, voice = voice, stationId = stationId, q = q)
+                when (stationUiSpec.replayMode) {
+                    StationReplayMode.TargetLetterOnly -> {
+                        val letter = Episode4Help.targetLetterForHelpHint(q) ?: return@launch
+                        val letterClip = AudioClips.letterNameClip(letter)
+                        if (letterClip != null) {
+                            val id = sfx.playReturningStreamId(letterClip, volume = 1f)
+                            if (id != null) return@launch
+                            if (voice.hasAsset(letterClip)) {
+                                voice.playBlocking(letterClip)
+                                return@launch
+                            }
+                        }
+                        speakLetterPrompt(voice, letter)
+                    }
+                    StationReplayMode.TargetWordOnly -> {
+                        if (q is Question.PictureStartsWithQuestion) {
+                            val wordPath = AudioClips.wordClipByCatalogId(q.catalogEntryId)
+                            if (voice.hasAsset(wordPath)) voice.playBlocking(wordPath)
+                        }
+                    }
+                    else -> replayEpisode4Stations15RoundAudio(sfx = sfx, voice = voice, stationId = stationId, q = q)
+                }
             }
     }
 
@@ -944,6 +969,8 @@ fun GameScreen(
                                 chapterId == 4 && stationId == Chapter1StationOrder.TAP_LETTER -> 0L
                                 chapterId == 4 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE -> 0L
                                 chapterId == 4 && stationId == Chapter1StationOrder.PICTURE_PICK_ALL -> 0L
+                                // Chapter 3 station 4 feedback: negative voice should be near-instant.
+                                chapterId == 3 && stationId == 4 -> 0L
                                 // Episode 5 feedback: station 4 wrong response should feel near-instant.
                                 chapterId == 5 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE -> 0L
                                 else -> 110L
@@ -2154,7 +2181,7 @@ fun GameScreen(
                         .zIndex(6f),
             )
         }
-        if (chapterId == 3 && stationId == 5) {
+        if (chapterId == 3 && stationId == 5 && !episode4HelpSt15) {
             Chapter3Station5ReplayColumn(
                 replayEnabled = phase == GamePhase.Play,
                 onReplayLetter = {

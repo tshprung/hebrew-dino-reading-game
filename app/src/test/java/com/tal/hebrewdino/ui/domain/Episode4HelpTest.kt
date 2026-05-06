@@ -14,13 +14,15 @@ class Episode4HelpTest {
             StationUiSpec(
                 chapterId = 4,
                 stationId = 1,
+                templateId = StationTemplateId.PickLetter,
+                variants = setOf(StationVariant.Standard, StationVariant.Episode4Help, StationVariant.ListenFirst),
                 quizMode = StationQuizMode.PickLetter,
                 helpControlsEnabled = true,
             )
         assertTrue(Episode4Help.isHelpColumnActive(4, ep4))
         assertTrue(Episode4Help.isHelpColumnActive(5, ep4))
         assertFalse(Episode4Help.isHelpColumnActive(4, ep4.copy(helpControlsEnabled = false)))
-        assertFalse(Episode4Help.isHelpColumnActive(3, ep4))
+        assertTrue(Episode4Help.isHelpColumnActive(3, ep4))
     }
 
     @Test

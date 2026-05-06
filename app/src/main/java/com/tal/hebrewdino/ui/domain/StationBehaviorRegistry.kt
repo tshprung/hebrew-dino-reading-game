@@ -12,6 +12,16 @@ import com.tal.hebrewdino.ui.domain.Chapter1StationOrder.TAP_LETTER
  */
 object StationBehaviorRegistry {
 
+    private fun variantsFor(
+        listenOnly: Boolean,
+        vararg extras: StationVariant,
+    ): Set<StationVariant> =
+        buildSet {
+            add(StationVariant.Standard)
+            if (listenOnly) add(StationVariant.ListenFirst)
+            addAll(extras)
+        }
+
     fun getStationUiSpec(chapterId: Int, stationId: Int): StationUiSpec {
         val sid = stationId.coerceIn(1, Chapter1Config.STATION_COUNT)
         val plan =
@@ -41,6 +51,12 @@ object StationBehaviorRegistry {
                 StationUiSpec(
                     chapterId = chapterId,
                     stationId = stationId,
+                    templateId = StationTemplateId.PickLetter,
+                    variants =
+                        variantsFor(
+                            listenOnly,
+                            *(if (chapterId == 5) arrayOf(StationVariant.Episode4Help) else emptyArray()),
+                        ),
                     quizMode = plan.mode,
                     findGridMaxTargetCount = plan.findLetterGridMaxTargetCount,
                     helpControlsEnabled = chapterId == 5,
@@ -79,6 +95,12 @@ object StationBehaviorRegistry {
                 StationUiSpec(
                     chapterId = chapterId,
                     stationId = stationId,
+                    templateId = StationTemplateId.PopBalloons,
+                    variants =
+                        variantsFor(
+                            listenOnly,
+                            *(if (chapterId == 5) arrayOf(StationVariant.Episode4Help) else emptyArray()),
+                        ),
                     quizMode = plan.mode,
                     findGridMaxTargetCount = plan.findLetterGridMaxTargetCount,
                     helpControlsEnabled = chapterId == 5,
@@ -95,12 +117,7 @@ object StationBehaviorRegistry {
                             StationHintMode.ExistingStationSpecific
                         },
                     hintDurationMs = if (chapterId == 5) 2100L else null,
-                    balloonInstructionOverride =
-                        if (listenOnly) {
-                            StationInstructionCopy.PopBalloonsListenFirst
-                        } else {
-                            StationInstructionCopy.PopBalloonsWithLetter
-                        },
+                    balloonInstructionOverride = StationInstructionCopy.PopBalloonsWithLetter,
                     useEpisode4BalloonInstructionPanel = chapterId == 5,
                     balloonPlayAreaStartInsetDp = if (chapterId == 5) 96f else 0f,
                     excludeFullScreenBalloonHintOverlay = chapterId == 5,
@@ -111,6 +128,12 @@ object StationBehaviorRegistry {
                 StationUiSpec(
                     chapterId = chapterId,
                     stationId = stationId,
+                    templateId = StationTemplateId.FindLetterGrid,
+                    variants =
+                        variantsFor(
+                            listenOnly,
+                            *(if (chapterId == 5) arrayOf(StationVariant.Episode4Help) else emptyArray()),
+                        ),
                     quizMode = plan.mode,
                     findGridMaxTargetCount = plan.findLetterGridMaxTargetCount,
                     helpControlsEnabled = chapterId == 5,
@@ -147,6 +170,12 @@ object StationBehaviorRegistry {
                 StationUiSpec(
                     chapterId = chapterId,
                     stationId = stationId,
+                    templateId = StationTemplateId.PictureStartsWith,
+                    variants =
+                        variantsFor(
+                            listenOnly,
+                            *(if (chapterId == 5) arrayOf(StationVariant.Episode4Help) else emptyArray()),
+                        ),
                     quizMode = plan.mode,
                     findGridMaxTargetCount = plan.findLetterGridMaxTargetCount,
                     helpControlsEnabled = chapterId == 5,
@@ -179,6 +208,12 @@ object StationBehaviorRegistry {
                 StationUiSpec(
                     chapterId = chapterId,
                     stationId = stationId,
+                    templateId = StationTemplateId.ImageMatch,
+                    variants =
+                        variantsFor(
+                            listenOnly,
+                            *(if (chapterId == 5) arrayOf(StationVariant.Episode4Help) else emptyArray()),
+                        ),
                     quizMode = plan.mode,
                     findGridMaxTargetCount = plan.findLetterGridMaxTargetCount,
                     helpControlsEnabled = chapterId == 5,
@@ -211,6 +246,8 @@ object StationBehaviorRegistry {
                 StationUiSpec(
                     chapterId = chapterId,
                     stationId = stationId,
+                    templateId = StationTemplateId.MatchLetterToWord,
+                    variants = variantsFor(listenOnly, StationVariant.Finale),
                     quizMode = plan.mode,
                     findGridMaxTargetCount = plan.findLetterGridMaxTargetCount,
                     helpControlsEnabled = false,
@@ -230,6 +267,8 @@ object StationBehaviorRegistry {
                 StationUiSpec(
                     chapterId = 3,
                     stationId = stationId,
+                    templateId = StationTemplateId.PictureStartsWith,
+                    variants = variantsFor(listenOnly = false),
                     quizMode = plan.mode,
                     findGridMaxTargetCount = plan.findLetterGridMaxTargetCount,
                     helpControlsEnabled = false,
@@ -243,6 +282,8 @@ object StationBehaviorRegistry {
                 StationUiSpec(
                     chapterId = 3,
                     stationId = stationId,
+                    templateId = StationTemplateId.MatchLetterToWord,
+                    variants = variantsFor(listenOnly = false),
                     quizMode = plan.mode,
                     findGridMaxTargetCount = plan.findLetterGridMaxTargetCount,
                     helpControlsEnabled = false,
@@ -257,6 +298,8 @@ object StationBehaviorRegistry {
                 StationUiSpec(
                     chapterId = 3,
                     stationId = stationId,
+                    templateId = StationTemplateId.PopBalloons,
+                    variants = variantsFor(listenOnly = false, StationVariant.Chapter3PopAllLettersInWord),
                     quizMode = plan.mode,
                     findGridMaxTargetCount = plan.findLetterGridMaxTargetCount,
                     helpControlsEnabled = false,
@@ -271,6 +314,8 @@ object StationBehaviorRegistry {
                 StationUiSpec(
                     chapterId = 3,
                     stationId = stationId,
+                    templateId = StationTemplateId.PickLetter,
+                    variants = variantsFor(listenOnly = false, StationVariant.Chapter3HighlightedLetter),
                     quizMode = plan.mode,
                     findGridMaxTargetCount = plan.findLetterGridMaxTargetCount,
                     helpControlsEnabled = false,
@@ -284,21 +329,32 @@ object StationBehaviorRegistry {
                 StationUiSpec(
                     chapterId = 3,
                     stationId = stationId,
+                    templateId = StationTemplateId.PickLetter,
+                    variants =
+                        variantsFor(
+                            listenOnly = true,
+                            StationVariant.Chapter3AudioLetterRecognition,
+                            StationVariant.Episode4Help,
+                        ),
                     quizMode = plan.mode,
                     findGridMaxTargetCount = plan.findLetterGridMaxTargetCount,
-                    helpControlsEnabled = false,
-                    replayMode = StationReplayMode.ExistingStationSpecific,
-                    hintMode = StationHintMode.ExistingStationSpecific,
+                    helpControlsEnabled = true,
+                    hintDurationMs = 2100L,
+                    replayMode = StationReplayMode.TargetLetterOnly,
+                    hintMode = StationHintMode.TemporaryTargetLetter,
                     pickLetterInstructionOverride = StationInstructionCopy.PickLetterListenOnly,
                     pickLetterListenOnlyHebrewPanel = false,
                     pickLetterListenOnlyInstructionText = null,
                     pickLetterRepeatLetterButtonLabel = null,
+                    pickLetterAllowPinnedCorrectShortcut = false,
                     riskNotes = "Ch3 st5 audio letter recognition — use same header+right-controls structure as Ep4/Ch5 st1.",
                 )
             6 ->
                 StationUiSpec(
                     chapterId = 3,
                     stationId = stationId,
+                    templateId = StationTemplateId.ImageToWord,
+                    variants = variantsFor(listenOnly = false, StationVariant.Chapter3ImageToWord),
                     quizMode = plan.mode,
                     findGridMaxTargetCount = plan.findLetterGridMaxTargetCount,
                     helpControlsEnabled = false,
@@ -317,6 +373,8 @@ object StationBehaviorRegistry {
                 StationUiSpec(
                     chapterId = 4,
                     stationId = stationId,
+                    templateId = StationTemplateId.PickLetter,
+                    variants = variantsFor(listenOnly = true, StationVariant.Episode4Help),
                     quizMode = plan.mode,
                     findGridMaxTargetCount = plan.findLetterGridMaxTargetCount,
                     helpControlsEnabled = true,
@@ -332,6 +390,8 @@ object StationBehaviorRegistry {
                 StationUiSpec(
                     chapterId = 4,
                     stationId = stationId,
+                    templateId = StationTemplateId.PopBalloons,
+                    variants = variantsFor(listenOnly = true, StationVariant.Episode4Help),
                     quizMode = plan.mode,
                     findGridMaxTargetCount = plan.findLetterGridMaxTargetCount,
                     helpControlsEnabled = true,
@@ -348,6 +408,8 @@ object StationBehaviorRegistry {
                 StationUiSpec(
                     chapterId = 4,
                     stationId = stationId,
+                    templateId = StationTemplateId.FindLetterGrid,
+                    variants = variantsFor(listenOnly = true, StationVariant.Episode4Help),
                     quizMode = plan.mode,
                     findGridMaxTargetCount = plan.findLetterGridMaxTargetCount,
                     helpControlsEnabled = true,
@@ -364,6 +426,8 @@ object StationBehaviorRegistry {
                 StationUiSpec(
                     chapterId = 4,
                     stationId = stationId,
+                    templateId = StationTemplateId.PictureStartsWith,
+                    variants = variantsFor(listenOnly = true, StationVariant.Episode4Help),
                     quizMode = plan.mode,
                     findGridMaxTargetCount = plan.findLetterGridMaxTargetCount,
                     helpControlsEnabled = true,
@@ -380,6 +444,8 @@ object StationBehaviorRegistry {
                 StationUiSpec(
                     chapterId = 4,
                     stationId = stationId,
+                    templateId = StationTemplateId.ImageMatch,
+                    variants = variantsFor(listenOnly = true, StationVariant.Episode4Help),
                     quizMode = plan.mode,
                     findGridMaxTargetCount = plan.findLetterGridMaxTargetCount,
                     helpControlsEnabled = true,
@@ -396,6 +462,8 @@ object StationBehaviorRegistry {
                 StationUiSpec(
                     chapterId = 4,
                     stationId = stationId,
+                    templateId = StationTemplateId.MatchLetterToWord,
+                    variants = variantsFor(listenOnly = false, StationVariant.Finale),
                     quizMode = plan.mode,
                     findGridMaxTargetCount = plan.findLetterGridMaxTargetCount,
                     helpControlsEnabled = false,

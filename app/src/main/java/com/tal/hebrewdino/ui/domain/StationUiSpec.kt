@@ -41,6 +41,10 @@ data class StationUiSpec(
     val chapterId: Int,
     /** WIRED: identity passed through GameScreen / registry tests. */
     val stationId: Int,
+    /** Canonical UI template for this station (architecture metadata). */
+    val templateId: StationTemplateId,
+    /** Template variants (architecture metadata). Always includes at least [StationVariant.Standard]. */
+    val variants: Set<StationVariant> = setOf(StationVariant.Standard),
     /** [DOCS] Mirror of plan mode; tests/registry alignment only. */
     val quizMode: StationQuizMode,
     /** WIRED: Episode 4 right-side replay/hint column eligibility (also gated by chapterId==4 in GameScreen). */
@@ -141,3 +145,5 @@ data class StationUiSpec(
     /** [DOCS] Human-readable registry notes (not read by UI). */
     val riskNotes: String = "",
 )
+
+fun StationUiSpec.hasVariant(v: StationVariant): Boolean = variants.contains(v)
