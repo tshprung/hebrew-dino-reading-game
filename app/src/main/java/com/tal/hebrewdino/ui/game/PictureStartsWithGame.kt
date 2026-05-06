@@ -78,8 +78,10 @@ fun PictureStartsWithGame(
     stationId: Int? = null,
     /** Hebrew prompt above the picture (Episode 3 wording tweak allowed). */
     instructionText: String = "באיזו אות המילה מתחילה?",
-    /** Episode 4 station 4: white readability panel behind instruction (same treatment as Episode 3). */
+    /** White readability panel behind instruction (from [StationUiSpec] presentation flags). */
     instructionReadablePanel: Boolean = false,
+    /** When true, letter options are sorted for display (e.g. Chapter 3 station 1). */
+    sortOptionLetters: Boolean = false,
     /** When false, picture card shows image only (episode 4–5 listen-first station 4). */
     showWordCaption: Boolean = true,
     /** Episode 4 station 4: tapping the picture replays the word audio (same as help "שוב"). */
@@ -104,7 +106,7 @@ fun PictureStartsWithGame(
             color = Color(0xFF0B2B3D),
             textAlign = TextAlign.Center,
             modifier =
-                if (chapterId == 3 || instructionReadablePanel) {
+                if (instructionReadablePanel) {
                     Modifier
                         .background(Color.White.copy(alpha = 0.72f), RoundedCornerShape(18.dp))
                         .padding(horizontal = 14.dp, vertical = 8.dp)
@@ -193,7 +195,7 @@ fun PictureStartsWithGame(
         }
         Spacer(modifier = Modifier.height(16.dp))
         val orderedLetters =
-            if (chapterId == 3 && stationId == 1) {
+            if (sortOptionLetters) {
                 question.optionLetters.sorted()
             } else {
                 question.optionLetters

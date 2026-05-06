@@ -23,6 +23,8 @@ fun Chapter3Station6ImageToWordStationContent(
     enabled: Boolean,
     entryPulseScale: Float,
     optionsShakePx: Float,
+    instructionText: String,
+    onPictureTapReplayWord: (() -> Unit)? = null,
     onWordPressed: (String) -> Unit,
     onAttempt: (String) -> Boolean,
     modifier: Modifier = Modifier,
@@ -31,7 +33,8 @@ fun Chapter3Station6ImageToWordStationContent(
         question = question,
         contentKey = contentKey,
         enabled = enabled,
-        instructionText = "איזו מילה מתאימה לתמונה של:",
+        instructionText = instructionText,
+        onPictureTapReplayWord = onPictureTapReplayWord,
         onWordPressed = onWordPressed,
         onAttempt = onAttempt,
         modifier =

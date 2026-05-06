@@ -26,6 +26,12 @@ enum class StationHintMode {
     ExistingStationSpecific,
 }
 
+/** White readability panel behind a header instruction line (non-balloon stations). */
+enum class InstructionPanelStyle {
+    None,
+    WhiteRounded,
+}
+
 /**
  * @param findGridMaxTargetCount mirrors [StationQuizPlan.findLetterGridMaxTargetCount] when set.
  * @param balloonPlayAreaStartInsetDp layout start inset for balloon area (RTL: toward help column).
@@ -53,6 +59,17 @@ data class StationUiSpec(
      */
     val pickLetterInstructionOverride: String? = null,
     /**
+     * WIRED: Chapter 1/2 saga station 1 — smaller preamble above target chip (no large white panel).
+     * Null when [pickLetterInstructionOverride] or listen-only panel handles the header.
+     */
+    val pickLetterSagaStation1CompactPreamble: String? = null,
+    /** WIRED: Chapter 3 station 4 — banner above highlighted spell row. */
+    val pickLetterHighlightedInWordInstruction: String? = null,
+    /** WIRED: Shown in listen-only Hebrew panel (Chapter 3 station 5 + any station with [pickLetterListenOnlyHebrewPanel]). */
+    val pickLetterListenOnlyInstructionText: String? = null,
+    /** WIRED: Label for the replay-letter button in the listen-only panel. */
+    val pickLetterRepeatLetterButtonLabel: String? = null,
+    /**
      * WIRED: “מצא את האות שנאמרת” + replay letter UI for listen-only saga pick-letter (Ch5 st1)
      * and same pattern for Ch3 st5 audio recognition (combined with plan flags in GameScreen).
      */
@@ -66,14 +83,24 @@ data class StationUiSpec(
     val useEpisode4BalloonInstructionPanel: Boolean = false,
     /** WIRED: Balloon instruction line when using inline/header balloon copy (Ep4 + saga defaults). */
     val balloonInstructionOverride: String? = null,
+    /**
+     * WIRED: When true, [PopBalloonsInstructionHeaderBlock] renders nothing (e.g. Chapter 3 pop-all-letters:
+     * banner is shown separately).
+     */
+    val popBalloonsSkipInstructionHeaderBlock: Boolean = false,
+    /**
+     * WIRED: Saga station 2 — show the instruction line above the letter chip when not using Ep4 panel
+     * or pinned-balloon staging.
+     */
+    val popBalloonsShowSagaStation2InstructionLine: Boolean = false,
+    /** WIRED: Instruction line on the Chapter 3 pop-all-letters word banner. */
+    val popBalloonsPopAllLettersBannerInstruction: String? = null,
     /** WIRED: RTL start inset for balloon play area (Ep4 st2). */
     val balloonPlayAreaStartInsetDp: Float = 0f,
     /** WIRED: Suppress full-screen center hint overlay for balloons (Ep4 st2 uses inline hint). */
     val excludeFullScreenBalloonHintOverlay: Boolean = false,
     /** WIRED: Find-grid inline instruction when in saga station 3 grid mode (Ep4 explicit; others use listenOnly fallback). */
     val findGridInlineInstructionOverride: String? = null,
-    /** WIRED: White readable panel behind find-grid inline instruction. */
-    val findGridInlineReadablePanel: Boolean = false,
     /** WIRED: Hide written target letter in find-grid header (Ep4 listen-first station 3). */
     val findGridHideListenOnlyHeaderTargetLetter: Boolean = false,
     /**
@@ -83,8 +110,15 @@ data class StationUiSpec(
     val findGridSuppressHeaderTargetLetter: Boolean = false,
     /** WIRED: Picture station instruction override (Ep4 st4); null uses GameScreen listen-only / default strings. */
     val pictureStartsWithInstructionOverride: String? = null,
+    /**
+     * WIRED: When non-null and GameScreen applies listen-first saga station 4 rule, this instruction
+     * replaces the default listen-only saga string.
+     */
+    val pictureStartsWithListenOnlySagaInstruction: String? = null,
     /** WIRED: Readable panel for picture instruction ([PictureStartsWithGame] also treats Ch3 specially). */
     val pictureStartsWithReadablePanel: Boolean = false,
+    /** WIRED: Panel style for the picture instruction line (replaces chapterId==3 special-casing). */
+    val pictureStartsWithInstructionPanelStyle: InstructionPanelStyle = InstructionPanelStyle.None,
     /**
      * WIRED: When true, hide picture word caption for listen-only saga station 4 (Ep4 + Ch5).
      * Used as: showCaption = !(listenOnly && saga && st4 && this).
@@ -98,6 +132,12 @@ data class StationUiSpec(
     val imageMatchShowTargetLetterChip: Boolean = true,
     /** WIRED: [MatchLetterToWordGame] instructionReadablePanelOverride / chapter 3 station 2 panel. */
     val matchLetterInstructionReadablePanel: Boolean = false,
+    /** WIRED: Persistent instructions for match-letter / finale UI; null falls back to game default copy. */
+    val matchLetterInstructionText: String? = null,
+    /** WIRED: Chapter 3 station 6 image→word header. */
+    val imageToWordInstructionText: String? = null,
+    /** WIRED: Inline find-grid instruction panel style (replaces chapterId==3 branch in [FindLetterGridGame]). */
+    val findGridInlineInstructionPanelStyle: InstructionPanelStyle = InstructionPanelStyle.None,
     /** [DOCS] Human-readable registry notes (not read by UI). */
     val riskNotes: String = "",
 )

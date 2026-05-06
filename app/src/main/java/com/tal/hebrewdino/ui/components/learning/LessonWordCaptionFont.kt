@@ -29,6 +29,10 @@ fun captionFontSizeForWordCard(
                 word == "תיק" -> 0.80f
                 // Episode 5 feedback: monkey caption ~20% smaller (illustration enlarged).
                 word == "קוף" -> 0.80f
+                // Feedback: drum caption −15%.
+                word == "תוף" -> 0.85f
+                // Feedback: train caption −15%.
+                word == "קטר" -> 0.85f
                 // Chapter 2 station 5: "שעון" caption −15%.
                 chapterId == 2 &&
                     stationId == Chapter1StationOrder.PICTURE_PICK_ALL &&

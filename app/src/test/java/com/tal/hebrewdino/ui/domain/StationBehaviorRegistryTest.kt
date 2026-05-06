@@ -100,8 +100,10 @@ class StationBehaviorRegistryTest {
     }
 
     @Test
-    fun chapter3_station5_listenFirstPickLetterPanel_true() {
-        assertTrue(StationBehaviorRegistry.getStationUiSpec(3, 5).pickLetterListenOnlyHebrewPanel)
+    fun chapter3_station5_usesInstructionOverride_and_noInternalListenPanel() {
+        val s = StationBehaviorRegistry.getStationUiSpec(3, 5)
+        assertFalse(s.pickLetterListenOnlyHebrewPanel)
+        assertEquals(StationInstructionCopy.PickLetterListenOnly, s.pickLetterInstructionOverride)
     }
 
     @Test
@@ -163,5 +165,58 @@ class StationBehaviorRegistryTest {
     @Test
     fun chapter3_station3_balloonInstructionOverride_staysNull() {
         assertNull(StationBehaviorRegistry.getStationUiSpec(3, 3).balloonInstructionOverride)
+    }
+
+    @Test
+    fun chapter3_station3_popAllBanner_and_skipHeaderBlock() {
+        val s = StationBehaviorRegistry.getStationUiSpec(3, 3)
+        assertTrue(s.popBalloonsSkipInstructionHeaderBlock)
+        assertEquals(
+            StationInstructionCopy.PopBalloonsPopAllLettersInWord,
+            s.popBalloonsPopAllLettersBannerInstruction,
+        )
+    }
+
+    @Test
+    fun chapter3_station4_highlightedPickLetterInstruction_present() {
+        assertEquals(
+            StationInstructionCopy.PickLetterHighlightedInWord,
+            StationBehaviorRegistry.getStationUiSpec(3, PICTURE_PICK_ONE).pickLetterHighlightedInWordInstruction,
+        )
+    }
+
+    @Test
+    fun chapter3_station6_imageToWordInstruction_present() {
+        assertEquals(
+            StationInstructionCopy.Chapter3ImageToWord,
+            StationBehaviorRegistry.getStationUiSpec(3, 6).imageToWordInstructionText,
+        )
+    }
+
+    @Test
+    fun chapter3_station1_pictureStartsWith_sortOptionLetters_inPlan() {
+        assertTrue(StationQuizPlans.chapter3(TAP_LETTER).sortPictureStartsWithOptionLetters)
+    }
+
+    @Test
+    fun chapter5_station2_uses_episode4BalloonInstructionPanel_for_readability_and_inset() {
+        val s = StationBehaviorRegistry.getStationUiSpec(5, BALLOON_POP)
+        assertTrue(s.useEpisode4BalloonInstructionPanel)
+        assertEquals(96f, s.balloonPlayAreaStartInsetDp, 0.001f)
+        assertTrue(s.excludeFullScreenBalloonHintOverlay)
+    }
+
+    @Test
+    fun episode4_finale_matchLetterInstructionText_present() {
+        assertEquals(
+            StationInstructionCopy.MatchLetterFinale,
+            StationBehaviorRegistry.getStationUiSpec(4, FINALE_PICTURE_LETTER_MATCH).matchLetterInstructionText,
+        )
+    }
+
+    @Test
+    fun chapter5_station3_findGrid_listenOnly_whiteRoundedPanel() {
+        val spec = StationBehaviorRegistry.getStationUiSpec(5, REVEAL_THEN_CHOOSE)
+        assertEquals(InstructionPanelStyle.WhiteRounded, spec.findGridInlineInstructionPanelStyle)
     }
 }

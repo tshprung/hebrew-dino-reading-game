@@ -35,6 +35,7 @@ import com.tal.hebrewdino.ui.screens.Station2PinnedBalloonMini
 @Composable
 fun Chapter3SagaPopBalloonsWordBanner(
     popAllLettersWord: String,
+    instructionText: String,
     modifier: Modifier = Modifier,
 ) {
     val emoji = LessonWordIllustrations.emojiForWord(popAllLettersWord)
@@ -43,7 +44,7 @@ fun Chapter3SagaPopBalloonsWordBanner(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
-            text = "פוצץ את כל הבלונים עם אותיות המופיעות במילה:",
+            text = instructionText,
             fontSize = 32.sp,
             fontWeight = FontWeight.Black,
             color = Color(0xFF0B2B3D),
@@ -87,13 +88,12 @@ fun Chapter3SagaPopBalloonsWordBanner(
  */
 @Composable
 fun PopBalloonsInstructionHeaderBlock(
-    chapterId: Int,
-    stationId: Int,
     listenOnly: Boolean,
     sagaUsesPopBalloonsAudioStaging: Boolean,
-    isSagaEpisode: Boolean,
+    skipInstructionHeaderBlock: Boolean,
     balloonInstructionOverride: String?,
     useEpisode4BalloonInstructionPanel: Boolean,
+    showSagaStation2InstructionLine: Boolean,
     episode4HelpSt15: Boolean,
     episode4HelpActiveHintLetter: String?,
     hintHeaderScale: Float,
@@ -107,7 +107,7 @@ fun PopBalloonsInstructionHeaderBlock(
         modifier = modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        if (!(chapterId == 3 && sagaUsesPopBalloonsAudioStaging)) {
+        if (!skipInstructionHeaderBlock) {
             if (useEpisode4BalloonInstructionPanel && sagaUsesPopBalloonsAudioStaging) {
                 Column(
                     modifier =
@@ -173,14 +173,14 @@ fun PopBalloonsInstructionHeaderBlock(
                     )
                 }
             } else {
-                if (isSagaEpisode && stationId == 2 && chapterId != 4) {
+                if (showSagaStation2InstructionLine) {
                     Text(
                         text =
                             balloonInstructionOverride
                                 ?: if (listenOnly) {
-                                    "פוצץ את הבלונים של האות שנשמעה:"
+                                    com.tal.hebrewdino.ui.domain.StationInstructionCopy.PopBalloonsListenFirst
                                 } else {
-                                    "פוצץ את הבלונים עם האות:"
+                                    com.tal.hebrewdino.ui.domain.StationInstructionCopy.PopBalloonsWithLetter
                                 },
                         fontSize = 30.sp,
                         fontWeight = FontWeight.Black,

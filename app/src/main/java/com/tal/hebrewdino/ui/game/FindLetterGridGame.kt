@@ -83,10 +83,8 @@ fun FindLetterGridGame(
     suppressHeaderTargetLetter: Boolean = false,
     /** When set (Episode 1 station 3), shows an inline instruction next to the target letter. */
     inlineInstructionText: String? = null,
-    /** Episode 4 station 3: white readability panel behind [inlineInstructionText] (same as Episode 3). */
+    /** White readability panel behind [inlineInstructionText] when non-context-word grid. */
     inlineInstructionReadablePanel: Boolean = false,
-    /** Optional saga context for chapter-specific UI tweaks. */
-    chapterId: Int? = null,
     /**
      * Episode 4 station 3: hide the large target letter in the yellow header while listen-only;
      * instruction text stays above. Does not affect Episode 3 (uses [contextWordHint]) or other chapters.
@@ -204,7 +202,7 @@ fun FindLetterGridGame(
                         Modifier
                             .padding(top = 6.dp, bottom = 6.dp)
                             .then(
-                                if (chapterId == 3 || inlineInstructionReadablePanel) {
+                                if (inlineInstructionReadablePanel) {
                                     Modifier
                                         .background(Color.White.copy(alpha = 0.72f), RoundedCornerShape(18.dp))
                                         .padding(horizontal = 14.dp, vertical = 8.dp)

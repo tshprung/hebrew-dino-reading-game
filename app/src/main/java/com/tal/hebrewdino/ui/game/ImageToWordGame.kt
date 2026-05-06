@@ -49,6 +49,7 @@ fun ImageToWordGame(
     contentKey: Int,
     enabled: Boolean,
     instructionText: String,
+    onPictureTapReplayWord: (() -> Unit)? = null,
     onWordPressed: ((choiceId: String) -> Unit)? = null,
     onAttempt: (choiceId: String) -> Boolean,
     modifier: Modifier = Modifier,
@@ -101,16 +102,17 @@ fun ImageToWordGame(
             )
 
             if (correctChoice != null) {
+                val pictureTapReplays = onPictureTapReplayWord != null
                 LessonChoiceCard(
                     choice = correctChoice,
-                    enabled = false,
+                    enabled = enabled && pictureTapReplays,
                     scale = 1f,
                     showWordCaption = false,
                     cardWidth = pictureCardW,
                     cardHeight = pictureCardH,
                     captionFontSize = 1.sp,
                     innerPictureScale = Chapter1Station5And6ImageMatchInnerScale.innerScale(correctChoice),
-                    onClick = { },
+                    onClick = { if (pictureTapReplays) onPictureTapReplayWord?.invoke() },
                 )
             } else {
                 Spacer(modifier = Modifier.height(pictureCardH))
