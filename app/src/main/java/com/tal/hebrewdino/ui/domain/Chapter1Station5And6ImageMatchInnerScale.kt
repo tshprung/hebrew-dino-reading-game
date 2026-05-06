@@ -91,8 +91,8 @@ object Chapter1Station5And6ImageMatchInnerScale {
             isButterfly -> 2.0f
             // Episode 5 feedback: locomotive + dish + ant + frog — emoji art at default card inner scale.
             isTrainEngine || isPlate || isAnt || isFrog -> 2f
-            // Episode 5 feedback: monkey illustration 2× vs default inner scale; caption sized separately.
-            isMonkey -> 4f
+            // Episode 5 feedback: monkey illustration should be ~25% smaller vs prior (caption sized separately).
+            isMonkey -> 3f
             isLeg || isRose -> 1f
             // Feedback: hippo reads small; bump by ~20% relative to default 2f.
             isHippo -> 2.4f

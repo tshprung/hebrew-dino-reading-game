@@ -15,6 +15,7 @@ object Chapter3StationOrder {
                     initialGroupIndex = 1,
                     imageMatchCaptionSizeMultiplier = 1f,
                     imageMatchPictureSizeMultiplier = 1f,
+                    sortPictureStartsWithOptionLetters = true,
                 )
             2 ->
                 StationQuizPlan(

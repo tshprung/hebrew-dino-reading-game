@@ -30,7 +30,7 @@ fun MatchLetterToWordStationContent(
     captionSizeMultiplier: Float,
     chapterId: Int?,
     stationId: Int?,
-    instructionReadablePanelOverride: Boolean?,
+    instructionReadablePanel: Boolean,
     instructions: String,
     onSolved: () -> Unit,
     entryPulseScale: Float,
@@ -52,7 +52,7 @@ fun MatchLetterToWordStationContent(
         captionSizeMultiplier = captionSizeMultiplier,
         chapterId = chapterId,
         stationId = stationId,
-        instructionReadablePanelOverride = instructionReadablePanelOverride,
+        instructionReadablePanel = instructionReadablePanel,
         instructions = instructions,
         onSolved = onSolved,
         modifier =

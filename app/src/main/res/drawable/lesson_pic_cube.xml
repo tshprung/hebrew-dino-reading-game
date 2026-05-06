@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="128dp"
+    android:height="128dp"
+    android:viewportWidth="128"
+    android:viewportHeight="128">
+
+    <!-- Simple isometric cube: top, left, right faces. -->
+    <path
+        android:fillColor="#FFE8B5"
+        android:strokeColor="#FF0B2B3D"
+        android:strokeWidth="3"
+        android:strokeLineJoin="round"
+        android:pathData="M64,18 L92,34 L64,50 L36,34 Z" />
+
+    <path
+        android:fillColor="#FFD58A"
+        android:strokeColor="#FF0B2B3D"
+        android:strokeWidth="3"
+        android:strokeLineJoin="round"
+        android:pathData="M36,34 L64,50 L64,94 L36,78 Z" />
+
+    <path
+        android:fillColor="#FFC76D"
+        android:strokeColor="#FF0B2B3D"
+        android:strokeWidth="3"
+        android:strokeLineJoin="round"
+        android:pathData="M92,34 L64,50 L64,94 L92,78 Z" />
+
+    <!-- Subtle highlight edge on top. -->
+    <path
+        android:fillColor="#00FFFFFF"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="2"
+        android:strokeLineJoin="round"
+        android:strokeAlpha="0.55"
+        android:pathData="M64,18 L92,34" />
+</vector>
+

@@ -101,11 +101,8 @@ fun MatchLetterToWordGame(
     /** Optional saga context for [captionFontSizeForWordCard]. */
     chapterId: Int? = null,
     stationId: Int? = null,
-    /**
-     * When set, controls the white instruction header panel; when null, uses legacy
-     * `(chapterId == 3 || (chapterId == 4 && stationId == 6))`.
-     */
-    instructionReadablePanelOverride: Boolean? = null,
+    /** White readability panel behind the instruction header (from [StationUiSpec]). */
+    instructionReadablePanel: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     val maxPairs = choices.take(choicePairLimit.coerceIn(1, 6))
@@ -220,9 +217,6 @@ fun MatchLetterToWordGame(
         val headerPadTop = 6.dp
         val headerPadBottom = 10.dp
         val headerFont = if (compactWideSpread) 22.sp else 26.sp
-        val instructionReadablePanel =
-            instructionReadablePanelOverride
-                ?: (chapterId == 3 || (chapterId == 4 && stationId == 6))
         val headerH =
             headerPadTop + headerPadBottom + if (compactWideSpread) 34.dp else 40.dp
         val bottomSafe = 18.dp

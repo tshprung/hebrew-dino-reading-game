@@ -38,6 +38,11 @@ data class StationQuizPlan(
      * When set (Episode 4 station 3 only), caps how many target-letter cells appear in the find-grid question.
      */
     val findLetterGridMaxTargetCount: Int? = null,
+    /**
+     * UI-only: sort letter option buttons (e.g. Chapter 3 station 1 picture-first-letter).
+     * Does not affect [LevelSession] or question generation.
+     */
+    val sortPictureStartsWithOptionLetters: Boolean = false,
 )
 
 object StationQuizPlans {

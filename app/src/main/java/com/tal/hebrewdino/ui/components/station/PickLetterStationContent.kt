@@ -43,16 +43,17 @@ import com.tal.hebrewdino.ui.screens.LetterOptions
 fun ColumnScope.PickLetterStationContent(
     question: Question.PopBalloonsQuestion,
     sessionRoundIndex: Int,
-    isChapter3HighlightedLetterInWordStation: Boolean,
-    isChapter3AudioLetterRecognitionStation: Boolean,
+    useHighlightedLetterInWordRow: Boolean,
+    highlightedInWordInstruction: String?,
+    showListenOnlyHebrewPanel: Boolean,
+    listenOnlyPanelInstruction: String?,
+    repeatLetterButtonLabel: String?,
     sagaUsesPickLetterAudioStaging: Boolean,
     station1PinnedCorrectLetter: String?,
     pickLetterInstructionOverride: String?,
-    pickLetterListenOnlyHebrewPanel: Boolean,
+    pickLetterSagaStation1CompactPreamble: String?,
+    showSagaStation1CompactPreamble: Boolean,
     pickLetterAllowPinnedCorrectShortcut: Boolean,
-    isSagaEpisode: Boolean,
-    chapterId: Int,
-    stationId: Int,
     boxTopPaddingDp: Dp,
     letterOptionsExtraTopPaddingDp: Dp,
     enabled: Boolean,
@@ -60,7 +61,6 @@ fun ColumnScope.PickLetterStationContent(
     correctPulseLetter: String?,
     correctPulseEpoch: Int,
     letterOptions: List<String>,
-    /** Chapter 3 station 5 (audio letter): stronger press + pulse on letter buttons. */
     strongLetterButtonFeedback: Boolean = false,
     onRepeatLetterClick: () -> Unit,
     onPick: (String) -> Unit,
@@ -83,11 +83,11 @@ fun ColumnScope.PickLetterStationContent(
             modifier = Modifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            if (isChapter3HighlightedLetterInWordStation) {
+            if (useHighlightedLetterInWordRow && highlightedInWordInstruction != null) {
                 val spell = Chapter3EpisodeContent.pickSpellRound(sessionRoundIndex)
                 val emoji = LessonWordIllustrations.emojiForWord(spell.word)
                 Text(
-                    text = "מצא את האות המודגשת במילה:",
+                    text = highlightedInWordInstruction,
                     fontSize = 32.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = Color(0xFF0B2B3D),
@@ -120,9 +120,9 @@ fun ColumnScope.PickLetterStationContent(
                     Text(text = emoji, fontSize = 42.sp)
                 }
             }
-            if (isChapter3AudioLetterRecognitionStation || pickLetterListenOnlyHebrewPanel) {
+            if (showListenOnlyHebrewPanel && listenOnlyPanelInstruction != null) {
                 Text(
-                    text = "מצא את האות שנאמרת",
+                    text = listenOnlyPanelInstruction,
                     fontSize = 39.sp,
                     fontWeight = FontWeight.Black,
                     color = Color(0xFF0B2B3D),
@@ -139,7 +139,7 @@ fun ColumnScope.PickLetterStationContent(
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp),
                 ) {
                     Text(
-                        "חזור על האות",
+                        repeatLetterButtonLabel ?: "",
                         style = ChapterNavChipStyles.labelTextStyle().copy(fontSize = 32.sp),
                     )
                 }
@@ -157,9 +157,9 @@ fun ColumnScope.PickLetterStationContent(
                             .padding(horizontal = 14.dp, vertical = 8.dp),
                 )
                 Spacer(modifier = Modifier.height(18.dp))
-            } else if (isSagaEpisode && stationId == 1) {
+            } else if (showSagaStation1CompactPreamble && pickLetterSagaStation1CompactPreamble != null) {
                 Text(
-                    text = "בחר את האות:",
+                    text = pickLetterSagaStation1CompactPreamble,
                     fontSize = 22.sp,
                     fontWeight = FontWeight.Black,
                     color = Color(0xFF0B2B3D),
@@ -170,7 +170,7 @@ fun ColumnScope.PickLetterStationContent(
                     modifier = Modifier.padding(top = 10.dp),
                 )
                 Spacer(modifier = Modifier.height(18.dp))
-            } else if (!isChapter3HighlightedLetterInWordStation) {
+            } else if (!useHighlightedLetterInWordRow) {
                 TargetLetterHeaderChip(
                     letter = question.correctAnswer,
                     modifier = Modifier.padding(top = 4.dp),

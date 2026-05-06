@@ -55,7 +55,7 @@ object LessonWordCatalog {
             LessonWordEntry("w_ח_2", "ח", "חלב", 0xFF5C6BC0.toInt()),
             LessonWordEntry("w_ח_3", "ח", "חלון", 0xFF42A5F5.toInt(), tileRes = R.drawable.lesson_pic_halon),
             LessonWordEntry("w_ח_4", "ח", "חולצה", 0xFF039BE5.toInt()),
-            LessonWordEntry("w_ט_1", "ט", "טוסט", 0xFF4DD0E1.toInt()),
+            LessonWordEntry("w_ט_1", "ט", "טוסט", 0xFF4DD0E1.toInt(), tileRes = R.drawable.lesson_pic_toast),
             LessonWordEntry("w_ט_2", "ט", "טלפון", 0xFFFF7043.toInt()),
             LessonWordEntry("w_ט_3", "ט", "טיגריס", 0xFF26C6DA.toInt()),
             LessonWordEntry("w_י_1", "י", "יום", 0xFFFFF9A7.toInt()),
@@ -85,7 +85,7 @@ object LessonWordCatalog {
             LessonWordEntry("w_צ_3", "צ", "צפרדע", 0xFF388E3C.toInt()),
             LessonWordEntry("w_צ_4", "צ", "צלחת", 0xFFB0BEC5.toInt()),
             LessonWordEntry("w_ק_1", "ק", "קוף", 0xFFFFAB40.toInt()),
-            LessonWordEntry("w_ק_2", "ק", "קוביה", 0xFF4FC3F7.toInt()),
+            LessonWordEntry("w_ק_2", "ק", "קוביה", 0xFF4FC3F7.toInt(), tileRes = R.drawable.lesson_pic_cube),
             LessonWordEntry("w_ק_3", "ק", "קטר", 0xFF455A64.toInt()),
             LessonWordEntry("w_ר_1", "ר", "ראש", 0xFFF48FB1.toInt()),
             // רכב (פרק 2): same 🚗 placeholder + card tint as אוטו/מכונית (פרק 1).

@@ -12,6 +12,16 @@ import com.tal.hebrewdino.ui.domain.Chapter1StationOrder.TAP_LETTER
  */
 object StationBehaviorRegistry {
 
+    private fun variantsFor(
+        listenOnly: Boolean,
+        vararg extras: StationVariant,
+    ): Set<StationVariant> =
+        buildSet {
+            add(StationVariant.Standard)
+            if (listenOnly) add(StationVariant.ListenFirst)
+            addAll(extras)
+        }
+
     fun getStationUiSpec(chapterId: Int, stationId: Int): StationUiSpec {
         val sid = stationId.coerceIn(1, Chapter1Config.STATION_COUNT)
         val plan =
@@ -41,6 +51,12 @@ object StationBehaviorRegistry {
                 StationUiSpec(
                     chapterId = chapterId,
                     stationId = stationId,
+                    templateId = StationTemplateId.PickLetter,
+                    variants =
+                        variantsFor(
+                            listenOnly,
+                            *(if (chapterId == 5) arrayOf(StationVariant.Episode4Help) else emptyArray()),
+                        ),
                     quizMode = plan.mode,
                     findGridMaxTargetCount = plan.findLetterGridMaxTargetCount,
                     helpControlsEnabled = chapterId == 5,
@@ -56,8 +72,21 @@ object StationBehaviorRegistry {
                         } else {
                             StationHintMode.ExistingStationSpecific
                         },
-                    hintDurationMs = if (chapterId == 5) 2100L else null,
-                    pickLetterInstructionOverride = if (chapterId == 5) "בחר את האות:" else null,
+                    hintDurationMs =
+                        if (chapterId == 5) {
+                            // Product: Chapter 5 station 1 hint should be ~30% shorter.
+                            1470L
+                        } else {
+                            null
+                        },
+                    pickLetterInstructionOverride =
+                        if (chapterId == 5) StationInstructionCopy.PickLetterEpisode4AndCh5 else null,
+                    pickLetterSagaStation1CompactPreamble =
+                        if (chapterId == 1 || chapterId == 2) {
+                            StationInstructionCopy.PickLetterSagaStation1Preamble
+                        } else {
+                            null
+                        },
                     pickLetterListenOnlyHebrewPanel = listenOnly && chapterId != 4 && chapterId != 5,
                     pickLetterAllowPinnedCorrectShortcut = !listenOnly,
                     riskNotes = "Saga pick letter; Ch5 station 1 uses Ep4-style help + 'בחר את האות' copy.",
@@ -66,6 +95,12 @@ object StationBehaviorRegistry {
                 StationUiSpec(
                     chapterId = chapterId,
                     stationId = stationId,
+                    templateId = StationTemplateId.PopBalloons,
+                    variants =
+                        variantsFor(
+                            listenOnly,
+                            *(if (chapterId == 5) arrayOf(StationVariant.Episode4Help) else emptyArray()),
+                        ),
                     quizMode = plan.mode,
                     findGridMaxTargetCount = plan.findLetterGridMaxTargetCount,
                     helpControlsEnabled = chapterId == 5,
@@ -82,18 +117,23 @@ object StationBehaviorRegistry {
                             StationHintMode.ExistingStationSpecific
                         },
                     hintDurationMs = if (chapterId == 5) 2100L else null,
-                    balloonInstructionOverride =
-                        if (listenOnly) {
-                            "פוצץ את הבלונים של האות שנשמעה:"
-                        } else {
-                            "פוצץ את הבלונים עם האות:"
-                        },
+                    balloonInstructionOverride = StationInstructionCopy.PopBalloonsWithLetter,
+                    useEpisode4BalloonInstructionPanel = chapterId == 5,
+                    balloonPlayAreaStartInsetDp = if (chapterId == 5) 96f else 0f,
+                    excludeFullScreenBalloonHintOverlay = chapterId == 5,
+                    popBalloonsShowSagaStation2InstructionLine = chapterId != 4,
                     riskNotes = "Saga balloon header text; Ch5 listen-only uses שמע string (same as prior listenOnly branch).",
                 )
             REVEAL_THEN_CHOOSE ->
                 StationUiSpec(
                     chapterId = chapterId,
                     stationId = stationId,
+                    templateId = StationTemplateId.FindLetterGrid,
+                    variants =
+                        variantsFor(
+                            listenOnly,
+                            *(if (chapterId == 5) arrayOf(StationVariant.Episode4Help) else emptyArray()),
+                        ),
                     quizMode = plan.mode,
                     findGridMaxTargetCount = plan.findLetterGridMaxTargetCount,
                     helpControlsEnabled = chapterId == 5,
@@ -110,15 +150,32 @@ object StationBehaviorRegistry {
                             StationHintMode.ExistingStationSpecific
                         },
                     hintDurationMs = if (chapterId == 5) 2100L else null,
+                    findGridInlineInstructionOverride =
+                        if (listenOnly) {
+                            StationInstructionCopy.FindGridListenFirst
+                        } else {
+                            StationInstructionCopy.FindGridVisibleTarget
+                        },
+                    findGridInlineInstructionPanelStyle =
+                        if (chapterId == 5 && listenOnly) {
+                            InstructionPanelStyle.WhiteRounded
+                        } else {
+                            InstructionPanelStyle.None
+                        },
                     findGridSuppressHeaderTargetLetter = chapterId == 3 || listenOnly,
                     findGridHideListenOnlyHeaderTargetLetter = chapterId == 5 && listenOnly,
-                    findGridInlineReadablePanel = chapterId == 5 && listenOnly,
                     riskNotes = "Find grid; inline text/panel via listenOnly vs Ep4 override.",
                 )
             PICTURE_PICK_ONE ->
                 StationUiSpec(
                     chapterId = chapterId,
                     stationId = stationId,
+                    templateId = StationTemplateId.PictureStartsWith,
+                    variants =
+                        variantsFor(
+                            listenOnly,
+                            *(if (chapterId == 5) arrayOf(StationVariant.Episode4Help) else emptyArray()),
+                        ),
                     quizMode = plan.mode,
                     findGridMaxTargetCount = plan.findLetterGridMaxTargetCount,
                     helpControlsEnabled = chapterId == 5,
@@ -135,7 +192,15 @@ object StationBehaviorRegistry {
                             StationHintMode.ExistingStationSpecific
                         },
                     hintDurationMs = if (chapterId == 5) 2100L else null,
-                    pictureStartsWithReadablePanel = false,
+                    pictureStartsWithReadablePanel = chapterId == 5,
+                    pictureStartsWithListenOnlySagaInstruction =
+                        if (listenOnly) StationInstructionCopy.PictureStartsWithListenFirstSaga else null,
+                    pictureStartsWithInstructionPanelStyle =
+                        if (chapterId == 5) {
+                            InstructionPanelStyle.WhiteRounded
+                        } else {
+                            InstructionPanelStyle.None
+                        },
                     hidePictureWordCaptionWhenListenOnlySaga = listenOnly,
                     riskNotes = "Picture first letter; Ep4/Ch5 caption visibility differs via hidePicture…",
                 )
@@ -143,6 +208,12 @@ object StationBehaviorRegistry {
                 StationUiSpec(
                     chapterId = chapterId,
                     stationId = stationId,
+                    templateId = StationTemplateId.ImageMatch,
+                    variants =
+                        variantsFor(
+                            listenOnly,
+                            *(if (chapterId == 5) arrayOf(StationVariant.Episode4Help) else emptyArray()),
+                        ),
                     quizMode = plan.mode,
                     findGridMaxTargetCount = plan.findLetterGridMaxTargetCount,
                     helpControlsEnabled = chapterId == 5,
@@ -158,14 +229,16 @@ object StationBehaviorRegistry {
                         } else {
                             StationHintMode.ExistingStationSpecific
                         },
-                    hintDurationMs = if (chapterId == 5) 2100L else null,
-                    imageMatchShowTargetLetterChip = !listenOnly,
-                    imageMatchHeaderInstructionOverride =
+                    hintDurationMs =
                         if (chapterId == 5) {
-                            "מצא את המילה המתחילה באות:"
+                            // Product: Chapter 5 station 5 hint should be ~30% shorter.
+                            1470L
                         } else {
                             null
                         },
+                    imageMatchShowTargetLetterChip = !listenOnly,
+                    imageMatchHeaderInstructionOverride =
+                        StationInstructionCopy.ImageMatchFindWordStartingWithLetter,
                     imageMatchHeaderReadablePanel = chapterId == 5,
                     riskNotes = "Image match three cards; listen-only hides target letter chip (Ch5).",
                 )
@@ -173,12 +246,15 @@ object StationBehaviorRegistry {
                 StationUiSpec(
                     chapterId = chapterId,
                     stationId = stationId,
+                    templateId = StationTemplateId.MatchLetterToWord,
+                    variants = variantsFor(listenOnly, StationVariant.Finale),
                     quizMode = plan.mode,
                     findGridMaxTargetCount = plan.findLetterGridMaxTargetCount,
                     helpControlsEnabled = false,
                     replayMode = StationReplayMode.ExistingStationSpecific,
                     hintMode = StationHintMode.ExistingStationSpecific,
                     matchLetterInstructionReadablePanel = chapterId == 5,
+                    matchLetterInstructionText = StationInstructionCopy.MatchLetterFinale,
                     riskNotes = "Finale match UI; Ch4 Ep6 uses readable panel (see episode4UiSpec).",
                 )
             else -> error("Unexpected stationId=$stationId")
@@ -191,18 +267,23 @@ object StationBehaviorRegistry {
                 StationUiSpec(
                     chapterId = 3,
                     stationId = stationId,
+                    templateId = StationTemplateId.PictureStartsWith,
+                    variants = variantsFor(listenOnly = false),
                     quizMode = plan.mode,
                     findGridMaxTargetCount = plan.findLetterGridMaxTargetCount,
                     helpControlsEnabled = false,
                     replayMode = StationReplayMode.ExistingStationSpecific,
                     hintMode = StationHintMode.ExistingStationSpecific,
                     pictureStartsWithReadablePanel = true,
+                    pictureStartsWithInstructionPanelStyle = InstructionPanelStyle.WhiteRounded,
                     riskNotes = "Ch3 st1 picture; [PictureStartsWithGame] also forces panel when chapterId==3.",
                 )
             2 ->
                 StationUiSpec(
                     chapterId = 3,
                     stationId = stationId,
+                    templateId = StationTemplateId.MatchLetterToWord,
+                    variants = variantsFor(listenOnly = false),
                     quizMode = plan.mode,
                     findGridMaxTargetCount = plan.findLetterGridMaxTargetCount,
                     helpControlsEnabled = false,
@@ -210,53 +291,77 @@ object StationBehaviorRegistry {
                     hintMode = StationHintMode.ExistingStationSpecific,
                     matchLetterInstructionReadablePanel = true,
                     imageMatchShowTargetLetterChip = true,
+                    matchLetterInstructionText = StationInstructionCopy.MatchLetterFinale,
                     riskNotes = "Ch3 st2 match letter + word.",
                 )
             3 ->
                 StationUiSpec(
                     chapterId = 3,
                     stationId = stationId,
+                    templateId = StationTemplateId.PopBalloons,
+                    variants = variantsFor(listenOnly = false, StationVariant.Chapter3PopAllLettersInWord),
                     quizMode = plan.mode,
                     findGridMaxTargetCount = plan.findLetterGridMaxTargetCount,
                     helpControlsEnabled = false,
                     replayMode = StationReplayMode.ExistingStationSpecific,
                     hintMode = StationHintMode.ExistingStationSpecific,
+                    popBalloonsSkipInstructionHeaderBlock = true,
+                    popBalloonsPopAllLettersBannerInstruction =
+                        StationInstructionCopy.PopBalloonsPopAllLettersInWord,
                     riskNotes = "Ch3 st3 pop-all balloons — header copy in GameScreen (spell word).",
                 )
             4 ->
                 StationUiSpec(
                     chapterId = 3,
                     stationId = stationId,
+                    templateId = StationTemplateId.PickLetter,
+                    variants = variantsFor(listenOnly = false, StationVariant.Chapter3HighlightedLetter),
                     quizMode = plan.mode,
                     findGridMaxTargetCount = plan.findLetterGridMaxTargetCount,
                     helpControlsEnabled = false,
                     replayMode = StationReplayMode.ExistingStationSpecific,
                     hintMode = StationHintMode.ExistingStationSpecific,
                     pickLetterAllowPinnedCorrectShortcut = true,
+                    pickLetterHighlightedInWordInstruction = StationInstructionCopy.PickLetterHighlightedInWord,
                     riskNotes = "Ch3 st4 highlighted letter in word.",
                 )
             5 ->
                 StationUiSpec(
                     chapterId = 3,
                     stationId = stationId,
+                    templateId = StationTemplateId.PickLetter,
+                    variants =
+                        variantsFor(
+                            listenOnly = true,
+                            StationVariant.Chapter3AudioLetterRecognition,
+                            StationVariant.Episode4Help,
+                        ),
                     quizMode = plan.mode,
                     findGridMaxTargetCount = plan.findLetterGridMaxTargetCount,
-                    helpControlsEnabled = false,
-                    replayMode = StationReplayMode.ExistingStationSpecific,
-                    hintMode = StationHintMode.ExistingStationSpecific,
-                    pickLetterListenOnlyHebrewPanel = true,
-                    riskNotes = "Ch3 st5 audio letter recognition — shared listen-first panel pattern.",
+                    helpControlsEnabled = true,
+                    hintDurationMs = 2100L,
+                    replayMode = StationReplayMode.TargetLetterOnly,
+                    hintMode = StationHintMode.TemporaryTargetLetter,
+                    pickLetterInstructionOverride = StationInstructionCopy.PickLetterListenOnly,
+                    pickLetterListenOnlyHebrewPanel = false,
+                    pickLetterListenOnlyInstructionText = null,
+                    pickLetterRepeatLetterButtonLabel = null,
+                    pickLetterAllowPinnedCorrectShortcut = false,
+                    riskNotes = "Ch3 st5 audio letter recognition — use same header+right-controls structure as Ep4/Ch5 st1.",
                 )
             6 ->
                 StationUiSpec(
                     chapterId = 3,
                     stationId = stationId,
+                    templateId = StationTemplateId.ImageToWord,
+                    variants = variantsFor(listenOnly = false, StationVariant.Chapter3ImageToWord),
                     quizMode = plan.mode,
                     findGridMaxTargetCount = plan.findLetterGridMaxTargetCount,
                     helpControlsEnabled = false,
                     replayMode = StationReplayMode.ExistingStationSpecific,
                     hintMode = StationHintMode.ExistingStationSpecific,
-                    riskNotes = "Ch3 st6 uses ImageToWordGame (instruction hardcoded there, not spec).",
+                    imageToWordInstructionText = StationInstructionCopy.Chapter3ImageToWord,
+                    riskNotes = "Ch3 st6 uses ImageToWordGame (instruction from spec).",
                 )
             else -> error("Unexpected Ch3 stationId=$stationId")
         }
@@ -268,6 +373,8 @@ object StationBehaviorRegistry {
                 StationUiSpec(
                     chapterId = 4,
                     stationId = stationId,
+                    templateId = StationTemplateId.PickLetter,
+                    variants = variantsFor(listenOnly = true, StationVariant.Episode4Help),
                     quizMode = plan.mode,
                     findGridMaxTargetCount = plan.findLetterGridMaxTargetCount,
                     helpControlsEnabled = true,
@@ -283,13 +390,15 @@ object StationBehaviorRegistry {
                 StationUiSpec(
                     chapterId = 4,
                     stationId = stationId,
+                    templateId = StationTemplateId.PopBalloons,
+                    variants = variantsFor(listenOnly = true, StationVariant.Episode4Help),
                     quizMode = plan.mode,
                     findGridMaxTargetCount = plan.findLetterGridMaxTargetCount,
                     helpControlsEnabled = true,
                     hintDurationMs = 2100L,
                     replayMode = StationReplayMode.TargetLetterOnly,
                     hintMode = StationHintMode.TemporaryTargetLetter,
-                    balloonInstructionOverride = "פוצץ את הבלונים עם האות:",
+                    balloonInstructionOverride = StationInstructionCopy.PopBalloonsWithLetter,
                     useEpisode4BalloonInstructionPanel = true,
                     balloonPlayAreaStartInsetDp = 96f,
                     excludeFullScreenBalloonHintOverlay = true,
@@ -299,14 +408,16 @@ object StationBehaviorRegistry {
                 StationUiSpec(
                     chapterId = 4,
                     stationId = stationId,
+                    templateId = StationTemplateId.FindLetterGrid,
+                    variants = variantsFor(listenOnly = true, StationVariant.Episode4Help),
                     quizMode = plan.mode,
                     findGridMaxTargetCount = plan.findLetterGridMaxTargetCount,
                     helpControlsEnabled = true,
                     hintDurationMs = 2100L,
                     replayMode = StationReplayMode.TargetLetterOnly,
                     hintMode = StationHintMode.TemporaryTargetLetter,
-                    findGridInlineInstructionOverride = "מצא את האות:",
-                    findGridInlineReadablePanel = true,
+                    findGridInlineInstructionOverride = StationInstructionCopy.FindGridVisibleTarget,
+                    findGridInlineInstructionPanelStyle = InstructionPanelStyle.WhiteRounded,
                     findGridHideListenOnlyHeaderTargetLetter = true,
                     findGridSuppressHeaderTargetLetter = true,
                     riskNotes = "Grid max targets capped via plan (4).",
@@ -315,14 +426,17 @@ object StationBehaviorRegistry {
                 StationUiSpec(
                     chapterId = 4,
                     stationId = stationId,
+                    templateId = StationTemplateId.PictureStartsWith,
+                    variants = variantsFor(listenOnly = true, StationVariant.Episode4Help),
                     quizMode = plan.mode,
                     findGridMaxTargetCount = plan.findLetterGridMaxTargetCount,
                     helpControlsEnabled = true,
                     hintDurationMs = 2100L,
                     replayMode = StationReplayMode.TargetWordOnly,
                     hintMode = StationHintMode.TemporaryStartingLetter,
-                    pictureStartsWithInstructionOverride = "באיזו אות מתחילה המילה:",
+                    pictureStartsWithInstructionOverride = StationInstructionCopy.PictureStartsWithEpisode4,
                     pictureStartsWithReadablePanel = true,
+                    pictureStartsWithInstructionPanelStyle = InstructionPanelStyle.WhiteRounded,
                     hidePictureWordCaptionWhenListenOnlySaga = true,
                     riskNotes = "Listen-first picture station; caption hidden when listen-only saga.",
                 )
@@ -330,13 +444,16 @@ object StationBehaviorRegistry {
                 StationUiSpec(
                     chapterId = 4,
                     stationId = stationId,
+                    templateId = StationTemplateId.ImageMatch,
+                    variants = variantsFor(listenOnly = true, StationVariant.Episode4Help),
                     quizMode = plan.mode,
                     findGridMaxTargetCount = plan.findLetterGridMaxTargetCount,
                     helpControlsEnabled = true,
                     hintDurationMs = 2100L,
                     replayMode = StationReplayMode.TargetLetterOnly,
                     hintMode = StationHintMode.TemporaryTargetLetter,
-                    imageMatchHeaderInstructionOverride = "מצא את המילה המתחילה באות:",
+                    imageMatchHeaderInstructionOverride =
+                        StationInstructionCopy.ImageMatchFindWordStartingWithLetter,
                     imageMatchHeaderReadablePanel = true,
                     imageMatchShowTargetLetterChip = false,
                     riskNotes = "Image match st5 arc.",
@@ -345,6 +462,8 @@ object StationBehaviorRegistry {
                 StationUiSpec(
                     chapterId = 4,
                     stationId = stationId,
+                    templateId = StationTemplateId.MatchLetterToWord,
+                    variants = variantsFor(listenOnly = false, StationVariant.Finale),
                     quizMode = plan.mode,
                     findGridMaxTargetCount = plan.findLetterGridMaxTargetCount,
                     helpControlsEnabled = false,
@@ -352,6 +471,7 @@ object StationBehaviorRegistry {
                     hintMode = StationHintMode.ExistingStationSpecific,
                     hintDurationMs = null,
                     matchLetterInstructionReadablePanel = true,
+                    matchLetterInstructionText = StationInstructionCopy.MatchLetterFinale,
                     riskNotes = "No right-side help column; letter not shown in header (match task).",
                 )
             else -> error("Unexpected Ep4 stationId=$stationId")

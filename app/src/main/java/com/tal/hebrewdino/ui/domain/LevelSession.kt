@@ -193,12 +193,13 @@ class LevelSession(
                                 val (word, _) =
                                     chapter3PopAllLettersCurrentWord()
                                         ?: error("Expected Chapter 3 pop-all-letters words to be initialized")
-                                // Distinct letters only: duplicates would force popping multiple identical letters.
-                                val correctBalloons = word.toCharArray().map { it.toString() }.distinct()
+                                // Chapter 3 station 3: balloons must include letter occurrences (e.g. "שמש" has two "ש").
+                                val correctBalloons = word.toCharArray().map { it.toString() }
                                 val optionCount = 8
+                                val inWord = correctBalloons.toSet()
                                 val distractors =
                                     Chapter3Config.letters
-                                        .filter { it !in correctBalloons }
+                                        .filter { it !in inWord }
                                         .shuffled(rnd)
                                         .take((optionCount - correctBalloons.size).coerceAtLeast(1))
                                 val options = (correctBalloons + distractors).take(optionCount).shuffled(rnd)

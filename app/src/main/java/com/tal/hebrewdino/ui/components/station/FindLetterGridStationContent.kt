@@ -5,7 +5,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.unit.IntOffset
+import com.tal.hebrewdino.ui.domain.InstructionPanelStyle
 import com.tal.hebrewdino.ui.domain.Question
+import com.tal.hebrewdino.ui.domain.StationInstructionCopy
 import com.tal.hebrewdino.ui.domain.StationUiSpec
 import com.tal.hebrewdino.ui.game.FindLetterGridGame
 
@@ -17,7 +19,6 @@ import com.tal.hebrewdino.ui.game.FindLetterGridGame
 fun FindLetterGridStationContent(
     question: Question.FindLetterGridQuestion,
     modifier: Modifier = Modifier,
-    chapterId: Int,
     listenOnly: Boolean,
     /** Precomputed: saga arc station 3 (find grid / reveal-then-choose). */
     isSagaRevealStation: Boolean,
@@ -41,9 +42,9 @@ fun FindLetterGridStationContent(
         if (isSagaRevealStation) {
             stationUiSpec.findGridInlineInstructionOverride
                 ?: if (listenOnly) {
-                    "מצאו את האות שנשמעת:"
+                    StationInstructionCopy.FindGridListenFirst
                 } else {
-                    "מצא את האות:"
+                    StationInstructionCopy.FindGridVisibleTarget
                 }
         } else {
             null
@@ -51,14 +52,14 @@ fun FindLetterGridStationContent(
 
     FindLetterGridGame(
         question = question,
-        chapterId = chapterId,
         hideListenOnlyHeaderTargetLetter = stationUiSpec.findGridHideListenOnlyHeaderTargetLetter,
         floatingTargetLetterHint = floatingTargetLetterHint,
         episode4TargetCellsHintEpoch = episode4TargetCellsHintEpoch,
         contextWordHint = chapter3ContextWordHint,
         suppressHeaderTargetLetter = suppressHeaderTargetLetter,
         inlineInstructionText = inlineInstructionText,
-        inlineInstructionReadablePanel = stationUiSpec.findGridInlineReadablePanel,
+        inlineInstructionReadablePanel =
+            stationUiSpec.findGridInlineInstructionPanelStyle == InstructionPanelStyle.WhiteRounded,
         cellSideScale =
             if (isSagaRevealStation) {
                 0.9f

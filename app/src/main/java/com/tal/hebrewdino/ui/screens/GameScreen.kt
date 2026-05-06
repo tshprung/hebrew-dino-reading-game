@@ -46,11 +46,18 @@ import com.tal.hebrewdino.ui.domain.LevelSession
 import com.tal.hebrewdino.ui.domain.Question
 import com.tal.hebrewdino.ui.domain.LetterPoolSpec
 import com.tal.hebrewdino.ui.domain.Chapter3EpisodeContent
+import com.tal.hebrewdino.ui.domain.InstructionPanelStyle
 import com.tal.hebrewdino.ui.domain.StationBehaviorRegistry
+import com.tal.hebrewdino.ui.domain.StationInstructionCopy
 import com.tal.hebrewdino.ui.domain.StationQuizMode
+import com.tal.hebrewdino.ui.domain.StationReplayMode
+import com.tal.hebrewdino.ui.domain.StationTemplateId
+import com.tal.hebrewdino.ui.domain.StationVariant
+import com.tal.hebrewdino.ui.domain.hasVariant
 import com.tal.hebrewdino.ui.domain.Episode4Help
 import com.tal.hebrewdino.ui.domain.StationQuizPlan
 import com.tal.hebrewdino.ui.components.Episode4Stations15HelpColumn
+import com.tal.hebrewdino.ui.components.Chapter3Station5ReplayColumn
 import com.tal.hebrewdino.ui.components.TargetLetterHeaderChip
 import com.tal.hebrewdino.ui.feedback.GameFeedback
 import com.tal.hebrewdino.ui.game.ChildGameAudioHooks
@@ -189,20 +196,20 @@ fun GameScreen(
     val sagaUsesPopBalloonsAudioStaging = isSagaEpisode(chapterId) && plan.mode == StationQuizMode.PopBalloons
     val sagaUsesFindGridAudioStaging = isSagaEpisode(chapterId) && plan.mode == StationQuizMode.FindLetterGrid
     val isChapter3HighlightedLetterInWordStation =
-        chapterId == 3 &&
-            stationId == 4 &&
+        stationUiSpec.templateId == StationTemplateId.PickLetter &&
+            stationUiSpec.hasVariant(StationVariant.Chapter3HighlightedLetter) &&
             plan.mode == StationQuizMode.PickLetter &&
             plan.chapter3HighlightedLetterInWordPickLetter
 
     val isChapter3AudioLetterRecognitionStation =
-        chapterId == 3 &&
-            stationId == 5 &&
+        stationUiSpec.templateId == StationTemplateId.PickLetter &&
+            stationUiSpec.hasVariant(StationVariant.Chapter3AudioLetterRecognition) &&
             plan.mode == StationQuizMode.PickLetter &&
             plan.chapter3AudioLetterRecognition
 
     val isChapter3PopAllLettersStation =
-        chapterId == 3 &&
-            stationId == 3 &&
+        stationUiSpec.templateId == StationTemplateId.PopBalloons &&
+            stationUiSpec.hasVariant(StationVariant.Chapter3PopAllLettersInWord) &&
             plan.mode == StationQuizMode.PopBalloons &&
             plan.chapter3PopAllLettersInWord
     val scope = rememberCoroutineScope()
@@ -305,7 +312,28 @@ fun GameScreen(
         }
         feedbackVoiceJob =
             scope.launch {
-                replayEpisode4Stations15RoundAudio(sfx = sfx, voice = voice, stationId = stationId, q = q)
+                when (stationUiSpec.replayMode) {
+                    StationReplayMode.TargetLetterOnly -> {
+                        val letter = Episode4Help.targetLetterForHelpHint(q) ?: return@launch
+                        val letterClip = AudioClips.letterNameClip(letter)
+                        if (letterClip != null) {
+                            val id = sfx.playReturningStreamId(letterClip, volume = 1f)
+                            if (id != null) return@launch
+                            if (voice.hasAsset(letterClip)) {
+                                voice.playBlocking(letterClip)
+                                return@launch
+                            }
+                        }
+                        speakLetterPrompt(voice, letter)
+                    }
+                    StationReplayMode.TargetWordOnly -> {
+                        if (q is Question.PictureStartsWithQuestion) {
+                            val wordPath = AudioClips.wordClipByCatalogId(q.catalogEntryId)
+                            if (voice.hasAsset(wordPath)) voice.playBlocking(wordPath)
+                        }
+                    }
+                    else -> replayEpisode4Stations15RoundAudio(sfx = sfx, voice = voice, stationId = stationId, q = q)
+                }
             }
     }
 
@@ -468,13 +496,15 @@ fun GameScreen(
                         // No artificial delay before instruction voice.
                         // Station 1: use SoundPool for ultra-low-latency voice.
                         if (isChapter3HighlightedLetterInWordStation && q is Question.PopBalloonsQuestion) {
-                            // Per-round instruction (letter + word).
+                            // Chapter 3 station 4:
+                            // - First letter of a word: full instruction + word + letter.
+                            // - Subsequent letters of the same word: word + letter only.
                             val round = Chapter3EpisodeContent.pickSpellRound(session.currentIndex)
                             sfx.stopAllStreams()
                             val intro = AudioClips.Ch3St4FindHighlightedLetterInWordInstruction
                             val parts =
                                 buildList {
-                                    if (voice.hasAsset(intro)) add(intro)
+                                    if (round.slotIndex == 0 && voice.hasAsset(intro)) add(intro)
                                     // UX: say the word first, then the letter (matches on-screen context).
                                     add(AudioClips.wordClipByCatalogId(round.catalogId))
                                     AudioClips.letterNameClip(round.correctLetter)?.let { add(it) }
@@ -797,6 +827,10 @@ fun GameScreen(
         }
         delay(5)
         session.nextQuestion()
+        if (session.currentQuestion == null && !completionCallbackFired) {
+            completionCallbackFired = true
+            onComplete(stationId, session.correctCount, session.mistakeCount)
+        }
         contentAlpha.animateTo(1f, tween(BetweenQuestionFadeMs))
     }
 
@@ -932,10 +966,13 @@ fun GameScreen(
                         val feedbackDelayMs =
                             when {
                                 // Episode 4 feedback: station 1 and station 4 should feel near-instant on tap.
-                                chapterId == 4 && stationId == Chapter1StationOrder.TAP_LETTER -> 12L
-                                chapterId == 4 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE -> 12L
+                                chapterId == 4 && stationId == Chapter1StationOrder.TAP_LETTER -> 0L
+                                chapterId == 4 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE -> 0L
+                                chapterId == 4 && stationId == Chapter1StationOrder.PICTURE_PICK_ALL -> 0L
+                                // Chapter 3 station 4 feedback: negative voice should be near-instant.
+                                chapterId == 3 && stationId == 4 -> 0L
                                 // Episode 5 feedback: station 4 wrong response should feel near-instant.
-                                chapterId == 5 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE -> 12L
+                                chapterId == 5 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE -> 0L
                                 else -> 110L
                             }
                         delay(feedbackDelayMs)
@@ -1049,7 +1086,6 @@ fun GameScreen(
                                 FindLetterGridStationContent(
                                     question = current,
                                     modifier = Modifier.fillMaxSize(),
-                                    chapterId = chapterId,
                                     listenOnly = listenOnly,
                                     isSagaRevealStation = isSagaRevealStation,
                                     sagaUsesFindGridAudioStaging = sagaUsesFindGridAudioStaging,
@@ -1178,17 +1214,19 @@ fun GameScreen(
                                         Chapter3SagaPopBalloonsWordBanner(
                                             popAllLettersWord =
                                                 session.chapter3PopAllLettersCurrentWord()?.first.orEmpty(),
+                                            instructionText =
+                                                stationUiSpec.popBalloonsPopAllLettersBannerInstruction
+                                                    ?: StationInstructionCopy.PopBalloonsPopAllLettersInWord,
                                         )
                                     }
                                     if (plan.mode != StationQuizMode.PickLetter) {
                                         PopBalloonsInstructionHeaderBlock(
-                                            chapterId = chapterId,
-                                            stationId = stationId,
                                             listenOnly = listenOnly,
                                             sagaUsesPopBalloonsAudioStaging = sagaUsesPopBalloonsAudioStaging,
-                                            isSagaEpisode = isSagaEpisode(chapterId),
+                                            skipInstructionHeaderBlock = stationUiSpec.popBalloonsSkipInstructionHeaderBlock,
                                             balloonInstructionOverride = stationUiSpec.balloonInstructionOverride,
                                             useEpisode4BalloonInstructionPanel = stationUiSpec.useEpisode4BalloonInstructionPanel,
+                                            showSagaStation2InstructionLine = stationUiSpec.popBalloonsShowSagaStation2InstructionLine,
                                             episode4HelpSt15 = episode4HelpSt15,
                                             episode4HelpActiveHintLetter = episode4Help.activeHintLetter,
                                             hintHeaderScale = hintHeaderScale.value,
@@ -1230,16 +1268,29 @@ fun GameScreen(
                                         PickLetterStationContent(
                                             question = current,
                                             sessionRoundIndex = session.currentIndex,
-                                            isChapter3HighlightedLetterInWordStation = isChapter3HighlightedLetterInWordStation,
-                                            isChapter3AudioLetterRecognitionStation = isChapter3AudioLetterRecognitionStation,
+                                            useHighlightedLetterInWordRow = isChapter3HighlightedLetterInWordStation,
+                                            highlightedInWordInstruction = stationUiSpec.pickLetterHighlightedInWordInstruction,
+                                            showListenOnlyHebrewPanel = stationUiSpec.pickLetterListenOnlyHebrewPanel,
+                                            listenOnlyPanelInstruction = stationUiSpec.pickLetterListenOnlyInstructionText,
+                                            repeatLetterButtonLabel =
+                                                if (isChapter3AudioLetterRecognitionStation) {
+                                                    null
+                                                } else {
+                                                    stationUiSpec.pickLetterRepeatLetterButtonLabel
+                                                },
                                             sagaUsesPickLetterAudioStaging = sagaUsesPickLetterAudioStaging,
                                             station1PinnedCorrectLetter = station1PinnedCorrectLetter,
                                             pickLetterInstructionOverride = stationUiSpec.pickLetterInstructionOverride,
-                                            pickLetterListenOnlyHebrewPanel = stationUiSpec.pickLetterListenOnlyHebrewPanel,
+                                            pickLetterSagaStation1CompactPreamble = stationUiSpec.pickLetterSagaStation1CompactPreamble,
+                                            showSagaStation1CompactPreamble =
+                                                isSagaEpisode(chapterId) &&
+                                                    stationId == Chapter1StationOrder.TAP_LETTER &&
+                                                    stationUiSpec.pickLetterSagaStation1CompactPreamble != null &&
+                                                    stationUiSpec.pickLetterInstructionOverride == null &&
+                                                    !isChapter3AudioLetterRecognitionStation &&
+                                                    !stationUiSpec.pickLetterListenOnlyHebrewPanel &&
+                                                    !isChapter3HighlightedLetterInWordStation,
                                             pickLetterAllowPinnedCorrectShortcut = stationUiSpec.pickLetterAllowPinnedCorrectShortcut,
-                                            isSagaEpisode = isSagaEpisode(chapterId),
-                                            chapterId = chapterId,
-                                            stationId = stationId,
                                             boxTopPaddingDp = pickLetterBoxTopPaddingDp,
                                             letterOptionsExtraTopPaddingDp = letterOptionsExtraTopPaddingDp,
                                             enabled = gameChoicesEnabled,
@@ -1350,20 +1401,6 @@ fun GameScreen(
                                                             (!(sagaUsesPickLetterAudioStaging) || isChapter3HighlightedLetterInWordStation || isChapter3AudioLetterRecognitionStation)
                                                         ) {
                                                             ChildGameAudioHooks.onWrong()
-                                                        }
-                                                        if (audioEnabled && isChapter3AudioLetterRecognitionStation) {
-                                                            scope.launch {
-                                                                cancelFeedbackVoice()
-                                                                val clip = AudioClips.letterNameClip(picked) ?: return@launch
-                                                                voice.playBlocking(clip)
-                                                                val tryAgain =
-                                                                    mutableListOf(
-                                                                        AudioClips.VoTryAgain2,
-                                                                        AudioClips.VoTryAgain1,
-                                                                    )
-                                                                tryAgain.shuffle()
-                                                                voice.playFirstAvailableBlocking(*tryAgain.toTypedArray())
-                                                            }
                                                         }
                                                         shakeEpoch += 1
                                                         wrongTapsThisQuestion += 1
@@ -1585,10 +1622,14 @@ fun GameScreen(
                                         stationUiSpec.pictureStartsWithInstructionOverride != null ->
                                             stationUiSpec.pictureStartsWithInstructionOverride
                                         listenOnly && isSagaEpisode(chapterId) && stationId == Chapter1StationOrder.PICTURE_PICK_ONE ->
-                                            "באיזו אות המילה מתחילה?"
+                                            stationUiSpec.pictureStartsWithListenOnlySagaInstruction
+                                                ?: StationInstructionCopy.PictureStartsWithListenFirstSaga
                                         else ->
-                                            "באיזו אות מתחילה המילה?"
+                                            StationInstructionCopy.PictureStartsWithDefault
                                     }
+                                val pictureInstructionReadablePanel =
+                                    stationUiSpec.pictureStartsWithReadablePanel ||
+                                        stationUiSpec.pictureStartsWithInstructionPanelStyle == InstructionPanelStyle.WhiteRounded
                                 val pictureShowWordCaption =
                                     !(
                                         listenOnly &&
@@ -1605,11 +1646,19 @@ fun GameScreen(
                                 PictureStartsWithStationContent(
                                     question = current,
                                     instructionText = pictureInstructionText,
-                                    instructionReadablePanel = stationUiSpec.pictureStartsWithReadablePanel,
+                                    instructionReadablePanel = pictureInstructionReadablePanel,
                                     showWordCaption = pictureShowWordCaption,
                                     onPictureTapReplayWord =
                                         if (episode4HelpSt15 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
                                             { performEpisode4HelpReplay() }
+                                        } else if (audioEnabled && chapterId == 3 && stationId == 1) {
+                                            {
+                                                cancelFeedbackVoice()
+                                                val wordPath = AudioClips.wordClipByCatalogId(current.catalogEntryId)
+                                                if (voice.hasAsset(wordPath)) {
+                                                    feedbackVoiceJob = scope.launch { voice.playBlocking(wordPath) }
+                                                }
+                                            }
                                         } else {
                                             null
                                         },
@@ -1651,6 +1700,7 @@ fun GameScreen(
                                             1f
                                         },
                                     pictureSizeMultiplier = plan.imageMatchPictureSizeMultiplier,
+                                    sortOptionLetters = plan.sortPictureStartsWithOptionLetters,
                                     chapterId = chapterId,
                                     stationId = stationId,
                                     hintCorrectLetter = current.correctLetter.takeIf { wrongTapsThisQuestion >= 2 },
@@ -1664,7 +1714,11 @@ fun GameScreen(
                                     onPickLetter = picturePick@{ picked ->
                                         if (!consumeTapCooldown()) return@picturePick
                                         cancelFeedbackVoice()
-                                        if (audioEnabled && chapterId == 3 && stationId == 1) {
+                                        if (audioEnabled && (
+                                                (chapterId == 3 && stationId == 1) ||
+                                                    (chapterId == 2 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE)
+                                            )
+                                        ) {
                                             val clip = AudioClips.letterNameClip(picked)
                                             if (clip != null && voice.hasAsset(clip)) {
                                                 feedbackVoiceJob = scope.launch { voice.playBlocking(clip) }
@@ -1749,6 +1803,20 @@ fun GameScreen(
                                         enabled = gameChoicesEnabled,
                                         entryPulseScale = entryPulseScale.value,
                                         optionsShakePx = optionsShake.value,
+                                        instructionText =
+                                            stationUiSpec.imageToWordInstructionText
+                                                ?: StationInstructionCopy.Chapter3ImageToWord,
+                                        onPictureTapReplayWord = {
+                                            if (!audioEnabled) return@Chapter3Station6ImageToWordStationContent
+                                            cancelFeedbackVoice()
+                                            val id = current.correctChoiceId
+                                            val ch3Clip = "audio/ch3_word_${id}.wav"
+                                            val clip =
+                                                if (voice.hasAsset(ch3Clip)) ch3Clip else AudioClips.wordClipByCatalogId(id)
+                                            if (voice.hasAsset(clip)) {
+                                                feedbackVoiceJob = scope.launch { voice.playBlocking(clip) }
+                                            }
+                                        },
                                         onWordPressed = ch3ImgWord@{ choiceId ->
                                             if (!audioEnabled) return@ch3ImgWord
                                             cancelFeedbackVoice()
@@ -1819,6 +1887,7 @@ fun GameScreen(
                                         } else {
                                             0.dp
                                         }
+                                    var lastPraiseClip by remember(chapterId, stationId) { mutableStateOf<String?>(null) }
                                     MatchLetterToWordStationContent(
                                         choices = matchChoices,
                                         choicePairLimit =
@@ -1881,10 +1950,10 @@ fun GameScreen(
                                                 },
                                         chapterId = chapterId,
                                         stationId = stationId,
-                                        instructionReadablePanelOverride =
-                                            (chapterId == 3 && stationId == 2) ||
-                                                stationUiSpec.matchLetterInstructionReadablePanel,
-                                        instructions = "ליחצו על אות והמילה שמתחילה באותה האות",
+                                        instructionReadablePanel = stationUiSpec.matchLetterInstructionReadablePanel,
+                                        instructions =
+                                            stationUiSpec.matchLetterInstructionText
+                                                ?: StationInstructionCopy.MatchLetterFinale,
                                         onSolved = matchSolved@{
                                             if (!consumeTapCooldown()) return@matchSolved
                                             scope.launch {
@@ -1895,17 +1964,21 @@ fun GameScreen(
                                                     cancelFeedbackVoice()
                                                     val job =
                                                         scope.launch {
-                                                            val praise =
-                                                                mutableListOf(
+                                                            val candidates =
+                                                                listOf(
                                                                     AudioClips.VoPraiseMetzuyan,
                                                                     AudioClips.VoPraiseYofi,
                                                                     AudioClips.VoPraiseHitzlacht,
                                                                     AudioClips.VoNice1,
                                                                     AudioClips.VoGoodJob2,
                                                                     AudioClips.VoGoodJob1,
-                                                                )
-                                                            praise.shuffle()
-                                                            voice.playFirstAvailableBlocking(*praise.toTypedArray())
+                                                                ).filter { it != lastPraiseClip }
+                                                            val pickFrom = if (candidates.isNotEmpty()) candidates else listOfNotNull(lastPraiseClip)
+                                                            val picked = pickFrom.shuffled().firstOrNull()
+                                                            if (picked != null) {
+                                                                lastPraiseClip = picked
+                                                                voice.playBlocking(picked)
+                                                            }
                                                         }
                                                     feedbackVoiceJob = job
                                                     withTimeoutOrNull(3000L) { job.join() }
@@ -1937,9 +2010,9 @@ fun GameScreen(
                                                 ?: when {
                                                     isSagaEpisode(chapterId) && stationId == Chapter1StationOrder.PICTURE_PICK_ALL ->
                                                         if (listenOnly) {
-                                                            "מצאו את המילה לפי האות שנשמעה:"
+                                                            StationInstructionCopy.ImageMatchListenFirst
                                                         } else {
-                                                            "מצא את המילה המתחילה באות:"
+                                                            StationInstructionCopy.ImageMatchFindWordStartingWithLetter
                                                         }
                                                     else ->
                                                         null
@@ -2101,6 +2174,41 @@ fun GameScreen(
                 hintEnabled = phase == GamePhase.Play && !episode4Help.hintLocksChoices,
                 onReplay = { performEpisode4HelpReplay() },
                 onHint = { performEpisode4HelpHint() },
+                modifier =
+                    Modifier
+                        .align(Alignment.CenterStart)
+                        .padding(start = 2.dp, top = 100.dp, bottom = 96.dp)
+                        .zIndex(6f),
+            )
+        }
+        if (chapterId == 3 && stationId == 5 && !episode4HelpSt15) {
+            Chapter3Station5ReplayColumn(
+                replayEnabled = phase == GamePhase.Play,
+                onReplayLetter = {
+                    if (!audioEnabled || phase != GamePhase.Play) return@Chapter3Station5ReplayColumn
+                    val q = session.currentQuestion as? Question.PopBalloonsQuestion ?: return@Chapter3Station5ReplayColumn
+                    cancelFeedbackVoice()
+                    val letterClip = AudioClips.letterNameClip(q.correctAnswer) ?: return@Chapter3Station5ReplayColumn
+                    if (voice.hasAsset(letterClip)) {
+                        feedbackVoiceJob = scope.launch { voice.playBlocking(letterClip) }
+                    }
+                },
+                onReplayFull = {
+                    if (!audioEnabled || phase != GamePhase.Play) return@Chapter3Station5ReplayColumn
+                    val q = session.currentQuestion as? Question.PopBalloonsQuestion ?: return@Chapter3Station5ReplayColumn
+                    cancelFeedbackVoice()
+                    feedbackVoiceJob =
+                        scope.launch {
+                            val instruction = AudioClips.Ch3St5AudioLetterRecognitionInstruction
+                            val letterClip = AudioClips.letterNameClip(q.correctAnswer)
+                            val parts =
+                                buildList {
+                                    if (voice.hasAsset(instruction)) add(instruction)
+                                    if (letterClip != null && voice.hasAsset(letterClip)) add(letterClip)
+                                }
+                            if (parts.isNotEmpty()) voice.playSequenceBlocking(*parts.toTypedArray())
+                        }
+                },
                 modifier =
                     Modifier
                         .align(Alignment.CenterStart)
