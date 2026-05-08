@@ -57,6 +57,13 @@ import kotlinx.coroutines.launch
 /** ~½ cm: shared layout nudges for the six-station arc (chapters 1–4); letters/art/intros differ per chapter. */
 internal val SixStationArcHalfCmNudge = 19.dp
 
+enum class StationHeaderMode {
+    /** Default: keep gameplay stations clean (back + progress only). */
+    None,
+    /** Optional: show chapter title + stage label under top chrome. */
+    ChapterTitleAndStage,
+}
+
 @Composable
 internal fun GameScreenBackgroundLayer(
     chapterId: Int,
@@ -95,6 +102,9 @@ internal fun GameScreenTopChrome(
     onBack: () -> Unit,
     questionNumber: Int,
     totalQuestions: Int,
+    stationHeaderMode: StationHeaderMode = StationHeaderMode.None,
+    chapterTitle: String = "",
+    stageLabel: String = "",
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -122,6 +132,22 @@ internal fun GameScreenTopChrome(
                 modifier = Modifier.weight(1f).height(9.dp),
                 color = Color(0xFF2E7D32),
                 trackColor = Color(0xFF0B2B3D).copy(alpha = 0.12f),
+            )
+        }
+
+        if (stationHeaderMode == StationHeaderMode.ChapterTitleAndStage) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = chapterTitle,
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black),
+                color = Color(0xFF0B2B3D).copy(alpha = 0.82f),
+                textAlign = TextAlign.Center,
+            )
+            Text(
+                text = stageLabel,
+                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                color = Color(0xFF0B2B3D).copy(alpha = 0.72f),
+                textAlign = TextAlign.Center,
             )
         }
     }

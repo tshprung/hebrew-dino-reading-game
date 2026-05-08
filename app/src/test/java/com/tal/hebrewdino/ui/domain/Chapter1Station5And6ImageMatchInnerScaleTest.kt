@@ -44,6 +44,12 @@ class Chapter1Station5And6ImageMatchInnerScaleTest {
     }
 
     @Test
+    fun toast_isHalfSize() {
+        assertEquals(1f, Chapter1Station5And6ImageMatchInnerScale.innerScale(LessonChoice("w_ט_1", "ט", "טוסט", 0, R.drawable.lesson_pic_toast)), 0f)
+        assertEquals(1f, Chapter1Station5And6ImageMatchInnerScale.innerScale(LessonChoice("x", "ט", "טוסט", 0, R.drawable.lesson_pic_toast)), 0f)
+    }
+
+    @Test
     fun bedIsLargerScale() {
         assertEquals(0.72f, Chapter1Station5And6ImageMatchInnerScale.innerScale(LessonChoice("w_מ_4", "מ", "מיטה", 0)), 0f)
         assertEquals(0.72f, Chapter1Station5And6ImageMatchInnerScale.innerScale(LessonChoice("x", "מ", "מיטה", 0)), 0f)

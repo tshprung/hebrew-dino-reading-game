@@ -40,7 +40,10 @@ private val chapterResetRows =
         ChapterResetRow(3, "פרק 3 — הביצה הורודה"),
         ChapterResetRow(4, "פרק 4 — סיבוך בדרך"),
         ChapterResetRow(5, "פרק 5 — הביצה השלישית"),
+        ChapterResetRow(6, "פרק 6 — חוזרים הביתה"),
     )
+
+internal fun chapterResetRowIdsForTest(): List<Int> = chapterResetRows.map { it.id }
 
 @Composable
 fun SettingsScreen(

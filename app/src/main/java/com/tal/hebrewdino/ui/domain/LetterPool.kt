@@ -21,3 +21,21 @@ object LetterPool {
         )
 }
 
+object HebrewLetterOrder {
+    private fun key(letter: String): Int {
+        val ch = letter.firstOrNull() ?: return Int.MAX_VALUE
+        val normalized =
+            when (ch) {
+                'ך' -> 'כ'
+                'ם' -> 'מ'
+                'ן' -> 'נ'
+                'ף' -> 'פ'
+                'ץ' -> 'צ'
+                else -> ch
+            }
+        return normalized.code
+    }
+
+    fun sortForDisplay(letters: List<String>): List<String> =
+        letters.sortedWith(compareBy(::key, { it }))
+}

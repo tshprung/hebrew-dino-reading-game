@@ -142,6 +142,11 @@ data class StationUiSpec(
     val imageToWordInstructionText: String? = null,
     /** WIRED: Inline find-grid instruction panel style (replaces chapterId==3 branch in [FindLetterGridGame]). */
     val findGridInlineInstructionPanelStyle: InstructionPanelStyle = InstructionPanelStyle.None,
+    /**
+     * WIRED: Optional extra top inset for station content to avoid crowding the progress bar on stations
+     * that show a large instruction row / banner (spec-driven; default keeps existing layout).
+     */
+    val contentTopInsetDp: Float? = null,
     /** [DOCS] Human-readable registry notes (not read by UI). */
     val riskNotes: String = "",
 )

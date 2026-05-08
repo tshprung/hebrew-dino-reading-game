@@ -299,9 +299,11 @@ fun FindLetterGridGame(
                 val safeMaxHeight = availableForGrid
                 val cellSideByWidth = (outerW - gridHorizontalPadding * 2 - gap * (cols - 1)) / cols
                 val cellSideByHeight = (safeMaxHeight - gap * (rows - 1)) / rows
-                val cellSide =
+                val cellSideBase =
                     // Fill the shorter dimension (width/height) while staying symmetric.
-                    minOf(cellSideByWidth, cellSideByHeight).coerceAtLeast(32.dp) * cellScale
+                    minOf(cellSideByWidth, cellSideByHeight).coerceAtLeast(32.dp)
+                // cellSideScale is only allowed to shrink; never enlarge beyond what already fits in both axes.
+                val cellSide = (cellSideBase * cellScale).coerceAtMost(cellSideBase)
                 val gridW = cellSide * cols + gap * (cols - 1)
                 val gridH = cellSide * rows + gap * (rows - 1)
                 // Keep letters readable; shrink the *squares* to fit landscape. Scale glyphs only via [gridLetterSizeMultiplier].

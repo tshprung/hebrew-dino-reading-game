@@ -19,6 +19,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -30,9 +31,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.Image
@@ -40,6 +43,8 @@ import com.tal.hebrewdino.R
 import com.tal.hebrewdino.ui.domain.Chapter3Config
 import com.tal.hebrewdino.ui.domain.Chapter4Config
 import com.tal.hebrewdino.ui.domain.Chapter5Config
+import com.tal.hebrewdino.ui.domain.Chapter6Config
+import com.tal.hebrewdino.ui.domain.HebrewLetterOrder
 import com.tal.hebrewdino.ui.components.learning.LetterChoiceTile
 import com.tal.hebrewdino.ui.audio.AudioClips
 import com.tal.hebrewdino.ui.audio.VoicePlayer
@@ -118,12 +123,31 @@ fun Chapter5LettersIntroScreen(
 }
 
 @Composable
+fun Chapter6LettersIntroScreen(
+    onContinue: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    ChapterLettersIntroScreen(
+        chapterTitle = "פרק 6 - חוזרים הביתה",
+        letters = HebrewLetterOrder.sortForDisplay(Chapter6Config.letters),
+        backgroundRes = R.drawable.forest_bg_journey_road,
+        letterGridRows = 2,
+        lettersAreaMinHeight = 228.dp,
+        onContinue = onContinue,
+        modifier = modifier,
+    )
+}
+
+@Composable
 fun ChapterLettersIntroScreen(
     chapterTitle: String,
     letters: List<String>,
     backgroundRes: Int,
+    introHeadline: String = "בפרק הזה נלמד את האותיות",
+    introSubhead: String? = null,
     /** 2 = two horizontal rows of letter tiles (Episode 3 layout). */
     letterGridRows: Int = 1,
+    letterTileSize: Dp = 88.dp,
     /** Ensures enough vertical space so rows do not overlap. */
     lettersAreaMinHeight: Dp? = null,
     onContinue: () -> Unit,
@@ -200,11 +224,20 @@ fun ChapterLettersIntroScreen(
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
-                        text = "בפרק הזה נלמד את האותיות",
+                        text = introHeadline,
                         style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Black),
                         color = Color(0xFF0B2B3D),
                         textAlign = TextAlign.Center,
                     )
+                    if (introSubhead != null) {
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = introSubhead,
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                            color = Color(0xFF0B2B3D).copy(alpha = 0.82f),
+                            textAlign = TextAlign.Center,
+                        )
+                    }
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
                         text = chapterTitle,
@@ -228,19 +261,21 @@ fun ChapterLettersIntroScreen(
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
-                        letterRows.forEach { rowLetters ->
-                            Row(
-                                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                rowLetters.forEach { l ->
-                                    LetterChoiceTile(
-                                        letter = l,
-                                        tileSize = 88.dp,
-                                        haloActive = highlightedLetter == l,
-                                        enabled = false,
-                                        onClick = { },
-                                    )
+                        CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+                            letterRows.forEach { rowLetters ->
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    rowLetters.forEach { l ->
+                                        LetterChoiceTile(
+                                            letter = l,
+                                            tileSize = letterTileSize,
+                                            haloActive = highlightedLetter == l,
+                                            enabled = false,
+                                            onClick = { },
+                                        )
+                                    }
                                 }
                             }
                         }

@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -16,13 +15,13 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -39,11 +38,15 @@ import com.tal.hebrewdino.ui.components.learning.LessonChoiceCardPictureAspect
 import com.tal.hebrewdino.ui.components.learning.captionFontSizeForWordCard
 import com.tal.hebrewdino.ui.domain.LessonChoice
 import com.tal.hebrewdino.ui.domain.Question
+import com.tal.hebrewdino.ui.domain.HebrewLetterOrder
 import com.tal.hebrewdino.ui.layout.ScreenFit
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.LayoutDirection
+import com.tal.hebrewdino.ui.screens.LetterOptions
 import kotlin.math.roundToInt
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -194,64 +197,37 @@ fun PictureStartsWithGame(
             }
         }
         Spacer(modifier = Modifier.height(16.dp))
-        val orderedLetters =
-            if (sortOptionLetters) {
-                question.optionLetters.sorted()
-            } else {
-                question.optionLetters
-            }
+        val orderedLetters = pictureStartsWithOrderedLetters(sortOptionLetters, question.optionLetters)
         val displayLetters =
             if (pinnedCorrectLetter != null) {
                 listOf(pinnedCorrectLetter)
             } else {
                 orderedLetters
             }
-        FlowRow(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(20.dp, Alignment.CenterHorizontally),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            displayLetters.forEach { letter ->
-                val pop = remember(letter, question) { Animatable(1f) }
-                val flash = remember(letter, question) { Animatable(0f) }
-                LaunchedEffect(entryPulseEpoch, letter, question) {
-                    if (entryPulseEpoch <= 0) return@LaunchedEffect
-                    // Very subtle guidance: tiny pulse once per round.
-                    pop.animateTo(1.06f, tween(120))
-                    pop.animateTo(1f, spring(dampingRatio = 0.70f, stiffness = 420f))
-                }
-                LaunchedEffect(hintPulseEpoch, hintCorrectLetter, correctPulseEpoch, correctPulseLetter, question) {
-                    val shouldPulse =
-                        (hintPulseEpoch > 0 && hintCorrectLetter == letter) ||
-                            (correctPulseEpoch > 0 && correctPulseLetter == letter)
-                    if (!shouldPulse) return@LaunchedEffect
-                    pop.snapTo(1f)
-                    pop.animateTo(0.90f, tween(70))
-                    // Slightly stronger feedback for station 4 (still fast).
-                    pop.animateTo(1.28f, tween(120))
-                    pop.animateTo(1f, spring(dampingRatio = 0.55f, stiffness = 520f))
-                }
-                LaunchedEffect(wrongFlashEpoch, wrongFlashLetter, letter, question) {
-                    if (wrongFlashEpoch <= 0 || wrongFlashLetter != letter) return@LaunchedEffect
-                    flash.snapTo(1f)
-                    flash.animateTo(0f, tween(220))
-                }
-                Button(
-                    onClick = { onPickLetter(letter) },
-                    enabled = enabled,
-                    modifier =
-                        Modifier
-                            .widthIn(min = 64.dp, max = 84.dp)
-                            .scale(pop.value)
-                            .border(
-                                width = 3.dp,
-                                color = Color(0xFFE53935).copy(alpha = 0.55f * flash.value),
-                                shape = RoundedCornerShape(14.dp),
-                            ),
-                ) {
-                    Text(text = letter, fontSize = 38.sp, fontWeight = FontWeight.Black)
-                }
-            }
+        CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+            LetterOptions(
+                options = displayLetters,
+                enabled = enabled,
+                shakePx = 0f,
+                entryPulseEpoch = entryPulseEpoch,
+                hintPulseLetter = hintCorrectLetter,
+                hintPulseEpoch = hintPulseEpoch,
+                correctPulseLetter = correctPulseLetter,
+                correctPulseEpoch = correctPulseEpoch,
+                wrongFlashLetter = wrongFlashLetter,
+                wrongFlashEpoch = wrongFlashEpoch,
+                onPick = onPickLetter,
+            )
         }
     }
 }
+
+internal fun pictureStartsWithOrderedLetters(
+    sortOptionLetters: Boolean,
+    optionLetters: List<String>,
+): List<String> =
+    if (sortOptionLetters) {
+        HebrewLetterOrder.sortForDisplay(optionLetters)
+    } else {
+        optionLetters
+    }

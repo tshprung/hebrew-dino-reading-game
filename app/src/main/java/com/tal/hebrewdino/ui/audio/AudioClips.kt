@@ -28,7 +28,7 @@ object AudioClips {
     const val VoLevelDone = "audio/vo_level_done.wav"
 
     /** Episode 1 station 5 prefix: "איזו מילה מתחילה באות". */
-    const val WhichWordStartsWithLetter = "audio/find_word_starts_with_letter.wav"
+    const val WhichWordStartsWithLetter = "audio/which_word_starts_with_letter.wav"
 
     /** Episode 1 station 4: "באיזו אות מתחילה המילה" (then play the word clip, e.g. "ברווז"). */
     const val WhichLetterDoesWordStart = "audio/which_letter_does_word_start.wav"
@@ -116,6 +116,9 @@ object AudioClips {
     const val StoryCh3MidBoost = "audio/story_ch3_mid_boost.wav"
     const val StoryCh4MidBoost = "audio/story_ch4_mid_boost.wav"
     const val StoryCh5MidBoost = "audio/story_ch5_mid_boost.wav"
+    const val StoryCh6Intro = "audio/story_ch6_intro.wav"
+    const val StoryCh6MidBoost = "audio/story_ch6_mid_boost.wav"
+    const val StoryCh6Outro = "audio/story_ch6_outro.wav"
 
     /**
      * Optional per-word voice lines, keyed by catalog entry id (e.g. `w_ב_1`).

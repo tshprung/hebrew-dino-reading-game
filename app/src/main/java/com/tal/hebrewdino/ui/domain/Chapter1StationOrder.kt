@@ -25,11 +25,25 @@ object Chapter1StationOrder {
     fun quizPlan(stationId: Int): StationQuizPlan {
         return when (stationId.coerceIn(1, Chapter1Config.STATION_COUNT)) {
             // Station 1: give more rounds to practice.
-            TAP_LETTER -> StationQuizPlan(StationQuizMode.PickLetter, questionCount = 6, initialGroupIndex = 0)
+            TAP_LETTER -> StationQuizPlan(
+                mode = StationQuizMode.PickLetter,
+                questionCount = 6,
+                initialGroupIndex = 0,
+                optionCount = 5
+            )
             // Station 2: a bit longer.
-            BALLOON_POP -> StationQuizPlan(StationQuizMode.PopBalloons, questionCount = 6, initialGroupIndex = 0)
+            BALLOON_POP -> StationQuizPlan(
+                mode = StationQuizMode.PopBalloons,
+                questionCount = 6,
+                initialGroupIndex = 0,
+                optionCount = 10
+            )
             // Station 3: a bit longer.
-            REVEAL_THEN_CHOOSE -> StationQuizPlan(StationQuizMode.FindLetterGrid, questionCount = 7, initialGroupIndex = 0)
+            REVEAL_THEN_CHOOSE -> StationQuizPlan(
+                mode = StationQuizMode.FindLetterGrid,
+                questionCount = 7,
+                initialGroupIndex = 0
+            )
             PICTURE_PICK_ONE ->
                 StationQuizPlan(
                     mode = StationQuizMode.PictureStartsWith,
@@ -38,6 +52,8 @@ object Chapter1StationOrder {
                     // Same caption/picture tuning as stations 5–6 so the single picture card matches ImageMatch.
                     imageMatchCaptionSizeMultiplier = 1.5f,
                     imageMatchPictureSizeMultiplier = 1f,
+                    optionCount = 5,
+                    sortOptionLetters = true
                 )
             PICTURE_PICK_ALL ->
                 StationQuizPlan(
