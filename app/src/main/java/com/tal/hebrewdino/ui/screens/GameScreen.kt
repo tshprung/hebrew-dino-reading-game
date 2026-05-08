@@ -548,7 +548,7 @@ fun GameScreen(
                                     if (letterClip != null) add(letterClip)
                                 }.filter { voice.hasAsset(it) }
                             if (parts.isNotEmpty()) voice.playSequenceBlocking(*parts.toTypedArray())
-                        } else if (chapterId == 6 && stationId == Chapter1StationOrder.PICTURE_PICK_ALL && q is Question.ImageMatchQuestion) {
+                        } else if (stationUiSpec.templateId == StationTemplateId.ImageMatch && stationId == Chapter1StationOrder.PICTURE_PICK_ALL && q is Question.ImageMatchQuestion) {
                             sfx.stopAllStreams()
                             val intro = AudioClips.WhichWordStartsWithLetter
                             val letterName = AudioClips.letterNameClip(q.targetLetter)

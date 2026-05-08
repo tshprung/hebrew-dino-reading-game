@@ -6,6 +6,7 @@ import com.tal.hebrewdino.ui.domain.Chapter1StationOrder.PICTURE_PICK_ALL
 import com.tal.hebrewdino.ui.domain.Chapter1StationOrder.PICTURE_PICK_ONE
 import com.tal.hebrewdino.ui.domain.Chapter1StationOrder.REVEAL_THEN_CHOOSE
 import com.tal.hebrewdino.ui.domain.Chapter1StationOrder.TAP_LETTER
+import com.tal.hebrewdino.ui.audio.AudioClips
 import com.tal.hebrewdino.ui.screens.chapterResetRowIdsForTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -251,6 +252,37 @@ class StationBehaviorRegistryTest {
     @Test
     fun chapter5_station5_imageMatchShowsTargetLetterChip_learning() {
         assertTrue(StationBehaviorRegistry.getStationUiSpec(5, PICTURE_PICK_ALL).imageMatchShowTargetLetterChip)
+    }
+
+    @Test
+    fun imageMatch_station5_is_unified_across_chapters_1_2_4_5_6() {
+        val chapters = listOf(1, 2, 4, 5, 6)
+        for (chapterId in chapters) {
+            val spec = StationBehaviorRegistry.getStationUiSpec(chapterId, PICTURE_PICK_ALL)
+            assertEquals(StationTemplateId.ImageMatch, spec.templateId)
+            assertEquals(
+                "בחר את התמונה שמתחילה באות:",
+                spec.imageMatchHeaderInstructionOverride,
+            )
+        }
+
+        for (chapterId in listOf(1, 2, 4, 5)) {
+            val spec = StationBehaviorRegistry.getStationUiSpec(chapterId, PICTURE_PICK_ALL)
+            assertTrue(spec.imageMatchShowTargetLetterChip)
+            assertFalse(spec.helpControlsEnabled)
+        }
+
+        val ch6 = StationBehaviorRegistry.getStationUiSpec(6, PICTURE_PICK_ALL)
+        assertFalse(ch6.imageMatchShowTargetLetterChip)
+        assertTrue(ch6.helpControlsEnabled)
+        assertEquals(StationReplayMode.TargetLetterOnly, ch6.replayMode)
+        assertEquals(StationHintMode.TemporaryTargetLetter, ch6.hintMode)
+    }
+
+    @Test
+    fun imageMatch_audioPrompt_is_whichWordStartsWithLetter() {
+        assertEquals("audio/which_word_starts_with_letter.wav", AudioClips.WhichWordStartsWithLetter)
+        assertFalse(AudioClips.WhichWordStartsWithLetter.contains("find_word_starts_with_letter"))
     }
 
     @Test
