@@ -1116,22 +1116,24 @@ fun AppNav() {
             val stationId = backStackEntry.arguments?.getInt("stationId") ?: 1
             val correct = backStackEntry.arguments?.getInt("correct") ?: 0
             val mistakes = backStackEntry.arguments?.getInt("mistakes") ?: 0
-            val backToMap: () -> Unit = {
-                if (stationId == 3 && !chapter6MidBoostSeen) {
-                    navController.navigate(NavRoutes.Ch6MidBoost) {
-                        popUpTo("${NavRoutes.Ch6Reward}/$stationId/$correct/$mistakes") { inclusive = true }
+            val backToMap: () -> Unit =
+                backToMap@{
+                    if (stationId == 3 && !chapter6MidBoostSeen) {
+                        navController.navigate(NavRoutes.Ch6MidBoost) {
+                            popUpTo("${NavRoutes.Ch6Reward}/$stationId/$correct/$mistakes") { inclusive = true }
+                        }
+                        return@backToMap
                     }
-                } else
-                if (stationId >= Chapter6Config.STATION_COUNT) {
-                    navController.navigate(NavRoutes.Ch6Outro) {
-                        popUpTo(NavRoutes.Ch6Journey) { inclusive = true }
-                    }
-                } else {
-                    navController.navigate(NavRoutes.Ch6Journey) {
-                        popUpTo(NavRoutes.Ch6Journey) { inclusive = true }
+                    if (stationId >= Chapter6Config.STATION_COUNT) {
+                        navController.navigate(NavRoutes.Ch6Outro) {
+                            popUpTo(NavRoutes.Ch6Journey) { inclusive = true }
+                        }
+                    } else {
+                        navController.navigate(NavRoutes.Ch6Journey) {
+                            popUpTo(NavRoutes.Ch6Journey) { inclusive = true }
+                        }
                     }
                 }
-            }
             BackHandler { backToMap() }
             RewardScreen(
                 levelId = stationId,

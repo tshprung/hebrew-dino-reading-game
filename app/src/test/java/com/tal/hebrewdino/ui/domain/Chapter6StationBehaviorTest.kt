@@ -49,6 +49,7 @@ class Chapter6StationBehaviorTest {
         assertEquals("audio/story_ch6_mid_boost.wav", AudioClips.StoryCh6MidBoost)
         assertEquals("audio/story_ch6_outro.wav", AudioClips.StoryCh6Outro)
         assertEquals("audio/this_is.wav", AudioClips.ThisIsPrefix)
+        assertEquals("audio/which_word_starts_with_letter.wav", AudioClips.WhichWordStartsWithLetter)
     }
 
     @Test

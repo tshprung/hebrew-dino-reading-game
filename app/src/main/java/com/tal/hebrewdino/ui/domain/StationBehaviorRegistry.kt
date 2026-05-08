@@ -379,7 +379,7 @@ object StationBehaviorRegistry {
             4 ->
                 pictureStartsWithSpec(chapterId = 6, stationId = stationId, plan = plan)
                     .copy(
-                        contentTopInsetDp = 56f,
+                        contentTopInsetDp = 76f,
                         riskNotes = "Ch6 st4 picture; uses unified pictureStartsWithSpec.",
                     )
             5 ->
@@ -397,6 +397,7 @@ object StationBehaviorRegistry {
                     imageMatchShowTargetLetterChip = false,
                     imageMatchHeaderInstructionOverride = StationInstructionCopy.ImageMatchFindWordStartingWithLetter,
                     imageMatchHeaderReadablePanel = true,
+                    contentTopInsetDp = 86f,
                     riskNotes = "Ch6 st5 image match (review).",
                 )
             6 ->

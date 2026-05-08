@@ -1763,7 +1763,7 @@ fun GameScreen(
                                     correctPulseEpoch = correctTapPulseEpoch,
                                     wrongFlashLetter = station4WrongFlashLetter,
                                     wrongFlashEpoch = station4WrongFlashEpoch,
-                                    entryPulseScale = entryPulseScale.value,
+                                    entryPulseScale = 1f,
                                     verticalNudgeDp = pictureVerticalNudge,
                                     onPickLetter = picturePick@{ picked ->
                                         if (!consumeTapCooldown()) return@picturePick
@@ -2063,7 +2063,12 @@ fun GameScreen(
                                         contentKey = session.currentIndex,
                                         enabled = gameChoicesEnabled,
                                         shakePx = optionsShake.value,
-                                        entryPulseEpoch = entryPulseEpoch,
+                                        entryPulseEpoch =
+                                            if (chapterId == 6 && stationId == Chapter1StationOrder.PICTURE_PICK_ALL) {
+                                                0
+                                            } else {
+                                                entryPulseEpoch
+                                            },
                                         hintCorrectChoiceId = current.correctChoiceId.takeIf { wrongTapsThisQuestion >= 2 },
                                         hintPulseEpoch = hintPulseEpoch,
                                         showWordCaptions = !(chapterId == 3 && stationId == 6),

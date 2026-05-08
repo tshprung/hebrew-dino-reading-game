@@ -6,6 +6,7 @@ import com.tal.hebrewdino.ui.domain.Chapter1StationOrder.PICTURE_PICK_ALL
 import com.tal.hebrewdino.ui.domain.Chapter1StationOrder.PICTURE_PICK_ONE
 import com.tal.hebrewdino.ui.domain.Chapter1StationOrder.REVEAL_THEN_CHOOSE
 import com.tal.hebrewdino.ui.domain.Chapter1StationOrder.TAP_LETTER
+import com.tal.hebrewdino.ui.screens.chapterResetRowIdsForTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -370,6 +371,16 @@ class StationBehaviorRegistryTest {
         assertEquals(StationReplayMode.TargetLetterOnly, spec.replayMode)
         assertEquals(StationHintMode.TemporaryTargetLetter, spec.hintMode)
         assertEquals(StationInstructionCopy.ImageMatchFindWordStartingWithLetter, spec.imageMatchHeaderInstructionOverride)
+        assertTrue((spec.contentTopInsetDp ?: 0f) >= 80f)
+    }
+
+    @Test
+    fun chapter6_station4_pictureStartsWith_hasReadablePanel_and_safeInset() {
+        val spec = StationBehaviorRegistry.getStationUiSpec(6, PICTURE_PICK_ONE)
+        assertEquals(StationTemplateId.PictureStartsWith, spec.templateId)
+        assertEquals("באיזו אות מתחילה המילה:", spec.pictureStartsWithInstructionOverride)
+        assertTrue(spec.pictureStartsWithReadablePanel)
+        assertTrue((spec.contentTopInsetDp ?: 0f) >= 70f)
     }
 
     @Test
@@ -397,6 +408,11 @@ class StationBehaviorRegistryTest {
         assertTrue((ch4.optionCount ?: 0) <= 6)
         assertTrue((ch5.optionCount ?: 0) <= 6)
         assertTrue((ch6.optionCount ?: 0) <= 6)
+    }
+
+    @Test
+    fun settings_resetChapters_list_includes_chapter6() {
+        assertTrue(6 in chapterResetRowIdsForTest())
     }
 
     @Test
