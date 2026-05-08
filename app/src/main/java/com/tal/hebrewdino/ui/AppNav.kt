@@ -1056,7 +1056,7 @@ fun AppNav() {
                 headerSubtitle = null,
                 headerSubtitleCompact = true,
                 collectedEggStripCount = collectedEggStripCount,
-                endMarker = JourneyEndMarker.HomeCave,
+                endMarker = JourneyEndMarker.Mom,
                 backgroundRes = R.drawable.forest_bg_journey_road,
                 onPlayLevel = { stationId ->
                     navController.navigate("${NavRoutes.Ch6Level}/$stationId")

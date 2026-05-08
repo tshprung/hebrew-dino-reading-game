@@ -29,6 +29,7 @@ object AudioClips {
 
     /** Episode 1 station 5 prefix: "איזו מילה מתחילה באות". */
     const val WhichWordStartsWithLetter = "audio/which_word_starts_with_letter.wav"
+    const val ChoosePictureStartsWithLetter = "audio/choose_picture_starts_with_letter.wav"
 
     /** Episode 1 station 4: "באיזו אות מתחילה המילה" (then play the word clip, e.g. "ברווז"). */
     const val WhichLetterDoesWordStart = "audio/which_letter_does_word_start.wav"

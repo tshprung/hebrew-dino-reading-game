@@ -78,6 +78,39 @@ class LevelSession(
             else -> letterPoolSpec.groups.flatten().distinct()
         }
 
+    data class HighlightedLetterInWordRound(
+        val word: String,
+        val catalogId: String,
+        val slotIndex: Int,
+        val correctLetter: String,
+    )
+
+    fun highlightedLetterInWordRound(questionIndex: Int = currentIndex): HighlightedLetterInWordRound? {
+        if (!plan.highlightedLetterInWordPickLetter) return null
+        return if (letterPoolSpec === Chapter6LetterPoolSpec) {
+            val r = Chapter6Config.pickSpellRound(questionIndex)
+            HighlightedLetterInWordRound(
+                word = r.word,
+                catalogId = r.catalogId,
+                slotIndex = r.slotIndex,
+                correctLetter = r.correctLetter,
+            )
+        } else {
+            val r = Chapter3EpisodeContent.pickSpellRound(questionIndex)
+            HighlightedLetterInWordRound(
+                word = r.word,
+                catalogId = r.catalogId,
+                slotIndex = r.slotIndex,
+                correctLetter = r.correctLetter,
+            )
+        }
+    }
+
+    fun highlightedLetterInWordCompletesWordAfterCorrectRound(questionIndex: Int = currentIndex): Boolean {
+        val r = highlightedLetterInWordRound(questionIndex) ?: return false
+        return r.slotIndex == r.word.lastIndex
+    }
+
     private fun pictureStartsWithOptionLetters(correctLetter: String): List<String> {
         val pool = episodeOptionLetters().distinct()
         val desired =
@@ -123,6 +156,38 @@ class LevelSession(
                             )
                         }
                         StationQuizMode.PickLetter -> {
+                            if (plan.highlightedLetterInWordPickLetter) {
+                                val round =
+                                    highlightedLetterInWordRound(currentIndex)
+                                        ?: error("Expected highlighted-in-word round when plan.highlightedLetterInWordPickLetter=true")
+                                val optionCount = plan.optionCount ?: 6
+                                val pool = episodeOptionLetters().distinct()
+                                val options =
+                                    buildList {
+                                        add(round.correctLetter)
+                                        addAll(
+                                            pool
+                                                .filter { it != round.correctLetter }
+                                                .shuffled(rnd)
+                                                .take((optionCount - 1).coerceAtLeast(1)),
+                                        )
+                                    }.distinct()
+                                val padded =
+                                    if (options.size >= optionCount) {
+                                        options.take(optionCount)
+                                    } else {
+                                        val extra =
+                                            pool
+                                                .filter { it !in options }
+                                                .shuffled(rnd)
+                                                .take(optionCount - options.size)
+                                        options + extra
+                                    }
+                                return Question.PopBalloonsQuestion(
+                                    correctAnswer = round.correctLetter,
+                                    options = padded,
+                                )
+                            }
                             if (letterPoolSpec === Chapter3LetterPoolSpec) {
                                 val optionCount = plan.optionCount ?: 6
                                 if (plan.chapter3AudioLetterRecognition) {
@@ -134,34 +199,6 @@ class LevelSession(
                                         group = group,
                                         correctAnswer = correct,
                                         optionCount = optionCount,
-                                    )
-                                } else if (plan.highlightedLetterInWordPickLetter) {
-                                    val round = Chapter3EpisodeContent.pickSpellRound(currentIndex)
-                                    val options =
-                                        buildList {
-                                            add(round.correctLetter)
-                                            val distractors =
-                                                Chapter3Config.letters
-                                                    .filter { it != round.correctLetter }
-                                                    .shuffled(rnd)
-                                                    .take((optionCount - 1).coerceAtLeast(1))
-                                            addAll(distractors)
-                                        }.distinct()
-                                    // Ensure size is stable (kids notice when the layout jumps).
-                                    val padded =
-                                        if (options.size >= optionCount) {
-                                            options.take(optionCount)
-                                        } else {
-                                            val extra =
-                                                Chapter3Config.letters
-                                                    .filter { it !in options }
-                                                    .shuffled(rnd)
-                                                    .take(optionCount - options.size)
-                                            options + extra
-                                        }
-                                    Question.PopBalloonsQuestion(
-                                        correctAnswer = round.correctLetter,
-                                        options = padded,
                                     )
                                 } else if (plan.chapter3FindAnyLetterInWordPickLetter) {
                                     val (word, _) = Chapter3EpisodeContent.findAnyInWord(currentIndex)

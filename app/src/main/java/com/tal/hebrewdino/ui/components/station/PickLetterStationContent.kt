@@ -29,7 +29,6 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
 import com.tal.hebrewdino.ui.components.ChapterNavChipStyles
 import com.tal.hebrewdino.ui.components.TargetLetterHeaderChip
-import com.tal.hebrewdino.ui.domain.Chapter3EpisodeContent
 import com.tal.hebrewdino.ui.domain.LessonWordIllustrations
 import com.tal.hebrewdino.ui.domain.Question
 import com.tal.hebrewdino.ui.screens.LetterOptions
@@ -42,8 +41,8 @@ import com.tal.hebrewdino.ui.screens.LetterOptions
 @Composable
 fun ColumnScope.PickLetterStationContent(
     question: Question.PopBalloonsQuestion,
-    sessionRoundIndex: Int,
-    useHighlightedLetterInWordRow: Boolean,
+    highlightedInWordWord: String?,
+    highlightedInWordSlotIndex: Int?,
     highlightedInWordInstruction: String?,
     showTargetLetterChip: Boolean,
     temporaryHintLetter: String?,
@@ -85,9 +84,8 @@ fun ColumnScope.PickLetterStationContent(
             modifier = Modifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            if (useHighlightedLetterInWordRow && highlightedInWordInstruction != null) {
-                val spell = Chapter3EpisodeContent.pickSpellRound(sessionRoundIndex)
-                val emoji = LessonWordIllustrations.emojiForWord(spell.word)
+            if (highlightedInWordWord != null && highlightedInWordSlotIndex != null && highlightedInWordInstruction != null) {
+                val emoji = LessonWordIllustrations.emojiForWord(highlightedInWordWord)
                 Text(
                     text = highlightedInWordInstruction,
                     fontSize = 32.sp,
@@ -114,15 +112,15 @@ fun ColumnScope.PickLetterStationContent(
                                 .padding(horizontal = 16.dp, vertical = 10.dp),
                     ) {
                         Chapter3SpellWordRow(
-                            word = spell.word,
-                            highlightIndex = spell.slotIndex,
+                            word = highlightedInWordWord,
+                            highlightIndex = highlightedInWordSlotIndex,
                         )
                     }
                     Spacer(modifier = Modifier.width(10.dp))
                     Text(text = emoji, fontSize = 42.sp)
                 }
             }
-            if (!useHighlightedLetterInWordRow && showListenOnlyHebrewPanel && listenOnlyPanelInstruction != null) {
+            if (highlightedInWordWord == null && showListenOnlyHebrewPanel && listenOnlyPanelInstruction != null) {
                 Text(
                     text = listenOnlyPanelInstruction,
                     fontSize = 39.sp,
@@ -146,7 +144,7 @@ fun ColumnScope.PickLetterStationContent(
                     )
                 }
                 Spacer(modifier = Modifier.height(16.dp))
-            } else if (!useHighlightedLetterInWordRow && pickLetterInstructionOverride != null) {
+            } else if (highlightedInWordWord == null && pickLetterInstructionOverride != null) {
                 Text(
                     text = pickLetterInstructionOverride,
                     fontSize = 39.sp,
@@ -190,7 +188,7 @@ fun ColumnScope.PickLetterStationContent(
                     modifier = Modifier.padding(top = 10.dp),
                 )
                 Spacer(modifier = Modifier.height(18.dp))
-            } else if (!useHighlightedLetterInWordRow && showTargetLetterChip) {
+            } else if (highlightedInWordWord == null && showTargetLetterChip) {
                 TargetLetterHeaderChip(
                     letter = question.correctAnswer,
                     modifier = Modifier.padding(top = 4.dp),

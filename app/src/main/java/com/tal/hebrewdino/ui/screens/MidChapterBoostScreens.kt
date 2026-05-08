@@ -123,8 +123,8 @@ fun Chapter6MidBoostScreen(
         backgroundRes = R.drawable.forest_bg_journey_road,
         title = "ממשיכים!",
         body =
-            "איזה יופי! אתם זוכרים מילים ואותיות מצוין.\n" +
-                "עוד קצת תרגול — ונחזור הביתה עם דינו.",
+            "דינו כבר רואה את הדרך לאמא.\n" +
+                "נמשיך לתרגל ונחזיר את הביצים הביתה.",
         eggStripCount = eggStripCount,
         companion = ChapterLobbyCompanion.DinoOnly,
         voiceAssetPath = AudioClips.StoryCh6MidBoost,

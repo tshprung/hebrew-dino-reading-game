@@ -130,6 +130,7 @@ private data class JourneyProgressKey(
 enum class JourneyEndMarker {
     Egg,
     HomeCave,
+    Mom,
     PinkEgg,
     PurpleEgg,
     Tracks,
@@ -648,6 +649,13 @@ private fun JourneyRoadStrip(
                                 DinoNestMark()
                             }
                         }
+                    JourneyEndMarker.Mom ->
+                        Image(
+                            painter = painterResource(id = R.drawable.mom_idle),
+                            contentDescription = null,
+                            modifier = Modifier.size(110.dp).scale(goalPulse),
+                            contentScale = ContentScale.Fit,
+                        )
                     JourneyEndMarker.PinkEgg ->
                         Image(
                             painter = painterResource(id = R.drawable.egg_pink),
@@ -827,6 +835,7 @@ private fun JourneyStationMarker(
                 when (endMarker) {
                     JourneyEndMarker.Egg -> R.drawable.egg_white
                     JourneyEndMarker.HomeCave -> R.drawable.egg_found
+                    JourneyEndMarker.Mom -> R.drawable.mom_idle
                     JourneyEndMarker.PinkEgg -> R.drawable.egg_pink
                     JourneyEndMarker.PurpleEgg -> R.drawable.egg_purple
                     JourneyEndMarker.Tracks -> R.drawable.finish_marker_tracks

@@ -203,6 +203,13 @@ fun GameScreen(
             plan.mode == StationQuizMode.PickLetter &&
             plan.highlightedLetterInWordPickLetter
 
+    val highlightedInWordRound =
+        if (isChapter3HighlightedLetterInWordStation) {
+            session.highlightedLetterInWordRound()
+        } else {
+            null
+        }
+
     val isChapter3AudioLetterRecognitionStation =
         stationUiSpec.templateId == StationTemplateId.PickLetter &&
             stationUiSpec.hasVariant(StationVariant.Chapter3AudioLetterRecognition) &&
@@ -315,7 +322,7 @@ fun GameScreen(
         feedbackVoiceJob =
             scope.launch {
                 if (plan.highlightedLetterInWordPickLetter && q is Question.PopBalloonsQuestion) {
-                    val round = Chapter3EpisodeContent.pickSpellRound(session.currentIndex)
+                    val round = session.highlightedLetterInWordRound() ?: return@launch
                     val wordPath = AudioClips.wordClipByCatalogId(round.catalogId)
                     val letterClip = AudioClips.letterNameClip(round.correctLetter)
                     val parts =
@@ -525,7 +532,7 @@ fun GameScreen(
                             // Chapter 3 station 4:
                             // - First letter of a word: full instruction + word + letter.
                             // - Subsequent letters of the same word: word + letter only.
-                            val round = Chapter3EpisodeContent.pickSpellRound(session.currentIndex)
+                            val round = session.highlightedLetterInWordRound() ?: return@launch
                             sfx.stopAllStreams()
                             val intro = AudioClips.Ch3St4FindHighlightedLetterInWordInstruction
                             val parts =
@@ -550,7 +557,10 @@ fun GameScreen(
                             if (parts.isNotEmpty()) voice.playSequenceBlocking(*parts.toTypedArray())
                         } else if (stationUiSpec.templateId == StationTemplateId.ImageMatch && stationId == Chapter1StationOrder.PICTURE_PICK_ALL && q is Question.ImageMatchQuestion) {
                             sfx.stopAllStreams()
-                            val intro = AudioClips.WhichWordStartsWithLetter
+                            val intro =
+                                listOf(AudioClips.ChoosePictureStartsWithLetter, AudioClips.WhichWordStartsWithLetter)
+                                    .firstOrNull { voice.hasAsset(it) }
+                                    ?: AudioClips.WhichWordStartsWithLetter
                             val letterName = AudioClips.letterNameClip(q.targetLetter)
                             val parts =
                                 buildList {
@@ -1332,8 +1342,8 @@ fun GameScreen(
                                             }
                                         PickLetterStationContent(
                                             question = current,
-                                            sessionRoundIndex = session.currentIndex,
-                                            useHighlightedLetterInWordRow = isChapter3HighlightedLetterInWordStation,
+                                            highlightedInWordWord = highlightedInWordRound?.word,
+                                            highlightedInWordSlotIndex = highlightedInWordRound?.slotIndex,
                                             highlightedInWordInstruction = stationUiSpec.pickLetterHighlightedInWordInstruction,
                                             showTargetLetterChip = !listenOnly && !isChapter3HighlightedLetterInWordStation,
                                             temporaryHintLetter = episode4Help.activeHintLetter,
@@ -1394,9 +1404,7 @@ fun GameScreen(
                                                         correctTapPulseLetter = picked
                                                         correctTapPulseEpoch += 1
                                                         if (audioEnabled && isChapter3HighlightedLetterInWordStation) {
-                                                            val idx = session.currentIndex
-                                                            val wordDone =
-                                                                Chapter3EpisodeContent.spellCompletesWordAfterCorrectRound(idx)
+                                                                val wordDone = session.highlightedLetterInWordCompletesWordAfterCorrectRound()
                                                             scope.launch {
                                                                 sfx.playFirstAvailable(AudioClips.SfxCorrect, volume = 0.62f)
                                                                 val letterName = AudioClips.letterNameClip(picked)
@@ -1743,7 +1751,12 @@ fun GameScreen(
                                         },
                                     enabled = gameChoicesEnabled,
                                     shakePx = optionsShake.value,
-                                    entryPulseEpoch = entryPulseEpoch,
+                                    entryPulseEpoch =
+                                        if (chapterId == 6 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
+                                            0
+                                        } else {
+                                            entryPulseEpoch
+                                        },
                                     promptWordSizeMultiplier = plan.imageMatchCaptionSizeMultiplier * 1.2f,
                                     innerPictureScale =
                                         Chapter1Station5And6ImageMatchInnerScale.innerScalePictureStartsWith(
@@ -2064,7 +2077,9 @@ fun GameScreen(
                                         enabled = gameChoicesEnabled,
                                         shakePx = optionsShake.value,
                                         entryPulseEpoch =
-                                            if (chapterId == 6 && stationId == Chapter1StationOrder.PICTURE_PICK_ALL) {
+                                            if (stationUiSpec.templateId == StationTemplateId.ImageMatch &&
+                                                stationId == Chapter1StationOrder.PICTURE_PICK_ALL
+                                            ) {
                                                 0
                                             } else {
                                                 entryPulseEpoch
@@ -2150,6 +2165,7 @@ fun GameScreen(
                         episode4HelpSt15 &&
                         episode4Help.activeHintLetter != null &&
                         current is Question.PopBalloonsQuestion &&
+                        stationUiSpec.templateId == StationTemplateId.PopBalloons &&
                         !stationUiSpec.excludeFullScreenBalloonHintOverlay
                     ) {
                         Box(
