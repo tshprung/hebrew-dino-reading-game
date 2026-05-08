@@ -109,6 +109,9 @@ object AudioClips {
     /** Episode 5 (optional narration). */
     const val StoryCh5Intro = "audio/story_ch5_intro.wav"
     const val StoryCh5ThirdEggOutro = "audio/story_ch5_third_egg_outro.wav"
+    /** Episode 6 (optional narration). */
+    const val StoryCh6Intro = "audio/story_ch6_intro.wav"
+    const val StoryCh6Outro = "audio/story_ch6_outro.wav"
     // Mid-chapter boost (after station 3)
     const val StoryCh1MidBoost = "audio/story_ch1_mid_boost.wav"
     const val StoryCh2MidBoost = "audio/story_ch2_mid_boost.wav"
@@ -116,6 +119,7 @@ object AudioClips {
     const val StoryCh3MidBoost = "audio/story_ch3_mid_boost.wav"
     const val StoryCh4MidBoost = "audio/story_ch4_mid_boost.wav"
     const val StoryCh5MidBoost = "audio/story_ch5_mid_boost.wav"
+    const val StoryCh6MidBoost = "audio/story_ch6_mid_boost.wav"
 
     /**
      * Optional per-word voice lines, keyed by catalog entry id (e.g. `w_ב_1`).

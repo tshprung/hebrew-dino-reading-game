@@ -1,5 +1,7 @@
 package com.tal.hebrewdino.ui.domain
 
+import com.tal.hebrewdino.ui.NavRoutes
+import com.tal.hebrewdino.ui.audio.AudioClips
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
@@ -27,6 +29,18 @@ class Chapter6StationBehaviorTest {
         assertTrue(q is Question.PopBalloonsQuestion)
         val pq = q as Question.PopBalloonsQuestion
         assertEquals(10, pq.options.size)
+    }
+
+    @Test
+    fun chapter6_storyAudioClipPaths_areDefined() {
+        assertEquals("audio/story_ch6_intro.wav", AudioClips.StoryCh6Intro)
+        assertEquals("audio/story_ch6_mid_boost.wav", AudioClips.StoryCh6MidBoost)
+        assertEquals("audio/story_ch6_outro.wav", AudioClips.StoryCh6Outro)
+    }
+
+    @Test
+    fun chapter6_midBoostRoute_isStable() {
+        assertEquals("ch6_mid_boost", NavRoutes.Ch6MidBoost)
     }
 }
 

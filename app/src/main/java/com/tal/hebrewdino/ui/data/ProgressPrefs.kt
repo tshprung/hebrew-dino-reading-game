@@ -49,6 +49,7 @@ class ProgressPrefs(private val context: Context) {
     private val chapter5CompletedKey: Preferences.Key<Boolean> = booleanPreferencesKey("chapter5_completed")
     private val chapter6IntroSeenKey: Preferences.Key<Boolean> = booleanPreferencesKey("chapter6_intro_seen")
     private val chapter6LettersIntroSeenKey: Preferences.Key<Boolean> = booleanPreferencesKey("chapter6_letters_intro_seen")
+    private val chapter6MidBoostSeenKey: Preferences.Key<Boolean> = booleanPreferencesKey("chapter6_mid_boost_seen")
     private val chapter6UnlockedStationKey: Preferences.Key<Int> = intPreferencesKey("chapter6_unlocked_station")
     private val chapter6CompletedStationsKey: Preferences.Key<String> =
         androidx.datastore.preferences.core.stringPreferencesKey("chapter6_completed_stations")
@@ -195,6 +196,9 @@ class ProgressPrefs(private val context: Context) {
     val chapter6LettersIntroSeenFlow: Flow<Boolean> =
         context.dataStore.data.map { prefs -> prefs[chapter6LettersIntroSeenKey] ?: false }
 
+    val chapter6MidBoostSeenFlow: Flow<Boolean> =
+        context.dataStore.data.map { prefs -> prefs[chapter6MidBoostSeenKey] ?: false }
+
     val chapter6UnlockedStationFlow: Flow<Int> =
         context.dataStore.data.map { prefs ->
             (prefs[chapter6UnlockedStationKey] ?: 1).coerceIn(1, Chapter6Config.STATION_COUNT)
@@ -251,6 +255,10 @@ class ProgressPrefs(private val context: Context) {
 
     suspend fun markChapter5MidBoostSeen() {
         context.dataStore.edit { prefs -> prefs[chapter5MidBoostSeenKey] = true }
+    }
+
+    suspend fun markChapter6MidBoostSeen() {
+        context.dataStore.edit { prefs -> prefs[chapter6MidBoostSeenKey] = true }
     }
 
     suspend fun unlockChapter2AtLeast(stationId: Int) {
@@ -703,6 +711,7 @@ class ProgressPrefs(private val context: Context) {
             prefs[chapter5CompletedKey] = false
             prefs[chapter6IntroSeenKey] = false
             prefs[chapter6LettersIntroSeenKey] = false
+            prefs[chapter6MidBoostSeenKey] = false
             prefs[chapter6UnlockedStationKey] = 1
             prefs[chapter6CompletedStationsKey] = ""
             prefs[chapter6CompletedKey] = false
@@ -756,6 +765,7 @@ class ProgressPrefs(private val context: Context) {
             if (6 in chapterIds) {
                 prefs[chapter6IntroSeenKey] = false
                 prefs[chapter6LettersIntroSeenKey] = false
+                prefs[chapter6MidBoostSeenKey] = false
                 prefs[chapter6UnlockedStationKey] = 1
                 prefs[chapter6CompletedStationsKey] = ""
                 prefs[chapter6CompletedKey] = false
