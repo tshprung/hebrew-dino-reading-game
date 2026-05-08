@@ -11,7 +11,7 @@ object StationInstructionCopy {
     const val PickLetterSagaStation1Preamble = "בחר את האות:"
     const val PickLetterEpisode4AndCh5 = "בחר את האות:"
 
-    const val PopBalloonsPopAllLettersInWord = "פוצץ את כל הבלונים עם אותיות המופיעות במילה:"
+    const val PopBalloonsPopAllLettersInWord = "פוצץ את כל הבלונים עם אותיות שמופיעות במילה:"
     const val PopBalloonsWithLetter = "פוצץ את הבלונים עם האות:"
     const val PopBalloonsListenFirst = "פוצץ את הבלונים של האות שנשמעה:"
 
@@ -22,8 +22,8 @@ object StationInstructionCopy {
     const val PictureStartsWithDefault = "באיזו אות מתחילה המילה?"
     const val PictureStartsWithEpisode4 = "באיזו אות מתחילה המילה:"
 
-    const val ImageMatchFindWordStartingWithLetter = "מצא את המילה המתחילה באות:"
-    const val ImageMatchListenFirst = "מצאו את המילה לפי האות שנשמעה:"
+    const val ImageMatchFindWordStartingWithLetter = "בחר את התמונה שמתחילה באות:"
+    const val ImageMatchListenFirst = "בחר את התמונה שמתחילה באות:"
 
     const val MatchLetterFinale = "ליחצו על אות והמילה שמתחילה באותה האות"
 

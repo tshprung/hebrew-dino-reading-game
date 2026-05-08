@@ -66,12 +66,7 @@ fun FindLetterGridStationContent(
             } else {
                 1f
             },
-        contentNudgeDownFraction =
-            if (isSagaRevealStation) {
-                0.05f
-            } else {
-                0f
-            },
+        contentNudgeDownFraction = 0f,
         onLetterTapped = onSagaGridLetterTapped,
         hintPulseEpoch = hintPulseEpoch,
         hintHeaderPeakScale = if (sagaUsesFindGridAudioStaging) 1.30f else 1.12f,

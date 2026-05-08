@@ -46,6 +46,7 @@ import com.tal.hebrewdino.ui.domain.LevelSession
 import com.tal.hebrewdino.ui.domain.Question
 import com.tal.hebrewdino.ui.domain.LetterPoolSpec
 import com.tal.hebrewdino.ui.domain.Chapter3EpisodeContent
+import com.tal.hebrewdino.ui.domain.HebrewLetterOrder
 import com.tal.hebrewdino.ui.domain.InstructionPanelStyle
 import com.tal.hebrewdino.ui.domain.StationBehaviorRegistry
 import com.tal.hebrewdino.ui.domain.StationInstructionCopy
@@ -313,6 +314,22 @@ fun GameScreen(
         }
         feedbackVoiceJob =
             scope.launch {
+                if (plan.highlightedLetterInWordPickLetter && q is Question.PopBalloonsQuestion) {
+                    val round = Chapter3EpisodeContent.pickSpellRound(session.currentIndex)
+                    val wordPath = AudioClips.wordClipByCatalogId(round.catalogId)
+                    val letterClip = AudioClips.letterNameClip(round.correctLetter)
+                    val parts =
+                        buildList {
+                            if (voice.hasAsset(wordPath)) add(wordPath)
+                            if (letterClip != null && voice.hasAsset(letterClip)) add(letterClip)
+                        }
+                    if (parts.isNotEmpty()) {
+                        voice.playSequenceBlocking(*parts.toTypedArray())
+                    } else {
+                        if (letterClip != null) speakLetterPrompt(voice, round.correctLetter)
+                    }
+                    return@launch
+                }
                 if (plan.popAllLettersInWord && q is Question.PopBalloonsQuestion) {
                     val catalogId = session.chapter3PopAllLettersCurrentWord()?.second
                     if (!catalogId.isNullOrBlank()) {
@@ -523,7 +540,7 @@ fun GameScreen(
                             }
                         } else if (isChapter3AudioLetterRecognitionStation && q is Question.PopBalloonsQuestion) {
                             sfx.stopAllStreams()
-                            val instruction = AudioClips.Ch3St5AudioLetterRecognitionInstruction
+                            val instruction = AudioClips.VoChooseLetter
                             val letterClip = AudioClips.letterNameClip(q.correctAnswer)
                             val parts =
                                 buildList {
@@ -531,6 +548,25 @@ fun GameScreen(
                                     if (letterClip != null) add(letterClip)
                                 }.filter { voice.hasAsset(it) }
                             if (parts.isNotEmpty()) voice.playSequenceBlocking(*parts.toTypedArray())
+                        } else if (chapterId == 6 && stationId == Chapter1StationOrder.PICTURE_PICK_ALL && q is Question.ImageMatchQuestion) {
+                            sfx.stopAllStreams()
+                            val intro = AudioClips.WhichWordStartsWithLetter
+                            val letterName = AudioClips.letterNameClip(q.targetLetter)
+                            val parts =
+                                buildList {
+                                    if (voice.hasAsset(intro)) add(intro)
+                                    if (letterName != null) add(letterName)
+                                }.filter { voice.hasAsset(it) }
+                            if (parts.isNotEmpty()) {
+                                voice.playSequenceBlocking(*parts.toTypedArray())
+                            } else {
+                                speakLetterPrompt(voice, q.targetLetter)
+                            }
+                        } else if (stationUiSpec.templateId == StationTemplateId.MatchLetterToWord && q is Question.ImageMatchQuestion) {
+                            sfx.stopAllStreams()
+                            if (voice.hasAsset(AudioClips.MatchLetterToWordInstructions)) {
+                                voice.playBlocking(AudioClips.MatchLetterToWordInstructions)
+                            }
                         } else if (sagaUsesPickLetterAudioStaging) {
                             val target =
                                 when (q) {
@@ -571,6 +607,12 @@ fun GameScreen(
                             }
                         } else if (sagaUsesFindGridAudioStaging && q is Question.FindLetterGridQuestion) {
                             playSagaFindGridIntroSoundPool(sfx, voice, q, chapterId, StationIntroLetterLeadFraction)
+                        } else if (chapterId == 6 && stationId == 4 && q is Question.PictureStartsWithQuestion) {
+                            sfx.stopAllStreams()
+                            val clip = AudioClips.WhichLetterDoesWordStart
+                            val wordPath = AudioClips.wordClipByCatalogId(q.catalogEntryId)
+                            if (voice.hasAsset(clip)) voice.playBlocking(clip)
+                            if (voice.hasAsset(wordPath)) voice.playBlocking(wordPath)
                         } else if (chapterId == 3 && stationId == 1 && q is Question.PictureStartsWithQuestion) {
                             sfx.stopAllStreams()
                             // Episode 3 station 1: reuse Episode 1 station 4 instruction voice.
@@ -1272,11 +1314,7 @@ fun GameScreen(
                                             ) {
                                                 listOf(station1PinnedCorrectLetter!!)
                                             } else {
-                                                if (isChapter3HighlightedLetterInWordStation) {
-                                                    current.options.sorted()
-                                                } else {
-                                                    current.options
-                                                }
+                                                HebrewLetterOrder.sortForDisplay(current.options)
                                             }
                                         val letterOptionsExtraTopPaddingDp =
                                             when {
@@ -1297,6 +1335,8 @@ fun GameScreen(
                                             sessionRoundIndex = session.currentIndex,
                                             useHighlightedLetterInWordRow = isChapter3HighlightedLetterInWordStation,
                                             highlightedInWordInstruction = stationUiSpec.pickLetterHighlightedInWordInstruction,
+                                            showTargetLetterChip = !listenOnly && !isChapter3HighlightedLetterInWordStation,
+                                            temporaryHintLetter = episode4Help.activeHintLetter,
                                             showListenOnlyHebrewPanel = stationUiSpec.pickLetterListenOnlyHebrewPanel,
                                             listenOnlyPanelInstruction = stationUiSpec.pickLetterListenOnlyInstructionText,
                                             repeatLetterButtonLabel =
@@ -1678,7 +1718,7 @@ fun GameScreen(
                                     onPictureTapReplayWord =
                                         if (episode4HelpSt15 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
                                             { performEpisode4HelpReplay() }
-                                        } else if (audioEnabled && chapterId == 3 && stationId == 1) {
+                                        } else if (audioEnabled) {
                                             {
                                                 cancelFeedbackVoice()
                                                 val wordPath = AudioClips.wordClipByCatalogId(current.catalogEntryId)
@@ -1704,30 +1744,17 @@ fun GameScreen(
                                     enabled = gameChoicesEnabled,
                                     shakePx = optionsShake.value,
                                     entryPulseEpoch = entryPulseEpoch,
-                                    promptWordSizeMultiplier =
-                                        if ((isSagaEpisode(chapterId) && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) ||
-                                            (chapterId == 3 && stationId == 1)
-                                        ) {
-                                            plan.imageMatchCaptionSizeMultiplier * 1.2f
-                                        } else {
-                                            1f
-                                        },
+                                    promptWordSizeMultiplier = plan.imageMatchCaptionSizeMultiplier * 1.2f,
                                     innerPictureScale =
-                                        if ((isSagaEpisode(chapterId) && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) ||
-                                            (chapterId == 3 && stationId == 1)
-                                        ) {
-                                            Chapter1Station5And6ImageMatchInnerScale.innerScalePictureStartsWith(
-                                                catalogEntryId = current.catalogEntryId,
-                                                letter = current.correctLetter,
-                                                word = current.word,
-                                                tintArgb = current.tintArgb,
-                                                tileDrawable = current.tileDrawable,
-                                            )
-                                        } else {
-                                            1f
-                                        },
+                                        Chapter1Station5And6ImageMatchInnerScale.innerScalePictureStartsWith(
+                                            catalogEntryId = current.catalogEntryId,
+                                            letter = current.correctLetter,
+                                            word = current.word,
+                                            tintArgb = current.tintArgb,
+                                            tileDrawable = current.tileDrawable,
+                                        ),
                                     pictureSizeMultiplier = plan.imageMatchPictureSizeMultiplier,
-                                    sortOptionLetters = plan.sortPictureStartsWithOptionLetters,
+                                    sortOptionLetters = plan.sortOptionLetters,
                                     chapterId = chapterId,
                                     stationId = stationId,
                                     hintCorrectLetter = current.correctLetter.takeIf { wrongTapsThisQuestion >= 2 },
@@ -1898,7 +1925,8 @@ fun GameScreen(
                                     )
                                 } else if (
                                     (chapterId == 3 && stationId == 2) ||
-                                        (isSagaEpisode(chapterId) && stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH)
+                                        (isSagaEpisode(chapterId) && stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH) ||
+                                        (chapterId == 6 && stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH)
                                 ) {
                                     // Same three picture cards as this round's ImageMatch question (station 5 generator/shape).
                                     val matchChoices = current.choices
@@ -1908,27 +1936,13 @@ fun GameScreen(
                                         cancelFeedbackVoice()
                                         feedbackVoiceJob = scope.launch { play() }
                                     }
-                                    val matchLetterVerticalNudge =
-                                        if (isSagaEpisode(chapterId) && stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH) {
-                                            SixStationArcHalfCmNudge
-                                        } else {
-                                            0.dp
-                                        }
                                     var lastPraiseClip by remember(chapterId, stationId) { mutableStateOf<String?>(null) }
                                     MatchLetterToWordStationContent(
                                         choices = matchChoices,
-                                        choicePairLimit =
-                                            if (chapterId == 3 && stationId == 2) {
-                                                3
-                                            } else if (chapterId == 3 && stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH) {
-                                                4
-                                            } else {
-                                                3
-                                            },
+                                        choicePairLimit = 3,
                                         contentKey = session.currentIndex,
                                         enabled = gameChoicesEnabled,
-                                        compactWideSpread =
-                                            isSagaEpisode(chapterId) && stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH,
+                                        compactWideSpread = false,
                                         onWordPressed = { choiceId ->
                                             speakNow {
                                                 val ch3Clip = "audio/ch3_word_${choiceId}.wav"
@@ -1954,27 +1968,9 @@ fun GameScreen(
                                             // Wrong speech handled in onWrongMatch (letter name + try again).
                                         },
                                         innerPictureScaleForChoice = { choice ->
-                                            if (isSagaEpisode(chapterId) && stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH) {
-                                                Chapter1Station5And6ImageMatchInnerScale.innerScale(choice)
-                                            } else if (chapterId == 3 && stationId == 2) {
-                                                // Match Episode 1/2 station 5 picture sizing.
-                                                Chapter1Station5And6ImageMatchInnerScale.innerScale(choice)
-                                            } else {
-                                                when {
-                                                    choice.word == "מדוזה" || choice.id == "w_מ_3" || choice.tileDrawable == R.drawable.lesson_pic_medusa -> 0.5f
-                                                    else -> 1f
-                                                }
-                                            }
+                                            Chapter1Station5And6ImageMatchInnerScale.innerScale(choice)
                                         },
-                                        captionSizeMultiplier =
-                                            plan.imageMatchCaptionSizeMultiplier *
-                                                if (isSagaEpisode(chapterId) && stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH) {
-                                                    1.2f
-                                                } else if (chapterId == 3 && stationId == 2) {
-                                                    1.2f
-                                                } else {
-                                                    1f
-                                                },
+                                        captionSizeMultiplier = plan.imageMatchCaptionSizeMultiplier,
                                         chapterId = chapterId,
                                         stationId = stationId,
                                         instructionReadablePanel = stationUiSpec.matchLetterInstructionReadablePanel,
@@ -2021,7 +2017,7 @@ fun GameScreen(
                                             }
                                         },
                                         entryPulseScale = entryPulseScale.value,
-                                        verticalNudgeDp = matchLetterVerticalNudge,
+                                        verticalNudgeDp = SixStationArcHalfCmNudge,
                                     )
                                 } else {
                                     val imageMatchVerticalNudge =
@@ -2045,11 +2041,7 @@ fun GameScreen(
                                                         null
                                                 },
                                         headerInstructionFontScale =
-                                            if (isSagaEpisode(chapterId) && stationId == Chapter1StationOrder.PICTURE_PICK_ALL) {
-                                                1.35f * 1.5f
-                                            } else {
-                                                1.35f
-                                            },
+                                            1.35f * 2f,
                                         headerPromptWord =
                                             if (chapterId == 3 && stationId == 6) {
                                                 current.targetWord
@@ -2076,19 +2068,10 @@ fun GameScreen(
                                         hintPulseEpoch = hintPulseEpoch,
                                         showWordCaptions = !(chapterId == 3 && stationId == 6),
                                         captionSizeMultiplier =
-                                            plan.imageMatchCaptionSizeMultiplier *
-                                                if (isSagaEpisode(chapterId) && stationId == Chapter1StationOrder.PICTURE_PICK_ALL) {
-                                                    1.2f
-                                                } else {
-                                                    1f
-                                                },
+                                            plan.imageMatchCaptionSizeMultiplier,
                                         pictureSizeMultiplier = plan.imageMatchPictureSizeMultiplier,
                                         innerPictureScaleForChoice = { choice ->
-                                            if (isSagaEpisode(chapterId) && stationId == Chapter1StationOrder.PICTURE_PICK_ALL) {
-                                                Chapter1Station5And6ImageMatchInnerScale.innerScale(choice)
-                                            } else {
-                                                1f
-                                            }
+                                            Chapter1Station5And6ImageMatchInnerScale.innerScale(choice)
                                         },
                                         chapterId = chapterId,
                                         stationId = stationId,
@@ -2197,7 +2180,10 @@ fun GameScreen(
             Episode4Stations15HelpColumn(
                 // Replay must stay available while choices are locked for feedback; only letter/grid taps use inputLocked.
                 replayEnabled = phase == GamePhase.Play,
-                hintEnabled = phase == GamePhase.Play && !episode4Help.hintLocksChoices,
+                hintEnabled =
+                    phase == GamePhase.Play &&
+                        !episode4Help.hintLocksChoices &&
+                        stationUiSpec.hintMode != com.tal.hebrewdino.ui.domain.StationHintMode.None,
                 onReplay = { performEpisode4HelpReplay() },
                 onHint = { performEpisode4HelpHint() },
                 modifier =
@@ -2225,7 +2211,7 @@ fun GameScreen(
                     cancelFeedbackVoice()
                     feedbackVoiceJob =
                         scope.launch {
-                            val instruction = AudioClips.Ch3St5AudioLetterRecognitionInstruction
+                            val instruction = AudioClips.VoChooseLetter
                             val letterClip = AudioClips.letterNameClip(q.correctAnswer)
                             val parts =
                                 buildList {

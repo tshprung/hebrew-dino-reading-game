@@ -45,6 +45,7 @@ import com.tal.hebrewdino.ui.screens.Chapter5LettersIntroScreen
 import com.tal.hebrewdino.ui.screens.Chapter5LevelScreen
 import com.tal.hebrewdino.ui.screens.Chapter5MidBoostScreen
 import com.tal.hebrewdino.ui.screens.Chapter5OutroScreen
+import com.tal.hebrewdino.ui.screens.Chapter6MidBoostScreen
 import com.tal.hebrewdino.ui.screens.Chapter6IntroScreen
 import com.tal.hebrewdino.ui.screens.Chapter6LettersIntroScreen
 import com.tal.hebrewdino.ui.screens.Chapter6LevelScreen
@@ -93,6 +94,7 @@ fun AppNav() {
     val chapter5Completed by progress.chapter5CompletedFlow.collectAsState(initial = false)
     val chapter6IntroSeen by progress.chapter6IntroSeenFlow.collectAsState(initial = false)
     val chapter6LettersIntroSeen by progress.chapter6LettersIntroSeenFlow.collectAsState(initial = false)
+    val chapter6MidBoostSeen by progress.chapter6MidBoostSeenFlow.collectAsState(initial = false)
     val chapter6UnlockedStation by progress.chapter6UnlockedStationFlow.collectAsState(initial = 1)
     val chapter6CompletedStations by progress.chapter6CompletedStationsFlow.collectAsState(initial = emptySet())
     val chapter6Completed by progress.chapter6CompletedFlow.collectAsState(initial = false)
@@ -860,6 +862,18 @@ fun AppNav() {
             )
         }
 
+        composable(NavRoutes.Ch6MidBoost) {
+            Chapter6MidBoostScreen(
+                eggStripCount = collectedEggStripCount,
+                onContinue = {
+                    scope.launch { progress.markChapter6MidBoostSeen() }
+                    navController.navigate(NavRoutes.Ch6Journey) {
+                        popUpTo(NavRoutes.Ch6MidBoost) { inclusive = true }
+                    }
+                },
+            )
+        }
+
         composable(NavRoutes.Ch5Intro) {
             Chapter5IntroScreen(
                 eggStripCount = collectedEggStripCount,
@@ -1103,6 +1117,11 @@ fun AppNav() {
             val correct = backStackEntry.arguments?.getInt("correct") ?: 0
             val mistakes = backStackEntry.arguments?.getInt("mistakes") ?: 0
             val backToMap: () -> Unit = {
+                if (stationId == 3 && !chapter6MidBoostSeen) {
+                    navController.navigate(NavRoutes.Ch6MidBoost) {
+                        popUpTo("${NavRoutes.Ch6Reward}/$stationId/$correct/$mistakes") { inclusive = true }
+                    }
+                } else
                 if (stationId >= Chapter6Config.STATION_COUNT) {
                     navController.navigate(NavRoutes.Ch6Outro) {
                         popUpTo(NavRoutes.Ch6Journey) { inclusive = true }

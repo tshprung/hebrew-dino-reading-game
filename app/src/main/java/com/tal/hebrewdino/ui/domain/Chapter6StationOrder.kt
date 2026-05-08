@@ -8,33 +8,32 @@ package com.tal.hebrewdino.ui.domain
 object Chapter6StationOrder {
     fun quizPlan(stationId: Int): StationQuizPlan {
         return when (stationId.coerceIn(1, Chapter6Config.STATION_COUNT)) {
-            // Station 1 — listen and choose the letter (same shape as Episode 4/5 station 1).
+            // Station 1 — listen-first pick letter (review; uses Chapter 6 config letters).
             1 ->
+                StationQuizPlan(
+                    mode = StationQuizMode.PickLetter,
+                    questionCount = 10,
+                    initialGroupIndex = 0,
+                    listenOnlyTargetPrompt = true,
+                    optionCount = 6,
+                )
+            // Station 2 — find highlighted letter in word (review; uses spell data from episode content).
+            2 ->
                 StationQuizPlan(
                     mode = StationQuizMode.PickLetter,
                     questionCount = 8,
                     initialGroupIndex = 0,
-                    pickLetterOptionCount = 6,
-                    listenOnlyTargetPrompt = true,
-                )
-            // Station 2 — pick the highlighted letter in a word (reuse Ch3 st4 behavior).
-            2 ->
-                StationQuizPlan(
-                    mode = StationQuizMode.PickLetter,
-                    questionCount = 9,
-                    initialGroupIndex = 0,
-                    pickLetterOptionCount = 6,
-                    listenOnlyTargetPrompt = false,
                     highlightedLetterInWordPickLetter = true,
+                    optionCount = 6,
                 )
-            // Station 3 — pop all letters appearing in the word (reuse Ch3 st3 behavior).
+            // Station 3 — any-letter-in-word balloons (review; uses balloon word data).
             3 ->
                 StationQuizPlan(
                     mode = StationQuizMode.PopBalloons,
-                    questionCount = 5,
+                    questionCount = 8,
                     initialGroupIndex = 0,
-                    listenOnlyTargetPrompt = false,
                     popAllLettersInWord = true,
+                    optionCount = 10,
                 )
             // Station 4 — picture starts with (review; keep manageable options).
             4 ->

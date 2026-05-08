@@ -78,6 +78,18 @@ class LevelSession(
             else -> letterPoolSpec.groups.flatten().distinct()
         }
 
+    private fun pictureStartsWithOptionLetters(correctLetter: String): List<String> {
+        val pool = episodeOptionLetters().distinct()
+        val desired =
+            (plan.optionCount ?: pool.size)
+                .coerceAtMost(6)
+                .coerceAtLeast(2)
+                .coerceAtMost(pool.size)
+        if (pool.size <= desired) return pool
+        val distractors = pool.filter { it != correctLetter }.shuffled(rnd)
+        return (listOf(correctLetter) + distractors.take((desired - 1).coerceAtLeast(1))).distinct()
+    }
+
     val totalQuestions: Int get() = questionCount
 
     val questionNumber: Int get() = currentIndex + 1
@@ -112,7 +124,7 @@ class LevelSession(
                         }
                         StationQuizMode.PickLetter -> {
                             if (letterPoolSpec === Chapter3LetterPoolSpec) {
-                                val optionCount = plan.pickLetterOptionCount ?: 6
+                                val optionCount = plan.optionCount ?: 6
                                 if (plan.chapter3AudioLetterRecognition) {
                                     // Station 5: audio says a letter; learner taps it. Ensure we don't repeat the target
                                     // letter during a station run by using the balanced bag.
@@ -181,7 +193,7 @@ class LevelSession(
                                     rnd = rnd,
                                     group = group,
                                     correctAnswer = correct,
-                                    optionCount = plan.pickLetterOptionCount ?: 3,
+                                    optionCount = plan.optionCount ?: 3,
                                 )
                             }
                         }
@@ -192,7 +204,7 @@ class LevelSession(
                                         ?: error("Expected Chapter 3 pop-all-letters words to be initialized")
                                 // Chapter 3 station 3: balloons must include letter occurrences (e.g. "שמש" has two "ש").
                                 val correctBalloons = word.toCharArray().map { it.toString() }
-                                val optionCount = 10
+                                val optionCount = plan.optionCount ?: 10
                                 val inWord = correctBalloons.toSet()
                                 val distractors =
                                     Chapter3Config.letters
@@ -216,13 +228,14 @@ class LevelSession(
                                     rnd = rnd,
                                     group = group,
                                     correctAnswer = correct,
-                                    optionCount = 7,
+                                    optionCount = plan.optionCount ?: 7,
                                 )
                             }
                         }
                         StationQuizMode.PictureStartsWith -> {
                             val correct = nextBalancedCorrect(group)
                             val used = lessonWordUsedCorrectIdsByLetter.getOrPut(correct) { mutableSetOf() }
+                            val optionLetters = pictureStartsWithOptionLetters(correctLetter = correct)
                             val q =
                                 if (letterPoolSpec === Chapter3LetterPoolSpec) {
                                     Chapter3LessonGenerators.pictureStartsWith(
@@ -230,7 +243,7 @@ class LevelSession(
                                         group = group,
                                         targetLetter = correct,
                                         excludeCorrectWordIds = used,
-                                        optionLetters = episodeOptionLetters(),
+                                        optionLetters = optionLetters,
                                     )
                                 } else {
                                     Chapter1LessonGenerators.pictureStartsWith(
@@ -238,7 +251,7 @@ class LevelSession(
                                         group = group,
                                         targetLetter = correct,
                                         excludeCorrectWordIds = used,
-                                        optionLetters = episodeOptionLetters(),
+                                        optionLetters = optionLetters,
                                     )
                                 }
                             used.add(q.catalogEntryId)

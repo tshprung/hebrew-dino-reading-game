@@ -19,6 +19,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -30,9 +31,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.Image
@@ -41,6 +44,7 @@ import com.tal.hebrewdino.ui.domain.Chapter3Config
 import com.tal.hebrewdino.ui.domain.Chapter4Config
 import com.tal.hebrewdino.ui.domain.Chapter5Config
 import com.tal.hebrewdino.ui.domain.Chapter6Config
+import com.tal.hebrewdino.ui.domain.HebrewLetterOrder
 import com.tal.hebrewdino.ui.components.learning.LetterChoiceTile
 import com.tal.hebrewdino.ui.audio.AudioClips
 import com.tal.hebrewdino.ui.audio.VoicePlayer
@@ -125,13 +129,10 @@ fun Chapter6LettersIntroScreen(
 ) {
     ChapterLettersIntroScreen(
         chapterTitle = "פרק 6 - חוזרים הביתה",
-        letters = Chapter6Config.letters,
+        letters = HebrewLetterOrder.sortForDisplay(Chapter6Config.letters),
         backgroundRes = R.drawable.forest_bg_journey_road,
-        introHeadline = "בפרק הזה נחזור על אותיות שכבר למדנו.",
-        introSubhead = "נעזור לדינו לחזור הביתה עם שלוש הביצים.",
         letterGridRows = 2,
-        letterTileSize = 76.dp,
-        lettersAreaMinHeight = 280.dp,
+        lettersAreaMinHeight = 228.dp,
         onContinue = onContinue,
         modifier = modifier,
     )
@@ -260,19 +261,21 @@ fun ChapterLettersIntroScreen(
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
-                        letterRows.forEach { rowLetters ->
-                            Row(
-                                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                rowLetters.forEach { l ->
-                                    LetterChoiceTile(
-                                        letter = l,
-                                        tileSize = letterTileSize,
-                                        haloActive = highlightedLetter == l,
-                                        enabled = false,
-                                        onClick = { },
-                                    )
+                        CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+                            letterRows.forEach { rowLetters ->
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    rowLetters.forEach { l ->
+                                        LetterChoiceTile(
+                                            letter = l,
+                                            tileSize = letterTileSize,
+                                            haloActive = highlightedLetter == l,
+                                            enabled = false,
+                                            onClick = { },
+                                        )
+                                    }
                                 }
                             }
                         }

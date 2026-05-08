@@ -19,6 +19,7 @@ class Chapter1StationOrderTest {
         assertEquals(StationQuizMode.PickLetter, s1.mode)
         assertEquals(6, s1.questionCount)
         assertEquals(0, s1.initialGroupIndex)
+        assertEquals(5, s1.optionCount)
 
         val s2 = Chapter1StationOrder.quizPlan(2)
         assertEquals(StationQuizMode.PopBalloons, s2.mode)

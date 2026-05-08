@@ -116,6 +116,9 @@ object AudioClips {
     const val StoryCh3MidBoost = "audio/story_ch3_mid_boost.wav"
     const val StoryCh4MidBoost = "audio/story_ch4_mid_boost.wav"
     const val StoryCh5MidBoost = "audio/story_ch5_mid_boost.wav"
+    const val StoryCh6Intro = "audio/story_ch6_intro.wav"
+    const val StoryCh6MidBoost = "audio/story_ch6_mid_boost.wav"
+    const val StoryCh6Outro = "audio/story_ch6_outro.wav"
 
     /**
      * Optional per-word voice lines, keyed by catalog entry id (e.g. `w_ב_1`).

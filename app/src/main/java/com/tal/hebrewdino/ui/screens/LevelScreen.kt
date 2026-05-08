@@ -289,8 +289,13 @@ internal fun LetterOptions(
     options: List<String>,
     enabled: Boolean,
     shakePx: Float,
+    entryPulseEpoch: Int = 0,
+    hintPulseLetter: String? = null,
+    hintPulseEpoch: Int = 0,
     correctPulseLetter: String? = null,
     correctPulseEpoch: Int = 0,
+    wrongFlashLetter: String? = null,
+    wrongFlashEpoch: Int = 0,
     /** Deeper press squish + larger bounce (e.g. Ch3 st5 “מצא את האות שנאמרת”). */
     strongPressFeedback: Boolean = false,
     onPick: (String) -> Unit,
@@ -307,7 +312,20 @@ internal fun LetterOptions(
         options.forEach { letter ->
             val interaction = remember(letter) { MutableInteractionSource() }
             val pressed by interaction.collectIsPressedAsState()
-            val pop = remember { Animatable(1f) }
+            val pop = remember(letter) { Animatable(1f) }
+            val flash = remember(letter) { Animatable(0f) }
+            LaunchedEffect(entryPulseEpoch, letter, options) {
+                if (entryPulseEpoch <= 0) return@LaunchedEffect
+                pop.animateTo(1.06f, tween(120))
+                pop.animateTo(1f, spring(dampingRatio = 0.70f, stiffness = 420f))
+            }
+            LaunchedEffect(hintPulseEpoch, hintPulseLetter, letter, options) {
+                if (hintPulseEpoch <= 0 || hintPulseLetter != letter) return@LaunchedEffect
+                pop.snapTo(1f)
+                pop.animateTo(0.90f, tween(70))
+                pop.animateTo(1.28f, tween(120))
+                pop.animateTo(1f, spring(dampingRatio = 0.55f, stiffness = 520f))
+            }
             LaunchedEffect(correctPulseEpoch, correctPulseLetter) {
                 if (correctPulseEpoch <= 0 || correctPulseLetter != letter) return@LaunchedEffect
                 pop.snapTo(1f)
@@ -321,6 +339,11 @@ internal fun LetterOptions(
                     pop.animateTo(1f, spring(dampingRatio = 0.5f, stiffness = 500f))
                 }
             }
+            LaunchedEffect(wrongFlashEpoch, wrongFlashLetter, letter, options) {
+                if (wrongFlashEpoch <= 0 || wrongFlashLetter != letter) return@LaunchedEffect
+                flash.snapTo(1f)
+                flash.animateTo(0f, tween(220))
+            }
             val pressSquish =
                 if (pressed) {
                     if (strongPressFeedback) 0.84f else 0.94f
@@ -332,6 +355,12 @@ internal fun LetterOptions(
                 onClick = { onPick(letter) },
                 enabled = enabled,
                 interactionSource = interaction,
+                modifier =
+                    Modifier.border(
+                        width = 3.dp,
+                        color = Color(0xFFE53935).copy(alpha = 0.55f * flash.value),
+                        shape = RoundedCornerShape(14.dp),
+                    ),
             ) {
                 Text(
                     text = letter,

@@ -113,3 +113,22 @@ fun Chapter5MidBoostScreen(
     )
 }
 
+@Composable
+fun Chapter6MidBoostScreen(
+    eggStripCount: Int,
+    onContinue: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    ChapterLobbyStoryLayout(
+        backgroundRes = R.drawable.forest_bg_journey_road,
+        title = "כמעט בבית!",
+        body = "דינו כבר רואה את הדרך לאמא. נמשיך לתרגל ונחזיר את הביצים הביתה.",
+        eggStripCount = eggStripCount,
+        companion = ChapterLobbyCompanion.DinoOnly,
+        voiceAssetPath = AudioClips.StoryCh6MidBoost,
+        dinoContentDescription = "דינו",
+        onContinue = onContinue,
+        modifier = modifier,
+    )
+}
+
