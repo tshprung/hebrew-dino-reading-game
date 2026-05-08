@@ -45,6 +45,7 @@ import com.tal.hebrewdino.ui.screens.Chapter5LettersIntroScreen
 import com.tal.hebrewdino.ui.screens.Chapter5LevelScreen
 import com.tal.hebrewdino.ui.screens.Chapter5MidBoostScreen
 import com.tal.hebrewdino.ui.screens.Chapter5OutroScreen
+import com.tal.hebrewdino.ui.screens.Chapter6MidBoostScreen
 import com.tal.hebrewdino.ui.screens.Chapter6IntroScreen
 import com.tal.hebrewdino.ui.screens.Chapter6LettersIntroScreen
 import com.tal.hebrewdino.ui.screens.Chapter6LevelScreen
@@ -862,6 +863,18 @@ fun AppNav() {
             )
         }
 
+        composable(NavRoutes.Ch6MidBoost) {
+            Chapter6MidBoostScreen(
+                eggStripCount = collectedEggStripCount,
+                onContinue = {
+                    scope.launch { progress.markChapter6MidBoostSeen() }
+                    navController.navigate(NavRoutes.Ch6Journey) {
+                        popUpTo(NavRoutes.Ch6MidBoost) { inclusive = true }
+                    }
+                },
+            )
+        }
+
         composable(NavRoutes.Ch5Intro) {
             Chapter5IntroScreen(
                 eggStripCount = collectedEggStripCount,
@@ -1134,12 +1147,16 @@ fun AppNav() {
                     navController.navigate(NavRoutes.Ch6Outro) {
                         popUpTo(NavRoutes.Ch6Journey) { inclusive = true }
                     }
-                } else {
-                    navController.navigate(NavRoutes.Ch6Journey) {
-                        popUpTo(NavRoutes.Ch6Journey) { inclusive = true }
+                    if (stationId >= Chapter6Config.STATION_COUNT) {
+                        navController.navigate(NavRoutes.Ch6Outro) {
+                            popUpTo(NavRoutes.Ch6Journey) { inclusive = true }
+                        }
+                    } else {
+                        navController.navigate(NavRoutes.Ch6Journey) {
+                            popUpTo(NavRoutes.Ch6Journey) { inclusive = true }
+                        }
                     }
                 }
-            }
             BackHandler { backToMap() }
             RewardScreen(
                 levelId = stationId,

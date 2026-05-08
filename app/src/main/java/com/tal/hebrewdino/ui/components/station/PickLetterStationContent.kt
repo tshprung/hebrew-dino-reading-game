@@ -45,6 +45,8 @@ fun ColumnScope.PickLetterStationContent(
     sessionRoundIndex: Int,
     useHighlightedLetterInWordRow: Boolean,
     highlightedInWordInstruction: String?,
+    showTargetLetterChip: Boolean,
+    temporaryHintLetter: String?,
     showListenOnlyHebrewPanel: Boolean,
     listenOnlyPanelInstruction: String?,
     repeatLetterButtonLabel: String?,
@@ -120,7 +122,7 @@ fun ColumnScope.PickLetterStationContent(
                     Text(text = emoji, fontSize = 42.sp)
                 }
             }
-            if (showListenOnlyHebrewPanel && listenOnlyPanelInstruction != null) {
+            if (!useHighlightedLetterInWordRow && showListenOnlyHebrewPanel && listenOnlyPanelInstruction != null) {
                 Text(
                     text = listenOnlyPanelInstruction,
                     fontSize = 39.sp,
@@ -144,7 +146,7 @@ fun ColumnScope.PickLetterStationContent(
                     )
                 }
                 Spacer(modifier = Modifier.height(16.dp))
-            } else if (pickLetterInstructionOverride != null) {
+            } else if (!useHighlightedLetterInWordRow && pickLetterInstructionOverride != null) {
                 Text(
                     text = pickLetterInstructionOverride,
                     fontSize = 39.sp,
@@ -156,47 +158,67 @@ fun ColumnScope.PickLetterStationContent(
                             .background(Color.White.copy(alpha = 0.72f), RoundedCornerShape(18.dp))
                             .padding(horizontal = 14.dp, vertical = 8.dp),
                 )
-                Spacer(modifier = Modifier.height(18.dp))
+                if (temporaryHintLetter != null) {
+                    TargetLetterHeaderChip(
+                        letter = temporaryHintLetter,
+                        modifier = Modifier.padding(top = 10.dp),
+                    )
+                    Spacer(modifier = Modifier.height(18.dp))
+                } else if (showTargetLetterChip) {
+                    TargetLetterHeaderChip(
+                        letter = question.correctAnswer,
+                        modifier = Modifier.padding(top = 10.dp),
+                    )
+                    Spacer(modifier = Modifier.height(18.dp))
+                } else {
+                    Spacer(modifier = Modifier.height(18.dp))
+                }
             } else if (showSagaStation1CompactPreamble && pickLetterSagaStation1CompactPreamble != null) {
                 Text(
                     text = pickLetterSagaStation1CompactPreamble,
-                    fontSize = 22.sp,
+                    fontSize = 34.sp,
                     fontWeight = FontWeight.Black,
                     color = Color(0xFF0B2B3D),
                     textAlign = TextAlign.Center,
+                    modifier =
+                        Modifier
+                            .background(Color.White.copy(alpha = 0.72f), RoundedCornerShape(18.dp))
+                            .padding(horizontal = 14.dp, vertical = 8.dp),
                 )
                 TargetLetterHeaderChip(
                     letter = question.correctAnswer,
                     modifier = Modifier.padding(top = 10.dp),
                 )
                 Spacer(modifier = Modifier.height(18.dp))
-            } else if (!useHighlightedLetterInWordRow) {
+            } else if (!useHighlightedLetterInWordRow && showTargetLetterChip) {
                 TargetLetterHeaderChip(
                     letter = question.correctAnswer,
                     modifier = Modifier.padding(top = 4.dp),
                 )
                 Spacer(modifier = Modifier.height(10.dp))
             }
-            LetterOptions(
-                options = letterOptions,
-                enabled = enabled,
-                shakePx = shakePx,
-                correctPulseLetter = correctPulseLetter,
-                correctPulseEpoch = correctPulseEpoch,
-                strongPressFeedback = strongLetterButtonFeedback,
-                onPick = onPick,
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .weight(1f, fill = true)
-                        .then(
-                            if (letterOptionsExtraTopPaddingDp > 0.dp) {
-                                Modifier.padding(top = letterOptionsExtraTopPaddingDp)
-                            } else {
-                                Modifier
-                            },
-                        ),
-            )
+            CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+                LetterOptions(
+                    options = letterOptions,
+                    enabled = enabled,
+                    shakePx = shakePx,
+                    correctPulseLetter = correctPulseLetter,
+                    correctPulseEpoch = correctPulseEpoch,
+                    strongPressFeedback = strongLetterButtonFeedback,
+                    onPick = onPick,
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .weight(1f, fill = true)
+                            .then(
+                                if (letterOptionsExtraTopPaddingDp > 0.dp) {
+                                    Modifier.padding(top = letterOptionsExtraTopPaddingDp)
+                                } else {
+                                    Modifier
+                                },
+                            ),
+                )
+            }
         }
     }
 }

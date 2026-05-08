@@ -15,7 +15,7 @@ object Chapter3StationOrder {
                     initialGroupIndex = 1,
                     imageMatchCaptionSizeMultiplier = 1f,
                     imageMatchPictureSizeMultiplier = 1f,
-                    sortPictureStartsWithOptionLetters = true,
+                    sortOptionLetters = true,
                 )
             2 ->
                 StationQuizPlan(
@@ -28,32 +28,32 @@ object Chapter3StationOrder {
                     imageMatchCaptionSizeMultiplier = 1f,
                     imageMatchPictureSizeMultiplier = 1f,
                 )
+            // Station 3 — any-letter-in-word balloons (PopBalloons generator uses word content).
             3 ->
                 StationQuizPlan(
                     mode = StationQuizMode.PopBalloons,
-                    // Station 3 balloons: one round per word.
-                    // Product request: 5 unique words per run; each word appears once.
                     questionCount = 5,
                     initialGroupIndex = 0,
                     popAllLettersInWord = true,
+                    optionCount = 10,
                 )
+            // Station 4 — find highlighted letter in word.
             4 ->
                 StationQuizPlan(
                     mode = StationQuizMode.PickLetter,
-                    questionCount = 9,
+                    questionCount = Chapter3EpisodeContent.STATION_4_ROUND_COUNT,
                     initialGroupIndex = 0,
-                    pickLetterOptionCount = 6,
                     highlightedLetterInWordPickLetter = true,
-                    imageMatchCaptionSizeMultiplier = 1.5f,
-                    imageMatchPictureSizeMultiplier = 1f,
+                    optionCount = 6,
                 )
+            // Station 5 — audio recognition pick-letter.
             5 ->
                 StationQuizPlan(
                     mode = StationQuizMode.PickLetter,
-                    questionCount = 12,
+                    questionCount = 10,
                     initialGroupIndex = 0,
-                    pickLetterOptionCount = 6,
                     chapter3AudioLetterRecognition = true,
+                    optionCount = 6,
                 )
             6 ->
                 StationQuizPlan(

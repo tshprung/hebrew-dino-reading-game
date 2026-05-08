@@ -609,6 +609,10 @@ class ProgressPrefs(private val context: Context) {
         context.dataStore.edit { prefs -> prefs[chapter6LettersIntroSeenKey] = true }
     }
 
+    suspend fun markChapter6MidBoostSeen() {
+        context.dataStore.edit { prefs -> prefs[chapter6MidBoostSeenKey] = true }
+    }
+
     suspend fun unlockChapter6AtLeast(stationId: Int) {
         val capped = stationId.coerceIn(1, Chapter6Config.STATION_COUNT)
         context.dataStore.edit { prefs ->

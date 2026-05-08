@@ -13,10 +13,10 @@ data class StationQuizPlan(
     /** When set (e.g. Episode 3 station 6), image match uses exactly this many picture choices (1 correct + rest distractors). */
     val imageMatchChoiceCount: Int? = null,
     /**
-     * When [mode] is [StationQuizMode.PickLetter], optional balloon/option count (default 3 in [LevelSession]).
-     * Episode 3 station 3 uses 6 letter chips with distractors.
+     * When [mode] is [StationQuizMode.PickLetter] or [StationQuizMode.PopBalloons],
+     * optional balloon/option count (default 3 in [LevelSession] for PickLetter, 7 for PopBalloons).
      */
-    val pickLetterOptionCount: Int? = null,
+    val optionCount: Int? = null,
     /** Episode 3 station 2: word-analysis rounds (custom prompt/UI tweaks, but still single-pick). */
     val chapter3WordAnalysisPickLetter: Boolean = false,
     /** Highlighted-letter-in-word rounds (single-pick per highlighted letter). */
@@ -42,42 +42,86 @@ data class StationQuizPlan(
      * UI-only: sort letter option buttons (e.g. Chapter 3 station 1 picture-first-letter).
      * Does not affect [LevelSession] or question generation.
      */
-    val sortPictureStartsWithOptionLetters: Boolean = false,
+    val sortOptionLetters: Boolean = false,
 )
 
 object StationQuizPlans {
-    /** Chapter 1 — see [Chapter1StationOrder] for station indices and `Question` subtype mapping. */
     fun chapter1(stationId: Int): StationQuizPlan = Chapter1StationOrder.quizPlan(stationId)
 
     /** Chapters 2–4 reuse the same six-station plan as chapter 1 ([Chapter1StationOrder]); letters/art/intros differ. */
     fun chapter2(stationId: Int): StationQuizPlan = Chapter1StationOrder.quizPlan(stationId)
 
-    fun chapter3(stationId: Int): StationQuizPlan = Chapter3StationOrder.quizPlan(stationId)
+    fun chapter3(stationId: Int): StationQuizPlan =
+        Chapter3StationOrder.quizPlan(stationId).let { plan ->
+            when (stationId) {
+                1 -> plan.copy( // Ch3 st1 picture starts-with
+                    optionCount = 6,
+                    sortOptionLetters = true
+                )
+                5 -> plan.copy( // Ch3 st5 audio recognition
+                    optionCount = 6,
+                    sortOptionLetters = true,
+                    listenOnlyTargetPrompt = true
+                )
+                else -> plan
+            }
+        }
 
     fun chapter4(stationId: Int): StationQuizPlan {
-        val base = Chapter1StationOrder.quizPlan(stationId).copy(listenOnlyTargetPrompt = true)
-        return if (stationId == Chapter1StationOrder.REVEAL_THEN_CHOOSE) {
-            base.copy(findLetterGridMaxTargetCount = 4)
-        } else {
-            base
+        val base = Chapter1StationOrder.quizPlan(stationId).copy(listenOnlyTargetPrompt = false)
+        val plan = when (stationId) {
+            Chapter1StationOrder.REVEAL_THEN_CHOOSE ->
+                base.copy(
+                    findLetterGridMaxTargetCount = 4
+                )
+            Chapter1StationOrder.PICTURE_PICK_ONE ->
+                base.copy(
+                    optionCount = 5,
+                    sortOptionLetters = true
+                )
+            else -> base
         }
+        return if (stationId == Chapter1StationOrder.TAP_LETTER) {
+            plan.copy(
+                optionCount = 5
+            )
+        } else plan
     }
 
     fun chapter5(stationId: Int): StationQuizPlan =
         Chapter1StationOrder.quizPlan(stationId)
-            .copy(listenOnlyTargetPrompt = true)
+            .copy(listenOnlyTargetPrompt = false)
             .let { base ->
-                if (stationId == Chapter1StationOrder.TAP_LETTER) {
-                    base.copy(pickLetterOptionCount = Chapter5Config.letters.size.coerceIn(3, 9))
-                } else {
-                // Chapter 5 station 3: cap target-letter repeats to 4 (same as chapter 4 grid tuning).
-                if (stationId == Chapter1StationOrder.REVEAL_THEN_CHOOSE) {
-                    base.copy(findLetterGridMaxTargetCount = 4)
-                } else {
-                    base
-                }
+                when (stationId) {
+                    Chapter1StationOrder.TAP_LETTER ->
+                        base.copy(
+                            optionCount = 5
+                        )
+                    Chapter1StationOrder.REVEAL_THEN_CHOOSE ->
+                        base.copy(
+                            findLetterGridMaxTargetCount = 4
+                        )
+                    Chapter1StationOrder.PICTURE_PICK_ONE ->
+                        base.copy(
+                            optionCount = 5,
+                            sortOptionLetters = true
+                        )
+                    else -> base
                 }
             }
 
-    fun chapter6(stationId: Int): StationQuizPlan = Chapter6StationOrder.quizPlan(stationId)
+    fun chapter6(stationId: Int): StationQuizPlan =
+        Chapter6StationOrder.quizPlan(stationId).let { plan ->
+            when (stationId) {
+                1 -> plan.copy( // Ch6 st1 review pick letter
+                    optionCount = 6,
+                    sortOptionLetters = true
+                )
+                4 -> plan.copy( // Ch6 st4 picture starts-with
+                    optionCount = 6,
+                    sortOptionLetters = true
+                )
+                else -> plan
+            }
+        }
 }

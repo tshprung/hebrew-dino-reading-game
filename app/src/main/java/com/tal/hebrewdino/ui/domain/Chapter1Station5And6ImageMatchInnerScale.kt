@@ -97,8 +97,8 @@ object Chapter1Station5And6ImageMatchInnerScale {
             isMonkey -> 3f
             // Episode 5 feedback: cube illustration ~25% smaller.
             isCube -> 2.66f
-            // Episode 4 feedback: toast illustration ~50% smaller.
-            isToast -> 4f
+            // Feedback: toast illustration ~50% smaller vs default (2f).
+            isToast -> 1f
             isLeg || isRose -> 1f
             // Feedback: hippo reads small; bump by ~20% relative to default 2f.
             isHippo -> 2.4f

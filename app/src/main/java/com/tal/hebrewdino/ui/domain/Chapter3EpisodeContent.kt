@@ -5,6 +5,8 @@ package com.tal.hebrewdino.ui.domain
  * Keeps [LevelSession] index-aligned without new [Question] fields.
  */
 object Chapter3EpisodeContent {
+    const val STATION_4_ROUND_COUNT: Int = 9
+
     /** Catalog ids for picture / image-match bias (subset of [LessonWordCatalog]). */
     val episodeCatalogIds: Set<String> =
         setOf(
