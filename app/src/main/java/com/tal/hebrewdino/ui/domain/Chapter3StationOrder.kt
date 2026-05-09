@@ -13,7 +13,7 @@ object Chapter3StationOrder {
                     mode = StationQuizMode.PictureStartsWith,
                     questionCount = 8,
                     initialGroupIndex = 1,
-                    imageMatchCaptionSizeMultiplier = 1f,
+                    imageMatchCaptionSizeMultiplier = 1.5f,
                     imageMatchPictureSizeMultiplier = 1f,
                     sortOptionLetters = true,
                 )

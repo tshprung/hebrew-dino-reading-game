@@ -55,7 +55,7 @@ object StationQuizPlans {
         Chapter3StationOrder.quizPlan(stationId).let { plan ->
             when (stationId) {
                 1 -> plan.copy( // Ch3 st1 picture starts-with
-                    optionCount = 6,
+                    optionCount = 5,
                     sortOptionLetters = true
                 )
                 5 -> plan.copy( // Ch3 st5 audio recognition
@@ -118,7 +118,7 @@ object StationQuizPlans {
                     sortOptionLetters = true
                 )
                 4 -> plan.copy( // Ch6 st4 picture starts-with
-                    optionCount = 6,
+                    optionCount = 5,
                     sortOptionLetters = true
                 )
                 else -> plan
