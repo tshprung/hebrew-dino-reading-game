@@ -123,7 +123,8 @@ fun Chapter6MidBoostScreen(
         backgroundRes = R.drawable.forest_bg_journey_road,
         title = "ממשיכים!",
         body =
-            "דינו כבר רואה את הדרך לאמא.\n" +
+            "כמעט בבית!\n" +
+                "דינו כבר רואה את הדרך לאמא.\n" +
                 "נמשיך לתרגל ונחזיר את הביצים הביתה.",
         eggStripCount = eggStripCount,
         companion = ChapterLobbyCompanion.DinoOnly,

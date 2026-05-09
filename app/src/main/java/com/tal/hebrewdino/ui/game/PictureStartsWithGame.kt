@@ -105,7 +105,11 @@ fun PictureStartsWithGame(
     ) {
         Text(
             text = instructionText,
-            style = MaterialTheme.typography.titleMedium.copy(fontSize = MaterialTheme.typography.titleMedium.fontSize * 2),
+            style =
+                MaterialTheme.typography.titleMedium.copy(
+                    fontSize = MaterialTheme.typography.titleMedium.fontSize * 2,
+                    fontWeight = if (chapterId == 6) FontWeight.Black else MaterialTheme.typography.titleMedium.fontWeight,
+                ),
             color = Color(0xFF0B2B3D),
             textAlign = TextAlign.Center,
             modifier =

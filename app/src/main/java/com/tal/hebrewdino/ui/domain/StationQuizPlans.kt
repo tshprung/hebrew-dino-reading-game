@@ -111,5 +111,14 @@ object StationQuizPlans {
             }
 
     fun chapter6(stationId: Int): StationQuizPlan =
-        Chapter6StationOrder.quizPlan(stationId)
+        Chapter6StationOrder.quizPlan(stationId).let { plan ->
+            when (stationId) {
+                5 ->
+                    plan.copy(
+                        sortOptionLetters = true,
+                        listenOnlyTargetPrompt = true
+                    )
+                else -> plan
+            }
+        }
 }

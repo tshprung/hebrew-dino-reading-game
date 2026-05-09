@@ -188,21 +188,21 @@ class LevelSession(
                                                 .take(optionCount - options.size)
                                         options + extra
                                     }
-                                return Question.PopBalloonsQuestion(
+                                Question.PopBalloonsQuestion(
                                     correctAnswer = round.correctLetter,
                                     options = padded,
                                 )
-                            }
-                            val optionCount = plan.optionCount ?: 6
-                            if (plan.chapter3AudioLetterRecognition) {
-                                val correct = nextBalancedCorrect(group)
-                                popGenerator.generatePickLetterOptions(
-                                    rnd = rnd,
-                                    group = group,
-                                    correctAnswer = correct,
-                                    optionCount = optionCount,
-                                )
-                            } else if (letterPoolSpec === Chapter3LetterPoolSpec && plan.chapter3FindAnyLetterInWordPickLetter) {
+                            } else {
+                                val optionCount = plan.optionCount ?: 6
+                                if (plan.chapter3AudioLetterRecognition) {
+                                    val correct = nextBalancedCorrect(group)
+                                    popGenerator.generatePickLetterOptions(
+                                        rnd = rnd,
+                                        group = group,
+                                        correctAnswer = correct,
+                                        optionCount = optionCount,
+                                    )
+                                } else if (letterPoolSpec === Chapter3LetterPoolSpec && plan.chapter3FindAnyLetterInWordPickLetter) {
                                     val (word, _) = Chapter3EpisodeContent.findAnyInWord(currentIndex)
                                     val inWord =
                                         word.toCharArray().map { it.toString() }.distinct()
@@ -217,22 +217,23 @@ class LevelSession(
                                         correctAnswer = options.first(),
                                         options = options,
                                     )
-                            } else if (letterPoolSpec === Chapter3LetterPoolSpec) {
-                                val round = Chapter3EpisodeContent.pickSpellRound(currentIndex)
-                                popGenerator.generatePickLetterOptions(
-                                    rnd = rnd,
-                                    group = group,
-                                    correctAnswer = round.correctLetter,
-                                    optionCount = optionCount,
-                                )
-                            } else {
-                                val correct = nextBalancedCorrect(group)
-                                popGenerator.generatePickLetterOptions(
-                                    rnd = rnd,
-                                    group = group,
-                                    correctAnswer = correct,
-                                    optionCount = plan.optionCount ?: 3,
-                                )
+                                } else if (letterPoolSpec === Chapter3LetterPoolSpec) {
+                                    val round = Chapter3EpisodeContent.pickSpellRound(currentIndex)
+                                    popGenerator.generatePickLetterOptions(
+                                        rnd = rnd,
+                                        group = group,
+                                        correctAnswer = round.correctLetter,
+                                        optionCount = optionCount,
+                                    )
+                                } else {
+                                    val correct = nextBalancedCorrect(group)
+                                    popGenerator.generatePickLetterOptions(
+                                        rnd = rnd,
+                                        group = group,
+                                        correctAnswer = correct,
+                                        optionCount = plan.optionCount ?: 3,
+                                    )
+                                }
                             }
                         }
                         StationQuizMode.PopBalloons -> {

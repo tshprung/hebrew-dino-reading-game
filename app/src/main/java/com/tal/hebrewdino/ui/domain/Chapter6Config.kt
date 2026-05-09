@@ -25,17 +25,31 @@ object Chapter6Config {
     )
 
     private val spellRounds: List<SpellRound> =
-        listOf(
-            SpellRound("כלב", "w_כ_2", 0, "כ"),
-            SpellRound("כלב", "w_כ_2", 2, "ב"),
-            SpellRound("חלב", "w_ח_2", 0, "ח"),
-            SpellRound("חלב", "w_ח_2", 2, "ב"),
-            SpellRound("טוסט", "w_ט_1", 0, "ט"),
-            SpellRound("טוסט", "w_ט_1", 3, "ט"),
-            SpellRound("תיק", "w_ת_2", 0, "ת"),
-            SpellRound("תיק", "w_ת_2", 2, "ק"),
-            SpellRound("נחש", "w_נ_4", 1, "ח"),
-        )
+        buildList {
+            val words =
+                listOf(
+                    "כלב" to "w_כ_2",
+                    "חלב" to "w_ח_2",
+                    "טוסט" to "w_ט_1",
+                    "תיק" to "w_ת_2",
+                    "נחש" to "w_נ_4",
+                )
+            for ((word, catalogId) in words) {
+                val letters = word.toCharArray().map { it.toString() }
+                for (slotIndex in letters.indices) {
+                    add(
+                        SpellRound(
+                            word = word,
+                            catalogId = catalogId,
+                            slotIndex = slotIndex,
+                            correctLetter = letters[slotIndex],
+                        ),
+                    )
+                }
+            }
+        }
+
+    val STATION_4_ROUND_COUNT: Int = spellRounds.size
 
     fun pickSpellRound(questionIndex: Int): SpellRound =
         spellRounds[questionIndex.coerceIn(0, spellRounds.lastIndex)]

@@ -577,6 +577,27 @@ fun GameScreen(
                             if (voice.hasAsset(AudioClips.MatchLetterToWordInstructions)) {
                                 voice.playBlocking(AudioClips.MatchLetterToWordInstructions)
                             }
+                        } else if (stationUiSpec.templateId == StationTemplateId.ImageToWord && q is Question.ImageMatchQuestion) {
+                            sfx.stopAllStreams()
+                            val intro =
+                                if (voice.hasAsset(AudioClips.Ch3ImageToWordInstructions)) {
+                                    AudioClips.Ch3ImageToWordInstructions
+                                } else {
+                                    AudioClips.ImageToWordInstructions
+                                }
+                            if (voice.hasAsset(intro)) {
+                                voice.playBlocking(intro)
+                            }
+                            val ch3Word = "audio/ch3_word_${q.correctChoiceId}.wav"
+                            val wordPath =
+                                if (voice.hasAsset(ch3Word)) {
+                                    ch3Word
+                                } else {
+                                    AudioClips.wordClipByCatalogId(q.correctChoiceId)
+                                }
+                            if (voice.hasAsset(wordPath)) {
+                                voice.playBlocking(wordPath)
+                            }
                         } else if (sagaUsesPickLetterAudioStaging) {
                             val target =
                                 when (q) {
@@ -1040,10 +1061,24 @@ fun GameScreen(
                         delay(feedbackDelayMs)
                         if (wrongWordCatalogId != null && !wrongWordAlreadySpoken) {
                             // One try-again line only ([playSequenceBlocking] would play every clip, so both try WAVs).
-                            voice.playSequenceBlocking(
-                                AudioClips.ThisIsPrefix,
-                                AudioClips.wordClipByCatalogId(wrongWordCatalogId),
-                            )
+                            val wordPath = AudioClips.wordClipByCatalogId(wrongWordCatalogId)
+                            val shortenPrefixGap = (chapterId == 3 || chapterId == 6) && stationId == 6
+                            val prefixMs = sfx.durationMs(AudioClips.ThisIsPrefix) ?: 0L
+                            if (shortenPrefixGap && prefixMs > 0L && voice.hasAsset(wordPath)) {
+                                sfx.stopAllStreams()
+                                sfx.playReturningStreamId(AudioClips.ThisIsPrefix, volume = 1f)
+                                val lead =
+                                    (prefixMs * 0.50f)
+                                        .toLong()
+                                        .coerceIn(16L, prefixMs)
+                                delay(lead)
+                                voice.playBlocking(wordPath)
+                            } else {
+                                voice.playSequenceBlocking(
+                                    AudioClips.ThisIsPrefix,
+                                    wordPath,
+                                )
+                            }
                             voice.playFirstAvailableBlocking(AudioClips.VoTryAgain2, AudioClips.VoTryAgain1)
                             return@launch
                         }
@@ -1949,9 +1984,7 @@ fun GameScreen(
                                         },
                                     )
                                 } else if (
-                                    (chapterId == 3 && stationId == 2) ||
-                                        (isSagaEpisode(chapterId) && stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH) ||
-                                        (chapterId == 6 && stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH)
+                                    stationUiSpec.templateId == StationTemplateId.MatchLetterToWord
                                 ) {
                                     // Same three picture cards as this round's ImageMatch question (station 5 generator/shape).
                                     val matchChoices = current.choices

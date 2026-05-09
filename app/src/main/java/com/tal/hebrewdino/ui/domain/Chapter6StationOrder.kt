@@ -42,7 +42,7 @@ object Chapter6StationOrder {
             4 ->
                 StationQuizPlan(
                     mode = StationQuizMode.PickLetter,
-                    questionCount = Chapter3EpisodeContent.STATION_4_ROUND_COUNT,
+                    questionCount = Chapter6Config.STATION_4_ROUND_COUNT,
                     initialGroupIndex = 0,
                     highlightedLetterInWordPickLetter = true,
                     optionCount = 6,
