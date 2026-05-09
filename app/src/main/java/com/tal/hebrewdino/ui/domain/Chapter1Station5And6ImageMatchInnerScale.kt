@@ -95,8 +95,8 @@ object Chapter1Station5And6ImageMatchInnerScale {
             isTrainEngine || isPlate || isAnt || isFrog -> 2f
             // Episode 5 feedback: monkey illustration should be ~25% smaller vs prior (caption sized separately).
             isMonkey -> 3f
-            // Episode 5 feedback: cube illustration ~25% smaller.
-            isCube -> 2.66f
+            // Episode 5 feedback: cube illustration ~50% smaller vs default (2f).
+            isCube -> 1f
             // Feedback: toast illustration ~50% smaller vs default (2f).
             isToast -> 1f
             isLeg || isRose -> 1f

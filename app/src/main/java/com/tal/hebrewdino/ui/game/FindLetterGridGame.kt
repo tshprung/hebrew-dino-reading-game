@@ -242,7 +242,7 @@ fun FindLetterGridGame(
                             Text(
                                 text = "מצאו את האות שמופיעה במילה $contextWordHint",
                                 fontSize = if (question.columns >= 4) 15.sp else 16.sp,
-                                fontWeight = FontWeight.SemiBold,
+                                fontWeight = FontWeight.Bold,
                                 color = Color(0xFF0B2B3D).copy(alpha = 0.92f),
                                 textAlign = TextAlign.Center,
                             )
@@ -250,7 +250,7 @@ fun FindLetterGridGame(
                             Text(
                                 text = "מצאו את האות שמופיעה במילה:",
                                 fontSize = if (question.columns >= 4) 14.sp else 15.sp,
-                                fontWeight = FontWeight.SemiBold,
+                                fontWeight = FontWeight.Bold,
                                 color = Color(0xFF0B2B3D).copy(alpha = 0.92f),
                                 textAlign = TextAlign.Center,
                             )

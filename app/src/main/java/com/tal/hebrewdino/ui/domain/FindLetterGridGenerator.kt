@@ -19,9 +19,10 @@ object FindLetterGridGenerator {
         val columns = if (rnd.nextBoolean()) 3 else 4
         val rows = columns
         val total = columns * rows
-        val maxTargets = (total - 2).coerceAtLeast(minTargetCount)
-        val cappedMax = maxTargetCount?.coerceIn(minTargetCount, maxTargets) ?: maxTargets
-        val targetCount = (minTargetCount..cappedMax).random(rnd)
+        val desiredTargetCount = if (columns == 3) 3 else 4
+        val maxTargets = (total - 2).coerceAtLeast(desiredTargetCount)
+        val cappedMax = maxTargetCount?.coerceIn(desiredTargetCount, maxTargets) ?: maxTargets
+        val targetCount = desiredTargetCount.coerceAtMost(cappedMax)
         val others = group.filter { it != targetLetter }.ifEmpty { listOf(targetLetter) }
         val indices = (0 until total).shuffled(rnd).take(targetCount).toSet()
         val cells =

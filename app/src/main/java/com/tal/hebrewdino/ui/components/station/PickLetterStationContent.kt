@@ -89,7 +89,7 @@ fun ColumnScope.PickLetterStationContent(
                 Text(
                     text = highlightedInWordInstruction,
                     fontSize = 32.sp,
-                    fontWeight = FontWeight.SemiBold,
+                    fontWeight = FontWeight.Bold,
                     color = Color(0xFF0B2B3D),
                     textAlign = TextAlign.Center,
                     modifier =
