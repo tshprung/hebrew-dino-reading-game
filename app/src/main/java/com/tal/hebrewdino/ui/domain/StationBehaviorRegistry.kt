@@ -344,41 +344,54 @@ object StationBehaviorRegistry {
     private fun chapter6UiSpec(stationId: Int, plan: StationQuizPlan): StationUiSpec {
         return when (stationId) {
             1 ->
-                findLetterGridSpec(chapterId = 6, stationId = stationId, plan = plan)
-                    .copy(riskNotes = "Ch6 st1 find-grid; aligned with standard six-station arc.")
-            2 ->
-                popBalloonsSpec(chapterId = 6, stationId = stationId, plan = plan)
-                    .copy(riskNotes = "Ch6 st2 balloons; aligned with standard six-station arc.")
-            3 ->
-                pickLetterSpec(chapterId = 6, stationId = stationId, plan = plan)
-                    .copy(riskNotes = "Ch6 st3 pick letter; aligned with standard six-station arc.")
-            4 ->
                 pictureStartsWithSpec(chapterId = 6, stationId = stationId, plan = plan)
-                    .copy(riskNotes = "Ch6 st4 picture; aligned with standard six-station arc.")
-            5 ->
-                StationUiSpec(
-                    chapterId = 6,
-                    stationId = stationId,
-                    templateId = StationTemplateId.ImageMatch,
-                    variants = variantsFor(listenOnly = false),
-                    quizMode = plan.mode,
-                    findGridMaxTargetCount = plan.findLetterGridMaxTargetCount,
-                    helpControlsEnabled = false,
-                    replayMode = StationReplayMode.None,
-                    hintMode = StationHintMode.None,
-                    hintDurationMs = null,
-                    imageMatchShowTargetLetterChip = true,
-                    imageMatchHeaderInstructionOverride = StationInstructionCopy.ImageMatchFindWordStartingWithLetter,
-                    imageMatchHeaderReadablePanel = true,
-                    riskNotes = "Ch6 st5 image match; aligned with standard six-station arc.",
-                )
-            6 ->
+                    .copy(riskNotes = "Ch6 st1 picture; aligned with Chapter 3 station 1.")
+            2 ->
                 matchLetterToWordSpec(
                     chapterId = 6,
                     stationId = stationId,
                     plan = plan,
-                    extraVariants = arrayOf(StationVariant.Finale),
-                ).copy(riskNotes = "Ch6 st6 finale match; aligned with standard six-station arc.")
+                ).copy(riskNotes = "Ch6 st2 match letter + word; aligned with Chapter 3 station 2.")
+            3 ->
+                popBalloonsSpec(chapterId = 6, stationId = stationId, plan = plan, isPopAllLetters = true)
+                    .copy(riskNotes = "Ch6 st3 pop-all; aligned with Chapter 3 station 3.")
+            4 ->
+                pickLetterSpec(
+                    chapterId = 6,
+                    stationId = stationId,
+                    plan = plan,
+                    extraVariants = arrayOf(StationVariant.HighlightedLetterInWord, StationVariant.Episode4Help),
+                ).copy(
+                    variants = variantsFor(listenOnly = false, StationVariant.HighlightedLetterInWord, StationVariant.Episode4Help),
+                    helpControlsEnabled = true,
+                    replayMode = StationReplayMode.ExistingStationSpecific,
+                    hintMode = StationHintMode.None,
+                    hintDurationMs = null,
+                    pickLetterInstructionOverride = null,
+                    pickLetterHighlightedInWordInstruction = StationInstructionCopy.PickLetterHighlightedInWord,
+                    riskNotes = "Ch6 st4 highlighted letter in word; aligned with Chapter 3 station 4.",
+                )
+            5 ->
+                pickLetterSpec(
+                    chapterId = 6,
+                    stationId = stationId,
+                    plan = plan,
+                    extraVariants = arrayOf(StationVariant.Chapter3AudioLetterRecognition, StationVariant.Episode4Help),
+                ).copy(riskNotes = "Ch6 st5 audio recognition; aligned with Chapter 3 station 5.")
+            6 ->
+                StationUiSpec(
+                    chapterId = 6,
+                    stationId = stationId,
+                    templateId = StationTemplateId.ImageToWord,
+                    variants = variantsFor(listenOnly = false, StationVariant.Chapter3ImageToWord),
+                    quizMode = plan.mode,
+                    findGridMaxTargetCount = plan.findLetterGridMaxTargetCount,
+                    helpControlsEnabled = false,
+                    replayMode = StationReplayMode.ExistingStationSpecific,
+                    hintMode = StationHintMode.ExistingStationSpecific,
+                    imageToWordInstructionText = StationInstructionCopy.Chapter3ImageToWord,
+                    riskNotes = "Ch6 st6 uses ImageToWordGame; aligned with Chapter 3 station 6.",
+                )
             else -> error("Unexpected Ch6 stationId=$stationId")
         }
     }

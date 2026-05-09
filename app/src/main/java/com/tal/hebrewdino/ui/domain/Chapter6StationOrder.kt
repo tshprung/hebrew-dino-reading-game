@@ -11,49 +11,59 @@ package com.tal.hebrewdino.ui.domain
 object Chapter6StationOrder {
     fun quizPlan(stationId: Int): StationQuizPlan {
         return when (stationId.coerceIn(1, Chapter6Config.STATION_COUNT)) {
-            1 -> // FindLetterGrid
-                StationQuizPlan(
-                    mode = StationQuizMode.FindLetterGrid,
-                    questionCount = 7,
-                    initialGroupIndex = 0,
-                )
-            2 -> // PopBalloons
-                StationQuizPlan(
-                    mode = StationQuizMode.PopBalloons,
-                    questionCount = 6,
-                    initialGroupIndex = 0,
-                    optionCount = 10,
-                )
-            3 -> // PickLetter
-                StationQuizPlan(
-                    mode = StationQuizMode.PickLetter,
-                    questionCount = 6,
-                    initialGroupIndex = 0,
-                    optionCount = 5,
-                )
-            4 -> // PictureStartsWith
+            1 ->
                 StationQuizPlan(
                     mode = StationQuizMode.PictureStartsWith,
                     questionCount = 8,
                     initialGroupIndex = 1,
                     imageMatchCaptionSizeMultiplier = 1.5f,
                     imageMatchPictureSizeMultiplier = 1f,
+                    optionCount = 5,
+                    sortOptionLetters = true,
                 )
-            5 -> // ImageMatch
-                StationQuizPlan(
-                    mode = StationQuizMode.ImageMatch,
-                    questionCount = 8,
-                    initialGroupIndex = 2,
-                    imageMatchAlwaysThreeChoices = true,
-                    imageMatchCaptionSizeMultiplier = 1.5f,
-                    imageMatchPictureSizeMultiplier = 1f,
-                )
-            6 -> // MatchLetterToWord (finale UI; still uses ImageMatch question shape)
+            2 ->
                 StationQuizPlan(
                     mode = StationQuizMode.ImageMatch,
                     questionCount = 6,
+                    initialGroupIndex = 2,
+                    imageMatchAlwaysThreeChoices = false,
+                    imageMatchChoiceCount = 3,
+                    imageMatchCaptionSizeMultiplier = 1f,
+                    imageMatchPictureSizeMultiplier = 1f,
+                )
+            3 ->
+                StationQuizPlan(
+                    mode = StationQuizMode.PopBalloons,
+                    questionCount = 5,
+                    initialGroupIndex = 0,
+                    popAllLettersInWord = true,
+                    optionCount = 10,
+                )
+            4 ->
+                StationQuizPlan(
+                    mode = StationQuizMode.PickLetter,
+                    questionCount = Chapter3EpisodeContent.STATION_4_ROUND_COUNT,
+                    initialGroupIndex = 0,
+                    highlightedLetterInWordPickLetter = true,
+                    optionCount = 6,
+                )
+            5 ->
+                StationQuizPlan(
+                    mode = StationQuizMode.PickLetter,
+                    questionCount = 10,
+                    initialGroupIndex = 0,
+                    chapter3AudioLetterRecognition = true,
+                    optionCount = 6,
+                    sortOptionLetters = true,
+                    listenOnlyTargetPrompt = true,
+                )
+            6 ->
+                StationQuizPlan(
+                    mode = StationQuizMode.ImageMatch,
+                    questionCount = 8,
                     initialGroupIndex = 3,
-                    imageMatchAlwaysThreeChoices = true,
+                    imageMatchAlwaysThreeChoices = false,
+                    imageMatchChoiceCount = 4,
                     imageMatchCaptionSizeMultiplier = 1.5f,
                     imageMatchPictureSizeMultiplier = 1f,
                 )

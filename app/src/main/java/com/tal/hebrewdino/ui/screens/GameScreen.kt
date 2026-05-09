@@ -1849,7 +1849,7 @@ fun GameScreen(
                                                     station4WrongFlashEpoch += 1
                                                     onWrongFeedback(wrongPickedLetter = picked)
                                                 } else {
-                                                    if (audioEnabled && chapterId == 3 && stationId == 1) {
+                                                if (audioEnabled && (chapterId == 3 || chapterId == 6) && stationId == 1) {
                                                         // Let the tapped letter name play; wrong feedback is still immediate via visuals/SFX.
                                                         onWrongFeedback(wrongPickedLetterAlreadySpoken = true)
                                                     } else {
@@ -1863,7 +1863,7 @@ fun GameScreen(
                                 )
                             }
                             is Question.ImageMatchQuestion ->
-                                if (chapterId == 3 && stationId == 6) {
+                                if (stationUiSpec.templateId == StationTemplateId.ImageToWord) {
                                     Chapter3Station6ImageToWordStationContent(
                                         question = current,
                                         contentKey = session.currentIndex,
@@ -1877,9 +1877,13 @@ fun GameScreen(
                                             if (!audioEnabled) return@Chapter3Station6ImageToWordStationContent
                                             cancelFeedbackVoice()
                                             val id = current.correctChoiceId
-                                            val ch3Clip = "audio/ch3_word_${id}.wav"
                                             val clip =
-                                                if (voice.hasAsset(ch3Clip)) ch3Clip else AudioClips.wordClipByCatalogId(id)
+                                                if (chapterId == 3) {
+                                                    val ch3Clip = "audio/ch3_word_${id}.wav"
+                                                    if (voice.hasAsset(ch3Clip)) ch3Clip else AudioClips.wordClipByCatalogId(id)
+                                                } else {
+                                                    AudioClips.wordClipByCatalogId(id)
+                                                }
                                             if (voice.hasAsset(clip)) {
                                                 feedbackVoiceJob = scope.launch { voice.playBlocking(clip) }
                                             }
@@ -1889,9 +1893,13 @@ fun GameScreen(
                                             cancelFeedbackVoice()
                                             feedbackVoiceJob =
                                                 scope.launch {
-                                                    val ch3Clip = "audio/ch3_word_${choiceId}.wav"
                                                     val clip =
-                                                        if (voice.hasAsset(ch3Clip)) ch3Clip else AudioClips.wordClipByCatalogId(choiceId)
+                                                        if (chapterId == 3) {
+                                                            val ch3Clip = "audio/ch3_word_${choiceId}.wav"
+                                                            if (voice.hasAsset(ch3Clip)) ch3Clip else AudioClips.wordClipByCatalogId(choiceId)
+                                                        } else {
+                                                            AudioClips.wordClipByCatalogId(choiceId)
+                                                        }
                                                     voice.playBlocking(clip)
                                                 }
                                         },
@@ -1903,9 +1911,13 @@ fun GameScreen(
                                                     if (audioEnabled) ChildGameAudioHooks.onCorrect()
                                                     scope.launch {
                                                         if (audioEnabled) {
-                                                            val ch3Clip = "audio/ch3_word_${choiceId}.wav"
                                                             val clip =
-                                                                if (voice.hasAsset(ch3Clip)) ch3Clip else AudioClips.wordClipByCatalogId(choiceId)
+                                                                if (chapterId == 3) {
+                                                                    val ch3Clip = "audio/ch3_word_${choiceId}.wav"
+                                                                    if (voice.hasAsset(ch3Clip)) ch3Clip else AudioClips.wordClipByCatalogId(choiceId)
+                                                                } else {
+                                                                    AudioClips.wordClipByCatalogId(choiceId)
+                                                                }
                                                             voice.playBlocking(clip)
                                                             val praise =
                                                                 mutableListOf(

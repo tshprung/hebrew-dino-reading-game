@@ -34,6 +34,7 @@ object Chapter6Config {
             SpellRound("טוסט", "w_ט_1", 3, "ט"),
             SpellRound("תיק", "w_ת_2", 0, "ת"),
             SpellRound("תיק", "w_ת_2", 2, "ק"),
+            SpellRound("נחש", "w_נ_4", 1, "ח"),
         )
 
     fun pickSpellRound(questionIndex: Int): SpellRound =
@@ -43,5 +44,13 @@ object Chapter6Config {
         val r = pickSpellRound(questionIndex)
         return r.slotIndex == r.word.lastIndex
     }
+
+    fun balloonWordCatalogPairs(): List<Pair<String, String>> =
+        LessonWordCatalog.entries
+            .asSequence()
+            .filter { it.letter in letters }
+            .map { it.word to it.id }
+            .distinctBy { it.first }
+            .toList()
 }
 
