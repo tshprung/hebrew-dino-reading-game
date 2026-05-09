@@ -623,14 +623,14 @@ fun GameScreen(
                             val wordPath = AudioClips.wordClipByCatalogId(q.catalogEntryId)
                             if (voice.hasAsset(clip)) voice.playBlocking(clip)
                             if (voice.hasAsset(wordPath)) voice.playBlocking(wordPath)
-                        } else if (chapterId == 3 && stationId == 1 && q is Question.PictureStartsWithQuestion) {
+                        } else if ((chapterId == 3 || chapterId == 6) && stationId == 1 && q is Question.PictureStartsWithQuestion) {
                             sfx.stopAllStreams()
                             // Episode 3 station 1: reuse Episode 1 station 4 instruction voice.
                             val clip = AudioClips.WhichLetterDoesWordStart
                             val wordPath = AudioClips.wordClipByCatalogId(q.catalogEntryId)
                             if (voice.hasAsset(clip)) voice.playBlocking(clip)
                             if (voice.hasAsset(wordPath)) voice.playBlocking(wordPath)
-                        } else if (chapterId == 3 && stationId == 2 && q is Question.ImageMatchQuestion) {
+                        } else if ((chapterId == 3 || chapterId == 6) && stationId == 2 && q is Question.ImageMatchQuestion) {
                             // Episode 3 station 2: reuse Episode 1 station 6 instruction voice.
                             sfx.stopAllStreams()
                             voice.playBlocking(AudioClips.MatchLetterToWordInstructions)
@@ -1152,7 +1152,7 @@ fun GameScreen(
                             // Station 3: no pulsing letter intro before each round.
                             !(sagaUsesFindGridAudioStaging) &&
                             // Episode 3 stations 1-3: no blinking intro (word/letter).
-                            !(chapterId == 3 && (stationId == 1 || stationId == 2 || stationId == 3))
+                            !((chapterId == 3 || chapterId == 6) && (stationId == 1 || stationId == 2 || stationId == 3))
                         ) {
                             IntroPulse(stationId = stationId, question = current, modifier = Modifier.fillMaxWidth())
                         }
@@ -2226,7 +2226,7 @@ fun GameScreen(
                         .zIndex(6f),
             )
         }
-        if (chapterId == 3 && stationId == 5 && !episode4HelpSt15) {
+        if ((chapterId == 3 || chapterId == 6) && stationId == 5 && !episode4HelpSt15) {
             Chapter3Station5ReplayColumn(
                 replayEnabled = phase == GamePhase.Play,
                 onReplayLetter = {

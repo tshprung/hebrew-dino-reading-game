@@ -54,8 +54,6 @@ object Chapter6StationOrder {
                     initialGroupIndex = 0,
                     chapter3AudioLetterRecognition = true,
                     optionCount = 6,
-                    sortOptionLetters = true,
-                    listenOnlyTargetPrompt = true,
                 )
             6 ->
                 StationQuizPlan(
