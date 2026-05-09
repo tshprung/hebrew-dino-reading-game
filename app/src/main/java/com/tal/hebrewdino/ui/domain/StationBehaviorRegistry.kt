@@ -32,6 +32,7 @@ object StationBehaviorRegistry {
                 4 -> StationQuizPlans.chapter4(sid)
                 5 -> StationQuizPlans.chapter5(sid)
                 6 -> StationQuizPlans.chapter6(stationId.coerceIn(1, Chapter6Config.STATION_COUNT))
+                TrainingV1Config.CHAPTER_ID -> StationQuizPlans.trainingV1(sid)
                 else -> error("Unsupported chapterId=$chapterId")
             }
         return when (chapterId) {
@@ -41,6 +42,7 @@ object StationBehaviorRegistry {
             4 -> episode4UiSpec(sid, plan)
             5 -> sixStationUiSpec(chapterId = 5, sid, plan)
             6 -> chapter6UiSpec(stationId.coerceIn(1, Chapter6Config.STATION_COUNT), plan)
+            TrainingV1Config.CHAPTER_ID -> trainingV1UiSpec(sid, plan)
             else -> error("Unsupported chapterId=$chapterId")
         }
     }
@@ -295,6 +297,100 @@ object StationBehaviorRegistry {
                     riskNotes = "Ch3 st6 uses ImageToWordGame (instruction from spec).",
                 )
             else -> error("Unexpected Ch3 stationId=$stationId")
+        }
+    }
+
+    private fun trainingV1UiSpec(stationId: Int, plan: StationQuizPlan): StationUiSpec {
+        return when (stationId) {
+            TrainingV1Config.STATION_HEAR_LETTER_CHOOSE ->
+                pickLetterSpec(
+                    chapterId = TrainingV1Config.CHAPTER_ID,
+                    stationId = stationId,
+                    plan = plan,
+                    extraVariants = arrayOf(StationVariant.Episode4Help),
+                ).copy(
+                    helpControlsEnabled = true,
+                    replayMode = StationReplayMode.TargetLetterOnly,
+                    hintMode = StationHintMode.TemporaryTargetLetter,
+                    hintDurationMs = 2100L,
+                    pickLetterInstructionOverride = StationInstructionCopy.TrainingHearLetterChoose,
+                    contentTopInsetDp = 72f,
+                )
+            TrainingV1Config.STATION_WHICH_WORD_STARTS_WITH_LETTER ->
+                StationUiSpec(
+                    chapterId = TrainingV1Config.CHAPTER_ID,
+                    stationId = stationId,
+                    templateId = StationTemplateId.ImageMatch,
+                    variants = variantsFor(listenOnly = false, StationVariant.Episode4Help),
+                    quizMode = plan.mode,
+                    findGridMaxTargetCount = plan.findLetterGridMaxTargetCount,
+                    helpControlsEnabled = true,
+                    replayMode = StationReplayMode.TargetLetterOnly,
+                    hintMode = StationHintMode.TemporaryTargetLetter,
+                    hintDurationMs = 2100L,
+                    imageMatchShowTargetLetterChip = false,
+                    imageMatchHeaderInstructionOverride = StationInstructionCopy.TrainingWhichWordStartsWithLetter,
+                    imageMatchHeaderReadablePanel = true,
+                    contentTopInsetDp = 72f,
+                )
+            TrainingV1Config.STATION_PICTURE_CHOOSE_WORD ->
+                StationUiSpec(
+                    chapterId = TrainingV1Config.CHAPTER_ID,
+                    stationId = stationId,
+                    templateId = StationTemplateId.ImageToWord,
+                    variants = variantsFor(listenOnly = false),
+                    quizMode = plan.mode,
+                    findGridMaxTargetCount = plan.findLetterGridMaxTargetCount,
+                    helpControlsEnabled = false,
+                    replayMode = StationReplayMode.None,
+                    hintMode = StationHintMode.None,
+                    imageToWordInstructionText = StationInstructionCopy.TrainingChooseWordForPicture,
+                    contentTopInsetDp = 72f,
+                )
+            TrainingV1Config.STATION_FIND_HEARD_LETTER_IN_GRID ->
+                StationUiSpec(
+                    chapterId = TrainingV1Config.CHAPTER_ID,
+                    stationId = stationId,
+                    templateId = StationTemplateId.FindLetterGrid,
+                    variants = variantsFor(listenOnly = true, StationVariant.Episode4Help),
+                    quizMode = plan.mode,
+                    findGridMaxTargetCount = plan.findLetterGridMaxTargetCount,
+                    helpControlsEnabled = true,
+                    hintDurationMs = 2100L,
+                    replayMode = StationReplayMode.TargetLetterOnly,
+                    hintMode = StationHintMode.TemporaryTargetLetter,
+                    findGridInlineInstructionOverride = StationInstructionCopy.TrainingFindLetterInGrid,
+                    findGridInlineInstructionPanelStyle = InstructionPanelStyle.WhiteRounded,
+                    findGridSuppressHeaderTargetLetter = true,
+                    findGridHideListenOnlyHeaderTargetLetter = true,
+                    contentTopInsetDp = 72f,
+                )
+            TrainingV1Config.STATION_WORD_BALLOONS ->
+                popBalloonsSpec(
+                    chapterId = TrainingV1Config.CHAPTER_ID,
+                    stationId = stationId,
+                    plan = plan,
+                    isPopAllLetters = true,
+                ).copy(
+                    variants = variantsFor(listenOnly = false, StationVariant.PopAllLettersInWord, StationVariant.Episode4Help),
+                    helpControlsEnabled = true,
+                    replayMode = StationReplayMode.ExistingStationSpecific,
+                    hintMode = StationHintMode.None,
+                    hintDurationMs = null,
+                    popBalloonsPopAllLettersBannerInstruction = StationInstructionCopy.TrainingPopWordLetters,
+                    balloonPlayAreaStartInsetDp = 96f,
+                    contentTopInsetDp = 72f,
+                )
+            TrainingV1Config.STATION_MATCH_LETTER_TO_WORD ->
+                matchLetterToWordSpec(
+                    chapterId = TrainingV1Config.CHAPTER_ID,
+                    stationId = stationId,
+                    plan = plan,
+                ).copy(
+                    matchLetterInstructionText = StationInstructionCopy.TrainingMatchLetterToWord,
+                    contentTopInsetDp = 72f,
+                )
+            else -> error("Unexpected Training v1 stationId=$stationId")
         }
     }
 

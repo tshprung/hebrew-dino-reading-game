@@ -219,7 +219,7 @@ fun MatchLetterToWordGame(
         val headerFont = if (compactWideSpread) 22.sp else 26.sp
         val headerH =
             headerPadTop + headerPadBottom + if (compactWideSpread) 34.dp else 40.dp
-        val bottomSafe = 18.dp
+        val bottomSafe = if (compactWideSpread) 72.dp else 18.dp
 
         Column(modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
             Column(
@@ -240,7 +240,7 @@ fun MatchLetterToWordGame(
                 Text(
                     text = instructions,
                     fontSize = headerFont,
-                    fontWeight = FontWeight.Black,
+                    fontWeight = FontWeight.Bold,
                     color = Color(0xFF0B2B3D),
                     textAlign = TextAlign.Center,
                 )
@@ -249,10 +249,10 @@ fun MatchLetterToWordGame(
             val availableH = (innerH - headerH - bottomSafe).coerceAtLeast(1.dp)
 
             // Estimate needed height so nothing clips. We scale the whole board uniformly.
-            val landscapePictureLetterGap = 56.dp * 1.8f
+            val landscapePictureLetterGap = if (compactWideSpread) 56.dp * 1.35f else 56.dp * 1.8f
             // Estimate must match `LessonChoiceCard` sizing, otherwise captions can get clipped
             // when we scale the whole board to fit the available height.
-            val maxCardWForEstimate = 168.dp
+            val maxCardWForEstimate = if (compactWideSpread) 150.dp else 168.dp
             val maxCardHForEstimate = maxCardWForEstimate * LessonChoiceCardPictureAspect
             val onePictureCardOuterH = maxCardHForEstimate + LessonChoiceCardCaptionSpacerHeight + LessonChoiceCardCaptionAreaHeight
             val rowNeeds =
@@ -264,7 +264,8 @@ fun MatchLetterToWordGame(
                     val perItemH = onePictureCardOuterH + 12.dp
                     (perItemH * maxPairs.size.coerceAtLeast(1)) + 8.dp
                 }
-            val scaleToFit = min(1f, availableH.value / rowNeeds.value)
+            val rowNeedsForScale = rowNeeds + if (compactWideSpread) 88.dp else 0.dp
+            val scaleToFit = min(1f, availableH.value / rowNeedsForScale.value)
 
             Box(
                 modifier =
@@ -275,7 +276,7 @@ fun MatchLetterToWordGame(
                 contentAlignment = Alignment.TopCenter,
             ) {
         val gap = 12.dp
-        val tileH = 88.dp
+        val tileH = if (compactWideSpread) 76.dp else 88.dp
         val tileShape = RoundedCornerShape(22.dp)
         val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
 
@@ -538,7 +539,7 @@ fun MatchLetterToWordGame(
                 ) {
                     Column(
                         modifier = Modifier.width(letterColW),
-                        verticalArrangement = Arrangement.spacedBy(if (compactWideSpread) 60.dp else 12.dp),
+                        verticalArrangement = Arrangement.spacedBy(if (compactWideSpread) 10.dp else 12.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
                         letterColumn.forEach { letter ->

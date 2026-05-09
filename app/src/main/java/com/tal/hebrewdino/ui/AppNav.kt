@@ -19,6 +19,7 @@ import com.tal.hebrewdino.ui.domain.Chapter3Config
 import com.tal.hebrewdino.ui.domain.Chapter4Config
 import com.tal.hebrewdino.ui.domain.Chapter5Config
 import com.tal.hebrewdino.ui.domain.Chapter6Config
+import com.tal.hebrewdino.ui.domain.TrainingV1Config
 import com.tal.hebrewdino.ui.data.CharacterPrefs
 import com.tal.hebrewdino.ui.data.DinoCharacter
 import com.tal.hebrewdino.ui.data.ProgressPrefs
@@ -38,6 +39,9 @@ import com.tal.hebrewdino.ui.screens.Chapter4IntroScreen
 import com.tal.hebrewdino.ui.screens.Chapter4OutroScreen
 import com.tal.hebrewdino.ui.screens.Chapter1MidBoostScreen
 import com.tal.hebrewdino.ui.screens.Chapter2MidBoostScreen
+import com.tal.hebrewdino.ui.screens.TrainingV1CompleteScreen
+import com.tal.hebrewdino.ui.screens.TrainingV1IntroScreen
+import com.tal.hebrewdino.ui.screens.TrainingV1RoundScreen
 import com.tal.hebrewdino.ui.screens.Chapter3MidBoostScreen
 import com.tal.hebrewdino.ui.screens.Chapter4MidBoostScreen
 import com.tal.hebrewdino.ui.screens.Chapter5IntroScreen
@@ -213,7 +217,52 @@ fun AppNav() {
                                 navController.navigate(NavRoutes.Ch6Intro)
                             }
                         }
-                        in 7..10 -> Unit
+                        7 -> {
+                            if (chapter6Completed) {
+                                navController.navigate(NavRoutes.TrainingIntro)
+                            }
+                        }
+                        in 8..10 -> Unit
+                    }
+                },
+            )
+        }
+
+        composable(NavRoutes.TrainingIntro) {
+            TrainingV1IntroScreen(
+                eggStripCount = collectedEggStripCount,
+                onContinue = { navController.navigate("${NavRoutes.TrainingRound}/1") },
+            )
+        }
+
+        composable(
+            route = "${NavRoutes.TrainingRound}/{roundIndex}",
+            arguments = listOf(navArgument("roundIndex") { type = NavType.IntType }),
+        ) { backStackEntry ->
+            val roundIndex = backStackEntry.arguments?.getInt("roundIndex") ?: 1
+            TrainingV1RoundScreen(
+                roundIndex = roundIndex,
+                onBack = { navController.popBackStack() },
+                onRoundComplete = {
+                    if (roundIndex >= TrainingV1Config.TOTAL_ROUNDS) {
+                        navController.navigate(NavRoutes.TrainingComplete) {
+                            popUpTo(NavRoutes.TrainingIntro) { inclusive = false }
+                        }
+                    } else {
+                        navController.navigate("${NavRoutes.TrainingRound}/${roundIndex + 1}") {
+                            popUpTo("${NavRoutes.TrainingRound}/$roundIndex") { inclusive = true }
+                        }
+                    }
+                },
+            )
+        }
+
+        composable(NavRoutes.TrainingComplete) {
+            TrainingV1CompleteScreen(
+                eggStripCount = collectedEggStripCount,
+                onContinue = {
+                    navController.navigate(NavRoutes.Chapters) {
+                        popUpTo(NavRoutes.TrainingIntro) { inclusive = true }
                     }
                 },
             )

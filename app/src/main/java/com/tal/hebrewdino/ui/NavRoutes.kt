@@ -46,6 +46,9 @@ object NavRoutes {
     const val Ch6Level = "ch6_level"
     const val Ch6Reward = "ch6_reward"
     const val Ch6Outro = "ch6_outro"
+    const val TrainingIntro = "training_intro"
+    const val TrainingRound = "training_round"
+    const val TrainingComplete = "training_complete"
     const val StoryOutro = "story_outro"
     const val Settings = "settings"
 }

@@ -46,7 +46,7 @@ fun Chapter3SagaPopBalloonsWordBanner(
         Text(
             text = instructionText,
             fontSize = 32.sp,
-            fontWeight = FontWeight.Black,
+            fontWeight = FontWeight.Bold,
             color = Color(0xFF0B2B3D),
             textAlign = TextAlign.Center,
             modifier =
@@ -119,7 +119,7 @@ fun PopBalloonsInstructionHeaderBlock(
                     Text(
                         text = balloonInstructionOverride ?: "פוצץ את הבלונים עם האות:",
                         fontSize = 30.sp,
-                        fontWeight = FontWeight.Black,
+                        fontWeight = FontWeight.Bold,
                         color = Color(0xFF0B2B3D),
                         textAlign = TextAlign.Center,
                         modifier =
@@ -145,7 +145,7 @@ fun PopBalloonsInstructionHeaderBlock(
                                 "פוצץ את הבלונים עם האות:"
                             },
                     fontSize = 30.sp,
-                    fontWeight = FontWeight.Black,
+                    fontWeight = FontWeight.Bold,
                     color = Color(0xFF0B2B3D),
                     textAlign = TextAlign.Center,
                     modifier =
@@ -187,7 +187,7 @@ fun PopBalloonsInstructionHeaderBlock(
                                     com.tal.hebrewdino.ui.domain.StationInstructionCopy.PopBalloonsWithLetter
                                 },
                         fontSize = 30.sp,
-                        fontWeight = FontWeight.Black,
+                        fontWeight = FontWeight.Bold,
                         color = Color(0xFF0B2B3D),
                         textAlign = TextAlign.Center,
                         modifier =

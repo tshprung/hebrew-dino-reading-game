@@ -62,6 +62,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.zIndex
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.Alignment
@@ -589,7 +590,8 @@ internal fun PopBalloonsOptions(
             Modifier
                 .fillMaxWidth()
                 .padding(start = helpSideInsetDp)
-                .height(ScreenFit.popBalloonsAreaHeightDp())
+                .clipToBounds()
+                .fillMaxSize()
                 .offset { IntOffset(shakePx.roundToInt(), 0) },
     ) {
         val density = LocalDensity.current

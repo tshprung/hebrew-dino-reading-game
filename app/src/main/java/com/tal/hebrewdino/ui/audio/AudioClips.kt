@@ -53,9 +53,6 @@ object AudioClips {
     /** Episode 1 station 2 prefix: "פוצץ את הבלונים עם האות". */
     const val PopBalloonsWithLetter = "audio/pop_balloons_with_letter.wav"
 
-    /** Wrong-tap prefix: "זה". Played before the tapped letter name. */
-    const val ThisIsPrefix = "audio/this_is.wav"
-
     // SFX (optional). If missing from assets, playback will be skipped.
     const val SfxBalloonPop = "audio/sfx_pop.wav"
     /** Softer balloon pop/plop for kids (optional). */

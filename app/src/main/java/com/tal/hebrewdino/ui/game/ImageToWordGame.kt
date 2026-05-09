@@ -91,7 +91,7 @@ fun ImageToWordGame(
             Text(
                 text = instructionText,
                 fontSize = 24.sp,
-                fontWeight = FontWeight.Black,
+                fontWeight = FontWeight.Bold,
                 color = Color(0xFF0B2B3D),
                 textAlign = TextAlign.Center,
                 modifier =

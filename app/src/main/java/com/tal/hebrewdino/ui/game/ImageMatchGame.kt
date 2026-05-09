@@ -125,7 +125,7 @@ fun ImageMatchGame(
                         style =
                             MaterialTheme.typography.titleMedium.copy(
                                 fontSize = MaterialTheme.typography.titleMedium.fontSize * headerInstructionFontScale,
-                                fontWeight = if (chapterId == 6) FontWeight.Black else MaterialTheme.typography.titleMedium.fontWeight,
+                                fontWeight = FontWeight.Bold,
                             ),
                         color = Color(0xFF0B2B3D),
                         textAlign = TextAlign.Center,

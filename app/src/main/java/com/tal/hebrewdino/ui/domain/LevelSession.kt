@@ -29,6 +29,7 @@ class LevelSession(
                 when (letterPoolSpec) {
                     Chapter3LetterPoolSpec -> Chapter3EpisodeContent.balloonWordCatalogPairs()
                     Chapter6LetterPoolSpec -> Chapter6Config.balloonWordCatalogPairs()
+                    TrainingV1LetterPoolSpec -> TrainingV1Config.balloonWordCatalogPairs()
                     else -> Chapter3EpisodeContent.balloonWordCatalogPairs()
                 }
             require(all.size >= 5) { "Pop-all-letters balloons needs at least 5 words; got ${all.size}" }

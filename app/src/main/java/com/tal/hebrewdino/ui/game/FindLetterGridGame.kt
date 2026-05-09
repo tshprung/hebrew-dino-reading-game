@@ -61,6 +61,7 @@ fun FindLetterGridGame(
     question: Question.FindLetterGridQuestion,
     /** Called for any tap (correct or wrong) with the tapped letter. */
     onLetterTapped: ((letter: String) -> Unit)? = null,
+    onCorrectTap: (() -> Unit)? = null,
     /** When incremented, triggers a subtle pulse hint on the header chip. */
     hintPulseEpoch: Int = 0,
     /** Header hint peak scale (2nd wrong hint). */
@@ -193,7 +194,7 @@ fun FindLetterGridGame(
                 Text(
                     text = inlineInstructionText,
                     fontSize = if (question.columns >= 4) 27.sp else 30.sp,
-                    fontWeight = FontWeight.Black,
+                    fontWeight = FontWeight.Bold,
                     color = Color(0xFF0B2B3D),
                     textAlign = TextAlign.Center,
                     modifier =
@@ -364,6 +365,7 @@ fun FindLetterGridGame(
                                 .clickable(enabled = enabled && !done && !gridFrozen) {
                                     onLetterTapped?.invoke(letter)
                                     if (letter == question.targetLetter) {
+                                        onCorrectTap?.invoke()
                                         val newFound = found + index
                                         found = newFound
                                         if (newFound == targetIndices) {

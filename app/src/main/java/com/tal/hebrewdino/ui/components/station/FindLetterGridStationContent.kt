@@ -33,6 +33,7 @@ fun FindLetterGridStationContent(
     entryPulseScale: Float,
     optionsShakePx: Float,
     onSagaGridLetterTapped: ((String) -> Unit)?,
+    onCorrectTap: (() -> Unit)?,
     onCellTapped: (Int) -> Unit,
     onCompleted: () -> Unit,
 ) {
@@ -68,6 +69,7 @@ fun FindLetterGridStationContent(
             },
         contentNudgeDownFraction = 0f,
         onLetterTapped = onSagaGridLetterTapped,
+        onCorrectTap = onCorrectTap,
         hintPulseEpoch = hintPulseEpoch,
         hintHeaderPeakScale = if (sagaUsesFindGridAudioStaging) 1.30f else 1.12f,
         gridLetterSizeMultiplier = if (sagaUsesFindGridAudioStaging) 1.5f else 1f,

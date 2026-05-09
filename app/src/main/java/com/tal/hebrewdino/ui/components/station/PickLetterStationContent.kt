@@ -124,7 +124,7 @@ fun ColumnScope.PickLetterStationContent(
                 Text(
                     text = listenOnlyPanelInstruction,
                     fontSize = 39.sp,
-                    fontWeight = FontWeight.Black,
+                    fontWeight = FontWeight.Bold,
                     color = Color(0xFF0B2B3D),
                     textAlign = TextAlign.Center,
                     modifier =
@@ -148,7 +148,7 @@ fun ColumnScope.PickLetterStationContent(
                 Text(
                     text = pickLetterInstructionOverride,
                     fontSize = 39.sp,
-                    fontWeight = FontWeight.Black,
+                    fontWeight = FontWeight.Bold,
                     color = Color(0xFF0B2B3D),
                     textAlign = TextAlign.Center,
                     modifier =
@@ -175,7 +175,7 @@ fun ColumnScope.PickLetterStationContent(
                 Text(
                     text = pickLetterSagaStation1CompactPreamble,
                     fontSize = 34.sp,
-                    fontWeight = FontWeight.Black,
+                    fontWeight = FontWeight.Bold,
                     color = Color(0xFF0B2B3D),
                     textAlign = TextAlign.Center,
                     modifier =

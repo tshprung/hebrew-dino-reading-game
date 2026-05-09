@@ -79,6 +79,7 @@ import com.tal.hebrewdino.R
 import com.tal.hebrewdino.ui.components.ChapterNavChipStyles
 import com.tal.hebrewdino.ui.components.learning.DinoNestMark
 import com.tal.hebrewdino.ui.domain.ChaptersPathLayout
+import com.tal.hebrewdino.ui.domain.TrainingV1Config
 import kotlin.math.hypot
 import kotlin.math.max
 import kotlin.math.roundToInt
@@ -235,7 +236,15 @@ fun ChaptersScreen(
             BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
                 TrainingComingSoonCard(
                     title = "אימון קצר",
-                    subtitle = "אותיות ומילים מכל הפרקים",
+                    subtitle =
+                        if (chaptersProgress.chapter6Completed) {
+                            "אותיות ומילים מכל הפרקים"
+                        } else {
+                            "ייפתח אחרי פרק 6"
+                        },
+                    statusText = if (chaptersProgress.chapter6Completed) "התחל" else "נעול",
+                    enabled = chaptersProgress.chapter6Completed,
+                    onClick = { onOpenChapter(TrainingV1Config.CHAPTER_ID) },
                     modifier =
                         Modifier
                             .width(maxWidth * 0.65f)
@@ -267,6 +276,9 @@ fun ChaptersScreen(
 private fun TrainingComingSoonCard(
     title: String,
     subtitle: String,
+    statusText: String,
+    enabled: Boolean,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Box(
@@ -275,6 +287,7 @@ private fun TrainingComingSoonCard(
                 .clip(RoundedCornerShape(22.dp))
                 .background(Color.White.copy(alpha = 0.72f))
                 .border(2.dp, Color(0xFF0B2B3D).copy(alpha = 0.10f), RoundedCornerShape(22.dp))
+                .then(if (enabled) Modifier.clickable(onClick = onClick) else Modifier)
                 .padding(horizontal = 14.dp, vertical = 12.dp),
     ) {
         // Corner status pill so it reads like a state, not an action.
@@ -286,7 +299,7 @@ private fun TrainingComingSoonCard(
                     .padding(horizontal = 10.dp, vertical = 4.dp),
         ) {
             Text(
-                text = "בקרוב",
+                text = statusText,
                 style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Black),
                 color = Color(0xFF0B2B3D).copy(alpha = 0.70f),
             )

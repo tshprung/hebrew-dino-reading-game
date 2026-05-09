@@ -55,9 +55,25 @@ class ProgressPrefs(private val context: Context) {
         androidx.datastore.preferences.core.stringPreferencesKey("chapter6_completed_stations")
     private val chapter6CompletedKey: Preferences.Key<Boolean> = booleanPreferencesKey("chapter6_completed")
 
+    private fun parseCompletedStations(raw: String, stationCount: Int): Set<Int> {
+        if (raw.isBlank()) return emptySet()
+        return raw.split(",")
+            .mapNotNull { it.trim().toIntOrNull() }
+            .filter { it in 1..stationCount }
+            .toSet()
+    }
+
+    private fun selfHealUnlockFromCompleted(currentUnlock: Int, completed: Set<Int>, stationCount: Int): Int {
+        val nextIncomplete = (1..stationCount).firstOrNull { it !in completed } ?: stationCount
+        return maxOf(currentUnlock.coerceIn(1, stationCount), nextIncomplete.coerceIn(1, stationCount))
+    }
+
     val unlockedLevelFlow: Flow<Int> =
         context.dataStore.data.map { prefs ->
-            (prefs[unlockedLevelKey] ?: 1).coerceIn(1, Chapter1Config.STATION_COUNT)
+            val stationCount = Chapter1Config.STATION_COUNT
+            val currentUnlock = (prefs[unlockedLevelKey] ?: 1).coerceIn(1, stationCount)
+            val completed = parseCompletedStations(prefs[completedLevelsKey].orEmpty(), stationCount)
+            selfHealUnlockFromCompleted(currentUnlock, completed, stationCount)
         }
 
     val completedLevelsFlow: Flow<Set<Int>> =
@@ -93,7 +109,10 @@ class ProgressPrefs(private val context: Context) {
 
     val chapter2UnlockedStationFlow: Flow<Int> =
         context.dataStore.data.map { prefs ->
-            (prefs[chapter2UnlockedStationKey] ?: 1).coerceIn(1, Chapter2Config.STATION_COUNT)
+            val stationCount = Chapter2Config.STATION_COUNT
+            val currentUnlock = (prefs[chapter2UnlockedStationKey] ?: 1).coerceIn(1, stationCount)
+            val completed = parseCompletedStations(prefs[chapter2CompletedStationsKey].orEmpty(), stationCount)
+            selfHealUnlockFromCompleted(currentUnlock, completed, stationCount)
         }
 
     val chapter2CompletedStationsFlow: Flow<Set<Int>> =
@@ -120,7 +139,10 @@ class ProgressPrefs(private val context: Context) {
 
     val chapter3UnlockedStationFlow: Flow<Int> =
         context.dataStore.data.map { prefs ->
-            (prefs[chapter3UnlockedStationKey] ?: 1).coerceIn(1, Chapter3Config.STATION_COUNT)
+            val stationCount = Chapter3Config.STATION_COUNT
+            val currentUnlock = (prefs[chapter3UnlockedStationKey] ?: 1).coerceIn(1, stationCount)
+            val completed = parseCompletedStations(prefs[chapter3CompletedStationsKey].orEmpty(), stationCount)
+            selfHealUnlockFromCompleted(currentUnlock, completed, stationCount)
         }
 
     val chapter3CompletedStationsFlow: Flow<Set<Int>> =
@@ -147,7 +169,10 @@ class ProgressPrefs(private val context: Context) {
 
     val chapter4UnlockedStationFlow: Flow<Int> =
         context.dataStore.data.map { prefs ->
-            (prefs[chapter4UnlockedStationKey] ?: 1).coerceIn(1, Chapter4Config.STATION_COUNT)
+            val stationCount = Chapter4Config.STATION_COUNT
+            val currentUnlock = (prefs[chapter4UnlockedStationKey] ?: 1).coerceIn(1, stationCount)
+            val completed = parseCompletedStations(prefs[chapter4CompletedStationsKey].orEmpty(), stationCount)
+            selfHealUnlockFromCompleted(currentUnlock, completed, stationCount)
         }
 
     val chapter4CompletedStationsFlow: Flow<Set<Int>> =
@@ -174,7 +199,10 @@ class ProgressPrefs(private val context: Context) {
 
     val chapter5UnlockedStationFlow: Flow<Int> =
         context.dataStore.data.map { prefs ->
-            (prefs[chapter5UnlockedStationKey] ?: 1).coerceIn(1, Chapter5Config.STATION_COUNT)
+            val stationCount = Chapter5Config.STATION_COUNT
+            val currentUnlock = (prefs[chapter5UnlockedStationKey] ?: 1).coerceIn(1, stationCount)
+            val completed = parseCompletedStations(prefs[chapter5CompletedStationsKey].orEmpty(), stationCount)
+            selfHealUnlockFromCompleted(currentUnlock, completed, stationCount)
         }
 
     val chapter5CompletedStationsFlow: Flow<Set<Int>> =
@@ -201,7 +229,10 @@ class ProgressPrefs(private val context: Context) {
 
     val chapter6UnlockedStationFlow: Flow<Int> =
         context.dataStore.data.map { prefs ->
-            (prefs[chapter6UnlockedStationKey] ?: 1).coerceIn(1, Chapter6Config.STATION_COUNT)
+            val stationCount = Chapter6Config.STATION_COUNT
+            val currentUnlock = (prefs[chapter6UnlockedStationKey] ?: 1).coerceIn(1, stationCount)
+            val completed = parseCompletedStations(prefs[chapter6CompletedStationsKey].orEmpty(), stationCount)
+            selfHealUnlockFromCompleted(currentUnlock, completed, stationCount)
         }
 
     val chapter6CompletedStationsFlow: Flow<Set<Int>> =
