@@ -113,10 +113,6 @@ object StationQuizPlans {
     fun chapter6(stationId: Int): StationQuizPlan =
         Chapter6StationOrder.quizPlan(stationId).let { plan ->
             when (stationId) {
-                1 -> plan.copy( // Ch6 st1 review pick letter
-                    optionCount = 6,
-                    sortOptionLetters = true
-                )
                 4 -> plan.copy( // Ch6 st4 picture starts-with
                     optionCount = 5,
                     sortOptionLetters = true
