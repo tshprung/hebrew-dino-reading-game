@@ -180,8 +180,6 @@ fun FindLetterGridGame(
             }
         val topPaddingH = 6.dp
         val outerW = maxWidth
-        // Small safety margin so the last row never clips in landscape.
-        val availableForGrid = (maxHeight - headerBoxH - topPaddingH - 6.dp).coerceAtLeast(120.dp)
 
         Column(
             modifier =
@@ -286,18 +284,18 @@ fun FindLetterGridGame(
             }
             }
             Spacer(modifier = Modifier.height(4.dp))
-            Box(
+            BoxWithConstraints(
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .height(availableForGrid)
-                        .padding(horizontal = gridHorizontalPadding)
+                        .weight(1f, fill = true)
+                        .padding(horizontal = gridHorizontalPadding, vertical = 6.dp)
                         .scale(gridScale.value),
             ) {
                 val cols = question.columns
                 val rows = question.rows
-                val safeMaxHeight = availableForGrid
-                val cellSideByWidth = (outerW - gridHorizontalPadding * 2 - gap * (cols - 1)) / cols
+                val safeMaxHeight = maxHeight.coerceAtLeast(120.dp)
+                val cellSideByWidth = (maxWidth - gap * (cols - 1)) / cols
                 val cellSideByHeight = (safeMaxHeight - gap * (rows - 1)) / rows
                 val cellSideBase =
                     // Fill the shorter dimension (width/height) while staying symmetric.
@@ -315,7 +313,7 @@ fun FindLetterGridGame(
                     horizontalArrangement = Arrangement.spacedBy(gap, Alignment.CenterHorizontally),
                     verticalArrangement = Arrangement.spacedBy(gap, Alignment.CenterVertically),
                     userScrollEnabled = false,
-                    modifier = Modifier.align(Alignment.TopCenter).size(gridW, gridH),
+                    modifier = Modifier.align(Alignment.Center).size(gridW, gridH),
                 ) {
                 itemsIndexed(question.cells, key = { i, _ -> "${contentKey}_$i" }) { index, letter ->
                     val done = index in found
