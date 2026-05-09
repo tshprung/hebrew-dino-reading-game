@@ -74,6 +74,7 @@ import com.tal.hebrewdino.ui.components.ChapterNavChipStyles
 import com.tal.hebrewdino.ui.components.learning.DinoNestMark
 import com.tal.hebrewdino.ui.components.learning.StoryEggStrip
 import com.tal.hebrewdino.ui.domain.Chapter1Config
+import com.tal.hebrewdino.ui.domain.DevTools
 import com.tal.hebrewdino.ui.domain.JourneyEndMarkerIdle
 import com.tal.hebrewdino.ui.domain.JourneyMapLayout
 import androidx.compose.ui.draw.scale
@@ -416,7 +417,7 @@ fun JourneyScreen(
                         }
                     }
                 }
-                if (onDebugUnlockNext != null) {
+                if (DevTools.enabled && onDebugUnlockNext != null) {
                     OutlinedButton(onClick = onDebugUnlockNext, enabled = true, colors = journeyNavChipColors) {
                         Text("בדיקה", style = journeyNavChipTextStyle)
                     }

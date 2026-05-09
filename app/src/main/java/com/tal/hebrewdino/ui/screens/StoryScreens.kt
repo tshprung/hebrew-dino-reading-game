@@ -34,6 +34,7 @@ import com.tal.hebrewdino.R
 import com.tal.hebrewdino.ui.audio.AudioClips
 import com.tal.hebrewdino.ui.audio.VoicePlayer
 import com.tal.hebrewdino.ui.data.DinoCharacter
+import com.tal.hebrewdino.ui.domain.DevTools
 
 @Composable
 fun BeachIntroScreen(
@@ -169,15 +170,17 @@ private fun StoryScreenScaffold(
             Spacer(modifier = Modifier.height(18.dp))
 
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                OutlinedButton(
-                    onClick = {
-                        // UX: stop intro immediately when leaving.
-                        voice.stopNow()
-                        onSkip()
-                    },
-                    modifier = Modifier.width(160.dp),
-                ) {
-                    Text("דלג")
+                if (DevTools.enabled) {
+                    OutlinedButton(
+                        onClick = {
+                            // UX: stop intro immediately when leaving.
+                            voice.stopNow()
+                            onSkip()
+                        },
+                        modifier = Modifier.width(160.dp),
+                    ) {
+                        Text("דלג")
+                    }
                 }
                 Button(
                     onClick = {

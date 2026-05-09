@@ -64,14 +64,13 @@ import com.tal.hebrewdino.ui.screens.RewardScreen
 import com.tal.hebrewdino.ui.screens.SettingsScreen
 import com.tal.hebrewdino.ui.screens.Chapter2LevelScreen
 import com.tal.hebrewdino.R
-import android.content.pm.ApplicationInfo
 import kotlinx.coroutines.launch
+import com.tal.hebrewdino.ui.domain.DevTools
 
 @Composable
 fun AppNav() {
     val navController = rememberNavController()
     val context = LocalContext.current
-    val isDebuggable = (context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
     val prefs = CharacterPrefs(context)
     val progress = ProgressPrefs(context)
     val scope = rememberCoroutineScope()
@@ -333,23 +332,28 @@ fun AppNav() {
                 onLettersHelp = {
                     navController.navigate(NavRoutes.Ch2Letters) { launchSingleTop = true }
                 },
-                onDebugUnlockNext = {
-                    scope.launch {
-                        val completedStationId = progress.debugUnlockNextChapter2Station()
-                        when {
-                            completedStationId == 3 && !chapter2MidBoostSeen -> {
-                                navController.navigate(NavRoutes.Ch2MidBoost) {
-                                    popUpTo(NavRoutes.Ch2Journey) { inclusive = false }
-                                }
-                            }
-                            completedStationId >= Chapter2Config.STATION_COUNT -> {
-                                navController.navigate(NavRoutes.Ch2StoryOutro) {
-                                    popUpTo(NavRoutes.Ch2Journey) { inclusive = true }
+                onDebugUnlockNext =
+                    if (DevTools.enabled) {
+                        {
+                            scope.launch {
+                                val completedStationId = progress.debugUnlockNextChapter2Station()
+                                when {
+                                    completedStationId == 3 && !chapter2MidBoostSeen -> {
+                                        navController.navigate(NavRoutes.Ch2MidBoost) {
+                                            popUpTo(NavRoutes.Ch2Journey) { inclusive = false }
+                                        }
+                                    }
+                                    completedStationId >= Chapter2Config.STATION_COUNT -> {
+                                        navController.navigate(NavRoutes.Ch2StoryOutro) {
+                                            popUpTo(NavRoutes.Ch2Journey) { inclusive = true }
+                                        }
+                                    }
                                 }
                             }
                         }
-                    }
-                },
+                    } else {
+                        null
+                    },
             )
         }
 
@@ -394,23 +398,28 @@ fun AppNav() {
                 onLettersHelp = {
                     navController.navigate(NavRoutes.Ch3Letters) { launchSingleTop = true }
                 },
-                onDebugUnlockNext = {
-                    scope.launch {
-                        val completedStationId = progress.debugUnlockNextChapter3Station()
-                        when {
-                            completedStationId == 3 && !chapter3MidBoostSeen -> {
-                                navController.navigate(NavRoutes.Ch3MidBoost) {
-                                    popUpTo(NavRoutes.Ch3Journey) { inclusive = false }
-                                }
-                            }
-                            completedStationId >= Chapter3Config.STATION_COUNT -> {
-                                navController.navigate(NavRoutes.Ch3StoryOutro) {
-                                    popUpTo(NavRoutes.Ch3Journey) { inclusive = true }
+                onDebugUnlockNext =
+                    if (DevTools.enabled) {
+                        {
+                            scope.launch {
+                                val completedStationId = progress.debugUnlockNextChapter3Station()
+                                when {
+                                    completedStationId == 3 && !chapter3MidBoostSeen -> {
+                                        navController.navigate(NavRoutes.Ch3MidBoost) {
+                                            popUpTo(NavRoutes.Ch3Journey) { inclusive = false }
+                                        }
+                                    }
+                                    completedStationId >= Chapter3Config.STATION_COUNT -> {
+                                        navController.navigate(NavRoutes.Ch3StoryOutro) {
+                                            popUpTo(NavRoutes.Ch3Journey) { inclusive = true }
+                                        }
+                                    }
                                 }
                             }
                         }
-                    }
-                },
+                    } else {
+                        null
+                    },
             )
         }
 
@@ -427,23 +436,28 @@ fun AppNav() {
                 onBack = {
                     navController.navigate(NavRoutes.Chapters) { popUpTo(NavRoutes.Journey) { inclusive = true } }
                 },
-                onDebugUnlockNext = {
-                    scope.launch {
-                        val completedStationId = progress.debugUnlockNextChapter1Station()
-                        when {
-                            completedStationId == 3 && !chapter1MidBoostSeen -> {
-                                navController.navigate(NavRoutes.Ch1MidBoost) {
-                                    popUpTo(NavRoutes.Journey) { inclusive = false }
-                                }
-                            }
-                            completedStationId >= Chapter1Config.STATION_COUNT && !beachOutroSeen -> {
-                                navController.navigate(NavRoutes.JourneyEndWalk) {
-                                    popUpTo(NavRoutes.Journey) { inclusive = true }
+                onDebugUnlockNext =
+                    if (DevTools.enabled) {
+                        {
+                            scope.launch {
+                                val completedStationId = progress.debugUnlockNextChapter1Station()
+                                when {
+                                    completedStationId == 3 && !chapter1MidBoostSeen -> {
+                                        navController.navigate(NavRoutes.Ch1MidBoost) {
+                                            popUpTo(NavRoutes.Journey) { inclusive = false }
+                                        }
+                                    }
+                                    completedStationId >= Chapter1Config.STATION_COUNT && !beachOutroSeen -> {
+                                        navController.navigate(NavRoutes.JourneyEndWalk) {
+                                            popUpTo(NavRoutes.Journey) { inclusive = true }
+                                        }
+                                    }
                                 }
                             }
                         }
-                    }
-                },
+                    } else {
+                        null
+                    },
                 onLettersHelp = {
                     navController.navigate(NavRoutes.ChapterLettersIntro) { launchSingleTop = true }
                 },
@@ -469,9 +483,12 @@ fun AppNav() {
                 onBack = {
                     navController.navigate(NavRoutes.Chapters) { popUpTo(NavRoutes.JourneyEndWalk) { inclusive = true } }
                 },
-                onDebugUnlockNext = {
-                    scope.launch { progress.debugUnlockNextChapter1Station() }
-                },
+                onDebugUnlockNext =
+                    if (DevTools.enabled) {
+                        { scope.launch { progress.debugUnlockNextChapter1Station() } }
+                    } else {
+                        null
+                    },
                 onLettersHelp = {
                     navController.navigate(NavRoutes.ChapterLettersIntro) { launchSingleTop = true }
                 },
@@ -490,7 +507,7 @@ fun AppNav() {
                     navController.navigate(NavRoutes.Ch2Letters) { launchSingleTop = true }
                 },
                 onDebugStationAdvance =
-                    if (isDebuggable) {
+                    if (DevTools.enabled) {
                         { scope.launch { progress.debugUnlockNextChapter2Station() } }
                     } else {
                         null
@@ -546,7 +563,7 @@ fun AppNav() {
                     navController.navigate(NavRoutes.ChapterLettersIntro) { launchSingleTop = true }
                 },
                 onDebugStationAdvance =
-                    if (isDebuggable) {
+                    if (DevTools.enabled) {
                         { scope.launch { progress.debugUnlockNextChapter1Station() } }
                     } else {
                         null
@@ -796,7 +813,7 @@ fun AppNav() {
                     navController.navigate(NavRoutes.Ch4Letters) { launchSingleTop = true }
                 },
                 onDebugUnlockNext =
-                    if (isDebuggable) {
+                    if (DevTools.enabled) {
                         {
                             scope.launch {
                                 val completedStationId = progress.debugUnlockNextChapter4Station()
@@ -832,7 +849,7 @@ fun AppNav() {
                     navController.navigate(NavRoutes.Ch4Letters) { launchSingleTop = true }
                 },
                 onDebugStationAdvance =
-                    if (isDebuggable) {
+                    if (DevTools.enabled) {
                         { scope.launch { progress.debugUnlockNextChapter4Station() } }
                     } else {
                         null
@@ -956,7 +973,7 @@ fun AppNav() {
                     navController.navigate(NavRoutes.Ch5Letters) { launchSingleTop = true }
                 },
                 onDebugUnlockNext =
-                    if (isDebuggable) {
+                    if (DevTools.enabled) {
                         {
                             scope.launch {
                                 val completedStationId = progress.debugUnlockNextChapter5Station()
@@ -992,7 +1009,7 @@ fun AppNav() {
                     navController.navigate(NavRoutes.Ch5Letters) { launchSingleTop = true }
                 },
                 onDebugStationAdvance =
-                    if (isDebuggable) {
+                    if (DevTools.enabled) {
                         { scope.launch { progress.debugUnlockNextChapter5Station() } }
                     } else {
                         null
@@ -1113,7 +1130,7 @@ fun AppNav() {
                 onBack = { navController.navigate(NavRoutes.Chapters) { popUpTo(NavRoutes.Ch6Journey) { inclusive = true } } },
                 onLettersHelp = { navController.navigate(NavRoutes.Ch6Letters) { launchSingleTop = true } },
                 onDebugUnlockNext =
-                    if (isDebuggable) {
+                    if (DevTools.enabled) {
                         {
                             scope.launch {
                                 val completedStationId = progress.debugUnlockNextChapter6Station()

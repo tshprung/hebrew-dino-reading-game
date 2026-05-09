@@ -1,5 +1,11 @@
 package com.tal.hebrewdino.ui.domain
 
+import com.tal.hebrewdino.BuildConfig
+
+object DevTools {
+    val enabled: Boolean = BuildConfig.DEBUG
+}
+
 /**
  * Declarative UI-oriented station behavior for saga gameplay ([com.tal.hebrewdino.ui.screens.GameScreen]).
  *
