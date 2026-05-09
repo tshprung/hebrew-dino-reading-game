@@ -93,6 +93,7 @@ private fun StoryScreenScaffold(
     modifier: Modifier = Modifier,
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
+    val devToolsEnabled = DevTools.enabled(context)
     val voice = remember { VoicePlayer(context = context) }
 
     DisposableEffect(Unit) {
@@ -170,7 +171,7 @@ private fun StoryScreenScaffold(
             Spacer(modifier = Modifier.height(18.dp))
 
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                if (DevTools.enabled) {
+                if (devToolsEnabled) {
                     OutlinedButton(
                         onClick = {
                             // UX: stop intro immediately when leaving.

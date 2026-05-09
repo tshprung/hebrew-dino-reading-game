@@ -1,9 +1,11 @@
 package com.tal.hebrewdino.ui.domain
 
-import com.tal.hebrewdino.BuildConfig
+import android.content.Context
+import android.content.pm.ApplicationInfo
 
 object DevTools {
-    val enabled: Boolean = BuildConfig.DEBUG
+    fun enabled(context: Context): Boolean =
+        (context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
 }
 
 /**

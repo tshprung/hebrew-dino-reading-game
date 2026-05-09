@@ -61,6 +61,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -198,6 +199,7 @@ fun JourneyScreen(
     collectedEggStripCount: Int = 0,
     modifier: Modifier = Modifier,
 ) {
+    val devToolsEnabled = DevTools.enabled(LocalContext.current)
     val resolvedSubtitle = headerSubtitle // when null, hide subtitle (chapter 1 request)
     val nextPlayableSuggested =
         (1..playableLevels).firstOrNull { !completedLevels.contains(it) } ?: (playableLevels + 1)
@@ -417,7 +419,7 @@ fun JourneyScreen(
                         }
                     }
                 }
-                if (DevTools.enabled && onDebugUnlockNext != null) {
+                if (devToolsEnabled && onDebugUnlockNext != null) {
                     OutlinedButton(onClick = onDebugUnlockNext, enabled = true, colors = journeyNavChipColors) {
                         Text("בדיקה", style = journeyNavChipTextStyle)
                     }
