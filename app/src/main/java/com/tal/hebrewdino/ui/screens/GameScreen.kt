@@ -577,6 +577,27 @@ fun GameScreen(
                             if (voice.hasAsset(AudioClips.MatchLetterToWordInstructions)) {
                                 voice.playBlocking(AudioClips.MatchLetterToWordInstructions)
                             }
+                        } else if (stationUiSpec.templateId == StationTemplateId.ImageToWord && q is Question.ImageMatchQuestion) {
+                            sfx.stopAllStreams()
+                            val intro =
+                                if (voice.hasAsset(AudioClips.Ch3ImageToWordInstructions)) {
+                                    AudioClips.Ch3ImageToWordInstructions
+                                } else {
+                                    AudioClips.ImageToWordInstructions
+                                }
+                            if (voice.hasAsset(intro)) {
+                                voice.playBlocking(intro)
+                            }
+                            val ch3Word = "audio/ch3_word_${q.correctChoiceId}.wav"
+                            val wordPath =
+                                if (voice.hasAsset(ch3Word)) {
+                                    ch3Word
+                                } else {
+                                    AudioClips.wordClipByCatalogId(q.correctChoiceId)
+                                }
+                            if (voice.hasAsset(wordPath)) {
+                                voice.playBlocking(wordPath)
+                            }
                         } else if (sagaUsesPickLetterAudioStaging) {
                             val target =
                                 when (q) {
@@ -623,14 +644,14 @@ fun GameScreen(
                             val wordPath = AudioClips.wordClipByCatalogId(q.catalogEntryId)
                             if (voice.hasAsset(clip)) voice.playBlocking(clip)
                             if (voice.hasAsset(wordPath)) voice.playBlocking(wordPath)
-                        } else if (chapterId == 3 && stationId == 1 && q is Question.PictureStartsWithQuestion) {
+                        } else if ((chapterId == 3 || chapterId == 6) && stationId == 1 && q is Question.PictureStartsWithQuestion) {
                             sfx.stopAllStreams()
                             // Episode 3 station 1: reuse Episode 1 station 4 instruction voice.
                             val clip = AudioClips.WhichLetterDoesWordStart
                             val wordPath = AudioClips.wordClipByCatalogId(q.catalogEntryId)
                             if (voice.hasAsset(clip)) voice.playBlocking(clip)
                             if (voice.hasAsset(wordPath)) voice.playBlocking(wordPath)
-                        } else if (chapterId == 3 && stationId == 2 && q is Question.ImageMatchQuestion) {
+                        } else if ((chapterId == 3 || chapterId == 6) && stationId == 2 && q is Question.ImageMatchQuestion) {
                             // Episode 3 station 2: reuse Episode 1 station 6 instruction voice.
                             sfx.stopAllStreams()
                             voice.playBlocking(AudioClips.MatchLetterToWordInstructions)
@@ -1040,10 +1061,24 @@ fun GameScreen(
                         delay(feedbackDelayMs)
                         if (wrongWordCatalogId != null && !wrongWordAlreadySpoken) {
                             // One try-again line only ([playSequenceBlocking] would play every clip, so both try WAVs).
-                            voice.playSequenceBlocking(
-                                AudioClips.ThisIsPrefix,
-                                AudioClips.wordClipByCatalogId(wrongWordCatalogId),
-                            )
+                            val wordPath = AudioClips.wordClipByCatalogId(wrongWordCatalogId)
+                            val shortenPrefixGap = (chapterId == 3 || chapterId == 6) && stationId == 6
+                            val prefixMs = sfx.durationMs(AudioClips.ThisIsPrefix) ?: 0L
+                            if (shortenPrefixGap && prefixMs > 0L && voice.hasAsset(wordPath)) {
+                                sfx.stopAllStreams()
+                                sfx.playReturningStreamId(AudioClips.ThisIsPrefix, volume = 1f)
+                                val lead =
+                                    (prefixMs * 0.50f)
+                                        .toLong()
+                                        .coerceIn(16L, prefixMs)
+                                delay(lead)
+                                voice.playBlocking(wordPath)
+                            } else {
+                                voice.playSequenceBlocking(
+                                    AudioClips.ThisIsPrefix,
+                                    wordPath,
+                                )
+                            }
                             voice.playFirstAvailableBlocking(AudioClips.VoTryAgain2, AudioClips.VoTryAgain1)
                             return@launch
                         }
@@ -1152,7 +1187,7 @@ fun GameScreen(
                             // Station 3: no pulsing letter intro before each round.
                             !(sagaUsesFindGridAudioStaging) &&
                             // Episode 3 stations 1-3: no blinking intro (word/letter).
-                            !(chapterId == 3 && (stationId == 1 || stationId == 2 || stationId == 3))
+                            !((chapterId == 3 || chapterId == 6) && (stationId == 1 || stationId == 2 || stationId == 3))
                         ) {
                             IntroPulse(stationId = stationId, question = current, modifier = Modifier.fillMaxWidth())
                         }
@@ -1849,7 +1884,7 @@ fun GameScreen(
                                                     station4WrongFlashEpoch += 1
                                                     onWrongFeedback(wrongPickedLetter = picked)
                                                 } else {
-                                                    if (audioEnabled && chapterId == 3 && stationId == 1) {
+                                                if (audioEnabled && (chapterId == 3 || chapterId == 6) && stationId == 1) {
                                                         // Let the tapped letter name play; wrong feedback is still immediate via visuals/SFX.
                                                         onWrongFeedback(wrongPickedLetterAlreadySpoken = true)
                                                     } else {
@@ -1863,7 +1898,7 @@ fun GameScreen(
                                 )
                             }
                             is Question.ImageMatchQuestion ->
-                                if (chapterId == 3 && stationId == 6) {
+                                if (stationUiSpec.templateId == StationTemplateId.ImageToWord) {
                                     Chapter3Station6ImageToWordStationContent(
                                         question = current,
                                         contentKey = session.currentIndex,
@@ -1877,9 +1912,13 @@ fun GameScreen(
                                             if (!audioEnabled) return@Chapter3Station6ImageToWordStationContent
                                             cancelFeedbackVoice()
                                             val id = current.correctChoiceId
-                                            val ch3Clip = "audio/ch3_word_${id}.wav"
                                             val clip =
-                                                if (voice.hasAsset(ch3Clip)) ch3Clip else AudioClips.wordClipByCatalogId(id)
+                                                if (chapterId == 3) {
+                                                    val ch3Clip = "audio/ch3_word_${id}.wav"
+                                                    if (voice.hasAsset(ch3Clip)) ch3Clip else AudioClips.wordClipByCatalogId(id)
+                                                } else {
+                                                    AudioClips.wordClipByCatalogId(id)
+                                                }
                                             if (voice.hasAsset(clip)) {
                                                 feedbackVoiceJob = scope.launch { voice.playBlocking(clip) }
                                             }
@@ -1889,9 +1928,13 @@ fun GameScreen(
                                             cancelFeedbackVoice()
                                             feedbackVoiceJob =
                                                 scope.launch {
-                                                    val ch3Clip = "audio/ch3_word_${choiceId}.wav"
                                                     val clip =
-                                                        if (voice.hasAsset(ch3Clip)) ch3Clip else AudioClips.wordClipByCatalogId(choiceId)
+                                                        if (chapterId == 3) {
+                                                            val ch3Clip = "audio/ch3_word_${choiceId}.wav"
+                                                            if (voice.hasAsset(ch3Clip)) ch3Clip else AudioClips.wordClipByCatalogId(choiceId)
+                                                        } else {
+                                                            AudioClips.wordClipByCatalogId(choiceId)
+                                                        }
                                                     voice.playBlocking(clip)
                                                 }
                                         },
@@ -1903,9 +1946,13 @@ fun GameScreen(
                                                     if (audioEnabled) ChildGameAudioHooks.onCorrect()
                                                     scope.launch {
                                                         if (audioEnabled) {
-                                                            val ch3Clip = "audio/ch3_word_${choiceId}.wav"
                                                             val clip =
-                                                                if (voice.hasAsset(ch3Clip)) ch3Clip else AudioClips.wordClipByCatalogId(choiceId)
+                                                                if (chapterId == 3) {
+                                                                    val ch3Clip = "audio/ch3_word_${choiceId}.wav"
+                                                                    if (voice.hasAsset(ch3Clip)) ch3Clip else AudioClips.wordClipByCatalogId(choiceId)
+                                                                } else {
+                                                                    AudioClips.wordClipByCatalogId(choiceId)
+                                                                }
                                                             voice.playBlocking(clip)
                                                             val praise =
                                                                 mutableListOf(
@@ -1937,9 +1984,7 @@ fun GameScreen(
                                         },
                                     )
                                 } else if (
-                                    (chapterId == 3 && stationId == 2) ||
-                                        (isSagaEpisode(chapterId) && stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH) ||
-                                        (chapterId == 6 && stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH)
+                                    stationUiSpec.templateId == StationTemplateId.MatchLetterToWord
                                 ) {
                                     // Same three picture cards as this round's ImageMatch question (station 5 generator/shape).
                                     val matchChoices = current.choices
@@ -2214,7 +2259,7 @@ fun GameScreen(
                         .zIndex(6f),
             )
         }
-        if (chapterId == 3 && stationId == 5 && !episode4HelpSt15) {
+        if ((chapterId == 3 || chapterId == 6) && stationId == 5 && !episode4HelpSt15) {
             Chapter3Station5ReplayColumn(
                 replayEnabled = phase == GamePhase.Play,
                 onReplayLetter = {

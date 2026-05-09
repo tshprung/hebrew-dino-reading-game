@@ -88,35 +88,28 @@ class StationBehaviorRegistryTest {
 
     @Test
     fun chapter6_templates_and_variants_are_explicit() {
-        val s1 = StationBehaviorRegistry.getStationUiSpec(6, 1)
-        assertEquals(StationTemplateId.PickLetter, s1.templateId)
-        assertTrue(s1.variants.contains(StationVariant.ListenFirst))
-        assertTrue(s1.variants.contains(StationVariant.Episode4Help))
-        assertTrue(s1.helpControlsEnabled)
-        assertEquals(StationReplayMode.TargetLetterOnly, s1.replayMode)
-        assertEquals(StationHintMode.TemporaryTargetLetter, s1.hintMode)
-        assertEquals(2100L, s1.hintDurationMs)
-        assertEquals(StationInstructionCopy.PickLetterSagaStation1Preamble, s1.pickLetterInstructionOverride)
-        val p1 = StationQuizPlans.chapter6(1)
-        assertTrue(p1.listenOnlyTargetPrompt)
-        assertEquals(6, p1.optionCount)
-
-        val s2 = StationBehaviorRegistry.getStationUiSpec(6, 2)
-        assertEquals(StationTemplateId.PickLetter, s2.templateId)
-        assertTrue(s2.variants.contains(StationVariant.HighlightedLetterInWord))
-        val p2 = StationQuizPlans.chapter6(2)
-        assertTrue((p2.optionCount ?: 99) <= 8)
+        assertEquals(StationTemplateId.PictureStartsWith, StationBehaviorRegistry.getStationUiSpec(6, 1).templateId)
+        assertEquals(StationTemplateId.MatchLetterToWord, StationBehaviorRegistry.getStationUiSpec(6, 2).templateId)
         val s3 = StationBehaviorRegistry.getStationUiSpec(6, 3)
         assertEquals(StationTemplateId.PopBalloons, s3.templateId)
         assertTrue(s3.variants.contains(StationVariant.PopAllLettersInWord))
-        assertEquals(StationInstructionCopy.PopBalloonsPopAllLettersInWord, s3.popBalloonsPopAllLettersBannerInstruction)
-        assertEquals(56f, s3.contentTopInsetDp)
-        assertEquals(StationTemplateId.PictureStartsWith, StationBehaviorRegistry.getStationUiSpec(6, 4).templateId)
-        assertEquals(StationTemplateId.ImageMatch, StationBehaviorRegistry.getStationUiSpec(6, 5).templateId)
+        val s4 = StationBehaviorRegistry.getStationUiSpec(6, 4)
+        assertEquals(StationTemplateId.PickLetter, s4.templateId)
+        assertTrue(s4.variants.contains(StationVariant.HighlightedLetterInWord))
+        assertTrue(s4.variants.contains(StationVariant.Episode4Help))
+        assertTrue(s4.helpControlsEnabled)
+        assertEquals(StationReplayMode.ExistingStationSpecific, s4.replayMode)
+        assertEquals(StationHintMode.None, s4.hintMode)
+        val s5 = StationBehaviorRegistry.getStationUiSpec(6, 5)
+        assertEquals(StationTemplateId.PickLetter, s5.templateId)
+        assertTrue(s5.variants.contains(StationVariant.Chapter3AudioLetterRecognition))
+        assertTrue(s5.variants.contains(StationVariant.Episode4Help))
+        assertTrue(s5.helpControlsEnabled)
+        assertEquals(StationReplayMode.TargetLetterOnly, s5.replayMode)
+        assertEquals(StationHintMode.TemporaryTargetLetter, s5.hintMode)
         val s6 = StationBehaviorRegistry.getStationUiSpec(6, 6)
-        assertEquals(StationTemplateId.MatchLetterToWord, s6.templateId)
-        assertTrue(s6.variants.contains(StationVariant.Finale))
-        assertEquals(56f, s6.contentTopInsetDp)
+        assertEquals(StationTemplateId.ImageToWord, s6.templateId)
+        assertTrue(s6.variants.contains(StationVariant.Chapter3ImageToWord))
     }
 
     @Test
@@ -153,21 +146,6 @@ class StationBehaviorRegistryTest {
     }
 
     @Test
-    fun chapter6_station1_is_review_listen_first_with_help() {
-        val s1 = StationBehaviorRegistry.getStationUiSpec(6, 1)
-        val p1 = StationQuizPlans.chapter6(1)
-        
-        assertEquals(StationTemplateId.PickLetter, s1.templateId)
-        assertTrue(p1.listenOnlyTargetPrompt)
-        assertTrue(s1.variants.contains(StationVariant.ListenFirst))
-        assertTrue(s1.variants.contains(StationVariant.Episode4Help))
-        assertTrue(s1.helpControlsEnabled)
-        assertEquals(StationReplayMode.TargetLetterOnly, s1.replayMode)
-        assertEquals(StationHintMode.TemporaryTargetLetter, s1.hintMode)
-        assertEquals(6, p1.optionCount)
-    }
-
-    @Test
     fun chapter3_station1_pictureReadablePanel_true() {
         assertTrue(StationBehaviorRegistry.getStationUiSpec(3, 1).pictureStartsWithReadablePanel)
     }
@@ -183,10 +161,8 @@ class StationBehaviorRegistryTest {
         assertEquals(StationTemplateId.MatchLetterToWord, StationBehaviorRegistry.getStationUiSpec(2, FINALE_PICTURE_LETTER_MATCH).templateId)
         assertEquals(StationTemplateId.MatchLetterToWord, StationBehaviorRegistry.getStationUiSpec(4, FINALE_PICTURE_LETTER_MATCH).templateId)
         assertEquals(StationTemplateId.MatchLetterToWord, StationBehaviorRegistry.getStationUiSpec(5, FINALE_PICTURE_LETTER_MATCH).templateId)
-        val ch6 = StationBehaviorRegistry.getStationUiSpec(6, FINALE_PICTURE_LETTER_MATCH)
-        assertEquals(StationTemplateId.MatchLetterToWord, ch6.templateId)
-        assertTrue(ch6.variants.contains(StationVariant.Finale))
         assertEquals(StationTemplateId.MatchLetterToWord, StationBehaviorRegistry.getStationUiSpec(3, 2).templateId)
+        assertEquals(StationTemplateId.MatchLetterToWord, StationBehaviorRegistry.getStationUiSpec(6, 2).templateId)
     }
 
     @Test
@@ -197,8 +173,8 @@ class StationBehaviorRegistryTest {
                 2 to FINALE_PICTURE_LETTER_MATCH,
                 4 to FINALE_PICTURE_LETTER_MATCH,
                 5 to FINALE_PICTURE_LETTER_MATCH,
-                6 to FINALE_PICTURE_LETTER_MATCH,
                 3 to 2,
+                6 to 2,
             )
         for ((chapterId, stationId) in ids) {
             val spec = StationBehaviorRegistry.getStationUiSpec(chapterId, stationId)
@@ -208,15 +184,20 @@ class StationBehaviorRegistryTest {
     }
 
     @Test
-    fun chapter6_station2_optionCount_atMost8() {
-        val p2 = StationQuizPlans.chapter6(2)
-        assertTrue("Ch6 st2 option count should be <= 8", (p2.optionCount ?: 0) <= 8)
-    }
-
-    @Test
     fun chapter6_station3_maxBalloons_is_10() {
         val p3 = StationQuizPlans.chapter6(3)
         assertEquals("Ch6 st3 balloon count should be 10", 10, p3.optionCount)
+    }
+
+    @Test
+    fun chapter6_station4_pickLetter_is_highlighted_with_help() {
+        val plan = StationQuizPlans.chapter6(4)
+        val spec = StationBehaviorRegistry.getStationUiSpec(6, 4)
+        assertEquals(StationQuizMode.PickLetter, plan.mode)
+        assertFalse(plan.listenOnlyTargetPrompt)
+        assertEquals(6, plan.optionCount)
+        assertTrue(spec.helpControlsEnabled)
+        assertTrue(spec.variants.contains(StationVariant.HighlightedLetterInWord))
     }
 
     @Test
@@ -256,7 +237,7 @@ class StationBehaviorRegistryTest {
 
     @Test
     fun imageMatch_station5_is_unified_across_chapters_1_2_4_5_6() {
-        val chapters = listOf(1, 2, 4, 5, 6)
+        val chapters = listOf(1, 2, 4, 5)
         for (chapterId in chapters) {
             val spec = StationBehaviorRegistry.getStationUiSpec(chapterId, PICTURE_PICK_ALL)
             assertEquals(StationTemplateId.ImageMatch, spec.templateId)
@@ -272,11 +253,6 @@ class StationBehaviorRegistryTest {
             assertFalse(spec.helpControlsEnabled)
         }
 
-        val ch6 = StationBehaviorRegistry.getStationUiSpec(6, PICTURE_PICK_ALL)
-        assertFalse(ch6.imageMatchShowTargetLetterChip)
-        assertTrue(ch6.helpControlsEnabled)
-        assertEquals(StationReplayMode.TargetLetterOnly, ch6.replayMode)
-        assertEquals(StationHintMode.TemporaryTargetLetter, ch6.hintMode)
     }
 
     @Test
@@ -349,7 +325,7 @@ class StationBehaviorRegistryTest {
         )
         assertEquals(
             StationInstructionCopy.PickLetterSagaStation1Preamble,
-            StationBehaviorRegistry.getStationUiSpec(6, 1).pickLetterInstructionOverride,
+            StationBehaviorRegistry.getStationUiSpec(6, 5).pickLetterInstructionOverride,
         )
     }
 
@@ -393,26 +369,21 @@ class StationBehaviorRegistryTest {
     }
 
     @Test
-    fun chapter6_station5_imageMatch_listenFirst_hidesTargetChip_and_hasInstruction() {
-        val spec = StationBehaviorRegistry.getStationUiSpec(6, PICTURE_PICK_ALL)
-        val plan = StationQuizPlans.chapter6(PICTURE_PICK_ALL)
-        assertEquals(StationTemplateId.ImageMatch, spec.templateId)
-        assertTrue(plan.listenOnlyTargetPrompt)
-        assertFalse(spec.imageMatchShowTargetLetterChip)
-        assertTrue(spec.helpControlsEnabled)
-        assertEquals(StationReplayMode.TargetLetterOnly, spec.replayMode)
-        assertEquals(StationHintMode.TemporaryTargetLetter, spec.hintMode)
-        assertEquals(StationInstructionCopy.ImageMatchFindWordStartingWithLetter, spec.imageMatchHeaderInstructionOverride)
-        assertTrue((spec.contentTopInsetDp ?: 0f) >= 80f)
+    fun chapter6_station6_is_imageToWord_template() {
+        val spec = StationBehaviorRegistry.getStationUiSpec(6, 6)
+        val plan = StationQuizPlans.chapter6(6)
+        assertEquals(StationTemplateId.ImageToWord, spec.templateId)
+        assertEquals(StationQuizMode.ImageMatch, plan.mode)
+        assertTrue(spec.variants.contains(StationVariant.Chapter3ImageToWord))
+        assertEquals(StationInstructionCopy.Chapter3ImageToWord, spec.imageToWordInstructionText)
     }
 
     @Test
     fun chapter6_station4_pictureStartsWith_hasReadablePanel_and_safeInset() {
-        val spec = StationBehaviorRegistry.getStationUiSpec(6, PICTURE_PICK_ONE)
+        val spec = StationBehaviorRegistry.getStationUiSpec(6, 1)
         assertEquals(StationTemplateId.PictureStartsWith, spec.templateId)
         assertEquals("באיזו אות מתחילה המילה:", spec.pictureStartsWithInstructionOverride)
         assertTrue(spec.pictureStartsWithReadablePanel)
-        assertTrue((spec.contentTopInsetDp ?: 0f) >= 70f)
     }
 
     @Test

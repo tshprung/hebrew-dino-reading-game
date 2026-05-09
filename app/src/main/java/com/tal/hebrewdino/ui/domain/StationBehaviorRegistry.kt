@@ -247,7 +247,10 @@ object StationBehaviorRegistry {
                     chapterId = 3,
                     stationId = stationId,
                     plan = plan,
-                ).copy(riskNotes = "Ch3 st2 match letter + word; unified MatchLetterToWord template.")
+                ).copy(
+                    contentTopInsetDp = 56f,
+                    riskNotes = "Ch3 st2 match letter + word; unified MatchLetterToWord template.",
+                )
             3 -> popBalloonsSpec(chapterId = 3, stationId = stationId, plan = plan, isPopAllLetters = true)
             4 ->
                 pickLetterSpec(
@@ -263,6 +266,7 @@ object StationBehaviorRegistry {
                     hintDurationMs = null,
                     pickLetterInstructionOverride = null,
                     pickLetterHighlightedInWordInstruction = StationInstructionCopy.PickLetterHighlightedInWord,
+                    contentTopInsetDp = 56f,
                     riskNotes = "Ch3 st4 highlighted letter in word.",
                 )
             5 ->
@@ -272,6 +276,7 @@ object StationBehaviorRegistry {
                     plan = plan,
                     extraVariants = arrayOf(StationVariant.Chapter3AudioLetterRecognition, StationVariant.Episode4Help)
                 ).copy(
+                    contentTopInsetDp = 56f,
                     riskNotes = "Ch3 st5 audio recognition; uses unified pickLetterSpec.",
                 )
             6 ->
@@ -286,6 +291,7 @@ object StationBehaviorRegistry {
                     replayMode = StationReplayMode.ExistingStationSpecific,
                     hintMode = StationHintMode.ExistingStationSpecific,
                     imageToWordInstructionText = StationInstructionCopy.Chapter3ImageToWord,
+                    contentTopInsetDp = 56f,
                     riskNotes = "Ch3 st6 uses ImageToWordGame (instruction from spec).",
                 )
             else -> error("Unexpected Ch3 stationId=$stationId")
@@ -342,6 +348,75 @@ object StationBehaviorRegistry {
     }
 
     private fun chapter6UiSpec(stationId: Int, plan: StationQuizPlan): StationUiSpec {
+        return when (stationId) {
+            1 ->
+                pictureStartsWithSpec(chapterId = 6, stationId = stationId, plan = plan)
+                    .copy(
+                        contentTopInsetDp = 72f,
+                        riskNotes = "Ch6 st1 picture; aligned with Chapter 3 station 1.",
+                    )
+            2 ->
+                matchLetterToWordSpec(
+                    chapterId = 6,
+                    stationId = stationId,
+                    plan = plan,
+                ).copy(
+                    contentTopInsetDp = 56f,
+                    riskNotes = "Ch6 st2 match letter + word; aligned with Chapter 3 station 2.",
+                )
+            3 ->
+                popBalloonsSpec(chapterId = 6, stationId = stationId, plan = plan, isPopAllLetters = true)
+                    .copy(
+                        contentTopInsetDp = 72f,
+                        riskNotes = "Ch6 st3 pop-all; aligned with Chapter 3 station 3.",
+                    )
+            4 ->
+                pickLetterSpec(
+                    chapterId = 6,
+                    stationId = stationId,
+                    plan = plan,
+                    extraVariants = arrayOf(StationVariant.HighlightedLetterInWord, StationVariant.Episode4Help),
+                ).copy(
+                    variants = variantsFor(listenOnly = false, StationVariant.HighlightedLetterInWord, StationVariant.Episode4Help),
+                    helpControlsEnabled = true,
+                    replayMode = StationReplayMode.ExistingStationSpecific,
+                    hintMode = StationHintMode.None,
+                    hintDurationMs = null,
+                    pickLetterInstructionOverride = null,
+                    pickLetterHighlightedInWordInstruction = StationInstructionCopy.PickLetterHighlightedInWord,
+                    contentTopInsetDp = 72f,
+                    riskNotes = "Ch6 st4 highlighted letter in word; aligned with Chapter 3 station 4.",
+                )
+            5 ->
+                pickLetterSpec(
+                    chapterId = 6,
+                    stationId = stationId,
+                    plan = plan,
+                    extraVariants = arrayOf(StationVariant.Chapter3AudioLetterRecognition, StationVariant.Episode4Help),
+                ).copy(
+                    contentTopInsetDp = 72f,
+                    riskNotes = "Ch6 st5 audio recognition; aligned with Chapter 3 station 5.",
+                )
+            6 ->
+                StationUiSpec(
+                    chapterId = 6,
+                    stationId = stationId,
+                    templateId = StationTemplateId.ImageToWord,
+                    variants = variantsFor(listenOnly = false, StationVariant.Chapter3ImageToWord),
+                    quizMode = plan.mode,
+                    findGridMaxTargetCount = plan.findLetterGridMaxTargetCount,
+                    helpControlsEnabled = false,
+                    replayMode = StationReplayMode.ExistingStationSpecific,
+                    hintMode = StationHintMode.ExistingStationSpecific,
+                    imageToWordInstructionText = StationInstructionCopy.Chapter3ImageToWord,
+                    contentTopInsetDp = 56f,
+                    riskNotes = "Ch6 st6 uses ImageToWordGame; aligned with Chapter 3 station 6.",
+                )
+            else -> error("Unexpected Ch6 stationId=$stationId")
+        }
+    }
+
+    private fun chapter6TrainingCandidateUiSpec(stationId: Int, plan: StationQuizPlan): StationUiSpec {
         val listenOnly = plan.listenOnlyTargetPrompt
         return when (stationId) {
             1 ->
@@ -349,9 +424,9 @@ object StationBehaviorRegistry {
                     chapterId = 6,
                     stationId = stationId,
                     plan = plan,
-                    extraVariants = arrayOf(StationVariant.Episode4Help)
+                    extraVariants = arrayOf(StationVariant.Episode4Help),
                 ).copy(
-                    riskNotes = "Ch6 st1 listen-first pick letter; uses unified pickLetterSpec.",
+                    riskNotes = "Training candidate: listen-first pick letter (from prior Ch6 st1).",
                 )
             2 ->
                 pickLetterSpec(
@@ -368,19 +443,19 @@ object StationBehaviorRegistry {
                     pickLetterInstructionOverride = null,
                     pickLetterHighlightedInWordInstruction = StationInstructionCopy.PickLetterHighlightedInWord,
                     contentTopInsetDp = 56f,
-                    riskNotes = "Ch6 st2 highlighted letter in word (reuses Ch3 st4 behavior).",
+                    riskNotes = "Training candidate: highlighted letter in word (from prior Ch6 st2).",
                 )
             3 ->
                 popBalloonsSpec(chapterId = 6, stationId = stationId, plan = plan, isPopAllLetters = true)
                     .copy(
                         contentTopInsetDp = 56f,
-                        riskNotes = "Ch6 st3 pop-all; uses unified popBalloonsSpec.",
+                        riskNotes = "Training candidate: pop-all-letters-in-word (from prior Ch6 st3).",
                     )
             4 ->
                 pictureStartsWithSpec(chapterId = 6, stationId = stationId, plan = plan)
                     .copy(
                         contentTopInsetDp = 76f,
-                        riskNotes = "Ch6 st4 picture; uses unified pictureStartsWithSpec.",
+                        riskNotes = "Training candidate: harder picture-starts-with variant (from prior Ch6 st4).",
                     )
             5 ->
                 StationUiSpec(
@@ -398,7 +473,7 @@ object StationBehaviorRegistry {
                     imageMatchHeaderInstructionOverride = StationInstructionCopy.ImageMatchFindWordStartingWithLetter,
                     imageMatchHeaderReadablePanel = true,
                     contentTopInsetDp = 86f,
-                    riskNotes = "Ch6 st5 image match (review).",
+                    riskNotes = "Training candidate: listen-first image match (from prior Ch6 st5).",
                 )
             6 ->
                 matchLetterToWordSpec(
@@ -408,8 +483,7 @@ object StationBehaviorRegistry {
                     extraVariants = arrayOf(StationVariant.Finale),
                 ).copy(
                     contentTopInsetDp = 56f,
-                    // Keep existing narrative note; UI is now unified.
-                    riskNotes = "Ch6 st6 finale match (homecoming narrative via story screens).",
+                    riskNotes = "Training candidate: advanced finale match (from prior Ch6 st6).",
                 )
             else -> error("Unexpected Ch6 stationId=$stationId")
         }

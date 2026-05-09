@@ -310,10 +310,10 @@ internal fun LetterOptions(
                 .offset { IntOffset(shakePx.roundToInt(), 0) },
     ) {
         options.forEach { letter ->
-            val interaction = remember(letter) { MutableInteractionSource() }
+            val interaction = remember(letter, options) { MutableInteractionSource() }
             val pressed by interaction.collectIsPressedAsState()
-            val pop = remember(letter) { Animatable(1f) }
-            val flash = remember(letter) { Animatable(0f) }
+            val pop = remember(letter, options) { Animatable(1f) }
+            val flash = remember(letter, options) { Animatable(0f) }
             LaunchedEffect(entryPulseEpoch, letter, options) {
                 if (entryPulseEpoch <= 0) return@LaunchedEffect
                 pop.animateTo(1.06f, tween(120))
