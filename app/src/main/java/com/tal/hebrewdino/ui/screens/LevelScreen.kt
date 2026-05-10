@@ -84,6 +84,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import com.tal.hebrewdino.R
@@ -529,6 +530,11 @@ internal fun PopBalloonsOptions(
     shakePx: Float,
     /** Mixes balloon palette between questions (Episode 1 station 2). */
     visualRoundSeed: Int = 0,
+    balloonSizeDp: Dp = 86.dp,
+    balloonStringHeightDp: Dp = 18.dp,
+    balloonLetterFontSize: TextUnit = 38.sp,
+    maxVisibleBalloonCount: Int? = null,
+    compactLandscapeFreeFlight: Boolean = false,
     /** Called whenever a balloon is pressed (letter in balloon). */
     onBalloonPressed: ((letter: String) -> Unit)? = null,
     /** [finalCorrectBalloon] is true for the last required correct balloon in this round; [balloonIndex] is option index. */
@@ -544,9 +550,51 @@ internal fun PopBalloonsOptions(
      */
     helpSideInsetDp: Dp = 0.dp,
 ) {
+    val isCompactLandscapePhone = ScreenFit.isCompactLandscapePhone()
+    val maxVisible = maxVisibleBalloonCount?.coerceIn(1, options.size)
+    val freeFlight = compactLandscapeFreeFlight && isCompactLandscapePhone && maxVisible != null
+    val visibleIndexSet =
+        remember(options, correctAnswer, correctLetterSet, visualRoundSeed, maxVisible) {
+            if (maxVisible == null || options.size <= maxVisible) {
+                null
+            } else {
+                val correctIndices =
+                    options.indices.filter { i ->
+                        val letter = options.getOrNull(i)
+                        if (letter == null) return@filter false
+                        correctLetterSet?.contains(letter) ?: (letter == correctAnswer)
+                    }
+                if (correctIndices.size >= maxVisible) {
+                    correctIndices.toSet()
+                } else {
+                    val remaining =
+                        options.indices.filter { i -> i !in correctIndices }
+                    val r =
+                        Random(
+                            correctAnswer.hashCode().toLong() * 31L +
+                                options.hashCode().toLong() * 131L +
+                                (visualRoundSeed.toLong() * 999_983L) +
+                                maxVisible.toLong() * 17L,
+                        )
+                    val picked = ArrayList<Int>(maxVisible)
+                    correctIndices.forEach { idx ->
+                        if (picked.size < maxVisible) picked.add(idx)
+                    }
+                    remaining.shuffled(r).forEach { idx ->
+                        if (picked.size < maxVisible) picked.add(idx)
+                    }
+                    picked.toSet()
+                }
+            }
+        }
     val alive =
-        remember(options, correctAnswer) {
-            mutableStateListOf<Boolean>().apply { repeat(options.size) { add(true) } }
+        remember(options, correctAnswer, correctLetterSet, visualRoundSeed, maxVisible) {
+            mutableStateListOf<Boolean>().apply {
+                repeat(options.size) { i ->
+                    val visible = visibleIndexSet?.contains(i) ?: true
+                    add(visible)
+                }
+            }
         }
     val scope = rememberCoroutineScope()
     var wrongRecoverRunning by remember(options, correctAnswer) { mutableStateOf(false) }
@@ -601,10 +649,19 @@ internal fun PopBalloonsOptions(
         val density = LocalDensity.current
         val wPx = with(density) { maxWidth.toPx() }
         val hPx = with(density) { maxHeight.toPx() }
-        val balloonWPx = with(density) { 86.dp.toPx() }
-        val balloonHPx = with(density) { 86.dp.toPx() + 18.dp.toPx() + 38.sp.toPx() }
+        val balloonWPx = with(density) { balloonSizeDp.toPx() }
+        val balloonHPx =
+            with(density) {
+                balloonSizeDp.toPx() + balloonStringHeightDp.toPx() + balloonLetterFontSize.toPx()
+            }
         val paddingPx = with(density) { 10.dp.toPx() }
-        val minCenterDist = hypot(balloonWPx, balloonHPx) * 0.97f
+        val minCenterDist =
+            hypot(balloonWPx, balloonHPx) *
+                when {
+                    freeFlight -> 0.68f
+                    isCompactLandscapePhone && maxVisible != null -> 0.90f
+                    else -> 0.97f
+                }
         val minX = paddingPx
         val minY = paddingPx
         val maxX = (wPx - balloonWPx - paddingPx).coerceAtLeast(minX)
@@ -627,7 +684,9 @@ internal fun PopBalloonsOptions(
                 balloonHPx.roundToInt(),
             ) {
                 val r = Random(correctAnswer.hashCode().toLong() * 31L + options.hashCode().toLong())
-                val minSep = hypot(balloonWPx, balloonHPx) * 0.97f
+                val minSep =
+                    hypot(balloonWPx, balloonHPx) *
+                        if (freeFlight) 0.82f else 0.97f
                 val pad = paddingPx
                 val axMin = pad
                 val ayMin = pad
@@ -652,7 +711,6 @@ internal fun PopBalloonsOptions(
         options.forEachIndexed { idx, _ ->
             if (!aliveMask[idx]) return@forEachIndexed
             val (baseXPx, baseYPx) = anchors.getOrElse(idx) { minX to minY }
-            val dir = if (idx % 2 == 0) 1f else -1f
             val ph = phases.getOrElse(idx) { 0f }
             // Every balloon uses its own phase/frequency so they never share one synchronized "line" of motion.
             val f = 0.71f + (idx % 6) * 0.051f + (idx % 3) * 0.019f
@@ -662,19 +720,45 @@ internal fun PopBalloonsOptions(
             val tSlow = base * slowFreq + ph * 2.3f + idx * 0.71f
             val usableW = (maxX - minX).coerceAtLeast(1f)
             val usableH = (maxY - minY).coerceAtLeast(1f)
-            val ampX = usableW * (0.13f + (idx % 5) * 0.026f)
-            val ampY = usableH * (0.11f + (idx % 4) * 0.024f)
+            val ampX =
+                usableW *
+                    if (freeFlight) {
+                        0.30f + (idx % 5) * 0.040f
+                    } else {
+                        0.13f + (idx % 5) * 0.026f
+                    }
+            val ampY =
+                usableH *
+                    when {
+                        freeFlight -> 0.34f + (idx % 4) * 0.045f
+                        isCompactLandscapePhone && maxVisible != null -> 0.18f + (idx % 4) * 0.028f
+                        else -> 0.11f + (idx % 4) * 0.024f
+                    }
             val ox =
-                dir *
-                    (
-                        sin(t.toDouble()).toFloat() * ampX +
-                            sin((t * 0.41f + idx * 0.7f).toDouble()).toFloat() * ampX * 0.55f +
-                            cos((t * 0.23f + idx * 0.17f).toDouble()).toFloat() * ampX * 0.38f
-                    )
+                if (freeFlight) {
+                    sin(t.toDouble()).toFloat() * ampX +
+                        cos((tSlow * 0.9f + idx * 0.19f).toDouble()).toFloat() * ampX * 0.72f +
+                        sin((t * 0.37f + idx * 0.83f).toDouble()).toFloat() * ampX * 0.48f
+                } else {
+                    (if (idx % 2 == 0) 1f else -1f) *
+                        (
+                            sin(t.toDouble()).toFloat() * ampX +
+                                sin((t * 0.41f + idx * 0.7f).toDouble()).toFloat() * ampX * 0.55f +
+                                cos((t * 0.23f + idx * 0.17f).toDouble()).toFloat() * ampX * 0.38f
+                        )
+                }
             val oy =
-                -dir * cos((t * 0.88f + idx * 0.09f).toDouble()).toFloat() * ampY +
-                    sin((t * 0.57f + idx * 0.4f).toDouble()).toFloat() * ampY * 0.9f +
-                    sin(tSlow.toDouble()).toFloat() * usableH * 0.26f
+                if (freeFlight) {
+                    cos((t * 0.88f + idx * 0.11f).toDouble()).toFloat() * ampY +
+                        sin((t * 0.53f + idx * 0.47f).toDouble()).toFloat() * ampY * 0.86f +
+                        cos((tSlow * 1.08f + idx * 0.37f).toDouble()).toFloat() * ampY * 0.60f
+                } else {
+                    val dir = if (idx % 2 == 0) 1f else -1f
+                    -dir * cos((t * 0.88f + idx * 0.09f).toDouble()).toFloat() * ampY +
+                        sin((t * 0.57f + idx * 0.4f).toDouble()).toFloat() * ampY * 0.9f +
+                        sin(tSlow.toDouble()).toFloat() * usableH *
+                        if (isCompactLandscapePhone && maxVisible != null) 0.38f else 0.26f
+                }
             val rx = (baseXPx + ox).coerceIn(minX, maxX)
             val ry = (baseYPx + oy).coerceIn(minY, maxY)
             xBuf[idx] = rx
@@ -691,11 +775,16 @@ internal fun PopBalloonsOptions(
             maxX = maxX,
             minY = minY,
             maxY = maxY,
-            iterations = 5,
-            damping = 0.38f,
+            iterations = if (freeFlight) 7 else 5,
+            damping = if (freeFlight) 0.32f else 0.38f,
             rawX = rawX,
             rawY = rawY,
-            maxDeltaFromRaw = minCenterDist * 0.36f,
+            maxDeltaFromRaw =
+                when {
+                    freeFlight -> minCenterDist * 1.1f
+                    isCompactLandscapePhone && maxVisible != null -> minCenterDist * 0.48f
+                    else -> minCenterDist * 0.36f
+                },
         )
 
         options.forEachIndexed { idx, letter ->
@@ -734,6 +823,9 @@ internal fun PopBalloonsOptions(
                     finaleCorrectPop = isPotentialFinaleCorrect,
                     driftXPx = xPx,
                     driftYPx = yPx,
+                    balloonSizeDp = balloonSizeDp,
+                    stringHeightDp = balloonStringHeightDp,
+                    letterFontSize = balloonLetterFontSize,
                     modifier = Modifier.scale(hintBoost.value).zIndex(yPx * 1000f + xPx),
                     onTapCorrect = {
                         // Make the pop feel connected: start SFX/voice immediately on tap (not after animation).
@@ -796,6 +888,9 @@ internal fun PopBalloon(
     finaleCorrectPop: Boolean = false,
     driftXPx: Float = 0f,
     driftYPx: Float = 0f,
+    balloonSizeDp: Dp = 86.dp,
+    stringHeightDp: Dp = 18.dp,
+    letterFontSize: TextUnit = 38.sp,
     modifier: Modifier = Modifier,
     /** Called immediately when tapping a correct balloon (before pop animation). */
     onTapCorrect: () -> Unit = {},
@@ -885,7 +980,7 @@ internal fun PopBalloon(
         Box(
             modifier =
                 Modifier
-                    .size(86.dp)
+                    .size(balloonSizeDp)
                     .scale(scale.value)
                     .alpha(fade.value)
                     .clickable(
@@ -1020,10 +1115,10 @@ internal fun PopBalloon(
                 }
             }
 
-            Text(text = letter, fontSize = 38.sp, fontWeight = FontWeight.Black, color = Color(0xFF0B2B3D))
+            Text(text = letter, fontSize = letterFontSize, fontWeight = FontWeight.Black, color = Color(0xFF0B2B3D))
         }
 
-        androidx.compose.foundation.Canvas(modifier = Modifier.width(2.dp).height(18.dp)) {
+        androidx.compose.foundation.Canvas(modifier = Modifier.width(2.dp).height(stringHeightDp)) {
             drawLine(
                 color = Color(0xFF0B2B3D).copy(alpha = 0.30f),
                 start = Offset(size.width / 2f, 0f),

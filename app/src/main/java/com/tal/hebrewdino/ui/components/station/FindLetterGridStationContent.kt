@@ -5,12 +5,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.unit.IntOffset
+import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
 import com.tal.hebrewdino.ui.domain.InstructionPanelStyle
 import com.tal.hebrewdino.ui.domain.Question
 import com.tal.hebrewdino.ui.domain.StationInstructionCopy
 import com.tal.hebrewdino.ui.domain.StationUiSpec
 import com.tal.hebrewdino.ui.domain.TrainingV1Config
 import com.tal.hebrewdino.ui.game.FindLetterGridGame
+import com.tal.hebrewdino.ui.layout.ScreenFit
 
 /**
  * Saga find-letter grid station UI for [GameScreen]: wires [FindLetterGridGame] from session-derived
@@ -38,6 +40,7 @@ fun FindLetterGridStationContent(
     onCellTapped: (Int) -> Unit,
     onCompleted: () -> Unit,
 ) {
+    val isCompactLandscapePhone = ScreenFit.isCompactLandscapePhone()
     val suppressHeaderTargetLetter =
         sagaUsesFindGridAudioStaging && stationUiSpec.findGridSuppressHeaderTargetLetter
     val inlineInstructionText =
@@ -62,8 +65,16 @@ fun FindLetterGridStationContent(
         inlineInstructionText = inlineInstructionText,
         inlineInstructionReadablePanel =
             stationUiSpec.findGridInlineInstructionPanelStyle == InstructionPanelStyle.WhiteRounded,
-        compactLandscapeTwoColumn = false,
-        cellSideScale = if (isSagaRevealStation) 0.9f else 1f,
+        compactLandscapeTwoColumn =
+            isCompactLandscapePhone &&
+                stationUiSpec.chapterId == 1 &&
+                stationUiSpec.stationId == Chapter1StationOrder.REVEAL_THEN_CHOOSE,
+        cellSideScale =
+            when {
+                isCompactLandscapePhone -> 0.9f
+                isSagaRevealStation -> 0.9f
+                else -> 1f
+            },
         contentNudgeDownFraction = 0f,
         onLetterTapped = onSagaGridLetterTapped,
         onCorrectTap = onCorrectTap,

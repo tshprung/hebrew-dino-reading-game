@@ -29,8 +29,10 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
 import com.tal.hebrewdino.ui.components.ChapterNavChipStyles
 import com.tal.hebrewdino.ui.components.TargetLetterHeaderChip
+import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
 import com.tal.hebrewdino.ui.domain.LessonWordIllustrations
 import com.tal.hebrewdino.ui.domain.Question
+import com.tal.hebrewdino.ui.layout.ScreenFit
 import com.tal.hebrewdino.ui.screens.LetterOptions
 
 /**
@@ -62,12 +64,17 @@ fun ColumnScope.PickLetterStationContent(
     correctPulseLetter: String?,
     correctPulseEpoch: Int,
     letterOptions: List<String>,
+    chapterId: Int? = null,
+    stationId: Int? = null,
     strongLetterButtonFeedback: Boolean = false,
     onRepeatLetterClick: () -> Unit,
     onPick: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val instructionFont = 39.sp
+    val isCompactLandscapePhone = ScreenFit.isCompactLandscapePhone()
+    val isPhoneCh1Station1 =
+        isCompactLandscapePhone && chapterId == 1 && stationId == Chapter1StationOrder.TAP_LETTER
+    val instructionFont = (39f * if (isPhoneCh1Station1) 0.80f else 1f).sp
     val instructionPadV = 8.dp
     val headerChipFont = 56.sp
     Box(
@@ -179,7 +186,7 @@ fun ColumnScope.PickLetterStationContent(
             } else if (showSagaStation1CompactPreamble && pickLetterSagaStation1CompactPreamble != null) {
                 Text(
                     text = pickLetterSagaStation1CompactPreamble,
-                    fontSize = 34.sp,
+                    fontSize = (34f * if (isPhoneCh1Station1) 0.80f else 1f).sp,
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFF0B2B3D),
                     textAlign = TextAlign.Center,

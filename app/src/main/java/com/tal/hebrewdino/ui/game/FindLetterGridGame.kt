@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -27,6 +28,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -41,14 +43,17 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.tal.hebrewdino.ui.components.TargetLetterHeaderChip
 import com.tal.hebrewdino.ui.domain.Question
+import com.tal.hebrewdino.ui.layout.ScreenFit
 import kotlin.math.roundToInt
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.coroutineScope
@@ -170,7 +175,7 @@ fun FindLetterGridGame(
     val gridHorizontalPadding = 6.dp
     val cellScale = cellSideScale.coerceIn(0.5f, 1.5f)
     val nudgeFrac = contentNudgeDownFraction.coerceIn(0f, 0.2f)
-    val isCompactLandscapePhone = false
+    val isCompactLandscapePhone = ScreenFit.isCompactLandscapePhone()
     val useTwoColumn = compactLandscapeTwoColumn && isCompactLandscapePhone
 
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
@@ -189,223 +194,237 @@ fun FindLetterGridGame(
         val outerW = maxWidth
 
         if (useTwoColumn) {
-            val sidePanelW = 190.dp
-            Row(
-                modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 4.dp, vertical = 2.dp)
-                        .offset(y = nudgeDown),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
-                Column(
-                    modifier = Modifier.width(sidePanelW),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    if (contextWordHint == null && inlineInstructionText != null) {
-                        Text(
-                            text = inlineInstructionText,
-                            fontSize = if (question.columns >= 4) 20.sp else 22.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF0B2B3D),
-                            textAlign = TextAlign.Center,
-                            modifier =
-                                Modifier
-                                    .padding(top = 2.dp, bottom = 6.dp)
-                                    .then(
-                                        if (inlineInstructionReadablePanel) {
-                                            Modifier
-                                                .background(Color.White.copy(alpha = 0.72f), RoundedCornerShape(18.dp))
-                                                .padding(horizontal = 12.dp, vertical = 6.dp)
-                                        } else {
-                                            Modifier
-                                        },
-                                    ),
-                        )
-                    }
-                    if (floatingTargetLetterHint != null) {
-                        TargetLetterHeaderChip(
-                            letter = floatingTargetLetterHint,
-                            fontSize = if (question.columns >= 4) 40.sp else 44.sp,
-                            modifier = Modifier.padding(bottom = 6.dp),
-                        )
-                    }
-                    if (!(hideListenOnlyHeaderTargetLetter && contextWordHint == null)) {
-                        Box(
-                            modifier =
-                                Modifier
-                                    .scale(headerScale.value)
-                                    .clip(RoundedCornerShape(18.dp))
-                                    .background(
-                                        brush =
-                                            Brush.verticalGradient(
-                                                listOf(
-                                                    Color(0xFFFFF59D).copy(alpha = 0.95f),
-                                                    Color(0xFFFFE082).copy(alpha = 0.88f),
-                                                ),
-                                            ),
-                                    )
-                                    .border(2.dp, Color(0xFFFFA000).copy(alpha = 0.45f), RoundedCornerShape(18.dp))
-                                    .padding(horizontal = 16.dp, vertical = 5.dp),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Text(
-                                text = question.targetLetter,
-                                fontSize = if (question.columns >= 4) 42.sp else 46.sp,
-                                fontWeight = FontWeight.Black,
-                                color = Color(0xFF0B2B3D),
-                                textAlign = TextAlign.Center,
-                            )
-                        }
-                    }
-                }
-
-                BoxWithConstraints(
+            val sidePanelW = 200.dp
+            CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+                Row(
                     modifier =
                         Modifier
-                            .weight(1f, fill = true)
                             .fillMaxSize()
-                            .padding(horizontal = 2.dp, vertical = 2.dp)
-                            .scale(gridScale.value),
+                            .padding(horizontal = 6.dp, vertical = 4.dp)
+                            .offset(y = nudgeDown),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    val n = question.cells.size.coerceAtLeast(1)
-                    val displayCols = (question.columns + 2).coerceAtMost(8).coerceAtLeast(question.columns)
-                    val displayRows = ((n + displayCols - 1) / displayCols).coerceAtLeast(1)
-                    val safeMaxHeight = maxHeight.coerceAtLeast(120.dp)
-                    val cellSideByWidth = (maxWidth - gap * (displayCols - 1)) / displayCols
-                    val cellSideByHeight = (safeMaxHeight - gap * (displayRows - 1)) / displayRows
-                    val cellSideBase = minOf(cellSideByWidth, cellSideByHeight).coerceAtLeast(28.dp)
-                    val cellSide = (cellSideBase * cellScale).coerceAtMost(cellSideBase)
-                    val gridW = cellSide * displayCols + gap * (displayCols - 1)
-                    val gridH = cellSide * displayRows + gap * (displayRows - 1)
-                    val letterSp =
-                        ((if (displayCols >= 4) 32f else 38f) * gridLetterSizeMultiplier.coerceIn(0.75f, 1.75f)).sp
-
-                LazyVerticalGrid(
-                    columns = GridCells.Fixed(displayCols),
-                    horizontalArrangement = Arrangement.spacedBy(gap, Alignment.CenterHorizontally),
-                    verticalArrangement = Arrangement.spacedBy(gap, Alignment.CenterVertically),
-                    userScrollEnabled = false,
-                    modifier = Modifier.align(Alignment.Center).size(gridW, gridH),
-                ) {
-                itemsIndexed(question.cells, key = { i, _ -> "${contentKey}_$i" }) { index, letter ->
-                    val done = index in found
-                    val scale = scales[index]
-                    val shake = cellShake[index]
-                    val showWrongFlash = wrongFlashIndex == index
-                    Box(
+                    BoxWithConstraints(
                         modifier =
                             Modifier
-                                .aspectRatio(1f)
-                                .shadow(
-                                    elevation = if (done) 8.dp else 6.dp,
-                                    shape = RoundedCornerShape(16.dp),
-                                    clip = false,
-                                )
-                                .scale(scale.value)
-                                .offset { IntOffset(shake.value.roundToInt(), 0) }
-                                .clip(RoundedCornerShape(16.dp))
-                                .border(
-                                    width = if (done) 3.5.dp else 2.dp,
-                                    color =
-                                        when {
-                                            done -> Color(0xFF2E7D32).copy(alpha = 0.95f)
-                                            else -> Color(0xFFFF8A65).copy(alpha = 0.35f)
-                                        },
-                                    shape = RoundedCornerShape(16.dp),
-                                )
-                                .background(
-                                    brush =
-                                        if (done) {
-                                            Brush.verticalGradient(
-                                                listOf(
-                                                    Color(0xFFE8F5E9).copy(alpha = 0.98f),
-                                                    Color(0xFF81C784).copy(alpha = 0.65f),
-                                                ),
-                                            )
-                                        } else {
-                                            Brush.verticalGradient(
-                                                listOf(
-                                                    Color(0xFFFFFDE7).copy(alpha = 0.98f),
-                                                    Color(0xFFFFF9C4).copy(alpha = 0.75f),
-                                                    Color(0xFFFFECB3).copy(alpha = 0.55f),
-                                                ),
-                                            )
-                                        },
-                                    shape = RoundedCornerShape(16.dp),
-                                )
-                                .clickable(enabled = enabled && !done && !gridFrozen) {
-                                    onLetterTapped?.invoke(letter)
-                                    if (letter == question.targetLetter) {
-                                        onCorrectTap?.invoke()
-                                        val newFound = found + index
-                                        found = newFound
-                                        if (newFound == targetIndices) {
-                                            gridFrozen = true
-                                        }
-                                        ChildGameAudioHooks.onCorrect()
-                                        scope.launch {
-                                            scale.snapTo(1f)
-                                            scale.animateTo(correctCellPeakScale, tween(100))
-                                            scale.animateTo(1f, spring(dampingRatio = 0.5f, stiffness = 400f))
-                                        }
-                                    } else {
-                                        ChildGameAudioHooks.onWrong()
-                                        onCellTapped(index)
-                                        wrongFlashIndex = index
-                                        scope.launch {
-                                            delay(200)
-                                            if (wrongFlashIndex == index) wrongFlashIndex = -1
-                                        }
-                                        scope.launch {
-                                            val amp = 11f
-                                            repeat(5) { i ->
-                                                shake.animateTo(
-                                                    if (i % 2 == 0) amp else -amp,
-                                                    tween(44),
-                                                )
-                                            }
-                                            shake.animateTo(0f, tween(55))
-                                        }
-                                    }
-                                },
-                        contentAlignment = Alignment.Center,
+                                .weight(1f, fill = true)
+                                .fillMaxHeight()
+                                .scale(gridScale.value),
                     ) {
-                        if (showWrongFlash) {
-                            Box(
-                                Modifier
-                                    .fillMaxSize()
-                                    .background(Color(0xFFE53935).copy(alpha = 0.22f), RoundedCornerShape(16.dp)),
+                        val cols = question.columns
+                        val rows = question.rows
+                        val safeMaxHeight = maxHeight.coerceAtLeast(120.dp)
+                        val cellSideByWidth = (maxWidth - gap * (cols - 1)) / cols
+                        val cellSideByHeight = (safeMaxHeight - gap * (rows - 1)) / rows
+                        val cellSideBase = minOf(cellSideByWidth, cellSideByHeight).coerceAtLeast(30.dp)
+                        val cellSide = (cellSideBase * cellScale).coerceAtMost(cellSideBase)
+                        val gridW = cellSide * cols + gap * (cols - 1)
+                        val gridH = cellSide * rows + gap * (rows - 1)
+                        val letterSp =
+                            ((if (cols >= 4) 34f else 40f) * gridLetterSizeMultiplier.coerceIn(0.75f, 1.75f)).sp
+                        val letterLineHeight = (letterSp.value * 1.12f).sp
+
+                        LazyVerticalGrid(
+                            columns = GridCells.Fixed(cols),
+                            horizontalArrangement = Arrangement.spacedBy(gap, Alignment.CenterHorizontally),
+                            verticalArrangement = Arrangement.spacedBy(gap, Alignment.CenterVertically),
+                            userScrollEnabled = false,
+                            modifier = Modifier.align(Alignment.Center).size(gridW, gridH),
+                        ) {
+                            itemsIndexed(question.cells, key = { i, _ -> "${contentKey}_$i" }) { index, letter ->
+                                val done = index in found
+                                val scale = scales[index]
+                                val shake = cellShake[index]
+                                val showWrongFlash = wrongFlashIndex == index
+                                Box(
+                                    modifier =
+                                        Modifier
+                                            .aspectRatio(1f)
+                                            .shadow(
+                                                elevation = if (done) 8.dp else 6.dp,
+                                                shape = RoundedCornerShape(16.dp),
+                                                clip = false,
+                                            )
+                                            .scale(scale.value)
+                                            .offset { IntOffset(shake.value.roundToInt(), 0) }
+                                            .clip(RoundedCornerShape(16.dp))
+                                            .border(
+                                                width = if (done) 3.5.dp else 2.dp,
+                                                color =
+                                                    when {
+                                                        done -> Color(0xFF2E7D32).copy(alpha = 0.95f)
+                                                        else -> Color(0xFFFF8A65).copy(alpha = 0.35f)
+                                                    },
+                                                shape = RoundedCornerShape(16.dp),
+                                            )
+                                            .background(
+                                                brush =
+                                                    if (done) {
+                                                        Brush.verticalGradient(
+                                                            listOf(
+                                                                Color(0xFFE8F5E9).copy(alpha = 0.98f),
+                                                                Color(0xFF81C784).copy(alpha = 0.65f),
+                                                            ),
+                                                        )
+                                                    } else {
+                                                        Brush.verticalGradient(
+                                                            listOf(
+                                                                Color(0xFFFFFDE7).copy(alpha = 0.98f),
+                                                                Color(0xFFFFF9C4).copy(alpha = 0.75f),
+                                                                Color(0xFFFFECB3).copy(alpha = 0.55f),
+                                                            ),
+                                                        )
+                                                    },
+                                                shape = RoundedCornerShape(16.dp),
+                                            )
+                                            .clickable(enabled = enabled && !done && !gridFrozen) {
+                                                onLetterTapped?.invoke(letter)
+                                                if (letter == question.targetLetter) {
+                                                    onCorrectTap?.invoke()
+                                                    val newFound = found + index
+                                                    found = newFound
+                                                    if (newFound == targetIndices) {
+                                                        gridFrozen = true
+                                                    }
+                                                    ChildGameAudioHooks.onCorrect()
+                                                    scope.launch {
+                                                        scale.snapTo(1f)
+                                                        scale.animateTo(correctCellPeakScale, tween(100))
+                                                        scale.animateTo(1f, spring(dampingRatio = 0.5f, stiffness = 400f))
+                                                    }
+                                                } else {
+                                                    ChildGameAudioHooks.onWrong()
+                                                    onCellTapped(index)
+                                                    wrongFlashIndex = index
+                                                    scope.launch {
+                                                        delay(200)
+                                                        if (wrongFlashIndex == index) wrongFlashIndex = -1
+                                                    }
+                                                    scope.launch {
+                                                        val amp = 11f
+                                                        repeat(5) { i ->
+                                                            shake.animateTo(
+                                                                if (i % 2 == 0) amp else -amp,
+                                                                tween(44),
+                                                            )
+                                                        }
+                                                        shake.animateTo(0f, tween(55))
+                                                    }
+                                                }
+                                            },
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    if (showWrongFlash) {
+                                        Box(
+                                            Modifier
+                                                .fillMaxSize()
+                                                .background(Color(0xFFE53935).copy(alpha = 0.22f), RoundedCornerShape(16.dp)),
+                                        )
+                                    }
+                                    Text(
+                                        text = letter,
+                                        fontSize = letterSp,
+                                        lineHeight = letterLineHeight,
+                                        fontWeight = FontWeight.Black,
+                                        color =
+                                            if (done) {
+                                                Color(0xFF1B5E20)
+                                            } else {
+                                                Color(0xFF0B2B3D)
+                                            },
+                                        textAlign = TextAlign.Center,
+                                        maxLines = 1,
+                                    )
+                                    if (done) {
+                                        Box(
+                                            modifier =
+                                                Modifier
+                                                    .align(Alignment.TopEnd)
+                                                    .padding(6.dp)
+                                                    .size(12.dp)
+                                                    .background(Color.White.copy(alpha = 0.92f), CircleShape)
+                                                    .border(1.5.dp, Color(0xFF2E7D32).copy(alpha = 0.5f), CircleShape),
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    Column(
+                        modifier =
+                            Modifier
+                                .width(sidePanelW)
+                                .fillMaxHeight()
+                                .padding(top = 16.dp, bottom = 8.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        if (contextWordHint == null && inlineInstructionText != null) {
+                            val displayInstructionText =
+                                if (isCompactLandscapePhone) {
+                                    ScreenFit.rtlUnicodeWrap(inlineInstructionText)
+                                } else {
+                                    inlineInstructionText
+                                }
+                            Text(
+                                text = displayInstructionText,
+                                fontSize =
+                                    ((if (question.columns >= 4) 20f else 22f) * 1.5f).sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF0B2B3D),
+                                textAlign = TextAlign.Center,
+                                modifier =
+                                    Modifier
+                                        .padding(bottom = 10.dp)
+                                        .then(
+                                            if (inlineInstructionReadablePanel) {
+                                                Modifier
+                                                    .background(Color.White.copy(alpha = 0.72f), RoundedCornerShape(18.dp))
+                                                    .padding(horizontal = 12.dp, vertical = 6.dp)
+                                            } else {
+                                                Modifier
+                                            },
+                                        ),
                             )
                         }
-                        Text(
-                            text = letter,
-                            fontSize = letterSp,
-                            fontWeight = FontWeight.Black,
-                            color =
-                                if (done) {
-                                    Color(0xFF1B5E20)
-                                } else {
-                                    Color(0xFF0B2B3D)
-                                },
-                            textAlign = TextAlign.Center,
-                        )
-                        if (done) {
+                        if (floatingTargetLetterHint != null) {
+                            TargetLetterHeaderChip(
+                                letter = floatingTargetLetterHint,
+                                fontSize = if (question.columns >= 4) 44.sp else 48.sp,
+                                modifier = Modifier.padding(bottom = 10.dp),
+                            )
+                        }
+                        if (!(hideListenOnlyHeaderTargetLetter && contextWordHint == null)) {
                             Box(
                                 modifier =
                                     Modifier
-                                        .align(Alignment.TopEnd)
-                                        .padding(6.dp)
-                                        .size(12.dp)
-                                        .background(Color.White.copy(alpha = 0.92f), CircleShape)
-                                        .border(1.5.dp, Color(0xFF2E7D32).copy(alpha = 0.5f), CircleShape),
-                            )
+                                        .scale(headerScale.value)
+                                        .clip(RoundedCornerShape(18.dp))
+                                        .background(
+                                            brush =
+                                                Brush.verticalGradient(
+                                                    listOf(
+                                                        Color(0xFFFFF59D).copy(alpha = 0.95f),
+                                                        Color(0xFFFFE082).copy(alpha = 0.88f),
+                                                    ),
+                                                ),
+                                        )
+                                        .border(2.dp, Color(0xFFFFA000).copy(alpha = 0.45f), RoundedCornerShape(18.dp))
+                                        .padding(horizontal = 22.dp, vertical = 10.dp),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Text(
+                                    text = question.targetLetter,
+                                    fontSize = if (question.columns >= 4) 54.sp else 60.sp,
+                                    fontWeight = FontWeight.Black,
+                                    color = Color(0xFF0B2B3D),
+                                    textAlign = TextAlign.Center,
+                                )
+                            }
                         }
                     }
                 }
-            }
-            }
             }
         } else {
             Column(

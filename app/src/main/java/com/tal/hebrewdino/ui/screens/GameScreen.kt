@@ -21,6 +21,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -84,6 +85,7 @@ import com.tal.hebrewdino.ui.components.station.PopBalloonsStationContent
 import com.tal.hebrewdino.ui.components.station.PictureStartsWithStationContent
 import com.tal.hebrewdino.ui.components.station.SagaImageMatchGameStationContent
 import androidx.compose.ui.platform.LocalContext
+import com.tal.hebrewdino.ui.layout.ScreenFit
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -1164,7 +1166,14 @@ fun GameScreen(
         )
 
         // Station screens: keep the top bar fixed (like Journey). Do not show collected eggs/letters/debug inside stations.
-        val contentTopInset = (stationUiSpec.contentTopInsetDp?.dp ?: 40.dp)
+        val isCompactLandscapePhone = ScreenFit.isCompactLandscapePhone()
+        val contentTopInsetBase = (stationUiSpec.contentTopInsetDp?.dp ?: 40.dp)
+        val contentTopInset =
+            if (isCompactLandscapePhone) {
+                contentTopInsetBase.coerceAtMost(28.dp)
+            } else {
+                contentTopInsetBase
+            }
         val (topQuestionNumber, topTotalQuestions) =
             topChromeProgressOverride ?: (session.questionNumber to session.totalQuestions)
         GameScreenTopChrome(
@@ -1181,17 +1190,56 @@ fun GameScreen(
                     .statusBarsPadding()
                     // Give a consistent ~1cm breathing room below the status bar so the progress line
                     // and the "חזור" button are never clipped.
-                    .padding(start = 8.dp, end = 8.dp, top = 38.dp, bottom = 0.dp)
+                    .padding(
+                        start = if (isCompactLandscapePhone) 6.dp else 8.dp,
+                        end = if (isCompactLandscapePhone) 6.dp else 8.dp,
+                        top = if (isCompactLandscapePhone) 12.dp else 38.dp,
+                        bottom = 0.dp,
+                    )
                     .offset(y = if (isSagaEpisode(chapterId)) -SixStationArcHalfCmNudge else 0.dp)
                     .align(Alignment.TopCenter)
                     .zIndex(4f),
         )
 
+        if (isCompactLandscapePhone) {
+            val dinoDrawable =
+                when (dinoVisual) {
+                    DinoVisual.Idle -> R.drawable.dino_idle
+                    DinoVisual.TryAgain -> R.drawable.dino_try_again
+                    DinoVisual.Jump -> jumpFrames[jumpFrameIndex.coerceIn(0, jumpFrames.lastIndex)]
+                }
+            val talkFrames =
+                listOf(R.drawable.dino_talk_0, R.drawable.dino_talk_1, R.drawable.dino_talk_2, R.drawable.dino_talk_3)
+            CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+                Box(modifier = Modifier.fillMaxSize()) {
+                    GameScreenDinoLayer(
+                        idleRes = dinoDrawable,
+                        talkFrameResIds = talkFrames,
+                        isTalking = dinoTalking || (isSagaEpisode(chapterId) && inputLocked && dinoVisual == DinoVisual.Jump),
+                        dinoForward = dinoForward,
+                        dinoSlip = dinoSlip,
+                        dinoTilt = dinoTilt,
+                        dinoScale = dinoScale,
+                        modifier =
+                            Modifier
+                                .align(Alignment.BottomEnd)
+                                .padding(end = 6.dp, bottom = 8.dp)
+                                .scale(0.70f),
+                    )
+                }
+            }
+        }
+
         Column(
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .padding(start = 8.dp, end = 8.dp, top = contentTopInset, bottom = 8.dp)
+                    .padding(
+                        start = if (isCompactLandscapePhone) 6.dp else 8.dp,
+                        end = if (isCompactLandscapePhone) 6.dp else 8.dp,
+                        top = contentTopInset,
+                        bottom = if (isCompactLandscapePhone) 4.dp else 8.dp,
+                    )
                     .alpha(contentAlpha.value),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.SpaceBetween,
@@ -1404,6 +1452,11 @@ fun GameScreen(
                                             correctAnswer = current.correctAnswer,
                                             station2PinnedBalloonLetter = station2PinnedBalloonLetter,
                                             station2PinnedBalloonColor = station2PinnedBalloonColor,
+                                            compactLandscapePhoneTuning =
+                                                isCompactLandscapePhone &&
+                                                    chapterId == 1 &&
+                                                    stationId == Chapter1StationOrder.BALLOON_POP &&
+                                                    sagaUsesPopBalloonsAudioStaging,
                                         )
                                     }
                                     if (plan.mode == StationQuizMode.PickLetter) {
@@ -1469,6 +1522,8 @@ fun GameScreen(
                                                     ?: current.correctAnswer.takeIf { wrongTapsThisQuestion >= 2 },
                                             correctPulseEpoch = hintPulseEpoch + correctTapPulseEpoch,
                                             letterOptions = pickLetterDisplayOptions,
+                                            chapterId = chapterId,
+                                            stationId = stationId,
                                             strongLetterButtonFeedback = isChapter3AudioLetterRecognitionStation,
                                             onRepeatLetterClick = repeatLetter@{
                                                 if (!audioEnabled) return@repeatLetter
@@ -1597,6 +1652,22 @@ fun GameScreen(
                                                 } else {
                                                     0
                                                 },
+                                            maxVisibleBalloonCount =
+                                                if (
+                                                    isCompactLandscapePhone &&
+                                                        chapterId == 1 &&
+                                                        stationId == Chapter1StationOrder.BALLOON_POP &&
+                                                        sagaUsesPopBalloonsAudioStaging
+                                                ) {
+                                                    8
+                                                } else {
+                                                    null
+                                                },
+                                            compactLandscapePhoneTuning =
+                                                isCompactLandscapePhone &&
+                                                    chapterId == 1 &&
+                                                    stationId == Chapter1StationOrder.BALLOON_POP &&
+                                                    sagaUsesPopBalloonsAudioStaging,
                                             onBalloonPressed = { _ ->
                                                 // Voice is triggered after pop SFX (see onPopSfx) so it feels connected.
                                             },
@@ -1794,6 +1865,15 @@ fun GameScreen(
                                         else ->
                                             StationInstructionCopy.PictureStartsWithDefault
                                     }
+                                val displayPictureInstructionText =
+                                    if (isCompactLandscapePhone &&
+                                        chapterId == 1 &&
+                                        stationId == Chapter1StationOrder.PICTURE_PICK_ONE
+                                    ) {
+                                        ScreenFit.rtlUnicodeWrap(pictureInstructionText)
+                                    } else {
+                                        pictureInstructionText
+                                    }
                                 val pictureInstructionReadablePanel =
                                     stationUiSpec.pictureStartsWithReadablePanel ||
                                         stationUiSpec.pictureStartsWithInstructionPanelStyle == InstructionPanelStyle.WhiteRounded
@@ -1812,7 +1892,7 @@ fun GameScreen(
                                     }
                                 PictureStartsWithStationContent(
                                     question = current,
-                                    instructionText = pictureInstructionText,
+                                    instructionText = displayPictureInstructionText,
                                     instructionReadablePanel = pictureInstructionReadablePanel,
                                     showWordCaption = pictureShowWordCaption,
                                     onPictureTapReplayWord =
@@ -2061,7 +2141,7 @@ fun GameScreen(
                                         choicePairLimit = 3,
                                         contentKey = session.currentIndex,
                                         enabled = gameChoicesEnabled,
-                                        compactWideSpread = false,
+                                        compactWideSpread = isCompactLandscapePhone && chapterId == 1 && stationId == 6,
                                         letterTileSizeMultiplier = if (chapterId == TrainingV1Config.CHAPTER_ID) 1.10f else 1f,
                                         onWordPressed = { choiceId ->
                                             speakNow {
@@ -2151,20 +2231,31 @@ fun GameScreen(
                                         } else {
                                             0.dp
                                         }
+                                    val rawImageMatchHeaderInstructionText =
+                                        stationUiSpec.imageMatchHeaderInstructionOverride
+                                            ?: when {
+                                                isSagaEpisode(chapterId) && stationId == Chapter1StationOrder.PICTURE_PICK_ALL ->
+                                                    if (listenOnly) {
+                                                        StationInstructionCopy.ImageMatchListenFirst
+                                                    } else {
+                                                        StationInstructionCopy.ImageMatchFindWordStartingWithLetter
+                                                    }
+                                                else ->
+                                                    null
+                                            }
+                                    val displayImageMatchHeaderInstructionText =
+                                        if (isCompactLandscapePhone &&
+                                            chapterId == 1 &&
+                                            stationId == Chapter1StationOrder.PICTURE_PICK_ALL &&
+                                            rawImageMatchHeaderInstructionText != null
+                                        ) {
+                                            ScreenFit.rtlUnicodeWrap(rawImageMatchHeaderInstructionText)
+                                        } else {
+                                            rawImageMatchHeaderInstructionText
+                                        }
                                     SagaImageMatchGameStationContent(
                                         question = current,
-                                        headerInstructionText =
-                                            stationUiSpec.imageMatchHeaderInstructionOverride
-                                                ?: when {
-                                                    isSagaEpisode(chapterId) && stationId == Chapter1StationOrder.PICTURE_PICK_ALL ->
-                                                        if (listenOnly) {
-                                                            StationInstructionCopy.ImageMatchListenFirst
-                                                        } else {
-                                                            StationInstructionCopy.ImageMatchFindWordStartingWithLetter
-                                                        }
-                                                    else ->
-                                                        null
-                                                },
+                                        headerInstructionText = displayImageMatchHeaderInstructionText,
                                         headerInstructionFontScale =
                                             if (chapterId == TrainingV1Config.CHAPTER_ID) 1.35f else 1.35f * 2f,
                                         headerPromptWord =
@@ -2303,15 +2394,17 @@ fun GameScreen(
             // Same in-round dino mouth animation for all chapters that use this screen (road-specific walks live in Journey).
             val talkFrames =
                 listOf(R.drawable.dino_talk_0, R.drawable.dino_talk_1, R.drawable.dino_talk_2, R.drawable.dino_talk_3)
-            GameScreenDinoLayer(
-                idleRes = dinoDrawable,
-                talkFrameResIds = talkFrames,
-                isTalking = dinoTalking || (isSagaEpisode(chapterId) && inputLocked && dinoVisual == DinoVisual.Jump),
-                dinoForward = dinoForward,
-                dinoSlip = dinoSlip,
-                dinoTilt = dinoTilt,
-                dinoScale = dinoScale,
-            )
+            if (!isCompactLandscapePhone) {
+                GameScreenDinoLayer(
+                    idleRes = dinoDrawable,
+                    talkFrameResIds = talkFrames,
+                    isTalking = dinoTalking || (isSagaEpisode(chapterId) && inputLocked && dinoVisual == DinoVisual.Jump),
+                    dinoForward = dinoForward,
+                    dinoSlip = dinoSlip,
+                    dinoTilt = dinoTilt,
+                    dinoScale = dinoScale,
+                )
+            }
         }
         if (episode4HelpSt15) {
             Episode4Stations15HelpColumn(
@@ -2367,3 +2460,4 @@ fun GameScreen(
         }
     }
 }
+

@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -214,44 +215,66 @@ fun MatchLetterToWordGame(
         val innerW = maxWidth
         val innerH = maxHeight
         val isLandscape = innerW > innerH
+        val isCompactLandscapePhone = ScreenFit.isCompactLandscapePhone()
+        val isPhoneCh1Station6 =
+            compactWideSpread && isCompactLandscapePhone && chapterId == 1 && stationId == 6
 
         // Header stays pinned; content below scales down if needed so nothing is clipped.
         val headerPadTop = 6.dp
         val headerPadBottom = 10.dp
-        val headerFont = if (compactWideSpread) 22.sp else 26.sp
+        val headerFont =
+            when {
+                compactWideSpread && isCompactLandscapePhone -> 18.sp
+                compactWideSpread -> 22.sp
+                else -> 26.sp
+            }
         val headerH =
             headerPadTop + headerPadBottom + if (compactWideSpread) 34.dp else 40.dp
-        val bottomSafe = if (compactWideSpread) 84.dp else 64.dp
-
-        Column(modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
-            Column(
-                modifier =
-                    Modifier
-                        .padding(top = headerPadTop, bottom = headerPadBottom, start = 12.dp, end = 12.dp)
-                        .then(
-                            if (instructionReadablePanel) {
-                                Modifier
-                                    .background(Color.White.copy(alpha = 0.72f), RoundedCornerShape(18.dp))
-                                    .padding(horizontal = 14.dp, vertical = 8.dp)
-                            } else {
-                                Modifier
-                            },
-                        ),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                Text(
-                    text = instructions,
-                    fontSize = headerFont,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF0B2B3D),
-                    textAlign = TextAlign.Center,
-                )
+        val bottomSafe =
+            when {
+                isPhoneCh1Station6 -> 8.dp
+                compactWideSpread && isCompactLandscapePhone -> 28.dp
+                compactWideSpread -> 84.dp
+                else -> 64.dp
             }
 
-            val availableH = (innerH - headerH - bottomSafe).coerceAtLeast(1.dp)
+        Column(modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
+            if (!isPhoneCh1Station6) {
+                Column(
+                    modifier =
+                        Modifier
+                            .padding(top = headerPadTop, bottom = headerPadBottom, start = 12.dp, end = 12.dp)
+                            .then(
+                                if (instructionReadablePanel) {
+                                    Modifier
+                                        .background(Color.White.copy(alpha = 0.72f), RoundedCornerShape(18.dp))
+                                        .padding(horizontal = 14.dp, vertical = 8.dp)
+                                } else {
+                                    Modifier
+                                },
+                            ),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Text(
+                        text = instructions,
+                        fontSize = headerFont,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF0B2B3D),
+                        textAlign = TextAlign.Center,
+                    )
+                }
+            }
+
+            val effectiveHeaderH = if (isPhoneCh1Station6) 0.dp else headerH
+            val availableH = (innerH - effectiveHeaderH - bottomSafe).coerceAtLeast(1.dp)
 
             // Estimate needed height so nothing clips. We scale the whole board uniformly.
-            val landscapePictureLetterGap = if (compactWideSpread) 56.dp * 1.35f else 56.dp * 1.8f
+            val landscapePictureLetterGap =
+                when {
+                    isPhoneCh1Station6 -> 24.dp
+                    compactWideSpread -> 56.dp * 1.35f
+                    else -> 56.dp * 1.8f
+                }
             // Estimate must match `LessonChoiceCard` sizing, otherwise captions can get clipped
             // when we scale the whole board to fit the available height.
             val maxCardWForEstimate = if (compactWideSpread) 150.dp else 168.dp
@@ -274,8 +297,8 @@ fun MatchLetterToWordGame(
                     Modifier
                         .fillMaxWidth()
                         .height(availableH)
-                        .scale(scaleToFit),
-                contentAlignment = Alignment.TopCenter,
+                        .then(if (isPhoneCh1Station6) Modifier else Modifier.scale(scaleToFit)),
+                contentAlignment = if (isPhoneCh1Station6) Alignment.TopStart else Alignment.TopCenter,
             ) {
         val gap = 12.dp
         val baseTileH = if (compactWideSpread) 76.dp else 88.dp
@@ -285,6 +308,262 @@ fun MatchLetterToWordGame(
 
         val density = LocalDensity.current
         val lineInsetPx = with(density) { 6.dp.toPx() }
+        if (isPhoneCh1Station6) {
+            val sidePanelW = 190.dp
+            val columnGap = 10.dp
+            val boardSizingW = (innerW - sidePanelW - columnGap).coerceAtLeast(1.dp)
+            CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+                Row(
+                    modifier = Modifier.fillMaxSize(),
+                    horizontalArrangement = Arrangement.spacedBy(columnGap),
+                    verticalAlignment = Alignment.Top,
+                ) {
+                    Box(
+                        modifier =
+                            Modifier
+                                .width(boardSizingW)
+                                .fillMaxHeight()
+                                .scale(scaleToFit),
+                        contentAlignment = Alignment.TopStart,
+                    ) {
+                        Box(
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .scale(boardScale.value)
+                                    .onGloballyPositioned { coords ->
+                                        boardOriginInRoot = coords.positionInRoot()
+                                    },
+                        ) {
+                            Canvas(modifier = Modifier.fillMaxSize()) {
+                                locked.forEach { (letter, choiceId) ->
+                                    val lr = letterRects[letter]
+                                    val ir = itemRects[choiceId]
+                                    val from = ir?.let { Offset(it.center.x, it.bottom - lineInsetPx) }
+                                    val to = lr?.let { Offset(it.center.x, it.top + lineInsetPx) }
+                                    if (from != null && to != null) {
+                                        val localA = from - boardOriginInRoot
+                                        val localB = to - boardOriginInRoot
+                                        drawLine(
+                                            color = Color(0xFF7E57C2).copy(alpha = 0.95f),
+                                            start = localA,
+                                            end = localB,
+                                            strokeWidth = 10f,
+                                            cap = StrokeCap.Round,
+                                        )
+                                        if (glow.value > 0f) {
+                                            drawLine(
+                                                color = Color(0xFFB39DDB).copy(alpha = 0.70f * glow.value),
+                                                start = localA,
+                                                end = localB,
+                                                strokeWidth = 18f,
+                                                cap = StrokeCap.Round,
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+
+                            Column(
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 4.dp)
+                                        .offset { IntOffset(shake.value.roundToInt(), 0) },
+                                horizontalAlignment = Alignment.Start,
+                            ) {
+                                val cardW =
+                                    (ScreenFit.rowChildWidthDp(
+                                        rowInnerWidth = boardSizingW,
+                                        count = 3,
+                                        gap = gap,
+                                        minEach = 56.dp,
+                                        maxEach = 150.dp,
+                                    ) * 0.82f).coerceAtLeast(56.dp)
+                                val cardH = cardW * LessonChoiceCardPictureAspect
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(gap, Alignment.Start),
+                                ) {
+                                    wordColumn.forEach { ch ->
+                                        val lockedThis = isLockedChoice(ch.id)
+                                        val selectedThis = selectedChoiceId == ch.id
+                                        val pop = remember(ch.id, contentKey) { Animatable(1f) }
+                                        val wrongFlash = remember(ch.id, contentKey) { Animatable(0f) }
+                                        LaunchedEffect(hintEpoch, hintChoiceId, ch.id, contentKey) {
+                                            if (hintEpoch <= 0 || hintChoiceId != ch.id) return@LaunchedEffect
+                                            pop.snapTo(1f)
+                                            pop.animateTo(1.12f, tween(120))
+                                            pop.animateTo(1f, tween(160))
+                                        }
+                                        LaunchedEffect(correctEpoch, correctChoiceId, ch.id, contentKey) {
+                                            if (correctEpoch <= 0 || correctChoiceId != ch.id) return@LaunchedEffect
+                                            pop.snapTo(1f)
+                                            pop.animateTo(1.18f, tween(90))
+                                            pop.animateTo(1f, tween(140))
+                                        }
+                                        LaunchedEffect(wrongFlashEpoch, wrongFlashChoiceId, ch.id, contentKey) {
+                                            if (wrongFlashEpoch <= 0 || wrongFlashChoiceId != ch.id) return@LaunchedEffect
+                                            wrongFlash.snapTo(1f)
+                                            wrongFlash.animateTo(0f, tween(220))
+                                        }
+                                        val captionSp =
+                                            captionFontSizeForWordCard(
+                                                density = density,
+                                                cardWidth = cardW,
+                                                word = ch.word,
+                                                sizeMultiplier = captionSizeMultiplier * 0.90f,
+                                                chapterId = chapterId,
+                                                stationId = stationId,
+                                            )
+                                        LessonChoiceCard(
+                                            choice = ch,
+                                            enabled = enabled && !lockedThis,
+                                            scale = pop.value,
+                                            showWordCaption = true,
+                                            cardWidth = cardW,
+                                            cardHeight = cardH,
+                                            captionFontSize = captionSp,
+                                            innerPictureScale = innerPictureScaleForChoice(ch),
+                                            isCorrectPick = lockedThis,
+                                            isSelected = !lockedThis && selectedThis,
+                                            wrongFlashAlpha = wrongFlash.value,
+                                            onClick = {
+                                                if (!enabled || lockedThis) return@LessonChoiceCard
+                                                onWordPressed?.invoke(ch.id)
+                                                val picked = selectedLetter
+                                                if (picked != null) {
+                                                    tryLockMatch(picked, ch)
+                                                } else {
+                                                    selectedChoiceId = if (selectedChoiceId == ch.id) null else ch.id
+                                                }
+                                            },
+                                            modifier =
+                                                Modifier.onGloballyPositioned { coords ->
+                                                    val p = coords.positionInRoot()
+                                                    itemRects[ch.id] = Rect(p, Size(coords.size.width.toFloat(), coords.size.height.toFloat()))
+                                                },
+                                        )
+                                    }
+                                }
+                                Spacer(modifier = Modifier.height(landscapePictureLetterGap))
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(gap, Alignment.Start),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    letterColumn.forEach { letter ->
+                                        val lockedThis = isLockedLetter(letter)
+                                        val selected = selectedLetter == letter
+                                        val pop = remember(letter, contentKey) { Animatable(1f) }
+                                        val wrongFlash = remember(letter, contentKey) { Animatable(0f) }
+                                        LaunchedEffect(hintEpoch, hintLetter, letter, contentKey) {
+                                            if (hintEpoch <= 0 || hintLetter != letter) return@LaunchedEffect
+                                            pop.snapTo(1f)
+                                            pop.animateTo(1.14f, tween(120))
+                                            pop.animateTo(1f, tween(160))
+                                        }
+                                        LaunchedEffect(correctEpoch, correctLetter, letter, contentKey) {
+                                            if (correctEpoch <= 0 || correctLetter != letter) return@LaunchedEffect
+                                            pop.snapTo(1f)
+                                            pop.animateTo(1.20f, tween(90))
+                                            pop.animateTo(1f, tween(140))
+                                        }
+                                        LaunchedEffect(wrongFlashEpoch, wrongFlashLetter, letter, contentKey) {
+                                            if (wrongFlashEpoch <= 0 || wrongFlashLetter != letter) return@LaunchedEffect
+                                            wrongFlash.snapTo(1f)
+                                            wrongFlash.animateTo(0f, tween(220))
+                                        }
+                                        Box(
+                                            modifier =
+                                                Modifier
+                                                    .width(cardW)
+                                                    .height(tileH)
+                                                    .scale(pop.value)
+                                                    .background(
+                                                        when {
+                                                            lockedThis -> Color(0xFFE8F5E9).copy(alpha = 0.98f)
+                                                            selected -> Color(0xFFC8E6C9).copy(alpha = 0.95f)
+                                                            else -> Color.White.copy(alpha = 0.88f)
+                                                        },
+                                                        tileShape,
+                                                    )
+                                                    .border(
+                                                        2.dp,
+                                                        when {
+                                                            wrongFlash.value > 0.01f -> Color(0xFFE53935).copy(alpha = 0.95f)
+                                                            lockedThis -> Color(0xFF2E7D32).copy(alpha = 0.85f)
+                                                            selected -> Color(0xFF2E7D32).copy(alpha = 0.70f)
+                                                            else -> Color(0xFF0B2B3D).copy(alpha = 0.14f)
+                                                        },
+                                                        tileShape,
+                                                    )
+                                                    .clickable(enabled = enabled && !lockedThis) {
+                                                        onLetterPressed?.invoke(letter)
+                                                        val nowSelected = if (selectedLetter == letter) null else letter
+                                                        selectedLetter = nowSelected
+                                                        val pickedChoiceId = selectedChoiceId
+                                                        if (nowSelected != null && pickedChoiceId != null) {
+                                                            val choice = wordColumn.firstOrNull { it.id == pickedChoiceId }
+                                                            if (choice != null) {
+                                                                tryLockMatch(nowSelected, choice)
+                                                            } else {
+                                                                selectedChoiceId = null
+                                                            }
+                                                        }
+                                                    }
+                                                    .onGloballyPositioned { coords ->
+                                                        val p = coords.positionInRoot()
+                                                        letterRects[letter] = Rect(p, Size(coords.size.width.toFloat(), coords.size.height.toFloat()))
+                                                    },
+                                            contentAlignment = Alignment.Center,
+                                        ) {
+                                            if (wrongFlash.value > 0.01f) {
+                                                Box(
+                                                    Modifier
+                                                        .fillMaxSize()
+                                                        .background(Color(0xFFE53935).copy(alpha = 0.18f * wrongFlash.value), tileShape),
+                                                )
+                                            }
+                                            Text(text = letter, fontSize = 42.sp, fontWeight = FontWeight.Black, color = Color(0xFF0B2B3D))
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    Box(modifier = Modifier.width(sidePanelW).fillMaxHeight()) {
+                        CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+                            Column(
+                                modifier =
+                                    Modifier
+                                        .align(Alignment.TopEnd)
+                                        .padding(top = 6.dp, end = 2.dp, start = 8.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                            ) {
+                                Text(
+                                    text = instructions,
+                                    fontSize = 22.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF0B2B3D),
+                                    textAlign = TextAlign.End,
+                                    modifier =
+                                        Modifier.then(
+                                            if (instructionReadablePanel) {
+                                                Modifier
+                                                    .background(Color.White.copy(alpha = 0.72f), RoundedCornerShape(18.dp))
+                                                    .padding(horizontal = 12.dp, vertical = 8.dp)
+                                            } else {
+                                                Modifier
+                                            },
+                                        ),
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        } else {
         Box(
             modifier =
                 Modifier
@@ -345,14 +624,24 @@ fun MatchLetterToWordGame(
 
             if (isLandscape) {
                 // Landscape: pictures row, then letters row underneath.
-                Column(
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 10.dp)
-                            .offset { IntOffset(shake.value.roundToInt(), 0) },
-                    horizontalAlignment = Alignment.CenterHorizontally,
+                CompositionLocalProvider(
+                    LocalLayoutDirection provides if (isPhoneCh1Station6) LayoutDirection.Ltr else LayoutDirection.Rtl,
                 ) {
+                    Column(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = if (isPhoneCh1Station6) 6.dp else 10.dp)
+                                .offset { IntOffset(shake.value.roundToInt(), 0) }
+                                .then(
+                                    if (isPhoneCh1Station6) {
+                                        Modifier.offset(y = (-8).dp)
+                                    } else {
+                                        Modifier
+                                    },
+                                ),
+                        horizontalAlignment = if (isPhoneCh1Station6) Alignment.Start else Alignment.CenterHorizontally,
+                    ) {
                     // Match station 5 sizing (computed width + fixed aspect ratio).
                     val cardW =
                         ScreenFit.rowChildWidthDp(
@@ -365,7 +654,11 @@ fun MatchLetterToWordGame(
                     val cardH = cardW * LessonChoiceCardPictureAspect
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(gap, Alignment.CenterHorizontally),
+                        horizontalArrangement =
+                            Arrangement.spacedBy(
+                                gap,
+                                if (isPhoneCh1Station6) Alignment.Start else Alignment.CenterHorizontally,
+                            ),
                     ) {
                         wordColumn.forEach { ch ->
                             val lockedThis = isLockedChoice(ch.id)
@@ -394,7 +687,7 @@ fun MatchLetterToWordGame(
                                     density = density,
                                     cardWidth = cardW,
                                     word = ch.word,
-                                    sizeMultiplier = captionSizeMultiplier,
+                                    sizeMultiplier = if (isPhoneCh1Station6) captionSizeMultiplier * 0.92f else captionSizeMultiplier,
                                     chapterId = chapterId,
                                     stationId = stationId,
                                 )
@@ -431,7 +724,11 @@ fun MatchLetterToWordGame(
                     Spacer(modifier = Modifier.height(landscapePictureLetterGap))
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(gap, Alignment.CenterHorizontally),
+                        horizontalArrangement =
+                            Arrangement.spacedBy(
+                                gap,
+                                if (isPhoneCh1Station6) Alignment.Start else Alignment.CenterHorizontally,
+                            ),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         letterColumn.forEach { letter ->
@@ -516,6 +813,7 @@ fun MatchLetterToWordGame(
                                 )
                             }
                         }
+                    }
                     }
                 }
             } else {
@@ -694,6 +992,7 @@ fun MatchLetterToWordGame(
                     }
                 }
             }
+        }
         }
             }
         }

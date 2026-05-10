@@ -38,6 +38,7 @@ import com.tal.hebrewdino.ui.components.TargetLetterHeaderChip
 import com.tal.hebrewdino.ui.components.learning.LessonChoiceCard
 import com.tal.hebrewdino.ui.components.learning.LessonChoiceCardPictureAspect
 import com.tal.hebrewdino.ui.components.learning.captionFontSizeForWordCard
+import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
 import com.tal.hebrewdino.ui.domain.LessonChoice
 import com.tal.hebrewdino.ui.domain.Question
 import com.tal.hebrewdino.ui.domain.HebrewLetterOrder
@@ -98,24 +99,60 @@ fun PictureStartsWithGame(
     onPickLetter: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val isCompactLandscapePhone = false
-    val useTwoColumn = false
-    val instructionScale = 2f
+    val isCompactLandscapePhone = ScreenFit.isCompactLandscapePhone()
+    val useTwoColumn = isCompactLandscapePhone && chapterId == 1 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE
+    val instructionScale = if (isCompactLandscapePhone) 1.1f else 2f
+    val phoneCardTextMultiplier =
+        if (useTwoColumn) {
+            promptWordSizeMultiplier * 0.80f
+        } else {
+            promptWordSizeMultiplier
+        }
 
     if (useTwoColumn) {
-        Row(
-            modifier =
-                modifier
-                    .fillMaxWidth()
-                    .fillMaxHeight()
-                    .offset { IntOffset(shakePx.roundToInt(), 0) },
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally),
-        ) {
+        CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+            Row(
+                modifier =
+                    modifier
+                        .fillMaxWidth()
+                        .fillMaxHeight()
+                        .offset { IntOffset(shakePx.roundToInt(), 0) },
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally),
+            ) {
+                val orderedLetters = pictureStartsWithOrderedLetters(sortOptionLetters, question.optionLetters)
+                val displayLetters =
+                    if (pinnedCorrectLetter != null) {
+                        listOf(pinnedCorrectLetter)
+                    } else {
+                        orderedLetters
+                    }
+                Column(
+                    modifier = Modifier.weight(1f, fill = true).fillMaxHeight(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center,
+                ) {
+                    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+                        LetterOptions(
+                            options = displayLetters,
+                            enabled = enabled,
+                            shakePx = 0f,
+                            entryPulseEpoch = entryPulseEpoch,
+                            hintPulseLetter = hintCorrectLetter,
+                            hintPulseEpoch = hintPulseEpoch,
+                            correctPulseLetter = correctPulseLetter,
+                            correctPulseEpoch = correctPulseEpoch,
+                            wrongFlashLetter = wrongFlashLetter,
+                            wrongFlashEpoch = wrongFlashEpoch,
+                            onPick = onPickLetter,
+                        )
+                    }
+                }
             Column(
                 modifier =
                     Modifier
-                        .widthIn(max = 260.dp)
+                        .widthIn(max = 270.dp)
+                        .offset(x = (-16).dp)
                         .fillMaxHeight(),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
@@ -145,7 +182,7 @@ fun PictureStartsWithGame(
                             (rowInnerWidth * f.coerceIn(0.20f, 1f)).coerceAtLeast(pictureFrameMinWidth)
                         } ?: rowInnerWidth
                     val rowForSizing = rowInnerWidth.coerceAtMost(frameCap)
-                    val choiceCount = 3
+                    val choiceCount = 2
                     val density = LocalDensity.current
                     Column(
                         modifier =
@@ -185,7 +222,7 @@ fun PictureStartsWithGame(
                                 minEach = 72.dp,
                                 maxEach = 168.dp,
                             )
-                        val effectivePictureSizeMultiplier = pictureSizeMultiplier * 0.92f
+                        val effectivePictureSizeMultiplier = pictureSizeMultiplier * 0.94f
                         cardW =
                             (cardW * effectivePictureSizeMultiplier).coerceAtMost(
                                 (rowForSizing - cardGap * (choiceCount - 1)) / choiceCount,
@@ -196,7 +233,7 @@ fun PictureStartsWithGame(
                                 density = density,
                                 cardWidth = cardW,
                                 word = question.word,
-                                sizeMultiplier = promptWordSizeMultiplier,
+                                sizeMultiplier = phoneCardTextMultiplier,
                                 chapterId = chapterId,
                                 stationId = stationId,
                             )
@@ -216,34 +253,6 @@ fun PictureStartsWithGame(
                     }
                 }
             }
-
-            val orderedLetters = pictureStartsWithOrderedLetters(sortOptionLetters, question.optionLetters)
-            val displayLetters =
-                if (pinnedCorrectLetter != null) {
-                    listOf(pinnedCorrectLetter)
-                } else {
-                    orderedLetters
-                }
-            Column(
-                modifier = Modifier.weight(1f, fill = true).fillMaxHeight(),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center,
-            ) {
-                CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
-                    LetterOptions(
-                        options = displayLetters,
-                        enabled = enabled,
-                        shakePx = 0f,
-                        entryPulseEpoch = entryPulseEpoch,
-                        hintPulseLetter = hintCorrectLetter,
-                        hintPulseEpoch = hintPulseEpoch,
-                        correctPulseLetter = correctPulseLetter,
-                        correctPulseEpoch = correctPulseEpoch,
-                        wrongFlashLetter = wrongFlashLetter,
-                        wrongFlashEpoch = wrongFlashEpoch,
-                        onPick = onPickLetter,
-                    )
-                }
             }
         }
     } else {

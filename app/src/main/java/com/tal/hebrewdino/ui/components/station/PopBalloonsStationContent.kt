@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.sp
 import com.tal.hebrewdino.ui.components.TargetLetterHeaderChip
 import com.tal.hebrewdino.ui.domain.LessonWordIllustrations
 import com.tal.hebrewdino.ui.domain.Question
+import com.tal.hebrewdino.ui.layout.ScreenFit
 import com.tal.hebrewdino.ui.screens.PopBalloonsOptions
 import com.tal.hebrewdino.ui.screens.Station2PinnedBalloonMini
 
@@ -100,12 +101,16 @@ fun PopBalloonsInstructionHeaderBlock(
     correctAnswer: String,
     station2PinnedBalloonLetter: String?,
     station2PinnedBalloonColor: Color?,
+    compactLandscapePhoneTuning: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
-    val instructionFontSize = 30.sp
-    val instructionPadV = 8.dp
-    val topPad = 8.dp
-    val bottomPad = 10.dp
+    val isCompactLandscapePhone = ScreenFit.isCompactLandscapePhone()
+    val usePhoneTuning = compactLandscapePhoneTuning && isCompactLandscapePhone
+    val instructionFontSize = if (usePhoneTuning) 22.sp else 30.sp
+    val instructionPadV = if (usePhoneTuning) 5.dp else 8.dp
+    val topPad = if (usePhoneTuning) 0.dp else 8.dp
+    val bottomPad = if (usePhoneTuning) 4.dp else 10.dp
+    val headerChipFont = if (usePhoneTuning) 44.sp else 56.sp
     // Same as GameScreen’s outer balloon Column: center children in full width (RTL-safe).
     Column(
         modifier = modifier.fillMaxWidth(),
@@ -135,6 +140,7 @@ fun PopBalloonsInstructionHeaderBlock(
                         Spacer(modifier = Modifier.height(10.dp))
                         TargetLetterHeaderChip(
                             letter = episode4HelpActiveHintLetter!!,
+                            fontSize = headerChipFont,
                             modifier = Modifier.scale(hintHeaderScale),
                         )
                     }
@@ -162,13 +168,14 @@ fun PopBalloonsInstructionHeaderBlock(
                     modifier =
                         Modifier
                             .fillMaxWidth()
-                            .padding(top = 4.dp),
+                            .padding(top = if (usePhoneTuning) 2.dp else 4.dp),
                     horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     if (!listenOnly) {
                         TargetLetterHeaderChip(
                             letter = correctAnswer,
+                            fontSize = headerChipFont,
                             modifier = Modifier.scale(hintHeaderScale),
                         )
                         Spacer(modifier = Modifier.width(10.dp))
@@ -204,6 +211,7 @@ fun PopBalloonsInstructionHeaderBlock(
                 if (!listenOnly) {
                     TargetLetterHeaderChip(
                         letter = correctAnswer,
+                        fontSize = headerChipFont,
                         modifier =
                             Modifier
                                 .padding(top = 4.dp)
@@ -228,12 +236,16 @@ fun ColumnScope.PopBalloonsStationContent(
     visualRoundSeed: Int,
     episode4CorrectBalloonHintEpoch: Int,
     helpSideInsetDp: Dp,
+    maxVisibleBalloonCount: Int? = null,
+    compactLandscapePhoneTuning: Boolean = false,
     onBalloonPressed: (String) -> Unit,
     onPopSfx: suspend (letter: String, isCorrect: Boolean, finalCorrectBalloon: Boolean, balloonIndex: Int) -> Unit,
     onWrongPick: () -> Unit,
     onAllCorrectPopped: (correctLetter: String, poppedBalloonColor: Color) -> Unit,
 ) {
-    Spacer(modifier = Modifier.height(8.dp))
+    val isCompactLandscapePhone = ScreenFit.isCompactLandscapePhone()
+    val usePhoneTuning = compactLandscapePhoneTuning && isCompactLandscapePhone
+    Spacer(modifier = Modifier.height(if (usePhoneTuning) 4.dp else 8.dp))
     Box(
         modifier = Modifier.fillMaxWidth().weight(1f),
         contentAlignment = Alignment.Center,
@@ -245,6 +257,10 @@ fun ColumnScope.PopBalloonsStationContent(
             enabled = enabled,
             shakePx = shakePx,
             visualRoundSeed = visualRoundSeed,
+            balloonSizeDp = if (usePhoneTuning) 72.dp else 86.dp,
+            balloonLetterFontSize = if (usePhoneTuning) 32.sp else 38.sp,
+            maxVisibleBalloonCount = maxVisibleBalloonCount,
+            compactLandscapeFreeFlight = usePhoneTuning,
             onBalloonPressed = onBalloonPressed,
             onPopSfx = onPopSfx,
             onWrongPick = onWrongPick,

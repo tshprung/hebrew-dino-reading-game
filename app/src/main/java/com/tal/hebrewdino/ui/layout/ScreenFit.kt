@@ -1,6 +1,8 @@
 package com.tal.hebrewdino.ui.layout
 
 import android.content.res.Configuration
+import android.text.BidiFormatter
+import android.text.TextDirectionHeuristics
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.Dp
@@ -86,4 +88,7 @@ object ScreenFit {
         val isTablet = c.smallestScreenWidthDp >= tabletSmallestWidthDp
         return isLandscape && isCompactHeight && !isTablet
     }
+
+    fun rtlUnicodeWrap(text: String): String =
+        BidiFormatter.getInstance().unicodeWrap(text, TextDirectionHeuristics.RTL)
 }
