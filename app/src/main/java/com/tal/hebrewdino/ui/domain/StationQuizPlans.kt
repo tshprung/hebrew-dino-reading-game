@@ -29,6 +29,8 @@ data class StationQuizPlan(
     val chapter3AudioLetterRecognition: Boolean = false,
     /** Chapter 1 station 6: forbid showing both "אוטו" and "מכונית" in the same round. */
     val chapter1Station6ForbidAutoAndCarTogether: Boolean = false,
+    /** For Training: forbid showing any pair among "אוטו" / "מכונית" / "רכב" in the same round. */
+    val forbidVehicleSynonymsTogether: Boolean = false,
     /**
      * Six-station arc (chapters 4–5): hide the written target letter/word where episode 1–2 would show it;
      * prompts rely on pre-recorded letter/word audio instead.
@@ -140,7 +142,7 @@ object StationQuizPlans {
                     initialGroupIndex = 0,
                     imageMatchChoiceCount = 3,
                     imageMatchAlwaysThreeChoices = true,
-                    imageMatchCaptionSizeMultiplier = 1.08f,
+                    imageMatchCaptionSizeMultiplier = 2.0f,
                     imageMatchPictureSizeMultiplier = 1.15f,
                 )
             TrainingV1Config.STATION_PICTURE_CHOOSE_WORD ->
@@ -176,8 +178,9 @@ object StationQuizPlans {
                     initialGroupIndex = 0,
                     imageMatchChoiceCount = 3,
                     imageMatchAlwaysThreeChoices = true,
-                    imageMatchCaptionSizeMultiplier = 1.05f,
+                    imageMatchCaptionSizeMultiplier = 1.575f,
                     imageMatchPictureSizeMultiplier = 1.15f,
+                    forbidVehicleSynonymsTogether = true,
                 )
             else -> error("Unknown Training v1 stationId=$stationId")
         }

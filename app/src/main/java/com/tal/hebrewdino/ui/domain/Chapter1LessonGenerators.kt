@@ -4,6 +4,7 @@ import kotlin.random.Random
 
 internal object Chapter1LessonGenerators {
     private val forbidAutoAndCarPair = setOf("אוטו", "מכונית")
+    private val forbidVehicleSynonyms = setOf("אוטו", "מכונית", "רכב")
 
     private fun pickRandomChoiceAvoidingWords(
         rnd: Random,
@@ -48,6 +49,7 @@ internal object Chapter1LessonGenerators {
         excludeCorrectWordIds: Set<String> = emptySet(),
         alwaysThreeChoices: Boolean = false,
         forbidAutoAndCarTogether: Boolean = false,
+        forbidVehicleSynonymsTogether: Boolean = false,
     ): Question.ImageMatchQuestion {
         require(targetLetter in group)
         val correct = LessonWordCatalog.pickRandomForImageMatch(rnd, targetLetter, excludeCorrectWordIds)
@@ -58,15 +60,20 @@ internal object Chapter1LessonGenerators {
                 2 -> otherLetters.take(1)
                 else -> otherLetters.take(2)
             }
-        val bannedPair =
-            if (forbidAutoAndCarTogether && correct.word in forbidAutoAndCarPair) {
-                forbidAutoAndCarPair
-            } else {
-                emptySet()
-            }
+        var bannedWords = emptySet<String>()
+        if (forbidVehicleSynonymsTogether && correct.word in forbidVehicleSynonyms) {
+            bannedWords = forbidVehicleSynonyms - correct.word
+        } else if (forbidAutoAndCarTogether && correct.word in forbidAutoAndCarPair) {
+            bannedWords = forbidAutoAndCarPair - correct.word
+        }
+
         val wrongChoices =
             wrongPicks.map { letter ->
-                pickRandomChoiceAvoidingWords(rnd, letter, bannedPair)
+                val picked = pickRandomChoiceAvoidingWords(rnd, letter, bannedWords)
+                if (forbidVehicleSynonymsTogether && picked.word in forbidVehicleSynonyms) {
+                    bannedWords = bannedWords + (forbidVehicleSynonyms - picked.word)
+                }
+                picked
             }
         val choices = (wrongChoices + correct.toChoice()).shuffled(rnd)
         return Question.ImageMatchQuestion(

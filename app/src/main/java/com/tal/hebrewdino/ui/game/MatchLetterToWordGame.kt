@@ -76,6 +76,8 @@ fun MatchLetterToWordGame(
     choicePairLimit: Int = 3,
     /** Narrower tiles with more horizontal space between the two columns. */
     compactWideSpread: Boolean = false,
+    /** Scales the letter tiles (background square) only; layout still scales-to-fit if needed. */
+    letterTileSizeMultiplier: Float = 1f,
     /** Scales only the illustration inside the picture card (same idea as [ImageMatchGame]). */
     innerPictureScaleForChoice: (LessonChoice) -> Float = { ch ->
         when {
@@ -219,7 +221,7 @@ fun MatchLetterToWordGame(
         val headerFont = if (compactWideSpread) 22.sp else 26.sp
         val headerH =
             headerPadTop + headerPadBottom + if (compactWideSpread) 34.dp else 40.dp
-        val bottomSafe = if (compactWideSpread) 72.dp else 18.dp
+        val bottomSafe = if (compactWideSpread) 84.dp else 64.dp
 
         Column(modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
             Column(
@@ -276,7 +278,8 @@ fun MatchLetterToWordGame(
                 contentAlignment = Alignment.TopCenter,
             ) {
         val gap = 12.dp
-        val tileH = if (compactWideSpread) 76.dp else 88.dp
+        val baseTileH = if (compactWideSpread) 76.dp else 88.dp
+        val tileH = baseTileH * letterTileSizeMultiplier
         val tileShape = RoundedCornerShape(22.dp)
         val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
 

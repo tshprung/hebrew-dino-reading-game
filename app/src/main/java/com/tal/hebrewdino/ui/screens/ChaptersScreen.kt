@@ -168,6 +168,7 @@ fun ChaptersScreen(
     /** Highest chapter tile (1–10) that can be opened from the map when unlocked. */
     maxSelectableChapterId: Int = 3,
     chaptersProgress: ChaptersProgress,
+    onBackToSeasons: () -> Unit,
     onOpenSettings: () -> Unit,
     onOpenChapter: (Int) -> Unit,
     modifier: Modifier = Modifier,
@@ -267,6 +268,22 @@ fun ChaptersScreen(
                 colors = ChapterNavChipStyles.outlinedButtonColors(),
             ) {
                 Text("הגדרות", style = ChapterNavChipStyles.labelTextStyle())
+            }
+        }
+
+        Box(
+            modifier =
+                Modifier
+                    .align(Alignment.TopStart)
+                    .statusBarsPadding()
+                    .padding(top = 4.dp, start = 8.dp)
+                    .zIndex(1f),
+        ) {
+            OutlinedButton(
+                onClick = onBackToSeasons,
+                colors = ChapterNavChipStyles.outlinedButtonColors(),
+            ) {
+                Text("עונות", style = ChapterNavChipStyles.labelTextStyle())
             }
         }
     }

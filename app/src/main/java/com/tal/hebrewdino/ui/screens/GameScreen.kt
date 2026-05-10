@@ -1174,6 +1174,7 @@ fun GameScreen(
             stationHeaderMode = stationHeaderMode,
             chapterTitle = chapterTitle,
             stageLabel = stageLabel,
+            underBackLabel = if (chapterId == TrainingV1Config.CHAPTER_ID) stageLabel else null,
             modifier =
                 Modifier
                     .fillMaxWidth()
@@ -1200,28 +1201,6 @@ fun GameScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Top,
             ) {
-                if (chapterId == TrainingV1Config.CHAPTER_ID) {
-                    Row(
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .padding(top = 4.dp, bottom = 10.dp),
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(
-                            text = "אימון · $stageLabel",
-                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Black),
-                            color = Color(0xFF0B2B3D).copy(alpha = 0.80f),
-                            textAlign = TextAlign.Center,
-                            modifier =
-                                Modifier
-                                    .background(Color.White.copy(alpha = 0.72f), RoundedCornerShape(999.dp))
-                                    .padding(horizontal = 14.dp, vertical = 8.dp),
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(4.dp))
-                }
                 Box(
                     modifier =
                         Modifier
@@ -2082,7 +2061,8 @@ fun GameScreen(
                                         choicePairLimit = 3,
                                         contentKey = session.currentIndex,
                                         enabled = gameChoicesEnabled,
-                                        compactWideSpread = chapterId == TrainingV1Config.CHAPTER_ID,
+                                        compactWideSpread = false,
+                                        letterTileSizeMultiplier = if (chapterId == TrainingV1Config.CHAPTER_ID) 1.10f else 1f,
                                         onWordPressed = { choiceId ->
                                             speakNow {
                                                 val ch3Clip = "audio/ch3_word_${choiceId}.wav"

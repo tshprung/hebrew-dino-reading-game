@@ -11,6 +11,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -105,6 +106,7 @@ internal fun GameScreenTopChrome(
     stationHeaderMode: StationHeaderMode = StationHeaderMode.None,
     chapterTitle: String = "",
     stageLabel: String = "",
+    underBackLabel: String? = null,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -133,6 +135,22 @@ internal fun GameScreenTopChrome(
                 color = Color(0xFF2E7D32),
                 trackColor = Color(0xFF0B2B3D).copy(alpha = 0.12f),
             )
+        }
+
+        if (!underBackLabel.isNullOrBlank()) {
+            Spacer(modifier = Modifier.height(6.dp))
+            Row(modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    text = underBackLabel,
+                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Black),
+                    color = Color(0xFF0B2B3D).copy(alpha = 0.80f),
+                    textAlign = TextAlign.Center,
+                    modifier =
+                        Modifier
+                            .background(Color.White.copy(alpha = 0.72f), RoundedCornerShape(999.dp))
+                            .padding(horizontal = 12.dp, vertical = 6.dp),
+                )
+            }
         }
 
         if (stationHeaderMode == StationHeaderMode.ChapterTitleAndStage) {

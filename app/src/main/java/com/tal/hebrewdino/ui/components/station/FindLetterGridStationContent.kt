@@ -9,6 +9,7 @@ import com.tal.hebrewdino.ui.domain.InstructionPanelStyle
 import com.tal.hebrewdino.ui.domain.Question
 import com.tal.hebrewdino.ui.domain.StationInstructionCopy
 import com.tal.hebrewdino.ui.domain.StationUiSpec
+import com.tal.hebrewdino.ui.domain.TrainingV1Config
 import com.tal.hebrewdino.ui.game.FindLetterGridGame
 
 /**
@@ -72,7 +73,13 @@ fun FindLetterGridStationContent(
         onCorrectTap = onCorrectTap,
         hintPulseEpoch = hintPulseEpoch,
         hintHeaderPeakScale = if (sagaUsesFindGridAudioStaging) 1.30f else 1.12f,
-        gridLetterSizeMultiplier = if (sagaUsesFindGridAudioStaging) 1.5f else 1f,
+        gridLetterSizeMultiplier =
+            when {
+                sagaUsesFindGridAudioStaging -> 1.5f
+                stationUiSpec.chapterId == TrainingV1Config.CHAPTER_ID &&
+                    stationUiSpec.stationId == TrainingV1Config.STATION_FIND_HEARD_LETTER_IN_GRID -> 1.5f
+                else -> 1f
+            },
         correctCellPeakScale = if (sagaUsesFindGridAudioStaging) 1.30f else 1.12f,
         onCellTapped = onCellTapped,
         onCompleted = onCompleted,

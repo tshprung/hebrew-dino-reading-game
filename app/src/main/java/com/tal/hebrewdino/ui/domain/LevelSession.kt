@@ -336,6 +336,7 @@ class LevelSession(
                                         excludeCorrectWordIds = used,
                                         alwaysThreeChoices = plan.imageMatchAlwaysThreeChoices,
                                         forbidAutoAndCarTogether = plan.chapter1Station6ForbidAutoAndCarTogether,
+                                        forbidVehicleSynonymsTogether = plan.forbidVehicleSynonymsTogether,
                                     )
                                 }
                             used.add(q.correctChoiceId)

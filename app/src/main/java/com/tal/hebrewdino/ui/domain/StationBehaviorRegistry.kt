@@ -345,7 +345,7 @@ object StationBehaviorRegistry {
                     replayMode = StationReplayMode.None,
                     hintMode = StationHintMode.None,
                     imageToWordInstructionText = StationInstructionCopy.TrainingChooseWordForPicture,
-                    contentTopInsetDp = 72f,
+                    contentTopInsetDp = 56f,
                 )
             TrainingV1Config.STATION_FIND_HEARD_LETTER_IN_GRID ->
                 StationUiSpec(
@@ -363,7 +363,7 @@ object StationBehaviorRegistry {
                     findGridInlineInstructionPanelStyle = InstructionPanelStyle.WhiteRounded,
                     findGridSuppressHeaderTargetLetter = true,
                     findGridHideListenOnlyHeaderTargetLetter = true,
-                    contentTopInsetDp = 72f,
+                    contentTopInsetDp = 56f,
                 )
             TrainingV1Config.STATION_WORD_BALLOONS ->
                 popBalloonsSpec(
@@ -379,7 +379,7 @@ object StationBehaviorRegistry {
                     hintDurationMs = null,
                     popBalloonsPopAllLettersBannerInstruction = StationInstructionCopy.TrainingPopWordLetters,
                     balloonPlayAreaStartInsetDp = 96f,
-                    contentTopInsetDp = 72f,
+                    contentTopInsetDp = 56f,
                 )
             TrainingV1Config.STATION_MATCH_LETTER_TO_WORD ->
                 matchLetterToWordSpec(

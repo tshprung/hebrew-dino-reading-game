@@ -61,6 +61,7 @@ import com.tal.hebrewdino.ui.screens.JourneyEndMarker
 import com.tal.hebrewdino.ui.screens.JourneyScreen
 import com.tal.hebrewdino.ui.screens.LevelScreen
 import com.tal.hebrewdino.ui.screens.RewardScreen
+import com.tal.hebrewdino.ui.screens.SeasonsScreen
 import com.tal.hebrewdino.ui.screens.SettingsScreen
 import com.tal.hebrewdino.ui.screens.Chapter2LevelScreen
 import com.tal.hebrewdino.R
@@ -149,7 +150,7 @@ fun AppNav() {
             else -> 3
         }
 
-    val startDestination = NavRoutes.Chapters
+    val startDestination = NavRoutes.Seasons
 
     LaunchedEffect(Unit) {
         progress.repairChapter2ProgressIfNeeded()
@@ -161,6 +162,14 @@ fun AppNav() {
     }
 
     NavHost(navController = navController, startDestination = startDestination) {
+        composable(NavRoutes.Seasons) {
+            SeasonsScreen(
+                onOpenSeason1 = {
+                    navController.navigate(NavRoutes.Chapters) { launchSingleTop = true }
+                },
+            )
+        }
+
         composable(NavRoutes.Chapters) {
             ChaptersScreen(
                 unlockedChapter = unlockedChapter,
@@ -177,6 +186,12 @@ fun AppNav() {
                         chapter5Completed = chapter5Completed,
                         chapter6Completed = chapter6Completed,
                     ),
+                onBackToSeasons = {
+                    navController.navigate(NavRoutes.Seasons) {
+                        popUpTo(NavRoutes.Seasons) { inclusive = false }
+                        launchSingleTop = true
+                    }
+                },
                 onOpenSettings = { navController.navigate(NavRoutes.Settings) },
                 onOpenChapter = { chapterId ->
                     when (chapterId) {
@@ -241,7 +256,12 @@ fun AppNav() {
             val roundIndex = backStackEntry.arguments?.getInt("roundIndex") ?: 1
             TrainingV1RoundScreen(
                 roundIndex = roundIndex,
-                onBack = { navController.popBackStack() },
+                onBack = {
+                    navController.navigate(NavRoutes.Chapters) {
+                        popUpTo(NavRoutes.Chapters) { inclusive = false }
+                        launchSingleTop = true
+                    }
+                },
                 onRoundComplete = {
                     if (roundIndex >= TrainingV1Config.TOTAL_ROUNDS) {
                         navController.navigate(NavRoutes.TrainingComplete) {
