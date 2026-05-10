@@ -17,6 +17,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.border
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -302,9 +304,10 @@ internal fun LetterOptions(
     onPick: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val gap = 12.dp
     FlowRow(
-        horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+        horizontalArrangement = Arrangement.spacedBy(gap, Alignment.CenterHorizontally),
+        verticalArrangement = Arrangement.spacedBy(gap),
         modifier =
             modifier
                 .fillMaxWidth()
@@ -362,6 +365,7 @@ internal fun LetterOptions(
                         color = Color(0xFFE53935).copy(alpha = 0.55f * flash.value),
                         shape = RoundedCornerShape(14.dp),
                     ),
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
             ) {
                 Text(
                     text = letter,
@@ -598,7 +602,7 @@ internal fun PopBalloonsOptions(
         val wPx = with(density) { maxWidth.toPx() }
         val hPx = with(density) { maxHeight.toPx() }
         val balloonWPx = with(density) { 86.dp.toPx() }
-        val balloonHPx = with(density) { 86.dp.toPx() + 18.dp.toPx() + 40.sp.toPx() }
+        val balloonHPx = with(density) { 86.dp.toPx() + 18.dp.toPx() + 38.sp.toPx() }
         val paddingPx = with(density) { 10.dp.toPx() }
         val minCenterDist = hypot(balloonWPx, balloonHPx) * 0.97f
         val minX = paddingPx

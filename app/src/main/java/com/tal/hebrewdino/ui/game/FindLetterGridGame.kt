@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
@@ -18,6 +19,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
@@ -95,6 +97,8 @@ fun FindLetterGridGame(
     floatingTargetLetterHint: String? = null,
     /** Increment to softly pulse all target-letter cells (Episode 4 help רמז). */
     episode4TargetCellsHintEpoch: Int = 0,
+    /** Phone landscape: show a two-column layout (right = instruction/target, left = grid). */
+    compactLandscapeTwoColumn: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     val scope = rememberCoroutineScope()
@@ -166,6 +170,8 @@ fun FindLetterGridGame(
     val gridHorizontalPadding = 6.dp
     val cellScale = cellSideScale.coerceIn(0.5f, 1.5f)
     val nudgeFrac = contentNudgeDownFraction.coerceIn(0f, 0.2f)
+    val isCompactLandscapePhone = false
+    val useTwoColumn = compactLandscapeTwoColumn && isCompactLandscapePhone
 
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
         val nudgeDown = maxHeight * nudgeFrac
@@ -182,135 +188,102 @@ fun FindLetterGridGame(
         val topPaddingH = 6.dp
         val outerW = maxWidth
 
-        Column(
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 4.dp, vertical = 2.dp)
-                    .offset(y = nudgeDown),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            if (contextWordHint == null && inlineInstructionText != null) {
-                Text(
-                    text = inlineInstructionText,
-                    fontSize = if (question.columns >= 4) 27.sp else 30.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF0B2B3D),
-                    textAlign = TextAlign.Center,
-                    modifier =
-                        Modifier
-                            .padding(top = 6.dp, bottom = 6.dp)
-                            .then(
-                                if (inlineInstructionReadablePanel) {
-                                    Modifier
-                                        .background(Color.White.copy(alpha = 0.72f), RoundedCornerShape(18.dp))
-                                        .padding(horizontal = 14.dp, vertical = 8.dp)
-                                } else {
-                                    Modifier
-                                },
-                            ),
-                )
-            }
-            if (floatingTargetLetterHint != null) {
-                TargetLetterHeaderChip(
-                    letter = floatingTargetLetterHint,
-                    fontSize = if (question.columns >= 4) 48.sp else 54.sp,
-                    modifier = Modifier.padding(top = 4.dp, bottom = 6.dp),
-                )
-            }
-            if (!(hideListenOnlyHeaderTargetLetter && contextWordHint == null)) {
-            Box(
+        if (useTwoColumn) {
+            val sidePanelW = 190.dp
+            Row(
                 modifier =
                     Modifier
-                        .scale(headerScale.value)
-                        .clip(RoundedCornerShape(18.dp))
-                        .background(
-                            brush =
-                                Brush.verticalGradient(
-                                    listOf(
-                                        Color(0xFFFFF59D).copy(alpha = 0.95f),
-                                        Color(0xFFFFE082).copy(alpha = 0.88f),
-                                    ),
-                                ),
-                        )
-                        .border(2.dp, Color(0xFFFFA000).copy(alpha = 0.45f), RoundedCornerShape(18.dp))
-                        .padding(horizontal = 20.dp, vertical = 5.dp),
-                contentAlignment = Alignment.Center,
+                        .fillMaxSize()
+                        .padding(horizontal = 4.dp, vertical = 2.dp)
+                        .offset(y = nudgeDown),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                if (contextWordHint != null) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        if (suppressHeaderTargetLetter) {
-                            Text(
-                                text = "מצאו את האות שמופיעה במילה $contextWordHint",
-                                fontSize = if (question.columns >= 4) 15.sp else 16.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFF0B2B3D).copy(alpha = 0.92f),
-                                textAlign = TextAlign.Center,
-                            )
-                        } else {
-                            Text(
-                                text = "מצאו את האות שמופיעה במילה:",
-                                fontSize = if (question.columns >= 4) 14.sp else 15.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFF0B2B3D).copy(alpha = 0.92f),
-                                textAlign = TextAlign.Center,
-                            )
-                            Spacer(modifier = Modifier.height(2.dp))
-                            Text(
-                                text = contextWordHint,
-                                fontSize = if (question.columns >= 4) 26.sp else 30.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFF0B2B3D),
-                                textAlign = TextAlign.Center,
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
+                Column(
+                    modifier = Modifier.width(sidePanelW),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    if (contextWordHint == null && inlineInstructionText != null) {
+                        Text(
+                            text = inlineInstructionText,
+                            fontSize = if (question.columns >= 4) 20.sp else 22.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF0B2B3D),
+                            textAlign = TextAlign.Center,
+                            modifier =
+                                Modifier
+                                    .padding(top = 2.dp, bottom = 6.dp)
+                                    .then(
+                                        if (inlineInstructionReadablePanel) {
+                                            Modifier
+                                                .background(Color.White.copy(alpha = 0.72f), RoundedCornerShape(18.dp))
+                                                .padding(horizontal = 12.dp, vertical = 6.dp)
+                                        } else {
+                                            Modifier
+                                        },
+                                    ),
+                        )
+                    }
+                    if (floatingTargetLetterHint != null) {
+                        TargetLetterHeaderChip(
+                            letter = floatingTargetLetterHint,
+                            fontSize = if (question.columns >= 4) 40.sp else 44.sp,
+                            modifier = Modifier.padding(bottom = 6.dp),
+                        )
+                    }
+                    if (!(hideListenOnlyHeaderTargetLetter && contextWordHint == null)) {
+                        Box(
+                            modifier =
+                                Modifier
+                                    .scale(headerScale.value)
+                                    .clip(RoundedCornerShape(18.dp))
+                                    .background(
+                                        brush =
+                                            Brush.verticalGradient(
+                                                listOf(
+                                                    Color(0xFFFFF59D).copy(alpha = 0.95f),
+                                                    Color(0xFFFFE082).copy(alpha = 0.88f),
+                                                ),
+                                            ),
+                                    )
+                                    .border(2.dp, Color(0xFFFFA000).copy(alpha = 0.45f), RoundedCornerShape(18.dp))
+                                    .padding(horizontal = 16.dp, vertical = 5.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
                             Text(
                                 text = question.targetLetter,
-                                fontSize = if (question.columns >= 4) 48.sp else 56.sp,
+                                fontSize = if (question.columns >= 4) 42.sp else 46.sp,
                                 fontWeight = FontWeight.Black,
                                 color = Color(0xFF0B2B3D),
                                 textAlign = TextAlign.Center,
                             )
                         }
                     }
-                } else {
-                    Text(
-                        text = question.targetLetter,
-                        fontSize = if (question.columns >= 4) 52.sp else 60.sp,
-                        fontWeight = FontWeight.Black,
-                        color = Color(0xFF0B2B3D),
-                        textAlign = TextAlign.Center,
-                    )
                 }
-            }
-            }
-            Spacer(modifier = Modifier.height(4.dp))
-            BoxWithConstraints(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .weight(1f, fill = true)
-                        .padding(horizontal = gridHorizontalPadding, vertical = 6.dp)
-                        .scale(gridScale.value),
-            ) {
-                val cols = question.columns
-                val rows = question.rows
-                val safeMaxHeight = maxHeight.coerceAtLeast(120.dp)
-                val cellSideByWidth = (maxWidth - gap * (cols - 1)) / cols
-                val cellSideByHeight = (safeMaxHeight - gap * (rows - 1)) / rows
-                val cellSideBase =
-                    // Fill the shorter dimension (width/height) while staying symmetric.
-                    minOf(cellSideByWidth, cellSideByHeight).coerceAtLeast(32.dp)
-                // cellSideScale is only allowed to shrink; never enlarge beyond what already fits in both axes.
-                val cellSide = (cellSideBase * cellScale).coerceAtMost(cellSideBase)
-                val gridW = cellSide * cols + gap * (cols - 1)
-                val gridH = cellSide * rows + gap * (rows - 1)
-                // Keep letters readable; shrink the *squares* to fit landscape. Scale glyphs only via [gridLetterSizeMultiplier].
-                val letterSp =
-                    ((if (cols >= 4) 34f else 40f) * gridLetterSizeMultiplier.coerceIn(0.75f, 1.75f)).sp
+
+                BoxWithConstraints(
+                    modifier =
+                        Modifier
+                            .weight(1f, fill = true)
+                            .fillMaxSize()
+                            .padding(horizontal = 2.dp, vertical = 2.dp)
+                            .scale(gridScale.value),
+                ) {
+                    val n = question.cells.size.coerceAtLeast(1)
+                    val displayCols = (question.columns + 2).coerceAtMost(8).coerceAtLeast(question.columns)
+                    val displayRows = ((n + displayCols - 1) / displayCols).coerceAtLeast(1)
+                    val safeMaxHeight = maxHeight.coerceAtLeast(120.dp)
+                    val cellSideByWidth = (maxWidth - gap * (displayCols - 1)) / displayCols
+                    val cellSideByHeight = (safeMaxHeight - gap * (displayRows - 1)) / displayRows
+                    val cellSideBase = minOf(cellSideByWidth, cellSideByHeight).coerceAtLeast(28.dp)
+                    val cellSide = (cellSideBase * cellScale).coerceAtMost(cellSideBase)
+                    val gridW = cellSide * displayCols + gap * (displayCols - 1)
+                    val gridH = cellSide * displayRows + gap * (displayRows - 1)
+                    val letterSp =
+                        ((if (displayCols >= 4) 32f else 38f) * gridLetterSizeMultiplier.coerceIn(0.75f, 1.75f)).sp
 
                 LazyVerticalGrid(
-                    columns = GridCells.Fixed(cols),
+                    columns = GridCells.Fixed(displayCols),
                     horizontalArrangement = Arrangement.spacedBy(gap, Alignment.CenterHorizontally),
                     verticalArrangement = Arrangement.spacedBy(gap, Alignment.CenterVertically),
                     userScrollEnabled = false,
@@ -432,7 +405,314 @@ fun FindLetterGridGame(
                     }
                 }
             }
+            }
+            }
+        } else {
+            Column(
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .padding(
+                            horizontal = if (isCompactLandscapePhone) 2.dp else 4.dp,
+                            vertical = if (isCompactLandscapePhone) 0.dp else 2.dp,
+                        )
+                        .offset(y = nudgeDown),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                if (contextWordHint == null && inlineInstructionText != null) {
+                    Text(
+                        text = inlineInstructionText,
+                        fontSize =
+                            if (isCompactLandscapePhone) {
+                                if (question.columns >= 4) 20.sp else 22.sp
+                            } else {
+                                if (question.columns >= 4) 27.sp else 30.sp
+                            },
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF0B2B3D),
+                        textAlign = TextAlign.Center,
+                        modifier =
+                            Modifier
+                                .padding(
+                                    top = if (isCompactLandscapePhone) 3.dp else 6.dp,
+                                    bottom = if (isCompactLandscapePhone) 3.dp else 6.dp,
+                                )
+                                .then(
+                                    if (inlineInstructionReadablePanel) {
+                                        Modifier
+                                            .background(Color.White.copy(alpha = 0.72f), RoundedCornerShape(18.dp))
+                                            .padding(
+                                                horizontal = 14.dp,
+                                                vertical = if (isCompactLandscapePhone) 5.dp else 8.dp,
+                                            )
+                                    } else {
+                                        Modifier
+                                    },
+                                ),
+                    )
+                }
+                if (floatingTargetLetterHint != null) {
+                    TargetLetterHeaderChip(
+                        letter = floatingTargetLetterHint,
+                        fontSize =
+                            if (isCompactLandscapePhone) {
+                                if (question.columns >= 4) 40.sp else 44.sp
+                            } else {
+                                if (question.columns >= 4) 48.sp else 54.sp
+                            },
+                        modifier =
+                            Modifier.padding(
+                                top = if (isCompactLandscapePhone) 2.dp else 4.dp,
+                                bottom = if (isCompactLandscapePhone) 4.dp else 6.dp,
+                            ),
+                    )
+                }
+                if (!(hideListenOnlyHeaderTargetLetter && contextWordHint == null)) {
+                Box(
+                    modifier =
+                        Modifier
+                            .scale(headerScale.value)
+                            .clip(RoundedCornerShape(18.dp))
+                            .background(
+                                brush =
+                                    Brush.verticalGradient(
+                                        listOf(
+                                            Color(0xFFFFF59D).copy(alpha = 0.95f),
+                                            Color(0xFFFFE082).copy(alpha = 0.88f),
+                                        ),
+                                    ),
+                            )
+                            .border(2.dp, Color(0xFFFFA000).copy(alpha = 0.45f), RoundedCornerShape(18.dp))
+                            .padding(horizontal = 20.dp, vertical = 5.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    if (contextWordHint != null) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            if (suppressHeaderTargetLetter) {
+                                Text(
+                                    text = "מצאו את האות שמופיעה במילה $contextWordHint",
+                                    fontSize =
+                                        if (isCompactLandscapePhone) {
+                                            if (question.columns >= 4) 13.sp else 14.sp
+                                        } else {
+                                            if (question.columns >= 4) 15.sp else 16.sp
+                                        },
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF0B2B3D).copy(alpha = 0.92f),
+                                    textAlign = TextAlign.Center,
+                                )
+                            } else {
+                                Text(
+                                    text = "מצאו את האות שמופיעה במילה:",
+                                    fontSize =
+                                        if (isCompactLandscapePhone) {
+                                            if (question.columns >= 4) 13.sp else 14.sp
+                                        } else {
+                                            if (question.columns >= 4) 14.sp else 15.sp
+                                        },
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF0B2B3D).copy(alpha = 0.92f),
+                                    textAlign = TextAlign.Center,
+                                )
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = contextWordHint,
+                                    fontSize =
+                                        if (isCompactLandscapePhone) {
+                                            if (question.columns >= 4) 20.sp else 22.sp
+                                        } else {
+                                            if (question.columns >= 4) 26.sp else 30.sp
+                                        },
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF0B2B3D),
+                                    textAlign = TextAlign.Center,
+                                )
+                                Spacer(modifier = Modifier.height(if (isCompactLandscapePhone) 2.dp else 4.dp))
+                                Text(
+                                    text = question.targetLetter,
+                                    fontSize =
+                                        if (isCompactLandscapePhone) {
+                                            if (question.columns >= 4) 38.sp else 42.sp
+                                        } else {
+                                            if (question.columns >= 4) 48.sp else 56.sp
+                                        },
+                                    fontWeight = FontWeight.Black,
+                                    color = Color(0xFF0B2B3D),
+                                    textAlign = TextAlign.Center,
+                                )
+                            }
+                        }
+                    } else {
+                        Text(
+                            text = question.targetLetter,
+                            fontSize =
+                                if (isCompactLandscapePhone) {
+                                    if (question.columns >= 4) 40.sp else 44.sp
+                                } else {
+                                    if (question.columns >= 4) 52.sp else 60.sp
+                                },
+                            fontWeight = FontWeight.Black,
+                            color = Color(0xFF0B2B3D),
+                            textAlign = TextAlign.Center,
+                        )
+                    }
+                }
+                }
+                Spacer(modifier = Modifier.height(if (isCompactLandscapePhone) 2.dp else 4.dp))
+                BoxWithConstraints(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .weight(1f, fill = true)
+                            .padding(
+                                horizontal = if (isCompactLandscapePhone) 4.dp else gridHorizontalPadding,
+                                vertical = if (isCompactLandscapePhone) 2.dp else 6.dp,
+                            )
+                            .scale(gridScale.value),
+                ) {
+                    val cols = question.columns
+                    val rows = question.rows
+                    val safeMaxHeight = maxHeight.coerceAtLeast(120.dp)
+                    val cellSideByWidth = (maxWidth - gap * (cols - 1)) / cols
+                    val cellSideByHeight = (safeMaxHeight - gap * (rows - 1)) / rows
+                    val cellSideBase =
+                        // Fill the shorter dimension (width/height) while staying symmetric.
+                        minOf(cellSideByWidth, cellSideByHeight).coerceAtLeast(32.dp)
+                    // cellSideScale is only allowed to shrink; never enlarge beyond what already fits in both axes.
+                    val cellSide = (cellSideBase * cellScale).coerceAtMost(cellSideBase)
+                    val gridW = cellSide * cols + gap * (cols - 1)
+                    val gridH = cellSide * rows + gap * (rows - 1)
+                    // Keep letters readable; shrink the *squares* to fit landscape. Scale glyphs only via [gridLetterSizeMultiplier].
+                    val letterSp =
+                        (
+                            (if (cols >= 4) 34f else 40f) *
+                                gridLetterSizeMultiplier.coerceIn(0.75f, 1.75f) *
+                                if (isCompactLandscapePhone) 0.92f else 1f
+                        ).sp
+                    val letterLineHeight = (letterSp.value * 1.15f).sp
+
+                    LazyVerticalGrid(
+                        columns = GridCells.Fixed(cols),
+                        horizontalArrangement = Arrangement.spacedBy(gap, Alignment.CenterHorizontally),
+                        verticalArrangement = Arrangement.spacedBy(gap, Alignment.CenterVertically),
+                        userScrollEnabled = false,
+                        modifier = Modifier.align(Alignment.Center).size(gridW, gridH),
+                    ) {
+                        itemsIndexed(question.cells, key = { i, _ -> "${contentKey}_$i" }) { index, letter ->
+                            val done = index in found
+                            val scale = scales[index]
+                            val shake = cellShake[index]
+                            val showWrongFlash = wrongFlashIndex == index
+                            Box(
+                                modifier =
+                                    Modifier
+                                        .aspectRatio(1f)
+                                        .shadow(
+                                            elevation = if (done) 8.dp else 6.dp,
+                                            shape = RoundedCornerShape(16.dp),
+                                            clip = false,
+                                        )
+                                        .scale(scale.value)
+                                        .offset { IntOffset(shake.value.roundToInt(), 0) }
+                                        .clip(RoundedCornerShape(16.dp))
+                                        .border(
+                                            width = if (done) 3.5.dp else 2.dp,
+                                            color =
+                                                when {
+                                                    done -> Color(0xFF2E7D32).copy(alpha = 0.95f)
+                                                    else -> Color(0xFFFF8A65).copy(alpha = 0.35f)
+                                                },
+                                            shape = RoundedCornerShape(16.dp),
+                                        )
+                                        .background(
+                                            brush =
+                                                if (done) {
+                                                    Brush.verticalGradient(
+                                                        listOf(
+                                                            Color(0xFFE8F5E9).copy(alpha = 0.98f),
+                                                            Color(0xFF81C784).copy(alpha = 0.65f),
+                                                        ),
+                                                    )
+                                                } else {
+                                                    Brush.verticalGradient(
+                                                        listOf(
+                                                            Color(0xFFFFFDE7).copy(alpha = 0.98f),
+                                                            Color(0xFFFFF9C4).copy(alpha = 0.75f),
+                                                            Color(0xFFFFECB3).copy(alpha = 0.55f),
+                                                        ),
+                                                    )
+                                                },
+                                            shape = RoundedCornerShape(16.dp),
+                                        )
+                                        .clickable(enabled = enabled && !done && !gridFrozen) {
+                                            onLetterTapped?.invoke(letter)
+                                            if (letter == question.targetLetter) {
+                                                onCorrectTap?.invoke()
+                                                val newFound = found + index
+                                                found = newFound
+                                                if (newFound == targetIndices) {
+                                                    gridFrozen = true
+                                                }
+                                                ChildGameAudioHooks.onCorrect()
+                                                scope.launch {
+                                                    scale.snapTo(1f)
+                                                    scale.animateTo(correctCellPeakScale, tween(100))
+                                                    scale.animateTo(1f, spring(dampingRatio = 0.5f, stiffness = 400f))
+                                                }
+                                            } else {
+                                                ChildGameAudioHooks.onWrong()
+                                                onCellTapped(index)
+                                                wrongFlashIndex = index
+                                                scope.launch {
+                                                    delay(200)
+                                                    if (wrongFlashIndex == index) wrongFlashIndex = -1
+                                                }
+                                                scope.launch {
+                                                    val amp = 11f
+                                                    repeat(5) { i ->
+                                                        shake.animateTo(
+                                                            if (i % 2 == 0) amp else -amp,
+                                                            tween(44),
+                                                        )
+                                                    }
+                                                    shake.animateTo(0f, tween(55))
+                                                }
+                                            }
+                                        },
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                if (showWrongFlash) {
+                                    Box(
+                                        Modifier
+                                            .fillMaxSize()
+                                            .background(Color(0xFFE53935).copy(alpha = 0.18f), RoundedCornerShape(16.dp)),
+                                    )
+                                }
+                                Text(
+                                    text = letter,
+                                    fontSize = letterSp,
+                                lineHeight = letterLineHeight,
+                                    fontWeight = FontWeight.Black,
+                                    color = Color(0xFF0B2B3D),
+                                    textAlign = TextAlign.Center,
+                                maxLines = 1,
+                                )
+                                if (done) {
+                                    Box(
+                                        modifier =
+                                            Modifier
+                                                .align(Alignment.TopEnd)
+                                                .padding(6.dp)
+                                                .size(12.dp)
+                                                .background(Color.White.copy(alpha = 0.92f), CircleShape)
+                                                .border(1.5.dp, Color(0xFF2E7D32).copy(alpha = 0.5f), CircleShape),
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
-    }
     }
 }

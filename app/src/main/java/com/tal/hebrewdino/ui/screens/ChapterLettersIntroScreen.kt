@@ -7,10 +7,12 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
@@ -48,6 +50,7 @@ import com.tal.hebrewdino.ui.domain.HebrewLetterOrder
 import com.tal.hebrewdino.ui.components.learning.LetterChoiceTile
 import com.tal.hebrewdino.ui.audio.AudioClips
 import com.tal.hebrewdino.ui.audio.VoicePlayer
+import com.tal.hebrewdino.ui.layout.ScreenFit
 import kotlinx.coroutines.launch
 
 @Composable
@@ -154,6 +157,7 @@ fun ChapterLettersIntroScreen(
     modifier: Modifier = Modifier,
 ) {
     val stableLetters = remember(letters) { letters.distinct() }
+    val isCompactLandscapePhone = ScreenFit.isCompactLandscapePhone()
 
     val context = androidx.compose.ui.platform.LocalContext.current
     val voice = remember { VoicePlayer(context = context) }
@@ -203,50 +207,31 @@ fun ChapterLettersIntroScreen(
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .padding(24.dp),
-            verticalArrangement = Arrangement.Center,
+                    .padding(if (isCompactLandscapePhone) 12.dp else 24.dp),
+            verticalArrangement = Arrangement.SpaceBetween,
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Box(
-                modifier =
-                    Modifier
-                        .clip(RoundedCornerShape(24.dp))
-                        .background(Color.White.copy(alpha = 0.88f))
-                        .padding(18.dp)
-                        .width(560.dp)
-                        .then(
-                            if (lettersAreaMinHeight != null) {
-                                Modifier.heightIn(min = lettersAreaMinHeight)
-                            } else {
-                                Modifier
-                            },
-                        ),
+                modifier = Modifier.fillMaxWidth().weight(1f, fill = true),
+                contentAlignment = if (isCompactLandscapePhone) Alignment.TopCenter else Alignment.Center,
             ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        text = introHeadline,
-                        style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Black),
-                        color = Color(0xFF0B2B3D),
-                        textAlign = TextAlign.Center,
-                    )
-                    if (introSubhead != null) {
-                        Spacer(modifier = Modifier.height(6.dp))
-                        Text(
-                            text = introSubhead,
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-                            color = Color(0xFF0B2B3D).copy(alpha = 0.82f),
-                            textAlign = TextAlign.Center,
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Text(
-                        text = chapterTitle,
-                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                        color = Color(0xFF1565C0),
-                        textAlign = TextAlign.Center,
-                    )
-                    Spacer(modifier = Modifier.height(10.dp))
-
+                val effectiveTileSize = if (isCompactLandscapePhone) minOf(letterTileSize, 66.dp) else letterTileSize
+                Box(
+                    modifier =
+                        Modifier
+                            .clip(RoundedCornerShape(24.dp))
+                            .background(Color.White.copy(alpha = 0.88f))
+                            .padding(if (isCompactLandscapePhone) 12.dp else 18.dp)
+                            .fillMaxWidth()
+                            .widthIn(max = 560.dp)
+                            .then(
+                                if (!isCompactLandscapePhone && lettersAreaMinHeight != null) {
+                                    Modifier.heightIn(min = lettersAreaMinHeight)
+                                } else {
+                                    Modifier
+                                },
+                            ),
+                ) {
                     val letterRows: List<List<String>> =
                         if (letterGridRows >= 2 && stableLetters.size > 1) {
                             val mid = (stableLetters.size + 1) / 2
@@ -257,53 +242,153 @@ fun ChapterLettersIntroScreen(
                         } else {
                             listOf(stableLetters)
                         }
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                    ) {
-                        CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
-                            letterRows.forEach { rowLetters ->
-                                Row(
-                                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                ) {
-                                    rowLetters.forEach { l ->
-                                        LetterChoiceTile(
-                                            letter = l,
-                                            tileSize = letterTileSize,
-                                            haloActive = highlightedLetter == l,
-                                            enabled = false,
-                                            onClick = { },
-                                        )
+
+                    if (isCompactLandscapePhone) {
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                        ) {
+                            Text(
+                                text = introHeadline,
+                                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black),
+                                color = Color(0xFF0B2B3D),
+                                textAlign = TextAlign.Center,
+                            )
+                            if (introSubhead != null) {
+                                Spacer(modifier = Modifier.height(3.dp))
+                                Text(
+                                    text = introSubhead,
+                                    style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
+                                    color = Color(0xFF0B2B3D).copy(alpha = 0.82f),
+                                    textAlign = TextAlign.Center,
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(3.dp))
+                            Text(
+                                text = chapterTitle,
+                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                color = Color(0xFF1565C0),
+                                textAlign = TextAlign.Center,
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            Column(
+                                verticalArrangement = Arrangement.spacedBy(10.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                            ) {
+                                CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+                                    letterRows.forEach { rowLetters ->
+                                        Row(
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                        ) {
+                                            rowLetters.forEach { l ->
+                                                LetterChoiceTile(
+                                                    letter = l,
+                                                    tileSize = effectiveTileSize,
+                                                    haloActive = highlightedLetter == l,
+                                                    enabled = false,
+                                                    onClick = { },
+                                                )
+                                            }
+                                        }
                                     }
                                 }
                             }
+
+                            Spacer(modifier = Modifier.height(10.dp))
+                            OutlinedButton(
+                                onClick = {
+                                    if (!playing) {
+                                        playJob?.cancel()
+                                        playJob = scope.launch { playAll() }
+                                    }
+                                },
+                                enabled = !playing,
+                            ) {
+                                Text("שמע/י את האותיות שוב")
+                            }
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Text(
+                                text = "עכשיו נצא לדרך.",
+                                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
+                                color = Color(0xFF0B2B3D),
+                                textAlign = TextAlign.Center,
+                            )
+                        }
+                    } else {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                text = introHeadline,
+                                style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Black),
+                                color = Color(0xFF0B2B3D),
+                                textAlign = TextAlign.Center,
+                            )
+                            if (introSubhead != null) {
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text(
+                                    text = introSubhead,
+                                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                                    color = Color(0xFF0B2B3D).copy(alpha = 0.82f),
+                                    textAlign = TextAlign.Center,
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Text(
+                                text = chapterTitle,
+                                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                                color = Color(0xFF1565C0),
+                                textAlign = TextAlign.Center,
+                            )
+                            Spacer(modifier = Modifier.height(10.dp))
+
+                            Column(
+                                verticalArrangement = Arrangement.spacedBy(12.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                            ) {
+                                CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+                                    letterRows.forEach { rowLetters ->
+                                        Row(
+                                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                        ) {
+                                            rowLetters.forEach { l ->
+                                                LetterChoiceTile(
+                                                    letter = l,
+                                                    tileSize = effectiveTileSize,
+                                                    haloActive = highlightedLetter == l,
+                                                    enabled = false,
+                                                    onClick = { },
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(14.dp))
+                            OutlinedButton(
+                                onClick = {
+                                    if (!playing) {
+                                        playJob?.cancel()
+                                        playJob = scope.launch { playAll() }
+                                    }
+                                },
+                                enabled = !playing,
+                            ) {
+                                Text("שמע/י את האותיות שוב")
+                            }
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "עכשיו נצא לדרך — ובשלבים לא נחזור על ההגייה.",
+                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                color = Color(0xFF0B2B3D),
+                                textAlign = TextAlign.Center,
+                            )
                         }
                     }
-
-                    Spacer(modifier = Modifier.height(14.dp))
-                    OutlinedButton(
-                        onClick = {
-                            if (!playing) {
-                                playJob?.cancel()
-                                playJob = scope.launch { playAll() }
-                            }
-                        },
-                        enabled = !playing,
-                    ) {
-                        Text("שמע/י את האותיות שוב")
-                    }
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = "עכשיו נצא לדרך — ובשלבים לא נחזור על ההגייה.",
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                        color = Color(0xFF0B2B3D),
-                        textAlign = TextAlign.Center,
-                    )
                 }
             }
-
-            Spacer(modifier = Modifier.height(18.dp))
 
             Button(
                 onClick = {
@@ -314,7 +399,7 @@ fun ChapterLettersIntroScreen(
                     highlightedLetter = null
                     onContinue()
                 },
-                modifier = Modifier.width(180.dp),
+                modifier = Modifier.width(if (isCompactLandscapePhone) 160.dp else 180.dp),
             ) {
                 Text("המשך")
             }

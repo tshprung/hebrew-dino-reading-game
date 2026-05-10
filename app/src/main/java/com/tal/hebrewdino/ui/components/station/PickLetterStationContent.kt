@@ -67,6 +67,9 @@ fun ColumnScope.PickLetterStationContent(
     onPick: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val instructionFont = 39.sp
+    val instructionPadV = 8.dp
+    val headerChipFont = 56.sp
     Box(
         modifier =
             modifier
@@ -96,7 +99,7 @@ fun ColumnScope.PickLetterStationContent(
                         Modifier
                             .padding(start = 8.dp, end = 8.dp, bottom = 6.dp)
                             .background(Color.White.copy(alpha = 0.72f), RoundedCornerShape(18.dp))
-                            .padding(horizontal = 14.dp, vertical = 8.dp),
+                            .padding(horizontal = 14.dp, vertical = instructionPadV),
                 )
                 Row(
                     horizontalArrangement = Arrangement.Center,
@@ -123,14 +126,14 @@ fun ColumnScope.PickLetterStationContent(
             if (highlightedInWordWord == null && showListenOnlyHebrewPanel && listenOnlyPanelInstruction != null) {
                 Text(
                     text = listenOnlyPanelInstruction,
-                    fontSize = 39.sp,
+                    fontSize = instructionFont,
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFF0B2B3D),
                     textAlign = TextAlign.Center,
                     modifier =
                         Modifier
                             .background(Color.White.copy(alpha = 0.72f), RoundedCornerShape(18.dp))
-                            .padding(horizontal = 14.dp, vertical = 8.dp),
+                            .padding(horizontal = 14.dp, vertical = instructionPadV),
                 )
                 Spacer(modifier = Modifier.height(10.dp))
                 OutlinedButton(
@@ -147,24 +150,26 @@ fun ColumnScope.PickLetterStationContent(
             } else if (highlightedInWordWord == null && pickLetterInstructionOverride != null) {
                 Text(
                     text = pickLetterInstructionOverride,
-                    fontSize = 39.sp,
+                    fontSize = instructionFont,
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFF0B2B3D),
                     textAlign = TextAlign.Center,
                     modifier =
                         Modifier
                             .background(Color.White.copy(alpha = 0.72f), RoundedCornerShape(18.dp))
-                            .padding(horizontal = 14.dp, vertical = 8.dp),
+                            .padding(horizontal = 14.dp, vertical = instructionPadV),
                 )
                 if (temporaryHintLetter != null) {
                     TargetLetterHeaderChip(
                         letter = temporaryHintLetter,
+                        fontSize = headerChipFont,
                         modifier = Modifier.padding(top = 10.dp),
                     )
                     Spacer(modifier = Modifier.height(18.dp))
                 } else if (showTargetLetterChip) {
                     TargetLetterHeaderChip(
                         letter = question.correctAnswer,
+                        fontSize = headerChipFont,
                         modifier = Modifier.padding(top = 10.dp),
                     )
                     Spacer(modifier = Modifier.height(18.dp))
@@ -181,16 +186,18 @@ fun ColumnScope.PickLetterStationContent(
                     modifier =
                         Modifier
                             .background(Color.White.copy(alpha = 0.72f), RoundedCornerShape(18.dp))
-                            .padding(horizontal = 14.dp, vertical = 8.dp),
+                            .padding(horizontal = 14.dp, vertical = instructionPadV),
                 )
                 TargetLetterHeaderChip(
                     letter = question.correctAnswer,
+                    fontSize = headerChipFont,
                     modifier = Modifier.padding(top = 10.dp),
                 )
                 Spacer(modifier = Modifier.height(18.dp))
             } else if (highlightedInWordWord == null && showTargetLetterChip) {
                 TargetLetterHeaderChip(
                     letter = question.correctAnswer,
+                    fontSize = headerChipFont,
                     modifier = Modifier.padding(top = 4.dp),
                 )
                 Spacer(modifier = Modifier.height(10.dp))

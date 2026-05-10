@@ -7,8 +7,10 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
@@ -96,33 +98,185 @@ fun PictureStartsWithGame(
     onPickLetter: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(
-        modifier =
-            modifier
-                .fillMaxWidth()
-                .offset { IntOffset(shakePx.roundToInt(), 0) },
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Text(
-            text = instructionText,
-            style =
-                MaterialTheme.typography.titleMedium.copy(
-                    fontSize = MaterialTheme.typography.titleMedium.fontSize * 2,
-                    fontWeight = if (chapterId == 6) FontWeight.Black else MaterialTheme.typography.titleMedium.fontWeight,
-                ),
-            color = Color(0xFF0B2B3D),
-            textAlign = TextAlign.Center,
+    val isCompactLandscapePhone = false
+    val useTwoColumn = false
+    val instructionScale = 2f
+
+    if (useTwoColumn) {
+        Row(
             modifier =
-                if (instructionReadablePanel) {
+                modifier
+                    .fillMaxWidth()
+                    .fillMaxHeight()
+                    .offset { IntOffset(shakePx.roundToInt(), 0) },
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally),
+        ) {
+            Column(
+                modifier =
                     Modifier
-                        .background(Color.White.copy(alpha = 0.72f), RoundedCornerShape(18.dp))
-                        .padding(horizontal = 14.dp, vertical = 8.dp)
+                        .widthIn(max = 260.dp)
+                        .fillMaxHeight(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Text(
+                    text = instructionText,
+                    style =
+                        MaterialTheme.typography.titleMedium.copy(
+                            fontSize = MaterialTheme.typography.titleMedium.fontSize * instructionScale,
+                            fontWeight = if (chapterId == 6) FontWeight.Black else MaterialTheme.typography.titleMedium.fontWeight,
+                        ),
+                    color = Color(0xFF0B2B3D),
+                    textAlign = TextAlign.Center,
+                    modifier =
+                        if (instructionReadablePanel) {
+                            Modifier
+                                .background(Color.White.copy(alpha = 0.72f), RoundedCornerShape(18.dp))
+                                .padding(horizontal = 14.dp, vertical = 5.dp)
+                        } else {
+                            Modifier
+                        },
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                BoxWithConstraints(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
+                    val rowInnerWidth = maxWidth
+                    val frameCap =
+                        pictureFrameMaxWidthFraction?.let { f ->
+                            (rowInnerWidth * f.coerceIn(0.20f, 1f)).coerceAtLeast(pictureFrameMinWidth)
+                        } ?: rowInnerWidth
+                    val rowForSizing = rowInnerWidth.coerceAtMost(frameCap)
+                    val choiceCount = 3
+                    val density = LocalDensity.current
+                    Column(
+                        modifier =
+                            Modifier
+                                .then(
+                                    if (pictureFrameMaxWidthFraction != null) {
+                                        Modifier.widthIn(max = frameCap)
+                                    } else {
+                                        Modifier.fillMaxWidth()
+                                    },
+                                )
+                                .padding(horizontal = 0.dp, vertical = 0.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        if (temporaryStartingLetterHint != null) {
+                            TargetLetterHeaderChip(
+                                letter = temporaryStartingLetterHint,
+                                fontSize = if (rowInnerWidth < 380.dp) 40.sp else 44.sp,
+                                modifier = Modifier.padding(bottom = 4.dp),
+                            )
+                        }
+                        val choice =
+                            LessonChoice(
+                                id = question.catalogEntryId,
+                                letter = question.correctLetter,
+                                word = question.word,
+                                tintArgb = question.tintArgb,
+                                tileDrawable = question.tileDrawable,
+                            )
+
+                        val cardGap = 8.dp
+                        var cardW =
+                            ScreenFit.rowChildWidthDp(
+                                rowInnerWidth = rowForSizing,
+                                count = choiceCount,
+                                gap = cardGap,
+                                minEach = 72.dp,
+                                maxEach = 168.dp,
+                            )
+                        val effectivePictureSizeMultiplier = pictureSizeMultiplier * 0.92f
+                        cardW =
+                            (cardW * effectivePictureSizeMultiplier).coerceAtMost(
+                                (rowForSizing - cardGap * (choiceCount - 1)) / choiceCount,
+                            )
+                        val cardH = cardW * LessonChoiceCardPictureAspect
+                        val captionSp =
+                            captionFontSizeForWordCard(
+                                density = density,
+                                cardWidth = cardW,
+                                word = question.word,
+                                sizeMultiplier = promptWordSizeMultiplier,
+                                chapterId = chapterId,
+                                stationId = stationId,
+                            )
+                        val pictureTapReplays = onPictureTapReplayWord != null
+                        LessonChoiceCard(
+                            choice = choice,
+                            enabled = enabled && pictureTapReplays,
+                            scale = 1f,
+                            showWordCaption = showWordCaption,
+                            cardWidth = cardW,
+                            cardHeight = cardH,
+                            captionFontSize = captionSp,
+                            innerPictureScale = innerPictureScale,
+                            isCorrectPick = false,
+                            onClick = { if (pictureTapReplays) onPictureTapReplayWord?.invoke() },
+                        )
+                    }
+                }
+            }
+
+            val orderedLetters = pictureStartsWithOrderedLetters(sortOptionLetters, question.optionLetters)
+            val displayLetters =
+                if (pinnedCorrectLetter != null) {
+                    listOf(pinnedCorrectLetter)
                 } else {
-                    Modifier
-                },
-        )
-        Spacer(modifier = Modifier.height(12.dp))
-        BoxWithConstraints(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
+                    orderedLetters
+                }
+            Column(
+                modifier = Modifier.weight(1f, fill = true).fillMaxHeight(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center,
+            ) {
+                CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+                    LetterOptions(
+                        options = displayLetters,
+                        enabled = enabled,
+                        shakePx = 0f,
+                        entryPulseEpoch = entryPulseEpoch,
+                        hintPulseLetter = hintCorrectLetter,
+                        hintPulseEpoch = hintPulseEpoch,
+                        correctPulseLetter = correctPulseLetter,
+                        correctPulseEpoch = correctPulseEpoch,
+                        wrongFlashLetter = wrongFlashLetter,
+                        wrongFlashEpoch = wrongFlashEpoch,
+                        onPick = onPickLetter,
+                    )
+                }
+            }
+        }
+    } else {
+        Column(
+            modifier =
+                modifier
+                    .fillMaxWidth()
+                    .offset { IntOffset(shakePx.roundToInt(), 0) },
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text(
+                text = instructionText,
+                style =
+                    MaterialTheme.typography.titleMedium.copy(
+                        fontSize = MaterialTheme.typography.titleMedium.fontSize * instructionScale,
+                        fontWeight = if (chapterId == 6) FontWeight.Black else MaterialTheme.typography.titleMedium.fontWeight,
+                    ),
+                color = Color(0xFF0B2B3D),
+                textAlign = TextAlign.Center,
+                modifier =
+                    if (instructionReadablePanel) {
+                        Modifier
+                            .background(Color.White.copy(alpha = 0.72f), RoundedCornerShape(18.dp))
+                            .padding(
+                                horizontal = 14.dp,
+                                vertical = if (isCompactLandscapePhone) 5.dp else 8.dp,
+                            )
+                    } else {
+                        Modifier
+                    },
+            )
+            Spacer(modifier = Modifier.height(if (isCompactLandscapePhone) 6.dp else 12.dp))
+            BoxWithConstraints(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
             val rowInnerWidth = maxWidth
             val frameCap =
                 pictureFrameMaxWidthFraction?.let { f ->
@@ -147,8 +301,13 @@ fun PictureStartsWithGame(
                 if (temporaryStartingLetterHint != null) {
                     TargetLetterHeaderChip(
                         letter = temporaryStartingLetterHint,
-                        fontSize = if (rowInnerWidth < 380.dp) 48.sp else 54.sp,
-                        modifier = Modifier.padding(bottom = 8.dp),
+                        fontSize =
+                            if (isCompactLandscapePhone) {
+                                if (rowInnerWidth < 380.dp) 40.sp else 44.sp
+                            } else {
+                                if (rowInnerWidth < 380.dp) 48.sp else 54.sp
+                            },
+                        modifier = Modifier.padding(bottom = if (isCompactLandscapePhone) 4.dp else 8.dp),
                     )
                 }
                 val choice =
@@ -199,29 +358,30 @@ fun PictureStartsWithGame(
                     onClick = { if (pictureTapReplays) onPictureTapReplayWord?.invoke() },
                 )
             }
-        }
-        Spacer(modifier = Modifier.height(16.dp))
-        val orderedLetters = pictureStartsWithOrderedLetters(sortOptionLetters, question.optionLetters)
-        val displayLetters =
-            if (pinnedCorrectLetter != null) {
-                listOf(pinnedCorrectLetter)
-            } else {
-                orderedLetters
             }
-        CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
-            LetterOptions(
-                options = displayLetters,
-                enabled = enabled,
-                shakePx = 0f,
-                entryPulseEpoch = entryPulseEpoch,
-                hintPulseLetter = hintCorrectLetter,
-                hintPulseEpoch = hintPulseEpoch,
-                correctPulseLetter = correctPulseLetter,
-                correctPulseEpoch = correctPulseEpoch,
-                wrongFlashLetter = wrongFlashLetter,
-                wrongFlashEpoch = wrongFlashEpoch,
-                onPick = onPickLetter,
-            )
+            Spacer(modifier = Modifier.height(if (isCompactLandscapePhone) 8.dp else 16.dp))
+            val orderedLetters = pictureStartsWithOrderedLetters(sortOptionLetters, question.optionLetters)
+            val displayLetters =
+                if (pinnedCorrectLetter != null) {
+                    listOf(pinnedCorrectLetter)
+                } else {
+                    orderedLetters
+                }
+            CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+                LetterOptions(
+                    options = displayLetters,
+                    enabled = enabled,
+                    shakePx = 0f,
+                    entryPulseEpoch = entryPulseEpoch,
+                    hintPulseLetter = hintCorrectLetter,
+                    hintPulseEpoch = hintPulseEpoch,
+                    correctPulseLetter = correctPulseLetter,
+                    correctPulseEpoch = correctPulseEpoch,
+                    wrongFlashLetter = wrongFlashLetter,
+                    wrongFlashEpoch = wrongFlashEpoch,
+                    onPick = onPickLetter,
+                )
+            }
         }
     }
 }

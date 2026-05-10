@@ -1,5 +1,6 @@
 package com.tal.hebrewdino.ui.layout
 
+import android.content.res.Configuration
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.Dp
@@ -64,5 +65,25 @@ object ScreenFit {
         val raw = (rowInnerWidth - gap * (n - 1).coerceAtLeast(0)) / n
         val lower = minOf(minEach, raw)
         return raw.coerceIn(lower, maxEach)
+    }
+
+    /**
+     * Phone-landscape / compact-height detection gate for layout tweaks.
+     *
+     * Rules:
+     * - Landscape orientation
+     * - Compact height (phones in landscape)
+     * - Not a tablet (based on smallestScreenWidthDp)
+     */
+    @Composable
+    fun isCompactLandscapePhone(
+        heightThresholdDp: Int = 500,
+        tabletSmallestWidthDp: Int = 600,
+    ): Boolean {
+        val c = LocalConfiguration.current
+        val isLandscape = c.orientation == Configuration.ORIENTATION_LANDSCAPE
+        val isCompactHeight = c.screenHeightDp in 1 until heightThresholdDp
+        val isTablet = c.smallestScreenWidthDp >= tabletSmallestWidthDp
+        return isLandscape && isCompactHeight && !isTablet
     }
 }

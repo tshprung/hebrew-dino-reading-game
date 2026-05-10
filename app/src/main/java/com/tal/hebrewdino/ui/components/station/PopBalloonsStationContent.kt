@@ -102,6 +102,10 @@ fun PopBalloonsInstructionHeaderBlock(
     station2PinnedBalloonColor: Color?,
     modifier: Modifier = Modifier,
 ) {
+    val instructionFontSize = 30.sp
+    val instructionPadV = 8.dp
+    val topPad = 8.dp
+    val bottomPad = 10.dp
     // Same as GameScreen’s outer balloon Column: center children in full width (RTL-safe).
     Column(
         modifier = modifier.fillMaxWidth(),
@@ -113,19 +117,19 @@ fun PopBalloonsInstructionHeaderBlock(
                     modifier =
                         Modifier
                             .fillMaxWidth()
-                            .padding(top = 8.dp, bottom = 10.dp),
+                            .padding(top = topPad, bottom = bottomPad),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     Text(
                         text = balloonInstructionOverride ?: "פוצץ את הבלונים עם האות:",
-                        fontSize = 30.sp,
+                        fontSize = instructionFontSize,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFF0B2B3D),
                         textAlign = TextAlign.Center,
                         modifier =
                             Modifier
                                 .background(Color.White.copy(alpha = 0.72f), RoundedCornerShape(18.dp))
-                                .padding(horizontal = 14.dp, vertical = 8.dp),
+                                .padding(horizontal = 14.dp, vertical = instructionPadV),
                     )
                     if (episode4HelpSt15 && episode4HelpActiveHintLetter != null) {
                         Spacer(modifier = Modifier.height(10.dp))
@@ -144,15 +148,15 @@ fun PopBalloonsInstructionHeaderBlock(
                             } else {
                                 "פוצץ את הבלונים עם האות:"
                             },
-                    fontSize = 30.sp,
+                    fontSize = instructionFontSize,
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFF0B2B3D),
                     textAlign = TextAlign.Center,
                     modifier =
                         Modifier
-                            .padding(top = 8.dp, bottom = 10.dp)
+                            .padding(top = topPad, bottom = bottomPad)
                             .background(Color.White.copy(alpha = 0.72f), RoundedCornerShape(18.dp))
-                            .padding(horizontal = 14.dp, vertical = 8.dp),
+                            .padding(horizontal = 14.dp, vertical = instructionPadV),
                 )
                 Row(
                     modifier =
@@ -186,15 +190,15 @@ fun PopBalloonsInstructionHeaderBlock(
                                 } else {
                                     com.tal.hebrewdino.ui.domain.StationInstructionCopy.PopBalloonsWithLetter
                                 },
-                        fontSize = 30.sp,
+                        fontSize = instructionFontSize,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFF0B2B3D),
                         textAlign = TextAlign.Center,
                         modifier =
                             Modifier
-                                .padding(top = 8.dp, bottom = 10.dp)
+                                .padding(top = topPad, bottom = bottomPad)
                                 .background(Color.White.copy(alpha = 0.72f), RoundedCornerShape(18.dp))
-                                .padding(horizontal = 14.dp, vertical = 8.dp),
+                                .padding(horizontal = 14.dp, vertical = instructionPadV),
                     )
                 }
                 if (!listenOnly) {

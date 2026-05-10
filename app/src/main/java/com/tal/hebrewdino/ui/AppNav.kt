@@ -150,6 +150,7 @@ fun AppNav() {
             else -> 3
         }
 
+    // TODO: Future: add app title/logo opening screen before Seasons.
     val startDestination = NavRoutes.Seasons
 
     LaunchedEffect(Unit) {

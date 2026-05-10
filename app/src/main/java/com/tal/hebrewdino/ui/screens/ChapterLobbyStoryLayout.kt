@@ -4,14 +4,20 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
@@ -31,12 +37,14 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.tal.hebrewdino.R
 import com.tal.hebrewdino.ui.audio.VoicePlayer
 import com.tal.hebrewdino.ui.components.AnimatedTalkingCharacter
 import com.tal.hebrewdino.ui.components.learning.StoryEggStrip
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import com.tal.hebrewdino.ui.layout.ScreenFit
 
 enum class ChapterLobbyCompanion {
     DinoOnly,
@@ -93,6 +101,7 @@ fun ChapterLobbyStoryLayout(
     }
 
     val talking = if (voiceAssetPath != null) autoNarrationPlaying else narrationPlaying
+    val isCompactLandscapePhone = ScreenFit.isCompactLandscapePhone()
 
     Box(modifier = modifier.fillMaxSize()) {
         Image(
@@ -106,7 +115,7 @@ fun ChapterLobbyStoryLayout(
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .padding(24.dp),
+                    .padding(if (isCompactLandscapePhone) 12.dp else 24.dp),
             verticalArrangement = Arrangement.SpaceBetween,
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
@@ -121,50 +130,123 @@ fun ChapterLobbyStoryLayout(
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Box(
-                    modifier =
-                        Modifier
-                            .clip(RoundedCornerShape(24.dp))
-                            .background(Color.White.copy(alpha = 0.88f))
-                            .padding(18.dp)
-                            .width(560.dp),
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            text = title,
-                            style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Black),
-                            color = Color(0xFF0B2B3D),
-                            textAlign = TextAlign.Center,
-                        )
-                        Spacer(modifier = Modifier.height(10.dp))
-                        if (betweenTitleAndBody != null) {
-                            betweenTitleAndBody()
-                            Spacer(modifier = Modifier.height(10.dp))
-                        }
-                        Text(
-                            text = body,
-                            style = MaterialTheme.typography.titleLarge,
-                            color = Color(0xFF0B2B3D),
-                            textAlign = TextAlign.Center,
-                        )
-                        Spacer(modifier = Modifier.height(14.dp))
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
-                            AnimatedTalkingCharacter(
-                                idleRes = R.drawable.dino_idle,
-                                talkFrameResIds = dinoTalkFrames,
-                                isTalking = talking,
-                                modifier = Modifier.size(92.dp),
-                                contentDescription = dinoContentDescription,
-                            )
-                            if (companion == ChapterLobbyCompanion.DinoAndMom) {
-                                Spacer(modifier = Modifier.width(14.dp))
-                                AnimatedTalkingCharacter(
-                                    idleRes = R.drawable.mom_idle,
-                                    talkFrameResIds = momTalkFrames,
-                                    isTalking = talking,
-                                    modifier = Modifier.size(92.dp),
-                                    contentDescription = "אמא דינוזאור",
+                BoxWithConstraints(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    Box(
+                        modifier =
+                            Modifier
+                                .heightIn(max = maxHeight)
+                                .clip(RoundedCornerShape(24.dp))
+                                .background(Color.White.copy(alpha = 0.88f))
+                                .padding(if (isCompactLandscapePhone) 12.dp else 18.dp)
+                                .fillMaxWidth()
+                                .widthIn(max = 560.dp),
+                    ) {
+                        if (isCompactLandscapePhone) {
+                            val scroll = rememberScrollState()
+                            val characterSize = 112.dp
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally),
+                            ) {
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    modifier = Modifier.weight(1f, fill = true).verticalScroll(scroll),
+                                ) {
+                                    Text(
+                                        text = title,
+                                        style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Black),
+                                        color = Color(0xFF0B2B3D),
+                                        textAlign = TextAlign.Center,
+                                    )
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    if (betweenTitleAndBody != null) {
+                                        betweenTitleAndBody()
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                    }
+                                    Text(
+                                        text = body,
+                                        style =
+                                            MaterialTheme.typography.bodyLarge.copy(
+                                                fontWeight = FontWeight.SemiBold,
+                                                lineHeight = 18.sp,
+                                            ),
+                                        color = Color(0xFF0B2B3D),
+                                        textAlign = TextAlign.Center,
+                                    )
+                                    Spacer(modifier = Modifier.height(6.dp))
+                                }
+
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    modifier =
+                                        Modifier.width(
+                                            characterSize *
+                                                if (companion == ChapterLobbyCompanion.DinoAndMom) {
+                                                    1.5f
+                                                } else {
+                                                    1.15f
+                                                },
+                                        ),
+                                ) {
+                                    AnimatedTalkingCharacter(
+                                        idleRes = R.drawable.dino_idle,
+                                        talkFrameResIds = dinoTalkFrames,
+                                        isTalking = talking,
+                                        modifier = Modifier.size(characterSize),
+                                        contentDescription = dinoContentDescription,
+                                    )
+                                    if (companion == ChapterLobbyCompanion.DinoAndMom) {
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                        AnimatedTalkingCharacter(
+                                            idleRes = R.drawable.mom_idle,
+                                            talkFrameResIds = momTalkFrames,
+                                            isTalking = talking,
+                                            modifier = Modifier.size(characterSize * 0.85f),
+                                            contentDescription = "אמא דינוזאור",
+                                        )
+                                    }
+                                }
+                            }
+                        } else {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(
+                                    text = title,
+                                    style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Black),
+                                    color = Color(0xFF0B2B3D),
+                                    textAlign = TextAlign.Center,
                                 )
+                                Spacer(modifier = Modifier.height(10.dp))
+                                if (betweenTitleAndBody != null) {
+                                    betweenTitleAndBody()
+                                    Spacer(modifier = Modifier.height(10.dp))
+                                }
+                                Text(
+                                    text = body,
+                                    style = MaterialTheme.typography.titleLarge,
+                                    color = Color(0xFF0B2B3D),
+                                    textAlign = TextAlign.Center,
+                                )
+                                Spacer(modifier = Modifier.height(14.dp))
+                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
+                                    AnimatedTalkingCharacter(
+                                        idleRes = R.drawable.dino_idle,
+                                        talkFrameResIds = dinoTalkFrames,
+                                        isTalking = talking,
+                                        modifier = Modifier.size(92.dp),
+                                        contentDescription = dinoContentDescription,
+                                    )
+                                    if (companion == ChapterLobbyCompanion.DinoAndMom) {
+                                        Spacer(modifier = Modifier.width(14.dp))
+                                        AnimatedTalkingCharacter(
+                                            idleRes = R.drawable.mom_idle,
+                                            talkFrameResIds = momTalkFrames,
+                                            isTalking = talking,
+                                            modifier = Modifier.size(92.dp),
+                                            contentDescription = "אמא דינוזאור",
+                                        )
+                                    }
+                                }
                             }
                         }
                     }

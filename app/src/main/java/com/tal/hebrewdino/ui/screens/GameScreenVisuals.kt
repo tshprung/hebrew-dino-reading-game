@@ -180,17 +180,20 @@ internal fun GameScreenDinoLayer(
     dinoSlip: Animatable<Float, AnimationVector1D>,
     dinoTilt: Animatable<Float, AnimationVector1D>,
     dinoScale: Animatable<Float, AnimationVector1D>,
+    modifier: Modifier = Modifier,
 ) {
     AnimatedTalkingCharacter(
         idleRes = idleRes,
         talkFrameResIds = talkFrameResIds,
         isTalking = isTalking,
         modifier =
-            Modifier
+            modifier.then(
+                Modifier
                 .offset { IntOffset((dinoForward.value + dinoSlip.value).toInt(), 0) }
                 .graphicsLayer { rotationZ = dinoTilt.value }
                 .size(88.dp)
                 .scale(dinoScale.value),
+            ),
         contentDescription = "דינו",
     )
 }

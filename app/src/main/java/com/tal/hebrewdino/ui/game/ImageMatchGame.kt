@@ -13,9 +13,11 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -88,6 +90,8 @@ fun ImageMatchGame(
     var successChoiceId by remember(contentKey) { mutableStateOf<String?>(null) }
     var wrongFlashChoiceId by remember(contentKey) { mutableStateOf<String?>(null) }
     var wrongFlashEpoch by remember(contentKey) { mutableStateOf(0) }
+    val isCompactLandscapePhone = false
+    val useTwoColumn = false
     LaunchedEffect(contentKey) {
         successChoiceId = null
         wrongFlashChoiceId = null
@@ -97,12 +101,18 @@ fun ImageMatchGame(
         BoxWithConstraints(
             modifier =
                 Modifier
-                    .fillMaxWidth()
+                    .then(
+                        if (useTwoColumn) {
+                            Modifier.fillMaxSize()
+                        } else {
+                            Modifier.fillMaxWidth()
+                        },
+                    )
                     .align(Alignment.TopCenter),
         ) {
             val rowInnerWidth = maxWidth
             val choiceCount = question.choices.size.coerceAtLeast(1)
-            val cardGap = 10.dp
+            val cardGap = if (isCompactLandscapePhone) 8.dp else 10.dp
             var cardW =
                 ScreenFit.rowChildWidthDp(
                     rowInnerWidth = rowInnerWidth,
@@ -111,140 +121,328 @@ fun ImageMatchGame(
                     minEach = 72.dp,
                     maxEach = 168.dp,
                 )
-            cardW = (cardW * pictureSizeMultiplier).coerceAtMost((rowInnerWidth - cardGap * (choiceCount - 1)) / choiceCount)
+            val effectivePictureSizeMultiplier =
+                if (isCompactLandscapePhone) {
+                    pictureSizeMultiplier * 0.88f
+                } else {
+                    pictureSizeMultiplier
+                }
+            cardW =
+                (cardW * effectivePictureSizeMultiplier).coerceAtMost(
+                    (rowInnerWidth - cardGap * (choiceCount - 1)) / choiceCount,
+                )
             val cardH = cardW * LessonChoiceCardPictureAspect
             val density = LocalDensity.current
             val narrowRow = rowInnerWidth < 380.dp
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.fillMaxWidth().padding(top = headerTopPaddingDp.dp),
-            ) {
-                if (headerInstructionText != null) {
-                    Text(
-                        text = headerInstructionText,
-                        style =
-                            MaterialTheme.typography.titleMedium.copy(
-                                fontSize = MaterialTheme.typography.titleMedium.fontSize * headerInstructionFontScale,
-                                fontWeight = FontWeight.Bold,
-                            ),
-                        color = Color(0xFF0B2B3D),
-                        textAlign = TextAlign.Center,
-                        modifier =
-                            Modifier
-                                .padding(horizontal = 8.dp)
-                                .then(
-                                    if (readableInstructionHeaderPanel) {
-                                        Modifier
-                                            .background(Color.White.copy(alpha = 0.72f), RoundedCornerShape(18.dp))
-                                            .padding(horizontal = 14.dp, vertical = 8.dp)
-                                    } else {
-                                        Modifier
-                                    },
-                                ),
+            if (useTwoColumn) {
+                val sidePanelW = 190.dp
+                val cardsAreaW = (rowInnerWidth - sidePanelW - 10.dp).coerceAtLeast(240.dp)
+                val cardGapTwo = 8.dp
+                var cardWTwo =
+                    ScreenFit.rowChildWidthDp(
+                        rowInnerWidth = cardsAreaW,
+                        count = choiceCount,
+                        gap = cardGapTwo,
+                        minEach = 68.dp,
+                        maxEach = 150.dp,
                     )
-                    Spacer(modifier = Modifier.height(6.dp))
-                }
-                if (headerPromptWord != null) {
-                    Text(
-                        text = headerPromptWord,
-                        fontSize = if (rowInnerWidth < 420.dp) 52.sp else 60.sp,
-                        fontWeight = FontWeight.Black,
-                        color = Color(0xFF0B2B3D),
-                        textAlign = TextAlign.Center,
-                        modifier =
-                            Modifier
-                                .background(Color(0xFFFFF59D).copy(alpha = 0.95f), shape = RoundedCornerShape(16.dp))
-                                .padding(horizontal = 18.dp, vertical = 6.dp),
+                cardWTwo =
+                    (cardWTwo * (pictureSizeMultiplier * 0.90f)).coerceAtMost(
+                        (cardsAreaW - cardGapTwo * (choiceCount - 1)) / choiceCount,
                     )
-                    Spacer(modifier = Modifier.height(10.dp))
-                }
-                if (showTargetLetterChip) {
-                    // Station 5 (all chapters): match station 3 target-letter chip style, and sit a bit lower.
-                    TargetLetterHeaderChip(
-                        letter = question.targetLetter,
-                        fontSize = if (rowInnerWidth < 420.dp) 52.sp else 56.sp,
-                        modifier =
-                            Modifier
-                                .padding(top = 2.dp)
-                                .offset(y = targetLetterChipOffsetYDp.dp),
-                    )
-                } else if (listenOnlyTemporaryHintLetter != null) {
-                    TargetLetterHeaderChip(
-                        letter = listenOnlyTemporaryHintLetter,
-                        fontSize = if (rowInnerWidth < 420.dp) 52.sp else 56.sp,
-                        modifier =
-                            Modifier
-                                .padding(top = 2.dp)
-                                .offset(y = targetLetterChipOffsetYDp.dp),
-                    )
-                }
-                Spacer(modifier = Modifier.height(if (narrowRow) 16.dp else 20.dp))
+                val cardHTwo = cardWTwo * LessonChoiceCardPictureAspect
+
                 Row(
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .offset { IntOffset(shakePx.roundToInt(), 0) },
-                    horizontalArrangement = Arrangement.spacedBy(cardGap, Alignment.CenterHorizontally),
+                    modifier = Modifier.fillMaxWidth().fillMaxHeight().padding(top = headerTopPaddingDp.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
-                    question.choices.forEach { choice ->
-                        val scale = remember(choice.id, contentKey) { Animatable(1f) }
-                        val flash = remember(choice.id, contentKey) { Animatable(0f) }
-                        LaunchedEffect(entryPulseEpoch, choice.id, contentKey) {
-                            if (entryPulseEpoch <= 0) return@LaunchedEffect
-                            // Very subtle guidance: tiny pulse once per round.
-                            scale.animateTo(1.05f, tween(120))
-                            scale.animateTo(1f, spring(dampingRatio = 0.70f, stiffness = 420f))
-                        }
-                        LaunchedEffect(hintPulseEpoch, hintCorrectChoiceId, choice.id, contentKey) {
-                            if (hintPulseEpoch <= 0 || hintCorrectChoiceId != choice.id) return@LaunchedEffect
-                            scale.snapTo(1f)
-                            scale.animateTo(1.22f, tween(120))
-                            scale.animateTo(1f, spring(dampingRatio = 0.55f, stiffness = 420f))
-                        }
-                        LaunchedEffect(wrongFlashEpoch, wrongFlashChoiceId, choice.id, contentKey) {
-                            if (wrongFlashEpoch <= 0 || wrongFlashChoiceId != choice.id) return@LaunchedEffect
-                            flash.snapTo(1f)
-                            flash.animateTo(0f, tween(220))
-                        }
-                        val captionSp =
-                            captionFontSizeForWordCard(
-                                density = density,
-                                cardWidth = cardW,
-                                word = choice.word,
-                                sizeMultiplier = captionSizeMultiplier,
-                                chapterId = chapterId,
-                                stationId = stationId,
+                    Column(
+                        modifier = Modifier.width(sidePanelW),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center,
+                    ) {
+                        if (headerInstructionText != null) {
+                            Text(
+                                text = headerInstructionText,
+                                style =
+                                    MaterialTheme.typography.titleMedium.copy(
+                                        fontSize = MaterialTheme.typography.titleMedium.fontSize * minOf(headerInstructionFontScale, 1.0f),
+                                        fontWeight = FontWeight.Bold,
+                                        lineHeight = 18.sp,
+                                    ),
+                                color = Color(0xFF0B2B3D),
+                                textAlign = TextAlign.Center,
+                                modifier =
+                                    Modifier
+                                        .padding(horizontal = 6.dp)
+                                        .then(
+                                            if (readableInstructionHeaderPanel) {
+                                                Modifier
+                                                    .background(Color.White.copy(alpha = 0.72f), RoundedCornerShape(18.dp))
+                                                    .padding(horizontal = 12.dp, vertical = 6.dp)
+                                            } else {
+                                                Modifier
+                                            },
+                                        ),
                             )
-                        LessonChoiceCard(
-                            choice = choice,
-                            enabled = enabled,
-                            scale = scale.value,
-                            showWordCaption = showWordCaptions,
-                            cardWidth = cardW,
-                            cardHeight = cardH,
-                            captionFontSize = captionSp,
-                            innerPictureScale = innerPictureScaleForChoice(choice),
-                            onClick = {
-                                val ok = onAttempt(choice.id)
-                                if (ok) {
-                                    successChoiceId = choice.id
-                                    scope.launch {
-                                        scale.snapTo(1f)
-                                        scale.animateTo(1.28f, tween(100))
-                                        scale.animateTo(1f, spring(dampingRatio = 0.52f, stiffness = 420f))
+                            Spacer(modifier = Modifier.height(6.dp))
+                        }
+                        if (headerPromptWord != null) {
+                            Text(
+                                text = headerPromptWord,
+                                fontSize = 52.sp,
+                                fontWeight = FontWeight.Black,
+                                color = Color(0xFF0B2B3D),
+                                textAlign = TextAlign.Center,
+                                modifier =
+                                    Modifier
+                                        .background(Color(0xFFFFF59D).copy(alpha = 0.95f), shape = RoundedCornerShape(16.dp))
+                                        .padding(horizontal = 14.dp, vertical = 6.dp),
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                        }
+                        if (showTargetLetterChip) {
+                            TargetLetterHeaderChip(
+                                letter = question.targetLetter,
+                                fontSize = 52.sp,
+                                modifier = Modifier.offset(y = targetLetterChipOffsetYDp.dp),
+                            )
+                        } else if (listenOnlyTemporaryHintLetter != null) {
+                            TargetLetterHeaderChip(
+                                letter = listenOnlyTemporaryHintLetter,
+                                fontSize = 52.sp,
+                                modifier = Modifier.offset(y = targetLetterChipOffsetYDp.dp),
+                            )
+                        }
+                    }
+
+                    Row(
+                        modifier =
+                            Modifier
+                                .weight(1f, fill = true)
+                                .offset { IntOffset(shakePx.roundToInt(), 0) },
+                        horizontalArrangement = Arrangement.spacedBy(cardGapTwo, Alignment.CenterHorizontally),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        question.choices.forEach { choice ->
+                            val scale = remember(choice.id, contentKey) { Animatable(1f) }
+                            val flash = remember(choice.id, contentKey) { Animatable(0f) }
+                            LaunchedEffect(entryPulseEpoch, choice.id, contentKey) {
+                                if (entryPulseEpoch <= 0) return@LaunchedEffect
+                                scale.animateTo(1.05f, tween(120))
+                                scale.animateTo(1f, spring(dampingRatio = 0.70f, stiffness = 420f))
+                            }
+                            LaunchedEffect(hintPulseEpoch, hintCorrectChoiceId, choice.id, contentKey) {
+                                if (hintPulseEpoch <= 0 || hintCorrectChoiceId != choice.id) return@LaunchedEffect
+                                scale.snapTo(1f)
+                                scale.animateTo(1.22f, tween(120))
+                                scale.animateTo(1f, spring(dampingRatio = 0.55f, stiffness = 420f))
+                            }
+                            LaunchedEffect(wrongFlashEpoch, wrongFlashChoiceId, choice.id, contentKey) {
+                                if (wrongFlashEpoch <= 0 || wrongFlashChoiceId != choice.id) return@LaunchedEffect
+                                flash.snapTo(1f)
+                                flash.animateTo(0f, tween(220))
+                            }
+                            val captionSp =
+                                captionFontSizeForWordCard(
+                                    density = density,
+                                    cardWidth = cardWTwo,
+                                    word = choice.word,
+                                    sizeMultiplier = captionSizeMultiplier,
+                                    chapterId = chapterId,
+                                    stationId = stationId,
+                                )
+                            LessonChoiceCard(
+                                choice = choice,
+                                enabled = enabled,
+                                scale = scale.value,
+                                showWordCaption = showWordCaptions,
+                                cardWidth = cardWTwo,
+                                cardHeight = cardHTwo,
+                                captionFontSize = captionSp,
+                                innerPictureScale = innerPictureScaleForChoice(choice),
+                                onClick = {
+                                    val ok = onAttempt(choice.id)
+                                    if (ok) {
+                                        successChoiceId = choice.id
+                                        scope.launch {
+                                            scale.snapTo(1f)
+                                            scale.animateTo(1.28f, tween(100))
+                                            scale.animateTo(1f, spring(dampingRatio = 0.52f, stiffness = 420f))
+                                        }
+                                    } else {
+                                        wrongFlashChoiceId = choice.id
+                                        wrongFlashEpoch += 1
+                                        scope.launch {
+                                            flash.snapTo(1f)
+                                            flash.animateTo(0f, tween(220))
+                                        }
                                     }
-                                } else {
-                                    wrongFlashChoiceId = choice.id
-                                    wrongFlashEpoch += 1
-                                    scope.launch {
-                                        flash.snapTo(1f)
-                                        flash.animateTo(0f, tween(220))
-                                    }
-                                }
-                            },
-                            isCorrectPick = choice.id == successChoiceId,
-                            wrongFlashAlpha = flash.value,
+                                },
+                                isCorrectPick = choice.id == successChoiceId,
+                                wrongFlashAlpha = flash.value,
+                            )
+                        }
+                    }
+                }
+            } else {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.fillMaxWidth().padding(top = headerTopPaddingDp.dp),
+                ) {
+                    if (headerInstructionText != null) {
+                        val effectiveHeaderScale =
+                            if (isCompactLandscapePhone) {
+                                minOf(headerInstructionFontScale, 1.05f)
+                            } else {
+                                headerInstructionFontScale
+                            }
+                        Text(
+                            text = headerInstructionText,
+                            style =
+                                MaterialTheme.typography.titleMedium.copy(
+                                    fontSize = MaterialTheme.typography.titleMedium.fontSize * effectiveHeaderScale,
+                                    fontWeight = FontWeight.Bold,
+                                    lineHeight = if (isCompactLandscapePhone) 20.sp else MaterialTheme.typography.titleMedium.lineHeight,
+                                ),
+                            color = Color(0xFF0B2B3D),
+                            textAlign = TextAlign.Center,
+                            modifier =
+                                Modifier
+                                    .padding(horizontal = if (isCompactLandscapePhone) 6.dp else 8.dp)
+                                    .then(
+                                        if (readableInstructionHeaderPanel) {
+                                            Modifier
+                                                .background(Color.White.copy(alpha = 0.72f), RoundedCornerShape(18.dp))
+                                                .padding(
+                                                    horizontal = 14.dp,
+                                                    vertical = if (isCompactLandscapePhone) 5.dp else 8.dp,
+                                                )
+                                        } else {
+                                            Modifier
+                                        },
+                                    ),
                         )
+                        Spacer(modifier = Modifier.height(if (isCompactLandscapePhone) 4.dp else 6.dp))
+                    }
+                    if (headerPromptWord != null) {
+                        Text(
+                            text = headerPromptWord,
+                            fontSize =
+                                if (isCompactLandscapePhone) {
+                                    if (rowInnerWidth < 420.dp) 42.sp else 48.sp
+                                } else {
+                                    if (rowInnerWidth < 420.dp) 52.sp else 60.sp
+                                },
+                            fontWeight = FontWeight.Black,
+                            color = Color(0xFF0B2B3D),
+                            textAlign = TextAlign.Center,
+                            modifier =
+                                Modifier
+                                    .background(Color(0xFFFFF59D).copy(alpha = 0.95f), shape = RoundedCornerShape(16.dp))
+                                    .padding(horizontal = 18.dp, vertical = 6.dp),
+                        )
+                        Spacer(modifier = Modifier.height(if (isCompactLandscapePhone) 6.dp else 10.dp))
+                    }
+                    if (showTargetLetterChip) {
+                        // Station 5 (all chapters): match station 3 target-letter chip style, and sit a bit lower.
+                        TargetLetterHeaderChip(
+                            letter = question.targetLetter,
+                            fontSize =
+                                if (isCompactLandscapePhone) {
+                                    if (rowInnerWidth < 420.dp) 42.sp else 46.sp
+                                } else {
+                                    if (rowInnerWidth < 420.dp) 52.sp else 56.sp
+                                },
+                            modifier =
+                                Modifier
+                                    .padding(top = 2.dp)
+                                    .offset(y = targetLetterChipOffsetYDp.dp),
+                        )
+                    } else if (listenOnlyTemporaryHintLetter != null) {
+                        TargetLetterHeaderChip(
+                            letter = listenOnlyTemporaryHintLetter,
+                            fontSize =
+                                if (isCompactLandscapePhone) {
+                                    if (rowInnerWidth < 420.dp) 42.sp else 46.sp
+                                } else {
+                                    if (rowInnerWidth < 420.dp) 52.sp else 56.sp
+                                },
+                            modifier =
+                                Modifier
+                                    .padding(top = 2.dp)
+                                    .offset(y = targetLetterChipOffsetYDp.dp),
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(if (isCompactLandscapePhone) 10.dp else if (narrowRow) 16.dp else 20.dp))
+                    Row(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .offset { IntOffset(shakePx.roundToInt(), 0) },
+                        horizontalArrangement = Arrangement.spacedBy(cardGap, Alignment.CenterHorizontally),
+                    ) {
+                        question.choices.forEach { choice ->
+                            val scale = remember(choice.id, contentKey) { Animatable(1f) }
+                            val flash = remember(choice.id, contentKey) { Animatable(0f) }
+                            LaunchedEffect(entryPulseEpoch, choice.id, contentKey) {
+                                if (entryPulseEpoch <= 0) return@LaunchedEffect
+                                // Very subtle guidance: tiny pulse once per round.
+                                scale.animateTo(1.05f, tween(120))
+                                scale.animateTo(1f, spring(dampingRatio = 0.70f, stiffness = 420f))
+                            }
+                            LaunchedEffect(hintPulseEpoch, hintCorrectChoiceId, choice.id, contentKey) {
+                                if (hintPulseEpoch <= 0 || hintCorrectChoiceId != choice.id) return@LaunchedEffect
+                                scale.snapTo(1f)
+                                scale.animateTo(1.22f, tween(120))
+                                scale.animateTo(1f, spring(dampingRatio = 0.55f, stiffness = 420f))
+                            }
+                            LaunchedEffect(wrongFlashEpoch, wrongFlashChoiceId, choice.id, contentKey) {
+                                if (wrongFlashEpoch <= 0 || wrongFlashChoiceId != choice.id) return@LaunchedEffect
+                                flash.snapTo(1f)
+                                flash.animateTo(0f, tween(220))
+                            }
+                            val captionSp =
+                                captionFontSizeForWordCard(
+                                    density = density,
+                                    cardWidth = cardW,
+                                    word = choice.word,
+                                    sizeMultiplier = captionSizeMultiplier,
+                                    chapterId = chapterId,
+                                    stationId = stationId,
+                                )
+                            LessonChoiceCard(
+                                choice = choice,
+                                enabled = enabled,
+                                scale = scale.value,
+                                showWordCaption = showWordCaptions,
+                                cardWidth = cardW,
+                                cardHeight = cardH,
+                                captionFontSize = captionSp,
+                                innerPictureScale = innerPictureScaleForChoice(choice),
+                                onClick = {
+                                    val ok = onAttempt(choice.id)
+                                    if (ok) {
+                                        successChoiceId = choice.id
+                                        scope.launch {
+                                            scale.snapTo(1f)
+                                            scale.animateTo(1.28f, tween(100))
+                                            scale.animateTo(1f, spring(dampingRatio = 0.52f, stiffness = 420f))
+                                        }
+                                    } else {
+                                        wrongFlashChoiceId = choice.id
+                                        wrongFlashEpoch += 1
+                                        scope.launch {
+                                            flash.snapTo(1f)
+                                            flash.animateTo(0f, tween(220))
+                                        }
+                                    }
+                                },
+                                isCorrectPick = choice.id == successChoiceId,
+                                wrongFlashAlpha = flash.value,
+                            )
+                        }
                     }
                 }
             }

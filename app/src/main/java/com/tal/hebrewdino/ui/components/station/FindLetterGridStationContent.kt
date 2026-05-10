@@ -62,12 +62,8 @@ fun FindLetterGridStationContent(
         inlineInstructionText = inlineInstructionText,
         inlineInstructionReadablePanel =
             stationUiSpec.findGridInlineInstructionPanelStyle == InstructionPanelStyle.WhiteRounded,
-        cellSideScale =
-            if (isSagaRevealStation) {
-                0.9f
-            } else {
-                1f
-            },
+        compactLandscapeTwoColumn = false,
+        cellSideScale = if (isSagaRevealStation) 0.9f else 1f,
         contentNudgeDownFraction = 0f,
         onLetterTapped = onSagaGridLetterTapped,
         onCorrectTap = onCorrectTap,

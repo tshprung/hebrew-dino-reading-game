@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import com.tal.hebrewdino.R
 import com.tal.hebrewdino.ui.audio.AudioClips
 import com.tal.hebrewdino.ui.audio.VoicePlayer
+import com.tal.hebrewdino.ui.layout.ScreenFit
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -70,6 +71,7 @@ fun RewardScreen(
     val context = androidx.compose.ui.platform.LocalContext.current
     val voice = remember { VoicePlayer(context = context) }
     var navigatedAway by remember(levelId) { mutableStateOf(false) }
+    val isCompactLandscapePhone = ScreenFit.isCompactLandscapePhone()
     val mascotRes =
         remember {
             RewardStageMascotDrawables[Random.nextInt(RewardStageMascotDrawables.size)]
@@ -110,43 +112,83 @@ fun RewardScreen(
             contentScale = ContentScale.Crop,
         )
 
-        Column(
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Text(
-                text = rtl("כל הכבוד!"),
-                style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Black),
-                color = Color(0xFF0B2B3D),
-            )
-            Spacer(modifier = Modifier.height(6.dp))
-            Text(
-                text = "שלב $levelId הסתיים",
-                style = MaterialTheme.typography.titleLarge,
-                color = Color(0xFF0B2B3D),
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Image(
-                painter = painterResource(id = mascotRes),
-                contentDescription = null,
-                modifier =
-                    Modifier
-                        .height(168.dp)
-                        .fillMaxWidth(),
-                contentScale = ContentScale.Fit,
-            )
-            Spacer(modifier = Modifier.height(6.dp))
+        if (isCompactLandscapePhone) {
+            RewardFireworksLayer(modifier = Modifier.fillMaxSize())
+        }
 
-            Box(
+        if (isCompactLandscapePhone) {
+            Row(
                 modifier =
                     Modifier
-                        .weight(1f, fill = true)
-                        .fillMaxSize(),
+                        .fillMaxSize()
+                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(14.dp, Alignment.CenterHorizontally),
             ) {
-                RewardFireworksLayer(modifier = Modifier.fillMaxSize())
+                Image(
+                    painter = painterResource(id = mascotRes),
+                    contentDescription = null,
+                    modifier = Modifier.width(160.dp).height(160.dp),
+                    contentScale = ContentScale.Fit,
+                )
+                Column(
+                    modifier = Modifier.weight(1f, fill = true),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Text(
+                        text = rtl("כל הכבוד!"),
+                        style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Black),
+                        color = Color(0xFF0B2B3D),
+                        textAlign = TextAlign.Center,
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "שלב $levelId הסתיים",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = Color(0xFF0B2B3D),
+                        textAlign = TextAlign.Center,
+                    )
+                }
+            }
+        } else {
+            Column(
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Text(
+                    text = rtl("כל הכבוד!"),
+                    style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Black),
+                    color = Color(0xFF0B2B3D),
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = "שלב $levelId הסתיים",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = Color(0xFF0B2B3D),
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Image(
+                    painter = painterResource(id = mascotRes),
+                    contentDescription = null,
+                    modifier =
+                        Modifier
+                            .height(168.dp)
+                            .fillMaxWidth(),
+                    contentScale = ContentScale.Fit,
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+
+                Box(
+                    modifier =
+                        Modifier
+                            .weight(1f, fill = true)
+                            .fillMaxSize(),
+                ) {
+                    RewardFireworksLayer(modifier = Modifier.fillMaxSize())
+                }
             }
         }
     }
