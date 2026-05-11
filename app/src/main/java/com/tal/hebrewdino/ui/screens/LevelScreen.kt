@@ -652,7 +652,9 @@ internal fun PopBalloonsOptions(
         val balloonWPx = with(density) { balloonSizeDp.toPx() }
         val balloonHPx =
             with(density) {
-                balloonSizeDp.toPx() + balloonStringHeightDp.toPx() + balloonLetterFontSize.toPx()
+                balloonSizeDp.toPx() +
+                    balloonStringHeightDp.toPx() +
+                    if (freeFlight && ScreenFit.isCompactLandscapePhone()) 0f else balloonLetterFontSize.toPx()
             }
         val paddingPx = with(density) { 10.dp.toPx() }
         val minCenterDist =

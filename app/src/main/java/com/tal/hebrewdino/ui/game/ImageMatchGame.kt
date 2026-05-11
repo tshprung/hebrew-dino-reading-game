@@ -227,7 +227,14 @@ fun ImageMatchGame(
                                         density = density,
                                         cardWidth = effectiveCardWTwo,
                                         word = choice.word,
-                                        sizeMultiplier = captionSizeMultiplier * 0.92f,
+                                        sizeMultiplier =
+                                            captionSizeMultiplier *
+                                                0.92f *
+                                                if (isCompactLandscapePhoneCh1Station5 && choice.word == "אבטיח") {
+                                                    0.70f
+                                                } else {
+                                                    1f
+                                                },
                                         chapterId = chapterId,
                                         stationId = stationId,
                                     )

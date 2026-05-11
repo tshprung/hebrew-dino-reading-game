@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -51,6 +52,7 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
 import com.tal.hebrewdino.ui.screens.LetterOptions
 import kotlin.math.roundToInt
+import androidx.compose.ui.draw.alpha
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -111,71 +113,76 @@ fun PictureStartsWithGame(
 
     if (useTwoColumn) {
         CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
-            Row(
-                modifier =
-                    modifier
-                        .fillMaxWidth()
-                        .fillMaxHeight()
-                        .offset { IntOffset(shakePx.roundToInt(), 0) },
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally),
-            ) {
-                val orderedLetters = pictureStartsWithOrderedLetters(sortOptionLetters, question.optionLetters)
-                val displayLetters =
-                    if (pinnedCorrectLetter != null) {
-                        listOf(pinnedCorrectLetter)
-                    } else {
-                        orderedLetters
-                    }
-                Column(
-                    modifier = Modifier.weight(1f, fill = true).fillMaxHeight(),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center,
-                ) {
-                    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
-                        LetterOptions(
-                            options = displayLetters,
-                            enabled = enabled,
-                            shakePx = 0f,
-                            entryPulseEpoch = entryPulseEpoch,
-                            hintPulseLetter = hintCorrectLetter,
-                            hintPulseEpoch = hintPulseEpoch,
-                            correctPulseLetter = correctPulseLetter,
-                            correctPulseEpoch = correctPulseEpoch,
-                            wrongFlashLetter = wrongFlashLetter,
-                            wrongFlashEpoch = wrongFlashEpoch,
-                            onPick = onPickLetter,
-                        )
-                    }
+            Box(modifier = modifier.fillMaxSize()) {
+                CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+                    Text(
+                        text = instructionText,
+                        fontSize = 34.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF0B2B3D),
+                        textAlign = TextAlign.Center,
+                        modifier =
+                            Modifier
+                                .align(Alignment.TopCenter)
+                                .padding(top = 0.dp, start = 12.dp, end = 12.dp)
+                                .then(
+                                    if (instructionReadablePanel) {
+                                        Modifier
+                                            .background(Color.White.copy(alpha = 0.72f), RoundedCornerShape(18.dp))
+                                            .padding(horizontal = 14.dp, vertical = 8.dp)
+                                    } else {
+                                        Modifier
+                                    },
+                                ),
+                    )
                 }
-            Column(
-                modifier =
-                    Modifier
-                        .widthIn(max = 270.dp)
-                        .offset(x = (-16).dp)
-                        .fillMaxHeight(),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                Text(
-                    text = instructionText,
-                    style =
-                        MaterialTheme.typography.titleMedium.copy(
-                            fontSize = MaterialTheme.typography.titleMedium.fontSize * instructionScale,
-                            fontWeight = if (chapterId == 6) FontWeight.Black else MaterialTheme.typography.titleMedium.fontWeight,
-                        ),
-                    color = Color(0xFF0B2B3D),
-                    textAlign = TextAlign.Center,
+                Row(
                     modifier =
-                        if (instructionReadablePanel) {
-                            Modifier
-                                .background(Color.White.copy(alpha = 0.72f), RoundedCornerShape(18.dp))
-                                .padding(horizontal = 14.dp, vertical = 5.dp)
+                        Modifier
+                            .fillMaxWidth()
+                            .fillMaxHeight()
+                            .offset { IntOffset(shakePx.roundToInt(), 0) },
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally),
+                ) {
+                    val orderedLetters = pictureStartsWithOrderedLetters(sortOptionLetters, question.optionLetters)
+                    val displayLetters =
+                        if (pinnedCorrectLetter != null) {
+                            listOf(pinnedCorrectLetter)
                         } else {
+                            orderedLetters
+                        }
+                    Column(
+                        modifier = Modifier.weight(1f, fill = true).fillMaxHeight(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center,
+                    ) {
+                        CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+                            LetterOptions(
+                                options = displayLetters,
+                                enabled = enabled,
+                                shakePx = 0f,
+                                entryPulseEpoch = entryPulseEpoch,
+                                hintPulseLetter = hintCorrectLetter,
+                                hintPulseEpoch = hintPulseEpoch,
+                                correctPulseLetter = correctPulseLetter,
+                                correctPulseEpoch = correctPulseEpoch,
+                                wrongFlashLetter = wrongFlashLetter,
+                                wrongFlashEpoch = wrongFlashEpoch,
+                                onPick = onPickLetter,
+                            )
+                        }
+                    }
+                    Column(
+                        modifier =
                             Modifier
-                        },
-                )
-                Spacer(modifier = Modifier.height(6.dp))
-                BoxWithConstraints(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
+                                .widthIn(max = 270.dp)
+                                .offset(x = (-16).dp)
+                                .fillMaxHeight(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        Spacer(modifier = Modifier.height(48.dp))
+                        BoxWithConstraints(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
                     val rowInnerWidth = maxWidth
                     val frameCap =
                         pictureFrameMaxWidthFraction?.let { f ->
@@ -253,6 +260,7 @@ fun PictureStartsWithGame(
                     }
                 }
             }
+                    }
             }
         }
     } else {

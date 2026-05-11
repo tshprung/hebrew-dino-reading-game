@@ -45,6 +45,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.tal.hebrewdino.R
 import com.tal.hebrewdino.ui.audio.AudioClips
 import com.tal.hebrewdino.ui.audio.SoundPoolPlayer
@@ -92,6 +93,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.random.Random
 import android.os.SystemClock
+import androidx.compose.ui.unit.sp
 
 private enum class GamePhase { Intro, Play }
 
@@ -1438,7 +1440,11 @@ fun GameScreen(
                                                     ?: StationInstructionCopy.PopBalloonsPopAllLettersInWord,
                                         )
                                     }
-                                    if (plan.mode != StationQuizMode.PickLetter) {
+                                    val ch1St2CompactLandscapePhone =
+                                        isCompactLandscapePhone &&
+                                            chapterId == 1 &&
+                                            stationId == Chapter1StationOrder.BALLOON_POP
+                                    if (plan.mode != StationQuizMode.PickLetter && !ch1St2CompactLandscapePhone) {
                                         PopBalloonsInstructionHeaderBlock(
                                             listenOnly = listenOnly,
                                             sagaUsesPopBalloonsAudioStaging = sagaUsesPopBalloonsAudioStaging,
@@ -1453,10 +1459,7 @@ fun GameScreen(
                                             station2PinnedBalloonLetter = station2PinnedBalloonLetter,
                                             station2PinnedBalloonColor = station2PinnedBalloonColor,
                                             compactLandscapePhoneTuning =
-                                                isCompactLandscapePhone &&
-                                                    chapterId == 1 &&
-                                                    stationId == Chapter1StationOrder.BALLOON_POP &&
-                                                    sagaUsesPopBalloonsAudioStaging,
+                                                ch1St2CompactLandscapePhone,
                                         )
                                     }
                                     if (plan.mode == StationQuizMode.PickLetter) {
@@ -1635,43 +1638,24 @@ fun GameScreen(
                                             modifier = Modifier.fillMaxWidth().weight(1f, fill = true),
                                         )
                                     } else {
-                                        PopBalloonsStationContent(
-                                            question = current,
-                                            correctLetterSet =
-                                                if (isChapter3PopAllLettersStation) {
-                                                    val w = session.chapter3PopAllLettersCurrentWord()?.first.orEmpty()
-                                                    w.toCharArray().map { it.toString() }.toSet()
-                                                } else {
-                                                    null
-                                                },
-                                            enabled = gameChoicesEnabled,
-                                            shakePx = optionsShake.value,
-                                            visualRoundSeed =
-                                                if (sagaUsesPopBalloonsAudioStaging) {
-                                                    session.currentIndex
-                                                } else {
-                                                    0
-                                                },
-                                            maxVisibleBalloonCount =
-                                                if (
-                                                    isCompactLandscapePhone &&
-                                                        chapterId == 1 &&
-                                                        stationId == Chapter1StationOrder.BALLOON_POP &&
-                                                        sagaUsesPopBalloonsAudioStaging
-                                                ) {
-                                                    8
-                                                } else {
-                                                    null
-                                                },
-                                            compactLandscapePhoneTuning =
-                                                isCompactLandscapePhone &&
-                                                    chapterId == 1 &&
-                                                    stationId == Chapter1StationOrder.BALLOON_POP &&
-                                                    sagaUsesPopBalloonsAudioStaging,
-                                            onBalloonPressed = { _ ->
-                                                // Voice is triggered after pop SFX (see onPopSfx) so it feels connected.
-                                            },
-                                            onPopSfx = popBalloonSfx@{ letter, isCorrect, finalCorrectBalloon, balloonIndex ->
+                                        val correctLetterSet =
+                                            if (isChapter3PopAllLettersStation) {
+                                                val w = session.chapter3PopAllLettersCurrentWord()?.first.orEmpty()
+                                                w.toCharArray().map { it.toString() }.toSet()
+                                            } else {
+                                                null
+                                            }
+                                        val visualRoundSeed =
+                                            if (sagaUsesPopBalloonsAudioStaging) {
+                                                session.currentIndex
+                                            } else {
+                                                0
+                                            }
+                                        val maxVisibleBalloonCount = if (ch1St2CompactLandscapePhone) 8 else null
+                                        val balloonSizeDp = if (ch1St2CompactLandscapePhone) 72.dp else 86.dp
+                                        val balloonLetterFontSize = if (ch1St2CompactLandscapePhone) 32.sp else 36.sp
+                                        val onPopSfx: suspend (String, Boolean, Boolean, Int) -> Unit =
+                                            popBalloonSfx@{ letter, isCorrect, finalCorrectBalloon, balloonIndex ->
                                                 if (!audioEnabled) return@popBalloonSfx
                                                 cancelFeedbackVoice()
                                                 if (sagaUsesPopBalloonsAudioStaging) {
@@ -1776,8 +1760,9 @@ fun GameScreen(
                                                             voice.playSequenceBlocking(clip)
                                                         }
                                                 }
-                                            },
-                                            onWrongPick = popWrong@{
+                                            }
+                                        val onWrongPick =
+                                            popWrong@{
                                                 if (!consumeTapCooldown()) return@popWrong
                                                 if (!(sagaUsesPopBalloonsAudioStaging)) {
                                                     cancelFeedbackVoice()
@@ -1806,8 +1791,8 @@ fun GameScreen(
                                                 } else {
                                                     onWrongFeedback()
                                                 }
-                                            },
-                                            onAllCorrectPopped = { lastLetter, poppedBalloonColor ->
+                                            }
+                                        val onAllCorrectPopped: (String, Color) -> Unit = { lastLetter, poppedBalloonColor ->
                                                 val ch1St2 = sagaUsesPopBalloonsAudioStaging
                                                 // Episode 1 station 2: show the last popped balloon beside the header chip.
                                                 // Episodes 4–5 feedback: do not pin the last balloon in the header.
@@ -1843,15 +1828,81 @@ fun GameScreen(
                                                         else -> {}
                                                     }
                                                 }
-                                            },
-                                            episode4CorrectBalloonHintEpoch =
-                                                if (episode4HelpSt15 && stationId == Chapter1StationOrder.BALLOON_POP) {
-                                                    episode4Help.station2BalloonHintEpoch
-                                                } else {
-                                                    0
+                                            }
+                                        val episode4CorrectBalloonHintEpoch =
+                                            if (episode4HelpSt15 && stationId == Chapter1StationOrder.BALLOON_POP) {
+                                                episode4Help.station2BalloonHintEpoch
+                                            } else {
+                                                0
+                                            }
+                                        val helpSideInsetDp = stationUiSpec.balloonPlayAreaStartInsetDp.dp
+
+                                        if (ch1St2CompactLandscapePhone) {
+                                            Box(
+                                                modifier =
+                                                    Modifier
+                                                        .fillMaxWidth()
+                                                        .weight(1f, fill = true),
+                                            ) {
+                                                PopBalloonsOptions(
+                                                    options = current.options,
+                                                    correctAnswer = current.correctAnswer,
+                                                    correctLetterSet = correctLetterSet,
+                                                    enabled = gameChoicesEnabled,
+                                                    shakePx = optionsShake.value,
+                                                    visualRoundSeed = visualRoundSeed,
+                                                    balloonSizeDp = balloonSizeDp,
+                                                    balloonLetterFontSize = balloonLetterFontSize,
+                                                    maxVisibleBalloonCount = 8,
+                                                    compactLandscapeFreeFlight = true,
+                                                    onBalloonPressed = { _ ->
+                                                        // Voice is triggered after pop SFX (see onPopSfx) so it feels connected.
+                                                    },
+                                                    onPopSfx = onPopSfx,
+                                                    onWrongPick = onWrongPick,
+                                                    onAllCorrectPopped = onAllCorrectPopped,
+                                                    episode4CorrectBalloonHintEpoch = episode4CorrectBalloonHintEpoch,
+                                                    helpSideInsetDp = helpSideInsetDp,
+                                                )
+                                                PopBalloonsInstructionHeaderBlock(
+                                                    listenOnly = listenOnly,
+                                                    sagaUsesPopBalloonsAudioStaging = sagaUsesPopBalloonsAudioStaging,
+                                                    skipInstructionHeaderBlock = stationUiSpec.popBalloonsSkipInstructionHeaderBlock,
+                                                    balloonInstructionOverride = stationUiSpec.balloonInstructionOverride,
+                                                    useEpisode4BalloonInstructionPanel = stationUiSpec.useEpisode4BalloonInstructionPanel,
+                                                    showSagaStation2InstructionLine = stationUiSpec.popBalloonsShowSagaStation2InstructionLine,
+                                                    episode4HelpSt15 = episode4HelpSt15,
+                                                    episode4HelpActiveHintLetter = episode4Help.activeHintLetter,
+                                                    hintHeaderScale = hintHeaderScale.value,
+                                                    correctAnswer = current.correctAnswer,
+                                                    station2PinnedBalloonLetter = station2PinnedBalloonLetter,
+                                                    station2PinnedBalloonColor = station2PinnedBalloonColor,
+                                                    compactLandscapePhoneTuning = true,
+                                                    modifier =
+                                                        Modifier
+                                                            .align(Alignment.TopCenter)
+                                                            .zIndex(2f),
+                                                )
+                                            }
+                                        } else {
+                                            PopBalloonsStationContent(
+                                                question = current,
+                                                correctLetterSet = correctLetterSet,
+                                                enabled = gameChoicesEnabled,
+                                                shakePx = optionsShake.value,
+                                                visualRoundSeed = visualRoundSeed,
+                                                maxVisibleBalloonCount = maxVisibleBalloonCount,
+                                                compactLandscapePhoneTuning = ch1St2CompactLandscapePhone,
+                                                onBalloonPressed = { _ ->
+                                                    // Voice is triggered after pop SFX (see onPopSfx) so it feels connected.
                                                 },
-                                            helpSideInsetDp = stationUiSpec.balloonPlayAreaStartInsetDp.dp,
-                                        )
+                                                onPopSfx = onPopSfx,
+                                                onWrongPick = onWrongPick,
+                                                onAllCorrectPopped = onAllCorrectPopped,
+                                                episode4CorrectBalloonHintEpoch = episode4CorrectBalloonHintEpoch,
+                                                helpSideInsetDp = helpSideInsetDp,
+                                            )
+                                        }
                                     }
                                 }
                             is Question.PictureStartsWithQuestion -> {
