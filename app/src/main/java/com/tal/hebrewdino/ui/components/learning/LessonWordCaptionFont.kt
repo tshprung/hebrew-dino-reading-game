@@ -44,8 +44,16 @@ fun captionFontSizeForWordCard(
                 word == "שולחן" -> 0.82f
                 // Feedback: balloon should be ~10% smaller everywhere.
                 word == "בלון" -> 0.90f
-                // Chapter 1 station 4 feedback: "אבטיח" should be ~10% smaller.
-                word == "אבטיח" -> 0.90f
+                // Episode 1 station 5 feedback: bed caption −10% (keep readable, avoid any clipping).
+                word == "מיטה" -> 0.90f
+                // Episode 1 station 5 feedback: pan caption.
+                word == "מחבת" -> 0.81f
+                // Feedback: "למידה" caption.
+                word == "למידה" -> 0.81f
+                // Feedback: "מכונית" caption −10%.
+                word == "מכונית" -> 0.81f
+                // Feedback: "אבטיח" caption.
+                word == "אבטיח" -> 0.72f
                 codePoints >= 9 -> 0.82f
                 codePoints >= 7 -> 0.88f
                 codePoints >= 6 -> 0.80f

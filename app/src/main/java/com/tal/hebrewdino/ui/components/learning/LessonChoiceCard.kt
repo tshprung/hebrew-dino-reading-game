@@ -39,6 +39,7 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.tal.hebrewdino.R
+import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
 import com.tal.hebrewdino.ui.domain.LessonChoice
 import com.tal.hebrewdino.ui.domain.LessonWordIllustrations
 
@@ -52,6 +53,33 @@ const val LessonChoiceCardPictureAspect: Float = 121f / 160f // +~10% taller tha
 // Taller reserved band so Hebrew glyphs never clip on small devices.
 val LessonChoiceCardCaptionAreaHeight: Dp = 66.dp
 val LessonChoiceCardCaptionSpacerHeight: Dp = 8.dp
+
+object Chapter1Station5And6LessonChoiceCardTuning {
+    fun pictureContentAlignment(isCompactLandscapePhone: Boolean, chapterId: Int?, stationId: Int?): Alignment =
+        if (
+            isCompactLandscapePhone &&
+                chapterId == 1 &&
+                (stationId == Chapter1StationOrder.PICTURE_PICK_ALL || stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH)
+        ) {
+            Alignment.TopCenter
+        } else {
+            Alignment.Center
+        }
+
+    fun captionContentAlignment(isCompactLandscapePhone: Boolean, chapterId: Int?, stationId: Int?): Alignment =
+        if (isCompactLandscapePhone && chapterId == 1 && stationId == Chapter1StationOrder.PICTURE_PICK_ALL) {
+            Alignment.BottomCenter
+        } else {
+            Alignment.TopCenter
+        }
+
+    fun pictureCaptionOffsetFraction(isCompactLandscapePhone: Boolean, chapterId: Int?, stationId: Int?): Float =
+        if (isCompactLandscapePhone && chapterId == 1 && stationId == Chapter1StationOrder.PICTURE_PICK_ALL) {
+            0f
+        } else {
+            -0.20f
+        }
+}
 
 @Composable
 fun LessonChoiceCard(

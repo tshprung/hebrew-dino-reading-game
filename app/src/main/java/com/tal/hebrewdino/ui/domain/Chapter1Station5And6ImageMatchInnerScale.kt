@@ -1,6 +1,18 @@
 package com.tal.hebrewdino.ui.domain
 
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
+import androidx.compose.ui.unit.dp
 import com.tal.hebrewdino.R
+import com.tal.hebrewdino.ui.components.learning.LessonChoiceCard
+import com.tal.hebrewdino.ui.components.learning.LessonChoiceCardCaptionAreaHeight
+import com.tal.hebrewdino.ui.components.learning.LessonChoiceCardCaptionSpacerHeight
+import com.tal.hebrewdino.ui.components.learning.LessonChoiceCardPictureAspect
+import com.tal.hebrewdino.ui.layout.ScreenFit
 
 /**
  * Six-station arc (chapters 1–4) stations **4, 5, and 6**: inner illustration scale inside [LessonChoiceCard].
@@ -115,5 +127,96 @@ object Chapter1Station5And6ImageMatchInnerScale {
             isCarPlaceholderSynonym -> 2.3f
             else -> 2f
         }
+    }
+}
+
+data class Station456CardSize(
+    val width: Dp,
+    val height: Dp,
+)
+
+object Chapter1Station4To6LessonChoiceCardSpec {
+    fun station5And6CardSize(
+        maxWidth: Dp,
+        maxHeight: Dp,
+        choiceCount: Int,
+        pictureSizeMultiplier: Float,
+        showWordCaption: Boolean,
+    ): Station456CardSize {
+        val columnGap = 10.dp
+        val sidePanelW =
+            if (maxWidth < 480.dp) {
+                170.dp
+            } else {
+                200.dp
+            }
+        val cardsAreaW = (maxWidth - sidePanelW - columnGap).coerceAtLeast(240.dp)
+        val cardGap = 8.dp
+        var cardW =
+            ScreenFit.rowChildWidthDp(
+                rowInnerWidth = cardsAreaW,
+                count = choiceCount.coerceAtLeast(1),
+                gap = cardGap,
+                minEach = 68.dp,
+                maxEach = 150.dp,
+            )
+        cardW =
+            (cardW * (pictureSizeMultiplier * 0.90f)).coerceAtMost(
+                (cardsAreaW - cardGap * (choiceCount - 1).coerceAtLeast(0)) / choiceCount.coerceAtLeast(1),
+            )
+        val cardsAreaVerticalPadding = 6.dp
+        val perCardExtraHeight =
+            24.dp +
+                if (showWordCaption) {
+                    LessonChoiceCardCaptionSpacerHeight + LessonChoiceCardCaptionAreaHeight
+                } else {
+                    0.dp
+                }
+        val maxPictureHeight =
+            (maxHeight - cardsAreaVerticalPadding * 2 - perCardExtraHeight)
+                .coerceAtLeast(60.dp)
+        val maxCardWByHeight = maxPictureHeight / LessonChoiceCardPictureAspect
+        val cardShrink = 0.80f
+        val width = (minOf(cardW, maxCardWByHeight) * cardShrink).coerceAtLeast(60.dp)
+        return Station456CardSize(width = width, height = width * LessonChoiceCardPictureAspect)
+    }
+
+    @Composable
+    fun Card(
+        choice: LessonChoice,
+        enabled: Boolean,
+        cardWidth: Dp,
+        cardHeight: Dp,
+        captionFontSize: TextUnit,
+        onClick: () -> Unit,
+        modifier: Modifier = Modifier,
+        scale: Float = 1f,
+        showWordCaption: Boolean = true,
+        innerPictureScale: Float = 1f,
+        isCorrectPick: Boolean = false,
+        isSelected: Boolean = false,
+        wrongFlashAlpha: Float = 0f,
+    ) {
+        LessonChoiceCard(
+            choice = choice,
+            enabled = enabled,
+            scale = scale,
+            showWordCaption = showWordCaption,
+            cardWidth = cardWidth,
+            cardHeight = cardHeight,
+            captionFontSize = captionFontSize,
+            innerPictureScale = innerPictureScale,
+            innerPictureScaleY = innerPictureScale,
+            innerPictureTransformOrigin = TransformOrigin(0.5f, 0.5f),
+            innerPictureTranslateY = 0.dp,
+            pictureContentAlignment = Alignment.Center,
+            captionContentAlignment = Alignment.TopCenter,
+            pictureCaptionOffsetFraction = -0.20f,
+            isCorrectPick = isCorrectPick,
+            isSelected = isSelected,
+            wrongFlashAlpha = wrongFlashAlpha,
+            onClick = onClick,
+            modifier = modifier,
+        )
     }
 }

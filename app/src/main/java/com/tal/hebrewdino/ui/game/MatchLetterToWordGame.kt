@@ -62,6 +62,7 @@ import com.tal.hebrewdino.ui.components.learning.LessonChoiceCardCaptionAreaHeig
 import com.tal.hebrewdino.ui.components.learning.LessonChoiceCardCaptionSpacerHeight
 import com.tal.hebrewdino.ui.components.learning.LessonChoiceCardPictureAspect
 import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
+import com.tal.hebrewdino.ui.domain.Chapter1Station4To6LessonChoiceCardSpec
 import com.tal.hebrewdino.ui.domain.LessonChoice
 import com.tal.hebrewdino.ui.layout.ScreenFit
 import kotlin.math.roundToInt
@@ -339,8 +340,34 @@ fun MatchLetterToWordGame(
             val perCardSlotW = (rowInnerW - gap * (columns - 1)) / columns
             val maxWidthBoostToFit = (perCardSlotW / cardWCurrent).coerceAtLeast(1f)
             val widthBoost = min(2f, maxWidthBoostToFit)
-            val cardW = cardWCurrent * widthBoost
-            val cardH = cardWCurrent * LessonChoiceCardPictureAspect
+            val sharedCardSize =
+                if (chapterId != 3) {
+                    Chapter1Station4To6LessonChoiceCardSpec.station5And6CardSize(
+                        maxWidth = innerW,
+                        maxHeight = innerH,
+                        choiceCount = columns,
+                        pictureSizeMultiplier = 1f,
+                        showWordCaption = true,
+                    )
+                } else {
+                    null
+                }
+            val cardWidthBoostForStation =
+                if (chapterId == 1 && stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH) {
+                    1.20f
+                } else {
+                    1f
+                }
+            val baseCardW = sharedCardSize?.width ?: (cardWCurrent * widthBoost)
+            val cardW = (baseCardW * cardWidthBoostForStation).coerceAtMost(perCardSlotW)
+            val cardH =
+                cardW *
+                    LessonChoiceCardPictureAspect *
+                    if (chapterId == 1 && stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH) {
+                        0.70f
+                    } else {
+                        1f
+                    }
             val letterTileW = cardW
             val letterTileH = (tileH * letterTileHeightScale).coerceAtLeast(44.dp)
 
@@ -438,15 +465,19 @@ fun MatchLetterToWordGame(
                                     density = density,
                                     cardWidth = cardW,
                                     word = ch.word,
-                                    sizeMultiplier = captionSizeMultiplier * 0.70f,
+                                    sizeMultiplier =
+                                        captionSizeMultiplier *
+                                            0.92f *
+                                            if (isCompactLandscapePhone && chapterId == 2 && ch.word == "היפופוטם") {
+                                                0.95f
+                                            } else {
+                                                1f
+                                            },
                                     chapterId = chapterId,
                                     stationId = stationId,
                                 )
                             val innerScale = innerPictureScaleForChoice(ch)
-                            val innerScaleY = if (isCompactLandscapePhoneCh1Station6) innerScale * 1.50f else innerScale
-                            val innerOrigin =
-                                if (isCompactLandscapePhoneCh1Station6) TransformOrigin(0.5f, 0f) else TransformOrigin(0.5f, 0.5f)
-                            LessonChoiceCard(
+                            Chapter1Station4To6LessonChoiceCardSpec.Card(
                                 choice = ch,
                                 enabled = enabled && !lockedThis,
                                 scale = pop.value,
@@ -455,18 +486,11 @@ fun MatchLetterToWordGame(
                                 cardHeight = cardH,
                                 captionFontSize = captionSp,
                                 innerPictureScale = innerScale,
-                                innerPictureScaleY = innerScaleY,
-                                innerPictureTransformOrigin = innerOrigin,
-                                pictureContentAlignment =
-                                    if (isCompactLandscapePhoneCh1Station6) Alignment.TopCenter else Alignment.Center,
-                                captionContentAlignment =
-                                    if (isCompactLandscapePhoneCh1Station6) Alignment.BottomCenter else Alignment.TopCenter,
-                                pictureCaptionOffsetFraction = if (isCompactLandscapePhoneCh1Station6) 0f else -0.20f,
                                 isCorrectPick = lockedThis,
                                 isSelected = !lockedThis && selectedThis,
                                 wrongFlashAlpha = wrongFlash.value,
                                 onClick = {
-                                    if (!enabled || lockedThis) return@LessonChoiceCard
+                                    if (!enabled || lockedThis) return@Card
                                     onWordPressed?.invoke(ch.id)
                                     val picked = selectedLetter
                                     if (picked != null) {
@@ -664,7 +688,14 @@ fun MatchLetterToWordGame(
                             minEach = 72.dp,
                             maxEach = 168.dp,
                         )
-                    val cardH = cardW * LessonChoiceCardPictureAspect
+                    val cardH =
+                        cardW *
+                            LessonChoiceCardPictureAspect *
+                            if (chapterId == 1 && stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH) {
+                                0.70f
+                            } else {
+                                1f
+                            }
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement =
@@ -711,10 +742,7 @@ fun MatchLetterToWordGame(
                                     stationId = stationId,
                                 )
                             val innerScale = innerPictureScaleForChoice(ch)
-                            val innerScaleY = if (isCompactLandscapePhoneCh1Station6) innerScale * 1.50f else innerScale
-                            val innerOrigin =
-                                if (isCompactLandscapePhoneCh1Station6) TransformOrigin(0.5f, 0f) else TransformOrigin(0.5f, 0.5f)
-                            LessonChoiceCard(
+                            Chapter1Station4To6LessonChoiceCardSpec.Card(
                                 choice = ch,
                                 enabled = enabled && !lockedThis,
                                 scale = pop.value,
@@ -723,18 +751,11 @@ fun MatchLetterToWordGame(
                                 cardHeight = cardH,
                                 captionFontSize = captionSp,
                                 innerPictureScale = innerScale,
-                                innerPictureScaleY = innerScaleY,
-                                innerPictureTransformOrigin = innerOrigin,
-                                pictureContentAlignment =
-                                    if (isCompactLandscapePhoneCh1Station6) Alignment.TopCenter else Alignment.Center,
-                                captionContentAlignment =
-                                    if (isCompactLandscapePhoneCh1Station6) Alignment.BottomCenter else Alignment.TopCenter,
-                                pictureCaptionOffsetFraction = if (isCompactLandscapePhoneCh1Station6) 0f else -0.20f,
                                 isCorrectPick = lockedThis,
                                 isSelected = !lockedThis && selectedThis,
                                 wrongFlashAlpha = wrongFlash.value,
                                 onClick = {
-                                    if (!enabled || lockedThis) return@LessonChoiceCard
+                                    if (!enabled || lockedThis) return@Card
                                     onWordPressed?.invoke(ch.id)
                                     val picked = selectedLetter
                                     if (picked != null) {
@@ -961,7 +982,14 @@ fun MatchLetterToWordGame(
                             val selectedThis = selectedChoiceId == ch.id
                             // Match station 5 sizing for the card inside the word column.
                             val cardW = (wordColW * 0.86f).coerceAtMost(168.dp).coerceAtLeast(72.dp)
-                            val cardH = cardW * LessonChoiceCardPictureAspect
+                            val cardH =
+                                cardW *
+                                    LessonChoiceCardPictureAspect *
+                                    if (chapterId == 1 && stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH) {
+                                        0.70f
+                                    } else {
+                                        1f
+                                    }
                             val captionSp =
                                 captionFontSizeForWordCard(
                                     density = density,
@@ -991,10 +1019,7 @@ fun MatchLetterToWordGame(
                                 wrongFlash.animateTo(0f, tween(220))
                             }
                             val innerScale = innerPictureScaleForChoice(ch)
-                            val innerScaleY = if (isCompactLandscapePhoneCh1Station6) innerScale * 1.50f else innerScale
-                            val innerOrigin =
-                                if (isCompactLandscapePhoneCh1Station6) TransformOrigin(0.5f, 0f) else TransformOrigin(0.5f, 0.5f)
-                            LessonChoiceCard(
+                            Chapter1Station4To6LessonChoiceCardSpec.Card(
                                 choice = ch,
                                 enabled = enabled && !lockedThis,
                                 showWordCaption = true,
@@ -1003,18 +1028,11 @@ fun MatchLetterToWordGame(
                                 cardHeight = cardH,
                                 captionFontSize = captionSp,
                                 innerPictureScale = innerScale,
-                                innerPictureScaleY = innerScaleY,
-                                innerPictureTransformOrigin = innerOrigin,
-                                pictureContentAlignment =
-                                    if (isCompactLandscapePhoneCh1Station6) Alignment.TopCenter else Alignment.Center,
-                                captionContentAlignment =
-                                    if (isCompactLandscapePhoneCh1Station6) Alignment.BottomCenter else Alignment.TopCenter,
-                                pictureCaptionOffsetFraction = if (isCompactLandscapePhoneCh1Station6) 0f else -0.20f,
                                 isCorrectPick = lockedThis,
                                 isSelected = !lockedThis && selectedThis,
                                 wrongFlashAlpha = wrongFlash.value,
                                 onClick = {
-                                    if (!enabled || lockedThis) return@LessonChoiceCard
+                                    if (!enabled || lockedThis) return@Card
                                     onWordPressed?.invoke(ch.id)
                                     val picked = selectedLetter
                                     if (picked != null) {

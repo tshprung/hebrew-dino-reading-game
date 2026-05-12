@@ -39,6 +39,7 @@ import com.tal.hebrewdino.ui.components.TargetLetterHeaderChip
 import com.tal.hebrewdino.ui.components.learning.LessonChoiceCard
 import com.tal.hebrewdino.ui.components.learning.LessonChoiceCardPictureAspect
 import com.tal.hebrewdino.ui.components.learning.captionFontSizeForWordCard
+import com.tal.hebrewdino.ui.domain.Chapter1Station4To6LessonChoiceCardSpec
 import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
 import com.tal.hebrewdino.ui.domain.LessonChoice
 import com.tal.hebrewdino.ui.domain.Question
@@ -255,17 +256,17 @@ fun PictureStartsWithGame(
                                 stationId = stationId,
                             )
                         val pictureTapReplays = onPictureTapReplayWord != null
-                        LessonChoiceCard(
+                        Chapter1Station4To6LessonChoiceCardSpec.Card(
                             choice = choice,
                             enabled = enabled && pictureTapReplays,
-                            scale = 1f,
                             showWordCaption = showWordCaption,
                             cardWidth = cardW,
                             cardHeight = cardH,
                             captionFontSize = captionSp,
                             innerPictureScale = innerPictureScale,
-                            isCorrectPick = false,
                             onClick = { if (pictureTapReplays) onPictureTapReplayWord?.invoke() },
+                            scale = 1f,
+                            isCorrectPick = false,
                         )
                     }
                 }
@@ -378,18 +379,18 @@ fun PictureStartsWithGame(
                         stationId = stationId,
                     )
                 val pictureTapReplays = onPictureTapReplayWord != null
-                LessonChoiceCard(
+                Chapter1Station4To6LessonChoiceCardSpec.Card(
                     choice = choice,
                     enabled = enabled && pictureTapReplays,
-                    scale = 1f,
                     showWordCaption = showWordCaption,
                     cardWidth = cardW,
                     // Use station-5 aspect ratio; this also fixes "too tall" without a custom frame.
                     cardHeight = cardH,
                     captionFontSize = captionSp,
                     innerPictureScale = innerPictureScale,
-                    isCorrectPick = false,
                     onClick = { if (pictureTapReplays) onPictureTapReplayWord?.invoke() },
+                    scale = 1f,
+                    isCorrectPick = false,
                 )
             }
             }

@@ -47,6 +47,7 @@ import com.tal.hebrewdino.ui.components.learning.LessonChoiceCardCaptionAreaHeig
 import com.tal.hebrewdino.ui.components.learning.LessonChoiceCardCaptionSpacerHeight
 import com.tal.hebrewdino.ui.domain.LessonChoice
 import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
+import com.tal.hebrewdino.ui.domain.Chapter1Station4To6LessonChoiceCardSpec
 import com.tal.hebrewdino.ui.domain.Question
 import com.tal.hebrewdino.ui.components.learning.LessonChoiceCard
 import com.tal.hebrewdino.ui.components.learning.LessonChoiceCardPictureAspect
@@ -185,8 +186,21 @@ fun ImageMatchGame(
                         .coerceAtLeast(60.dp)
                 val maxCardWByHeight = maxPictureHeight / LessonChoiceCardPictureAspect
                 val cardShrink = if (isCompactLandscapePhoneSixStationArcStation5) 0.80f else 1f
-                val effectiveCardWTwo = (minOf(cardWTwo, maxCardWByHeight) * cardShrink).coerceAtLeast(60.dp)
-                val cardHTwo = effectiveCardWTwo * LessonChoiceCardPictureAspect
+                val sharedCardSize =
+                    if (isCompactLandscapePhoneSixStationArcStation5) {
+                        Chapter1Station4To6LessonChoiceCardSpec.station5And6CardSize(
+                            maxWidth = rowInnerWidth,
+                            maxHeight = maxHeight,
+                            choiceCount = choiceCount,
+                            pictureSizeMultiplier = pictureSizeMultiplier,
+                            showWordCaption = showWordCaptions,
+                        )
+                    } else {
+                        null
+                    }
+                val effectiveCardWTwo =
+                    sharedCardSize?.width ?: (minOf(cardWTwo, maxCardWByHeight) * cardShrink).coerceAtLeast(60.dp)
+                val cardHTwo = sharedCardSize?.height ?: (effectiveCardWTwo * LessonChoiceCardPictureAspect)
 
                 CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
                     Row(
@@ -239,26 +253,12 @@ fun ImageMatchGame(
                                                     0.95f
                                                 } else {
                                                     1f
-                                                } *
-                                                if (isCompactLandscapePhoneSixStationArcStation5 && choice.word == "אבטיח") {
-                                                    0.70f
-                                                } else {
-                                                    1f
                                                 },
                                         chapterId = chapterId,
                                         stationId = stationId,
                                     )
                                 val innerScale = innerPictureScaleForChoice(choice)
-                                val innerScaleY = if (isCompactLandscapePhoneSixStationArcStation5) innerScale * 1.50f else innerScale
-                                val innerOrigin =
-                                    if (isCompactLandscapePhoneSixStationArcStation5) TransformOrigin(0.5f, 0f) else TransformOrigin(0.5f, 0.5f)
-                                val innerTranslateY =
-                                    if (isCompactLandscapePhoneSixStationArcStation5 && !isCompactLandscapePhoneCh1Station5) {
-                                        6.dp
-                                    } else {
-                                        0.dp
-                                    }
-                                LessonChoiceCard(
+                                Chapter1Station4To6LessonChoiceCardSpec.Card(
                                     choice = choice,
                                     enabled = enabled,
                                     scale = scale.value,
@@ -267,14 +267,6 @@ fun ImageMatchGame(
                                     cardHeight = cardHTwo,
                                     captionFontSize = captionSp,
                                     innerPictureScale = innerScale,
-                                    innerPictureScaleY = innerScaleY,
-                                    innerPictureTransformOrigin = innerOrigin,
-                                    innerPictureTranslateY = innerTranslateY,
-                                    pictureContentAlignment =
-                                        if (isCompactLandscapePhoneCh1Station5) Alignment.TopCenter else Alignment.Center,
-                                    captionContentAlignment =
-                                        if (isCompactLandscapePhoneCh1Station5) Alignment.BottomCenter else Alignment.TopCenter,
-                                    pictureCaptionOffsetFraction = if (isCompactLandscapePhoneCh1Station5) 0f else -0.20f,
                                     onClick = {
                                         val ok = onAttempt(choice.id)
                                         if (ok) {
@@ -509,16 +501,7 @@ fun ImageMatchGame(
                                     stationId = stationId,
                                 )
                             val innerScale = innerPictureScaleForChoice(choice)
-                            val innerScaleY = if (isCompactLandscapePhoneSixStationArcStation5) innerScale * 1.50f else innerScale
-                            val innerOrigin =
-                                if (isCompactLandscapePhoneSixStationArcStation5) TransformOrigin(0.5f, 0f) else TransformOrigin(0.5f, 0.5f)
-                            val innerTranslateY =
-                                if (isCompactLandscapePhoneSixStationArcStation5 && !isCompactLandscapePhoneCh1Station5) {
-                                    6.dp
-                                } else {
-                                    0.dp
-                                }
-                            LessonChoiceCard(
+                            Chapter1Station4To6LessonChoiceCardSpec.Card(
                                 choice = choice,
                                 enabled = enabled,
                                 scale = scale.value,
@@ -527,14 +510,6 @@ fun ImageMatchGame(
                                 cardHeight = cardH,
                                 captionFontSize = captionSp,
                                 innerPictureScale = innerScale,
-                                innerPictureScaleY = innerScaleY,
-                                innerPictureTransformOrigin = innerOrigin,
-                                innerPictureTranslateY = innerTranslateY,
-                                pictureContentAlignment =
-                                    if (isCompactLandscapePhoneCh1Station5) Alignment.TopCenter else Alignment.Center,
-                                captionContentAlignment =
-                                    if (isCompactLandscapePhoneCh1Station5) Alignment.BottomCenter else Alignment.TopCenter,
-                                pictureCaptionOffsetFraction = if (isCompactLandscapePhoneCh1Station5) 0f else -0.20f,
                                 onClick = {
                                     val ok = onAttempt(choice.id)
                                     if (ok) {
