@@ -32,6 +32,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.LayoutDirection
@@ -97,12 +98,16 @@ fun ImageMatchGame(
     var wrongFlashChoiceId by remember(contentKey) { mutableStateOf<String?>(null) }
     var wrongFlashEpoch by remember(contentKey) { mutableStateOf(0) }
     val isCompactLandscapePhone = ScreenFit.isCompactLandscapePhone()
+    val isCompactLandscapePhoneSixStationArcStation5 =
+        isCompactLandscapePhone &&
+            (chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) &&
+            stationId == Chapter1StationOrder.PICTURE_PICK_ALL
     val isCompactLandscapePhoneCh1Station5 =
         isCompactLandscapePhone &&
             chapterId == 1 &&
             stationId == Chapter1StationOrder.PICTURE_PICK_ALL
     val useTwoColumn =
-        isCompactLandscapePhoneCh1Station5
+        isCompactLandscapePhoneSixStationArcStation5
     LaunchedEffect(contentKey) {
         successChoiceId = null
         wrongFlashChoiceId = null
@@ -123,7 +128,7 @@ fun ImageMatchGame(
         ) {
             val rowInnerWidth = maxWidth
             val choiceCount = question.choices.size.coerceAtLeast(1)
-            val cardGap = if (isCompactLandscapePhoneCh1Station5) 8.dp else 10.dp
+            val cardGap = if (isCompactLandscapePhoneSixStationArcStation5) 8.dp else 10.dp
             var cardW =
                 ScreenFit.rowChildWidthDp(
                     rowInnerWidth = rowInnerWidth,
@@ -133,7 +138,7 @@ fun ImageMatchGame(
                     maxEach = 168.dp,
                 )
             val effectivePictureSizeMultiplier =
-                if (isCompactLandscapePhoneCh1Station5) {
+                if (isCompactLandscapePhoneSixStationArcStation5) {
                     pictureSizeMultiplier * 0.88f
                 } else {
                     pictureSizeMultiplier
@@ -179,7 +184,7 @@ fun ImageMatchGame(
                     (maxHeight - cardsAreaVerticalPadding * 2 - perCardExtraHeight)
                         .coerceAtLeast(60.dp)
                 val maxCardWByHeight = maxPictureHeight / LessonChoiceCardPictureAspect
-                val cardShrink = if (isCompactLandscapePhoneCh1Station5) 0.80f else 1f
+                val cardShrink = if (isCompactLandscapePhoneSixStationArcStation5) 0.80f else 1f
                 val effectiveCardWTwo = (minOf(cardWTwo, maxCardWByHeight) * cardShrink).coerceAtLeast(60.dp)
                 val cardHTwo = effectiveCardWTwo * LessonChoiceCardPictureAspect
 
@@ -189,7 +194,7 @@ fun ImageMatchGame(
                             Modifier
                                 .fillMaxWidth()
                                 .fillMaxHeight()
-                                .padding(top = if (isCompactLandscapePhoneCh1Station5) 0.dp else headerTopPaddingDp.dp),
+                                .padding(top = if (isCompactLandscapePhoneSixStationArcStation5) 0.dp else headerTopPaddingDp.dp),
                         verticalAlignment = Alignment.Top,
                         horizontalArrangement = Arrangement.spacedBy(columnGap),
                     ) {
@@ -230,7 +235,12 @@ fun ImageMatchGame(
                                         sizeMultiplier =
                                             captionSizeMultiplier *
                                                 0.92f *
-                                                if (isCompactLandscapePhoneCh1Station5 && choice.word == "אבטיח") {
+                                                if (isCompactLandscapePhone && chapterId == 2 && choice.word == "היפופוטם") {
+                                                    0.95f
+                                                } else {
+                                                    1f
+                                                } *
+                                                if (isCompactLandscapePhoneSixStationArcStation5 && choice.word == "אבטיח") {
                                                     0.70f
                                                 } else {
                                                     1f
@@ -238,6 +248,16 @@ fun ImageMatchGame(
                                         chapterId = chapterId,
                                         stationId = stationId,
                                     )
+                                val innerScale = innerPictureScaleForChoice(choice)
+                                val innerScaleY = if (isCompactLandscapePhoneSixStationArcStation5) innerScale * 1.50f else innerScale
+                                val innerOrigin =
+                                    if (isCompactLandscapePhoneSixStationArcStation5) TransformOrigin(0.5f, 0f) else TransformOrigin(0.5f, 0.5f)
+                                val innerTranslateY =
+                                    if (isCompactLandscapePhoneSixStationArcStation5 && !isCompactLandscapePhoneCh1Station5) {
+                                        6.dp
+                                    } else {
+                                        0.dp
+                                    }
                                 LessonChoiceCard(
                                     choice = choice,
                                     enabled = enabled,
@@ -246,7 +266,15 @@ fun ImageMatchGame(
                                     cardWidth = effectiveCardWTwo,
                                     cardHeight = cardHTwo,
                                     captionFontSize = captionSp,
-                                    innerPictureScale = innerPictureScaleForChoice(choice),
+                                    innerPictureScale = innerScale,
+                                    innerPictureScaleY = innerScaleY,
+                                    innerPictureTransformOrigin = innerOrigin,
+                                    innerPictureTranslateY = innerTranslateY,
+                                    pictureContentAlignment =
+                                        if (isCompactLandscapePhoneCh1Station5) Alignment.TopCenter else Alignment.Center,
+                                    captionContentAlignment =
+                                        if (isCompactLandscapePhoneCh1Station5) Alignment.BottomCenter else Alignment.TopCenter,
+                                    pictureCaptionOffsetFraction = if (isCompactLandscapePhoneCh1Station5) 0f else -0.20f,
                                     onClick = {
                                         val ok = onAttempt(choice.id)
                                         if (ok) {
@@ -274,11 +302,11 @@ fun ImageMatchGame(
                         Column(
                             modifier = Modifier.width(sidePanelW).fillMaxHeight(),
                             horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = if (isCompactLandscapePhoneCh1Station5) Arrangement.Top else Arrangement.Center,
+                            verticalArrangement = if (isCompactLandscapePhoneSixStationArcStation5) Arrangement.Top else Arrangement.Center,
                         ) {
                         if (headerInstructionText != null) {
                             val effectiveFontSize =
-                                if (isCompactLandscapePhoneCh1Station5) {
+                                if (isCompactLandscapePhoneSixStationArcStation5) {
                                     if (rowInnerWidth < 480.dp) 24.sp else 28.sp
                                 } else {
                                     val baseSize = MaterialTheme.typography.titleMedium.fontSize
@@ -292,14 +320,14 @@ fun ImageMatchGame(
                                     MaterialTheme.typography.titleMedium.copy(
                                         fontSize = effectiveFontSize,
                                         fontWeight = FontWeight.Bold,
-                                        lineHeight = if (isCompactLandscapePhoneCh1Station5) (effectiveFontSize.value * 1.10f).sp else 16.sp,
+                                        lineHeight = if (isCompactLandscapePhoneSixStationArcStation5) (effectiveFontSize.value * 1.10f).sp else 16.sp,
                                     ),
                                 color = Color(0xFF0B2B3D),
                                 textAlign = TextAlign.Center,
                                 modifier =
                                     Modifier
                                         .then(
-                                            if (isCompactLandscapePhoneCh1Station5) {
+                                            if (isCompactLandscapePhoneSixStationArcStation5) {
                                                 Modifier.offset(y = (-18).dp)
                                             } else {
                                                 Modifier
@@ -355,7 +383,7 @@ fun ImageMatchGame(
                 ) {
                     if (headerInstructionText != null) {
                         val effectiveHeaderScale =
-                            if (isCompactLandscapePhoneCh1Station5) {
+                            if (isCompactLandscapePhoneSixStationArcStation5) {
                                 minOf(headerInstructionFontScale, 1.05f)
                             } else {
                                 headerInstructionFontScale
@@ -366,33 +394,33 @@ fun ImageMatchGame(
                                 MaterialTheme.typography.titleMedium.copy(
                                     fontSize = MaterialTheme.typography.titleMedium.fontSize * effectiveHeaderScale,
                                     fontWeight = FontWeight.Bold,
-                                    lineHeight = if (isCompactLandscapePhoneCh1Station5) 20.sp else MaterialTheme.typography.titleMedium.lineHeight,
+                                    lineHeight = if (isCompactLandscapePhoneSixStationArcStation5) 20.sp else MaterialTheme.typography.titleMedium.lineHeight,
                                 ),
                             color = Color(0xFF0B2B3D),
                             textAlign = TextAlign.Center,
                             modifier =
                                 Modifier
-                                    .padding(horizontal = if (isCompactLandscapePhoneCh1Station5) 6.dp else 8.dp)
+                                    .padding(horizontal = if (isCompactLandscapePhoneSixStationArcStation5) 6.dp else 8.dp)
                                     .then(
                                         if (readableInstructionHeaderPanel) {
                                             Modifier
                                                 .background(Color.White.copy(alpha = 0.72f), RoundedCornerShape(18.dp))
                                                 .padding(
                                                     horizontal = 14.dp,
-                                                    vertical = if (isCompactLandscapePhoneCh1Station5) 5.dp else 8.dp,
+                                                    vertical = if (isCompactLandscapePhoneSixStationArcStation5) 5.dp else 8.dp,
                                                 )
                                         } else {
                                             Modifier
                                         },
                                     ),
                         )
-                        Spacer(modifier = Modifier.height(if (isCompactLandscapePhoneCh1Station5) 4.dp else 6.dp))
+                        Spacer(modifier = Modifier.height(if (isCompactLandscapePhoneSixStationArcStation5) 4.dp else 6.dp))
                     }
                     if (headerPromptWord != null) {
                         Text(
                             text = headerPromptWord,
                             fontSize =
-                                if (isCompactLandscapePhoneCh1Station5) {
+                                if (isCompactLandscapePhoneSixStationArcStation5) {
                                     if (rowInnerWidth < 420.dp) 42.sp else 48.sp
                                 } else {
                                     if (rowInnerWidth < 420.dp) 52.sp else 60.sp
@@ -405,14 +433,14 @@ fun ImageMatchGame(
                                     .background(Color(0xFFFFF59D).copy(alpha = 0.95f), shape = RoundedCornerShape(16.dp))
                                     .padding(horizontal = 18.dp, vertical = 6.dp),
                         )
-                        Spacer(modifier = Modifier.height(if (isCompactLandscapePhoneCh1Station5) 6.dp else 10.dp))
+                        Spacer(modifier = Modifier.height(if (isCompactLandscapePhoneSixStationArcStation5) 6.dp else 10.dp))
                     }
                     if (showTargetLetterChip) {
                         // Station 5 (all chapters): match station 3 target-letter chip style, and sit a bit lower.
                         TargetLetterHeaderChip(
                             letter = question.targetLetter,
                             fontSize =
-                                if (isCompactLandscapePhoneCh1Station5) {
+                                if (isCompactLandscapePhoneSixStationArcStation5) {
                                     if (rowInnerWidth < 420.dp) 42.sp else 46.sp
                                 } else {
                                     if (rowInnerWidth < 420.dp) 52.sp else 56.sp
@@ -426,7 +454,7 @@ fun ImageMatchGame(
                         TargetLetterHeaderChip(
                             letter = listenOnlyTemporaryHintLetter,
                             fontSize =
-                                if (isCompactLandscapePhoneCh1Station5) {
+                                if (isCompactLandscapePhoneSixStationArcStation5) {
                                     if (rowInnerWidth < 420.dp) 42.sp else 46.sp
                                 } else {
                                     if (rowInnerWidth < 420.dp) 52.sp else 56.sp
@@ -437,7 +465,7 @@ fun ImageMatchGame(
                                     .offset(y = targetLetterChipOffsetYDp.dp),
                         )
                     }
-                    Spacer(modifier = Modifier.height(if (isCompactLandscapePhoneCh1Station5) 10.dp else if (narrowRow) 16.dp else 20.dp))
+                    Spacer(modifier = Modifier.height(if (isCompactLandscapePhoneSixStationArcStation5) 10.dp else if (narrowRow) 16.dp else 20.dp))
                     Row(
                         modifier =
                             Modifier
@@ -470,10 +498,26 @@ fun ImageMatchGame(
                                     density = density,
                                     cardWidth = cardW,
                                     word = choice.word,
-                                    sizeMultiplier = captionSizeMultiplier,
+                                    sizeMultiplier =
+                                        captionSizeMultiplier *
+                                            if (isCompactLandscapePhone && chapterId == 2 && choice.word == "היפופוטם") {
+                                                0.95f
+                                            } else {
+                                                1f
+                                            },
                                     chapterId = chapterId,
                                     stationId = stationId,
                                 )
+                            val innerScale = innerPictureScaleForChoice(choice)
+                            val innerScaleY = if (isCompactLandscapePhoneSixStationArcStation5) innerScale * 1.50f else innerScale
+                            val innerOrigin =
+                                if (isCompactLandscapePhoneSixStationArcStation5) TransformOrigin(0.5f, 0f) else TransformOrigin(0.5f, 0.5f)
+                            val innerTranslateY =
+                                if (isCompactLandscapePhoneSixStationArcStation5 && !isCompactLandscapePhoneCh1Station5) {
+                                    6.dp
+                                } else {
+                                    0.dp
+                                }
                             LessonChoiceCard(
                                 choice = choice,
                                 enabled = enabled,
@@ -482,7 +526,15 @@ fun ImageMatchGame(
                                 cardWidth = cardW,
                                 cardHeight = cardH,
                                 captionFontSize = captionSp,
-                                innerPictureScale = innerPictureScaleForChoice(choice),
+                                innerPictureScale = innerScale,
+                                innerPictureScaleY = innerScaleY,
+                                innerPictureTransformOrigin = innerOrigin,
+                                innerPictureTranslateY = innerTranslateY,
+                                pictureContentAlignment =
+                                    if (isCompactLandscapePhoneCh1Station5) Alignment.TopCenter else Alignment.Center,
+                                captionContentAlignment =
+                                    if (isCompactLandscapePhoneCh1Station5) Alignment.BottomCenter else Alignment.TopCenter,
+                                pictureCaptionOffsetFraction = if (isCompactLandscapePhoneCh1Station5) 0f else -0.20f,
                                 onClick = {
                                     val ok = onAttempt(choice.id)
                                     if (ok) {

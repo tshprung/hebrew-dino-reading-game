@@ -42,6 +42,7 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
@@ -60,6 +61,7 @@ import com.tal.hebrewdino.ui.components.learning.LessonChoiceCard
 import com.tal.hebrewdino.ui.components.learning.LessonChoiceCardCaptionAreaHeight
 import com.tal.hebrewdino.ui.components.learning.LessonChoiceCardCaptionSpacerHeight
 import com.tal.hebrewdino.ui.components.learning.LessonChoiceCardPictureAspect
+import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
 import com.tal.hebrewdino.ui.domain.LessonChoice
 import com.tal.hebrewdino.ui.layout.ScreenFit
 import kotlin.math.roundToInt
@@ -216,8 +218,17 @@ fun MatchLetterToWordGame(
         val innerH = maxHeight
         val isLandscape = innerW > innerH
         val isCompactLandscapePhone = ScreenFit.isCompactLandscapePhone()
-        val isPhoneCh1Station6 =
-            isCompactLandscapePhone && chapterId == 1 && stationId == 6
+        val isCompactLandscapePhoneCh1Station6 =
+            isCompactLandscapePhone &&
+                chapterId == 1 &&
+                stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH
+        val isPhoneSixStationArcStation6 =
+            isCompactLandscapePhone &&
+                (
+                    ((chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) &&
+                        stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH) ||
+                        (chapterId == 3 && stationId == 2)
+                )
 
         // Header stays pinned; content below scales down if needed so nothing is clipped.
         val headerPadTop = 6.dp
@@ -232,14 +243,14 @@ fun MatchLetterToWordGame(
             headerPadTop + headerPadBottom + if (compactWideSpread) 34.dp else 40.dp
         val bottomSafe =
             when {
-                isPhoneCh1Station6 -> 8.dp
+                isPhoneSixStationArcStation6 -> 8.dp
                 compactWideSpread && isCompactLandscapePhone -> 28.dp
                 compactWideSpread -> 84.dp
                 else -> 64.dp
             }
 
         Column(modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
-            if (!isPhoneCh1Station6) {
+            if (!isPhoneSixStationArcStation6) {
                 Column(
                     modifier =
                         Modifier
@@ -265,13 +276,13 @@ fun MatchLetterToWordGame(
                 }
             }
 
-            val effectiveHeaderH = if (isPhoneCh1Station6) 0.dp else headerH
+            val effectiveHeaderH = if (isPhoneSixStationArcStation6) 0.dp else headerH
             val availableH = (innerH - effectiveHeaderH - bottomSafe).coerceAtLeast(1.dp)
 
             // Estimate needed height so nothing clips. We scale the whole board uniformly.
             val landscapePictureLetterGap =
                 when {
-                    isPhoneCh1Station6 -> 24.dp
+                    isPhoneSixStationArcStation6 -> 24.dp
                     compactWideSpread -> 56.dp * 1.35f
                     else -> 56.dp * 1.8f
                 }
@@ -297,8 +308,8 @@ fun MatchLetterToWordGame(
                     Modifier
                         .fillMaxWidth()
                         .height(availableH)
-                        .then(if (isPhoneCh1Station6) Modifier else Modifier.scale(scaleToFit)),
-                contentAlignment = if (isPhoneCh1Station6) Alignment.TopStart else Alignment.TopCenter,
+                        .then(if (isPhoneSixStationArcStation6) Modifier else Modifier.scale(scaleToFit)),
+                contentAlignment = if (isPhoneSixStationArcStation6) Alignment.TopStart else Alignment.TopCenter,
             ) {
         val gap = 12.dp
         val baseTileH = if (compactWideSpread) 76.dp else 88.dp
@@ -308,7 +319,7 @@ fun MatchLetterToWordGame(
 
         val density = LocalDensity.current
         val lineInsetPx = with(density) { 6.dp.toPx() }
-        if (isPhoneCh1Station6) {
+        if (isPhoneSixStationArcStation6) {
             val boardHorizontalPadding = 10.dp
             val cardScale = 0.41f
             val letterTileHeightScale = 0.46f
@@ -431,6 +442,10 @@ fun MatchLetterToWordGame(
                                     chapterId = chapterId,
                                     stationId = stationId,
                                 )
+                            val innerScale = innerPictureScaleForChoice(ch)
+                            val innerScaleY = if (isCompactLandscapePhoneCh1Station6) innerScale * 1.50f else innerScale
+                            val innerOrigin =
+                                if (isCompactLandscapePhoneCh1Station6) TransformOrigin(0.5f, 0f) else TransformOrigin(0.5f, 0.5f)
                             LessonChoiceCard(
                                 choice = ch,
                                 enabled = enabled && !lockedThis,
@@ -439,7 +454,14 @@ fun MatchLetterToWordGame(
                                 cardWidth = cardW,
                                 cardHeight = cardH,
                                 captionFontSize = captionSp,
-                                innerPictureScale = innerPictureScaleForChoice(ch),
+                                innerPictureScale = innerScale,
+                                innerPictureScaleY = innerScaleY,
+                                innerPictureTransformOrigin = innerOrigin,
+                                pictureContentAlignment =
+                                    if (isCompactLandscapePhoneCh1Station6) Alignment.TopCenter else Alignment.Center,
+                                captionContentAlignment =
+                                    if (isCompactLandscapePhoneCh1Station6) Alignment.BottomCenter else Alignment.TopCenter,
+                                pictureCaptionOffsetFraction = if (isCompactLandscapePhoneCh1Station6) 0f else -0.20f,
                                 isCorrectPick = lockedThis,
                                 isSelected = !lockedThis && selectedThis,
                                 wrongFlashAlpha = wrongFlash.value,
@@ -616,22 +638,22 @@ fun MatchLetterToWordGame(
             if (isLandscape) {
                 // Landscape: pictures row, then letters row underneath.
                 CompositionLocalProvider(
-                    LocalLayoutDirection provides if (isPhoneCh1Station6) LayoutDirection.Ltr else LayoutDirection.Rtl,
+                    LocalLayoutDirection provides if (isPhoneSixStationArcStation6) LayoutDirection.Ltr else LayoutDirection.Rtl,
                 ) {
                     Column(
                         modifier =
                             Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = if (isPhoneCh1Station6) 6.dp else 10.dp)
+                                .padding(horizontal = if (isPhoneSixStationArcStation6) 6.dp else 10.dp)
                                 .offset { IntOffset(shake.value.roundToInt(), 0) }
                                 .then(
-                                    if (isPhoneCh1Station6) {
+                                    if (isPhoneSixStationArcStation6) {
                                         Modifier.offset(y = (-8).dp)
                                     } else {
                                         Modifier
                                     },
                                 ),
-                        horizontalAlignment = if (isPhoneCh1Station6) Alignment.Start else Alignment.CenterHorizontally,
+                        horizontalAlignment = if (isPhoneSixStationArcStation6) Alignment.Start else Alignment.CenterHorizontally,
                     ) {
                     // Match station 5 sizing (computed width + fixed aspect ratio).
                     val cardW =
@@ -648,7 +670,7 @@ fun MatchLetterToWordGame(
                         horizontalArrangement =
                             Arrangement.spacedBy(
                                 gap,
-                                if (isPhoneCh1Station6) Alignment.Start else Alignment.CenterHorizontally,
+                                if (isPhoneSixStationArcStation6) Alignment.Start else Alignment.CenterHorizontally,
                             ),
                     ) {
                         wordColumn.forEach { ch ->
@@ -678,10 +700,20 @@ fun MatchLetterToWordGame(
                                     density = density,
                                     cardWidth = cardW,
                                     word = ch.word,
-                                    sizeMultiplier = if (isPhoneCh1Station6) captionSizeMultiplier * 0.92f else captionSizeMultiplier,
+                                    sizeMultiplier =
+                                        (if (isPhoneSixStationArcStation6) captionSizeMultiplier * 0.92f else captionSizeMultiplier) *
+                                            if (isCompactLandscapePhone && chapterId == 2 && ch.word == "היפופוטם") {
+                                                0.95f
+                                            } else {
+                                                1f
+                                            },
                                     chapterId = chapterId,
                                     stationId = stationId,
                                 )
+                            val innerScale = innerPictureScaleForChoice(ch)
+                            val innerScaleY = if (isCompactLandscapePhoneCh1Station6) innerScale * 1.50f else innerScale
+                            val innerOrigin =
+                                if (isCompactLandscapePhoneCh1Station6) TransformOrigin(0.5f, 0f) else TransformOrigin(0.5f, 0.5f)
                             LessonChoiceCard(
                                 choice = ch,
                                 enabled = enabled && !lockedThis,
@@ -690,7 +722,14 @@ fun MatchLetterToWordGame(
                                 cardWidth = cardW,
                                 cardHeight = cardH,
                                 captionFontSize = captionSp,
-                                innerPictureScale = innerPictureScaleForChoice(ch),
+                                innerPictureScale = innerScale,
+                                innerPictureScaleY = innerScaleY,
+                                innerPictureTransformOrigin = innerOrigin,
+                                pictureContentAlignment =
+                                    if (isCompactLandscapePhoneCh1Station6) Alignment.TopCenter else Alignment.Center,
+                                captionContentAlignment =
+                                    if (isCompactLandscapePhoneCh1Station6) Alignment.BottomCenter else Alignment.TopCenter,
+                                pictureCaptionOffsetFraction = if (isCompactLandscapePhoneCh1Station6) 0f else -0.20f,
                                 isCorrectPick = lockedThis,
                                 isSelected = !lockedThis && selectedThis,
                                 wrongFlashAlpha = wrongFlash.value,
@@ -718,7 +757,7 @@ fun MatchLetterToWordGame(
                         horizontalArrangement =
                             Arrangement.spacedBy(
                                 gap,
-                                if (isPhoneCh1Station6) Alignment.Start else Alignment.CenterHorizontally,
+                                if (isPhoneSixStationArcStation6) Alignment.Start else Alignment.CenterHorizontally,
                             ),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
@@ -951,6 +990,10 @@ fun MatchLetterToWordGame(
                                 wrongFlash.snapTo(1f)
                                 wrongFlash.animateTo(0f, tween(220))
                             }
+                            val innerScale = innerPictureScaleForChoice(ch)
+                            val innerScaleY = if (isCompactLandscapePhoneCh1Station6) innerScale * 1.50f else innerScale
+                            val innerOrigin =
+                                if (isCompactLandscapePhoneCh1Station6) TransformOrigin(0.5f, 0f) else TransformOrigin(0.5f, 0.5f)
                             LessonChoiceCard(
                                 choice = ch,
                                 enabled = enabled && !lockedThis,
@@ -959,7 +1002,14 @@ fun MatchLetterToWordGame(
                                 cardWidth = cardW,
                                 cardHeight = cardH,
                                 captionFontSize = captionSp,
-                                innerPictureScale = innerPictureScaleForChoice(ch),
+                                innerPictureScale = innerScale,
+                                innerPictureScaleY = innerScaleY,
+                                innerPictureTransformOrigin = innerOrigin,
+                                pictureContentAlignment =
+                                    if (isCompactLandscapePhoneCh1Station6) Alignment.TopCenter else Alignment.Center,
+                                captionContentAlignment =
+                                    if (isCompactLandscapePhoneCh1Station6) Alignment.BottomCenter else Alignment.TopCenter,
+                                pictureCaptionOffsetFraction = if (isCompactLandscapePhoneCh1Station6) 0f else -0.20f,
                                 isCorrectPick = lockedThis,
                                 isSelected = !lockedThis && selectedThis,
                                 wrongFlashAlpha = wrongFlash.value,

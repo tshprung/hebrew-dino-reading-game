@@ -102,7 +102,10 @@ fun PictureStartsWithGame(
     modifier: Modifier = Modifier,
 ) {
     val isCompactLandscapePhone = ScreenFit.isCompactLandscapePhone()
-    val useTwoColumn = isCompactLandscapePhone && chapterId == 1 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE
+    val useTwoColumn =
+        isCompactLandscapePhone &&
+            (chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) &&
+            stationId == Chapter1StationOrder.PICTURE_PICK_ONE
     val instructionScale = if (isCompactLandscapePhone) 1.1f else 2f
     val phoneCardTextMultiplier =
         if (useTwoColumn) {
@@ -114,6 +117,12 @@ fun PictureStartsWithGame(
     if (useTwoColumn) {
         CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
             Box(modifier = modifier.fillMaxSize()) {
+                val instructionOffsetY =
+                    if (isCompactLandscapePhone && chapterId == 1 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
+                        (-22).dp
+                    } else {
+                        (-6).dp
+                    }
                 CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
                     Text(
                         text = instructionText,
@@ -124,7 +133,7 @@ fun PictureStartsWithGame(
                         modifier =
                             Modifier
                                 .align(Alignment.TopCenter)
-                                .offset(y = (-6).dp)
+                                .offset(y = instructionOffsetY)
                                 .padding(top = 0.dp, start = 12.dp, end = 12.dp)
                                 .then(
                                     if (instructionReadablePanel) {
@@ -347,8 +356,15 @@ fun PictureStartsWithGame(
                         minEach = 72.dp,
                         maxEach = 168.dp,
                     )
+                val effectivePictureSizeMultiplier =
+                    pictureSizeMultiplier *
+                        if (isCompactLandscapePhone && chapterId == 3 && stationId == 1) {
+                            0.70f
+                        } else {
+                            1f
+                        }
                 cardW =
-                    (cardW * pictureSizeMultiplier).coerceAtMost(
+                    (cardW * effectivePictureSizeMultiplier).coerceAtMost(
                         (rowForSizing - cardGap * (choiceCount - 1)) / choiceCount,
                     )
                 val cardH = cardW * LessonChoiceCardPictureAspect

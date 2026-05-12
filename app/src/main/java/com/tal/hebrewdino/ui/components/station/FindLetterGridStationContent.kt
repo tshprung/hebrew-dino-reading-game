@@ -67,7 +67,10 @@ fun FindLetterGridStationContent(
             stationUiSpec.findGridInlineInstructionPanelStyle == InstructionPanelStyle.WhiteRounded,
         compactLandscapeTwoColumn =
             isCompactLandscapePhone &&
-                stationUiSpec.chapterId == 1 &&
+                (stationUiSpec.chapterId == 1 ||
+                    stationUiSpec.chapterId == 2 ||
+                    stationUiSpec.chapterId == 4 ||
+                    stationUiSpec.chapterId == 5) &&
                 stationUiSpec.stationId == Chapter1StationOrder.REVEAL_THEN_CHOOSE,
         cellSideScale =
             when {

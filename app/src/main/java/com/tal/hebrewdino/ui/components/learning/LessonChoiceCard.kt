@@ -63,6 +63,12 @@ fun LessonChoiceCard(
     cardHeight: Dp,
     captionFontSize: TextUnit = 24.sp,
     innerPictureScale: Float = 1f,
+    innerPictureScaleY: Float = innerPictureScale,
+    innerPictureTransformOrigin: TransformOrigin = TransformOrigin(0.5f, 0.5f),
+    innerPictureTranslateY: Dp = 0.dp,
+    pictureContentAlignment: Alignment = Alignment.Center,
+    captionContentAlignment: Alignment = Alignment.TopCenter,
+    pictureCaptionOffsetFraction: Float = -0.20f,
     isCorrectPick: Boolean = false,
     isSelected: Boolean = false,
     /** 0..1 red flash overlay for wrong pick feedback. */
@@ -71,6 +77,7 @@ fun LessonChoiceCard(
     modifier: Modifier = Modifier,
 ) {
     val density = LocalDensity.current
+    val innerTranslateYPx = with(density) { innerPictureTranslateY.toPx() }
     val borderColor =
         if (wrongFlashAlpha > 0.01f) {
             Color(0xFFE53935).copy(alpha = 0.90f)
@@ -144,7 +151,7 @@ fun LessonChoiceCard(
                                 alpha = 1f,
                             ),
                         ),
-                contentAlignment = Alignment.Center,
+                contentAlignment = pictureContentAlignment,
             ) {
                 Text(
                     text = choice.letter,
@@ -156,8 +163,9 @@ fun LessonChoiceCard(
                         Modifier
                             .graphicsLayer {
                                 scaleX = innerPictureScale
-                                scaleY = innerPictureScale
-                                transformOrigin = TransformOrigin(0.5f, 0.5f)
+                                scaleY = innerPictureScaleY
+                                transformOrigin = innerPictureTransformOrigin
+                                translationY = innerTranslateYPx
                             }
                             .background(Color.White.copy(alpha = 0.50f), RoundedCornerShape(18.dp))
                             .padding(horizontal = 12.dp, vertical = 6.dp),
@@ -182,7 +190,7 @@ fun LessonChoiceCard(
                                 alpha = 1f,
                             ),
                         ),
-                contentAlignment = Alignment.Center,
+                contentAlignment = pictureContentAlignment,
             ) {
                 Text(
                     text = emoji,
@@ -191,8 +199,9 @@ fun LessonChoiceCard(
                     modifier =
                         Modifier.graphicsLayer {
                             scaleX = innerPictureScale
-                            scaleY = innerPictureScale
-                            transformOrigin = TransformOrigin(0.5f, 0.5f)
+                            scaleY = innerPictureScaleY
+                            transformOrigin = innerPictureTransformOrigin
+                            translationY = innerTranslateYPx
                         },
                 )
             }
@@ -205,7 +214,7 @@ fun LessonChoiceCard(
                         // Unify illustration presentation: all vector pictures sit on the same soft
                         // background (also fixes medusa looking "cut out" vs others).
                         .background(Color.White.copy(alpha = 0.55f)),
-                contentAlignment = Alignment.Center,
+                contentAlignment = pictureContentAlignment,
             ) {
                 Image(
                     painter = painterResource(id = choice.tileDrawable),
@@ -215,9 +224,11 @@ fun LessonChoiceCard(
                             .fillMaxSize()
                             .graphicsLayer {
                                 scaleX = innerPictureScale
-                                scaleY = innerPictureScale
-                                transformOrigin = TransformOrigin(0.5f, 0.5f)
+                                scaleY = innerPictureScaleY
+                                transformOrigin = innerPictureTransformOrigin
+                                translationY = innerTranslateYPx
                             },
+                    alignment = pictureContentAlignment,
                     // For our vector lesson illustrations, Fit keeps all pictures visually consistent
                     // inside the same card frame (no surprise cropping / perceived size jumps).
                     contentScale = ContentScale.Fit,
@@ -246,7 +257,7 @@ fun LessonChoiceCard(
                         .width(cardWidth + 8.dp)
                         .height(LessonChoiceCardCaptionAreaHeight),
                 // Keep the caption slightly higher so descenders don't get clipped on small devices.
-                contentAlignment = Alignment.TopCenter,
+                contentAlignment = captionContentAlignment,
             ) {
                 AutoFitSingleLineText(
                     text = choice.word,
@@ -263,7 +274,7 @@ fun LessonChoiceCard(
                             .fillMaxWidth()
                             // Picture-card captions: lift baseline ~20% within the reserved caption band
                             // so text stays visible and readable under the picture frame on small devices.
-                            .offset(y = if (isPictureWord) (-0.20f * maxHeight.value).dp else 0.dp),
+                            .offset(y = if (isPictureWord) (pictureCaptionOffsetFraction * maxHeight.value).dp else 0.dp),
                     minFontSize = 10.sp,
                 )
             }

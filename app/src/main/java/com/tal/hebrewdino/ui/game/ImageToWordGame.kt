@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -70,6 +71,7 @@ fun ImageToWordGame(
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
         val w = maxWidth
         val density = LocalDensity.current
+        val isCompactLandscapePhone = ScreenFit.isCompactLandscapePhone()
 
         // Match the same card sizing math as PictureStartsWith/ImageMatch (Episode 1/2 station 4).
         val cardGap = 10.dp
@@ -81,28 +83,44 @@ fun ImageToWordGame(
                 minEach = 72.dp,
                 maxEach = 168.dp,
             )
+        if (isCompactLandscapePhone) {
+            pictureCardW *= 0.70f
+        }
         val pictureCardH = pictureCardW * LessonChoiceCardPictureAspect
 
         Column(
-            modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp, vertical = 8.dp),
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 12.dp, vertical = if (isCompactLandscapePhone) 0.dp else 8.dp)
+                    .then(
+                        if (isCompactLandscapePhone) {
+                            Modifier.offset(y = (-10).dp)
+                        } else {
+                            Modifier
+                        },
+                    ),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Top,
         ) {
             Text(
                 text = instructionText,
-                fontSize = 24.sp,
+                fontSize = if (isCompactLandscapePhone) 20.sp else 24.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color(0xFF0B2B3D),
                 textAlign = TextAlign.Center,
                 modifier =
                     Modifier
-                        .padding(top = 6.dp, bottom = 10.dp)
+                        .padding(top = if (isCompactLandscapePhone) 2.dp else 6.dp, bottom = if (isCompactLandscapePhone) 6.dp else 10.dp)
                         .background(Color.White.copy(alpha = 0.72f), RoundedCornerShape(18.dp))
                         .padding(horizontal = 14.dp, vertical = 8.dp),
             )
 
             if (correctChoice != null) {
                 val pictureTapReplays = onPictureTapReplayWord != null
+                val innerScale =
+                    Chapter1Station5And6ImageMatchInnerScale.innerScale(correctChoice) *
+                        if (isCompactLandscapePhone) 1.50f else 1f
                 LessonChoiceCard(
                     choice = correctChoice,
                     enabled = enabled && pictureTapReplays,
@@ -111,14 +129,14 @@ fun ImageToWordGame(
                     cardWidth = pictureCardW,
                     cardHeight = pictureCardH,
                     captionFontSize = 1.sp,
-                    innerPictureScale = Chapter1Station5And6ImageMatchInnerScale.innerScale(correctChoice),
+                    innerPictureScale = innerScale,
                     onClick = { if (pictureTapReplays) onPictureTapReplayWord?.invoke() },
                 )
             } else {
                 Spacer(modifier = Modifier.height(pictureCardH))
             }
 
-            Spacer(modifier = Modifier.height(14.dp))
+            Spacer(modifier = Modifier.height(if (isCompactLandscapePhone) 6.dp else 14.dp))
 
             val optionCount = question.choices.size.coerceIn(2, 6)
             val optionW =
@@ -159,7 +177,7 @@ fun ImageToWordGame(
                         modifier =
                             Modifier
                                 .width(optionW)
-                                .height((optionW * 0.54f).coerceAtLeast(64.dp))
+                                .height((optionW * 0.54f).coerceAtLeast(if (isCompactLandscapePhone) 56.dp else 64.dp))
                                 .background(Color.White.copy(alpha = 0.92f), RoundedCornerShape(16.dp))
                                 .border(
                                     width = 2.dp,
@@ -186,7 +204,7 @@ fun ImageToWordGame(
                                         wrongFlashEpoch += 1
                                     }
                                 }
-                                .padding(horizontal = 10.dp, vertical = 6.dp),
+                                .padding(horizontal = 10.dp, vertical = if (isCompactLandscapePhone) 4.dp else 6.dp),
                         contentAlignment = Alignment.Center,
                     ) {
                         Text(

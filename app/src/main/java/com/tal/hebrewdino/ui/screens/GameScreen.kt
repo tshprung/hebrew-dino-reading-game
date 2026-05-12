@@ -1440,11 +1440,14 @@ fun GameScreen(
                                                     ?: StationInstructionCopy.PopBalloonsPopAllLettersInWord,
                                         )
                                     }
-                                    val ch1St2CompactLandscapePhone =
+                                    val sixStationArcSt2CompactLandscapePhone =
                                         isCompactLandscapePhone &&
-                                            chapterId == 1 &&
-                                            stationId == Chapter1StationOrder.BALLOON_POP
-                                    if (plan.mode != StationQuizMode.PickLetter && !ch1St2CompactLandscapePhone) {
+                                            (
+                                                ((chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) &&
+                                                    stationId == Chapter1StationOrder.BALLOON_POP) ||
+                                                    (chapterId == 3 && stationId == 3)
+                                            )
+                                    if (plan.mode != StationQuizMode.PickLetter && !sixStationArcSt2CompactLandscapePhone) {
                                         PopBalloonsInstructionHeaderBlock(
                                             listenOnly = listenOnly,
                                             sagaUsesPopBalloonsAudioStaging = sagaUsesPopBalloonsAudioStaging,
@@ -1459,7 +1462,7 @@ fun GameScreen(
                                             station2PinnedBalloonLetter = station2PinnedBalloonLetter,
                                             station2PinnedBalloonColor = station2PinnedBalloonColor,
                                             compactLandscapePhoneTuning =
-                                                ch1St2CompactLandscapePhone,
+                                                sixStationArcSt2CompactLandscapePhone,
                                         )
                                     }
                                     if (plan.mode == StationQuizMode.PickLetter) {
@@ -1651,9 +1654,9 @@ fun GameScreen(
                                             } else {
                                                 0
                                             }
-                                        val maxVisibleBalloonCount = if (ch1St2CompactLandscapePhone) 8 else null
-                                        val balloonSizeDp = if (ch1St2CompactLandscapePhone) 72.dp else 86.dp
-                                        val balloonLetterFontSize = if (ch1St2CompactLandscapePhone) 32.sp else 36.sp
+                                        val maxVisibleBalloonCount = if (sixStationArcSt2CompactLandscapePhone) 8 else null
+                                        val balloonSizeDp = if (sixStationArcSt2CompactLandscapePhone) 72.dp else 86.dp
+                                        val balloonLetterFontSize = if (sixStationArcSt2CompactLandscapePhone) 32.sp else 36.sp
                                         val onPopSfx: suspend (String, Boolean, Boolean, Int) -> Unit =
                                             popBalloonSfx@{ letter, isCorrect, finalCorrectBalloon, balloonIndex ->
                                                 if (!audioEnabled) return@popBalloonSfx
@@ -1837,7 +1840,7 @@ fun GameScreen(
                                             }
                                         val helpSideInsetDp = stationUiSpec.balloonPlayAreaStartInsetDp.dp
 
-                                        if (ch1St2CompactLandscapePhone) {
+                                        if (sixStationArcSt2CompactLandscapePhone) {
                                             Box(
                                                 modifier =
                                                     Modifier
@@ -1892,7 +1895,7 @@ fun GameScreen(
                                                 shakePx = optionsShake.value,
                                                 visualRoundSeed = visualRoundSeed,
                                                 maxVisibleBalloonCount = maxVisibleBalloonCount,
-                                                compactLandscapePhoneTuning = ch1St2CompactLandscapePhone,
+                                                compactLandscapePhoneTuning = sixStationArcSt2CompactLandscapePhone,
                                                 onBalloonPressed = { _ ->
                                                     // Voice is triggered after pop SFX (see onPopSfx) so it feels connected.
                                                 },
@@ -1918,7 +1921,7 @@ fun GameScreen(
                                     }
                                 val displayPictureInstructionText =
                                     if (isCompactLandscapePhone &&
-                                        chapterId == 1 &&
+                                        (chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) &&
                                         stationId == Chapter1StationOrder.PICTURE_PICK_ONE
                                     ) {
                                         ScreenFit.rtlUnicodeWrap(pictureInstructionText)
@@ -2192,7 +2195,13 @@ fun GameScreen(
                                         choicePairLimit = 3,
                                         contentKey = session.currentIndex,
                                         enabled = gameChoicesEnabled,
-                                        compactWideSpread = isCompactLandscapePhone && chapterId == 1 && stationId == 6,
+                                        compactWideSpread =
+                                            isCompactLandscapePhone &&
+                                                (
+                                                    ((chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) &&
+                                                        stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH) ||
+                                                        (chapterId == 3 && stationId == 2)
+                                                ),
                                         letterTileSizeMultiplier = if (chapterId == TrainingV1Config.CHAPTER_ID) 1.10f else 1f,
                                         onWordPressed = { choiceId ->
                                             speakNow {
@@ -2296,7 +2305,7 @@ fun GameScreen(
                                             }
                                     val displayImageMatchHeaderInstructionText =
                                         if (isCompactLandscapePhone &&
-                                            chapterId == 1 &&
+                                            (chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) &&
                                             stationId == Chapter1StationOrder.PICTURE_PICK_ALL &&
                                             rawImageMatchHeaderInstructionText != null
                                         ) {

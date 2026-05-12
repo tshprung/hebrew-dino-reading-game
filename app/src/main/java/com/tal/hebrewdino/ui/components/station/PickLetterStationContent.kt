@@ -72,9 +72,11 @@ fun ColumnScope.PickLetterStationContent(
     modifier: Modifier = Modifier,
 ) {
     val isCompactLandscapePhone = ScreenFit.isCompactLandscapePhone()
-    val isPhoneCh1Station1 =
-        isCompactLandscapePhone && chapterId == 1 && stationId == Chapter1StationOrder.TAP_LETTER
-    val instructionFont = (39f * if (isPhoneCh1Station1) 0.80f else 1f).sp
+    val isPhoneSixStationArcStation1 =
+        isCompactLandscapePhone &&
+            (chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) &&
+            stationId == Chapter1StationOrder.TAP_LETTER
+    val instructionFont = (39f * if (isPhoneSixStationArcStation1) 0.80f else 1f).sp
     val instructionPadV = 8.dp
     val headerChipFont = 56.sp
     Box(
@@ -186,7 +188,7 @@ fun ColumnScope.PickLetterStationContent(
             } else if (showSagaStation1CompactPreamble && pickLetterSagaStation1CompactPreamble != null) {
                 Text(
                     text = pickLetterSagaStation1CompactPreamble,
-                    fontSize = (34f * if (isPhoneCh1Station1) 0.80f else 1f).sp,
+                    fontSize = (34f * if (isPhoneSixStationArcStation1) 0.80f else 1f).sp,
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFF0B2B3D),
                     textAlign = TextAlign.Center,
