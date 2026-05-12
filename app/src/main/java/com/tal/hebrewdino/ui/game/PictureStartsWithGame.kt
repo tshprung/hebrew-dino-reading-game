@@ -124,6 +124,7 @@ fun PictureStartsWithGame(
                         modifier =
                             Modifier
                                 .align(Alignment.TopCenter)
+                                .offset(y = (-6).dp)
                                 .padding(top = 0.dp, start = 12.dp, end = 12.dp)
                                 .then(
                                     if (instructionReadablePanel) {
