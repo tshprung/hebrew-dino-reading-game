@@ -58,7 +58,7 @@ object Chapter1Station5And6LessonChoiceCardTuning {
     fun pictureContentAlignment(isCompactLandscapePhone: Boolean, chapterId: Int?, stationId: Int?): Alignment =
         if (
             isCompactLandscapePhone &&
-                chapterId == 1 &&
+                (chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) &&
                 (stationId == Chapter1StationOrder.PICTURE_PICK_ALL || stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH)
         ) {
             Alignment.TopCenter
@@ -67,14 +67,20 @@ object Chapter1Station5And6LessonChoiceCardTuning {
         }
 
     fun captionContentAlignment(isCompactLandscapePhone: Boolean, chapterId: Int?, stationId: Int?): Alignment =
-        if (isCompactLandscapePhone && chapterId == 1 && stationId == Chapter1StationOrder.PICTURE_PICK_ALL) {
+        if (isCompactLandscapePhone &&
+            (chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) &&
+            stationId == Chapter1StationOrder.PICTURE_PICK_ALL
+        ) {
             Alignment.BottomCenter
         } else {
             Alignment.TopCenter
         }
 
     fun pictureCaptionOffsetFraction(isCompactLandscapePhone: Boolean, chapterId: Int?, stationId: Int?): Float =
-        if (isCompactLandscapePhone && chapterId == 1 && stationId == Chapter1StationOrder.PICTURE_PICK_ALL) {
+        if (isCompactLandscapePhone &&
+            (chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) &&
+            stationId == Chapter1StationOrder.PICTURE_PICK_ALL
+        ) {
             0f
         } else {
             -0.20f

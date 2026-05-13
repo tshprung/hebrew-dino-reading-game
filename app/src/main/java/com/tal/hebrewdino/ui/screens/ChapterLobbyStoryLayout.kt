@@ -209,7 +209,11 @@ fun ChapterLobbyStoryLayout(
                                 }
                             }
                         } else {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            val scroll = rememberScrollState()
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                modifier = Modifier.verticalScroll(scroll),
+                            ) {
                                 Text(
                                     text = title,
                                     style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Black),
@@ -223,7 +227,7 @@ fun ChapterLobbyStoryLayout(
                                 }
                                 Text(
                                     text = body,
-                                    style = MaterialTheme.typography.titleLarge,
+                                    style = MaterialTheme.typography.titleLarge.copy(lineHeight = 30.sp),
                                     color = Color(0xFF0B2B3D),
                                     textAlign = TextAlign.Center,
                                 )

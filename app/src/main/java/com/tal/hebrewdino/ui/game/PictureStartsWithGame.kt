@@ -119,7 +119,10 @@ fun PictureStartsWithGame(
         CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
             Box(modifier = modifier.fillMaxSize()) {
                 val instructionOffsetY =
-                    if (isCompactLandscapePhone && chapterId == 1 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
+                    if (isCompactLandscapePhone &&
+                        (chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) &&
+                        stationId == Chapter1StationOrder.PICTURE_PICK_ONE
+                    ) {
                         (-22).dp
                     } else {
                         (-6).dp

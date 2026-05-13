@@ -283,7 +283,17 @@ fun GameScreen(
     /** Episode 1 station 2: counts correct pops within the current question (for pop SFX variety). */
     var station2CorrectPopCount by remember(stationId, session.currentIndex) { mutableIntStateOf(0) }
     var station1PinnedCorrectLetter by remember(stationId) { mutableStateOf<String?>(null) }
-    val gameChoicesEnabled = !inputLocked && !episode4Help.hintLocksChoices
+    val chapter3Station3BalloonHelpEnabled =
+        chapterId == 3 &&
+            stationId == 3 &&
+            stationUiSpec.templateId == StationTemplateId.PopBalloons &&
+            !episode4HelpSt15
+    var chapter3Station3HintLocksChoices by remember(stationId) { mutableStateOf(false) }
+    var chapter3Station3HintLetter by remember(stationId) { mutableStateOf<String?>(null) }
+    val gameChoicesEnabled =
+        !inputLocked &&
+            !episode4Help.hintLocksChoices &&
+            !(chapter3Station3BalloonHelpEnabled && chapter3Station3HintLocksChoices)
 
     fun cancelFeedbackVoice() {
         feedbackVoiceJob?.cancel()
@@ -397,6 +407,35 @@ fun GameScreen(
             stationId = stationId,
             hintDurationMs = stationUiSpec.hintDurationMs,
         )
+    }
+
+    fun performChapter3Station3HelpReplay() {
+        if (!audioEnabled || !chapter3Station3BalloonHelpEnabled || phase != GamePhase.Play) return
+        val q = session.currentQuestion as? Question.PopBalloonsQuestion ?: return
+        cancelFeedbackVoice()
+        val letter = q.correctAnswer
+        val letterClip = AudioClips.letterNameClip(letter)
+        feedbackVoiceJob =
+            scope.launch {
+                if (letterClip != null && voice.hasAsset(letterClip)) {
+                    voice.playBlocking(letterClip)
+                    return@launch
+                }
+                speakLetterPrompt(voice, letter)
+            }
+    }
+
+    fun performChapter3Station3HelpHint() {
+        if (!chapter3Station3BalloonHelpEnabled || phase != GamePhase.Play) return
+        if (chapter3Station3HintLocksChoices) return
+        val q = session.currentQuestion as? Question.PopBalloonsQuestion ?: return
+        chapter3Station3HintLocksChoices = true
+        chapter3Station3HintLetter = q.correctAnswer
+        scope.launch {
+            delay(Episode4Help.HINT_REVEAL_FALLBACK_MS)
+            chapter3Station3HintLetter = null
+            chapter3Station3HintLocksChoices = false
+        }
     }
     val jumpFrames =
         remember(stationId) {
@@ -528,6 +567,8 @@ fun GameScreen(
         station4WrongFlashLetter = null
         station4PinnedCorrectLetter = null
         episode4Help.resetForNewQuestion()
+        chapter3Station3HintLocksChoices = false
+        chapter3Station3HintLetter = null
         station1PinnedCorrectLetter = null
         station2PinnedBalloonLetter = null
         station2PinnedBalloonColor = null
@@ -2428,9 +2469,14 @@ fun GameScreen(
                                             .offset { IntOffset(optionsShake.value.toInt(), 0) },
                                 )
                         }
+                    val fullScreenBalloonHintLetter =
+                        when {
+                            episode4HelpSt15 -> episode4Help.activeHintLetter
+                            chapter3Station3BalloonHelpEnabled -> chapter3Station3HintLetter
+                            else -> null
+                        }
                     if (phase == GamePhase.Play &&
-                        episode4HelpSt15 &&
-                        episode4Help.activeHintLetter != null &&
+                        fullScreenBalloonHintLetter != null &&
                         current is Question.PopBalloonsQuestion &&
                         stationUiSpec.templateId == StationTemplateId.PopBalloons &&
                         !stationUiSpec.excludeFullScreenBalloonHintOverlay
@@ -2439,7 +2485,7 @@ fun GameScreen(
                             modifier = Modifier.fillMaxSize().zIndex(3f),
                             contentAlignment = Alignment.Center,
                         ) {
-                            TargetLetterHeaderChip(letter = episode4Help.activeHintLetter!!)
+                            TargetLetterHeaderChip(letter = fullScreenBalloonHintLetter!!)
                         }
                     }
                     }
@@ -2476,6 +2522,19 @@ fun GameScreen(
                         stationUiSpec.hintMode != com.tal.hebrewdino.ui.domain.StationHintMode.None,
                 onReplay = { performEpisode4HelpReplay() },
                 onHint = { performEpisode4HelpHint() },
+                modifier =
+                    Modifier
+                        .align(Alignment.CenterStart)
+                        .padding(start = 2.dp, top = 100.dp, bottom = 96.dp)
+                        .zIndex(6f),
+            )
+        }
+        if (chapter3Station3BalloonHelpEnabled) {
+            Episode4Stations15HelpColumn(
+                replayEnabled = phase == GamePhase.Play,
+                hintEnabled = phase == GamePhase.Play && !chapter3Station3HintLocksChoices,
+                onReplay = { performChapter3Station3HelpReplay() },
+                onHint = { performChapter3Station3HelpHint() },
                 modifier =
                     Modifier
                         .align(Alignment.CenterStart)

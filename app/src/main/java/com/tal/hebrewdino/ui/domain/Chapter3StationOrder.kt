@@ -14,7 +14,7 @@ object Chapter3StationOrder {
                     questionCount = 8,
                     initialGroupIndex = 1,
                     imageMatchCaptionSizeMultiplier = 1.5f,
-                    imageMatchPictureSizeMultiplier = 1f,
+                    imageMatchPictureSizeMultiplier = 0.85f,
                     sortOptionLetters = true,
                 )
             2 ->
@@ -28,13 +28,11 @@ object Chapter3StationOrder {
                     imageMatchCaptionSizeMultiplier = 1f,
                     imageMatchPictureSizeMultiplier = 1f,
                 )
-            // Station 3 — any-letter-in-word balloons (PopBalloons generator uses word content).
             3 ->
                 StationQuizPlan(
                     mode = StationQuizMode.PopBalloons,
-                    questionCount = 5,
+                    questionCount = 6,
                     initialGroupIndex = 0,
-                    popAllLettersInWord = true,
                     optionCount = 10,
                 )
             // Station 4 — find highlighted letter in word.

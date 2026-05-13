@@ -223,6 +223,10 @@ fun MatchLetterToWordGame(
             isCompactLandscapePhone &&
                 chapterId == 1 &&
                 stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH
+        val isChapter3Station2MatchLetterToWord =
+            isCompactLandscapePhone &&
+                chapterId == 3 &&
+                stationId == 2
         val isPhoneSixStationArcStation6 =
             isCompactLandscapePhone &&
                 (
@@ -321,285 +325,50 @@ fun MatchLetterToWordGame(
         val density = LocalDensity.current
         val lineInsetPx = with(density) { 6.dp.toPx() }
         if (isPhoneSixStationArcStation6) {
-            val boardHorizontalPadding = 10.dp
-            val cardScale = 0.41f
-            val letterTileHeightScale = 0.46f
-            val letterFontSp = 30.sp
-            val topGroupOffsetY = (-24).dp
-            val columns = wordColumn.size.coerceIn(1, 6)
-            val rowInnerW = (innerW - boardHorizontalPadding * 2f).coerceAtLeast(1.dp)
-            val cardWBase =
-                ScreenFit.rowChildWidthDp(
-                    rowInnerWidth = rowInnerW,
-                    count = columns,
-                    gap = gap,
-                    minEach = 72.dp,
-                    maxEach = 168.dp,
-                )
-            val cardWCurrent = cardWBase * cardScale
-            val perCardSlotW = (rowInnerW - gap * (columns - 1)) / columns
-            val maxWidthBoostToFit = (perCardSlotW / cardWCurrent).coerceAtLeast(1f)
-            val widthBoost = min(2f, maxWidthBoostToFit)
-            val sharedCardSize =
-                if (chapterId != 3) {
-                    Chapter1Station4To6LessonChoiceCardSpec.station5And6CardSize(
-                        maxWidth = innerW,
-                        maxHeight = innerH,
-                        choiceCount = columns,
-                        pictureSizeMultiplier = 1f,
-                        showWordCaption = true,
-                    )
-                } else {
-                    null
-                }
-            val cardWidthBoostForStation =
-                if (chapterId == 1 && stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH) {
-                    1.20f
-                } else {
-                    1f
-                }
-            val baseCardW = sharedCardSize?.width ?: (cardWCurrent * widthBoost)
-            val cardW = (baseCardW * cardWidthBoostForStation).coerceAtMost(perCardSlotW)
-            val cardH =
-                cardW *
-                    LessonChoiceCardPictureAspect *
-                    if (chapterId == 1 && stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH) {
-                        0.70f
-                    } else {
-                        1f
-                    }
-            val letterTileW = cardW
-            val letterTileH = (tileH * letterTileHeightScale).coerceAtLeast(44.dp)
-
-            Box(
-                modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .onGloballyPositioned { coords ->
-                            boardOriginInRoot = coords.positionInRoot()
-                        },
-            ) {
-                Canvas(modifier = Modifier.fillMaxSize()) {
-                    locked.forEach { (letter, choiceId) ->
-                        val lr = letterRects[letter]
-                        val ir = itemRects[choiceId]
-                        val from = ir?.let { Offset(it.center.x, it.bottom - lineInsetPx) }
-                        val to = lr?.let { Offset(it.center.x, it.top + lineInsetPx) }
-                        if (from != null && to != null) {
-                            val localA = from - boardOriginInRoot
-                            val localB = to - boardOriginInRoot
-                            drawLine(
-                                color = Color(0xFF7E57C2).copy(alpha = 0.95f),
-                                start = localA,
-                                end = localB,
-                                strokeWidth = 10f,
-                                cap = StrokeCap.Round,
-                            )
-                            if (glow.value > 0f) {
-                                drawLine(
-                                    color = Color(0xFFB39DDB).copy(alpha = 0.70f * glow.value),
-                                    start = localA,
-                                    end = localB,
-                                    strokeWidth = 18f,
-                                    cap = StrokeCap.Round,
-                                )
-                            }
-                        }
-                    }
-                }
-
-                Column(
-                    modifier =
-                        Modifier
-                            .align(Alignment.TopCenter)
-                            .fillMaxWidth()
-                            .padding(top = 0.dp, start = 12.dp, end = 12.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    Text(
-                        text = instructions,
-                        fontSize = 22.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF0B2B3D),
-                        textAlign = TextAlign.Center,
-                        modifier =
-                            Modifier
-                                .offset(y = topGroupOffsetY)
-                                .background(Color.White.copy(alpha = 0.72f), RoundedCornerShape(18.dp))
-                                .padding(horizontal = 14.dp, vertical = 4.dp),
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Row(
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = boardHorizontalPadding)
-                                .offset(y = topGroupOffsetY)
-                                .offset { IntOffset(shake.value.roundToInt(), 0) },
-                        horizontalArrangement = Arrangement.spacedBy(gap, Alignment.CenterHorizontally),
-                    ) {
-                        wordColumn.forEach { ch ->
-                            val lockedThis = isLockedChoice(ch.id)
-                            val selectedThis = selectedChoiceId == ch.id
-                            val pop = remember(ch.id, contentKey) { Animatable(1f) }
-                            val wrongFlash = remember(ch.id, contentKey) { Animatable(0f) }
-                            LaunchedEffect(hintEpoch, hintChoiceId, ch.id, contentKey) {
-                                if (hintEpoch <= 0 || hintChoiceId != ch.id) return@LaunchedEffect
-                                pop.snapTo(1f)
-                                pop.animateTo(1.12f, tween(120))
-                                pop.animateTo(1f, tween(160))
-                            }
-                            LaunchedEffect(correctEpoch, correctChoiceId, ch.id, contentKey) {
-                                if (correctEpoch <= 0 || correctChoiceId != ch.id) return@LaunchedEffect
-                                pop.snapTo(1f)
-                                pop.animateTo(1.18f, tween(90))
-                                pop.animateTo(1f, tween(140))
-                            }
-                            LaunchedEffect(wrongFlashEpoch, wrongFlashChoiceId, ch.id, contentKey) {
-                                if (wrongFlashEpoch <= 0 || wrongFlashChoiceId != ch.id) return@LaunchedEffect
-                                wrongFlash.snapTo(1f)
-                                wrongFlash.animateTo(0f, tween(220))
-                            }
-                            val captionSp =
-                                captionFontSizeForWordCard(
-                                    density = density,
-                                    cardWidth = cardW,
-                                    word = ch.word,
-                                    sizeMultiplier =
-                                        captionSizeMultiplier *
-                                            0.92f *
-                                            if (isCompactLandscapePhone && chapterId == 2 && ch.word == "היפופוטם") {
-                                                0.95f
-                                            } else {
-                                                1f
-                                            },
-                                    chapterId = chapterId,
-                                    stationId = stationId,
-                                )
-                            val innerScale = innerPictureScaleForChoice(ch)
-                            Chapter1Station4To6LessonChoiceCardSpec.Card(
-                                choice = ch,
-                                enabled = enabled && !lockedThis,
-                                scale = pop.value,
-                                showWordCaption = true,
-                                cardWidth = cardW,
-                                cardHeight = cardH,
-                                captionFontSize = captionSp,
-                                innerPictureScale = innerScale,
-                                isCorrectPick = lockedThis,
-                                isSelected = !lockedThis && selectedThis,
-                                wrongFlashAlpha = wrongFlash.value,
-                                onClick = {
-                                    if (!enabled || lockedThis) return@Card
-                                    onWordPressed?.invoke(ch.id)
-                                    val picked = selectedLetter
-                                    if (picked != null) {
-                                        tryLockMatch(picked, ch)
-                                    } else {
-                                        selectedChoiceId = if (selectedChoiceId == ch.id) null else ch.id
-                                    }
-                                },
-                                modifier =
-                                    Modifier
-                                        .width(cardW)
-                                        .onGloballyPositioned { coords ->
-                                            val p = coords.positionInRoot()
-                                            itemRects[ch.id] =
-                                                Rect(p, Size(coords.size.width.toFloat(), coords.size.height.toFloat()))
-                                        },
-                            )
-                        }
-                    }
-                }
-
-                Row(
-                    modifier =
-                        Modifier
-                            .align(Alignment.BottomCenter)
-                            .fillMaxWidth()
-                            .padding(start = boardHorizontalPadding, end = boardHorizontalPadding, bottom = 12.dp)
-                            .offset { IntOffset(shake.value.roundToInt(), 0) },
-                    horizontalArrangement = Arrangement.spacedBy(gap, Alignment.CenterHorizontally),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    letterColumn.forEach { letter ->
-                        val lockedThis = isLockedLetter(letter)
-                        val selected = selectedLetter == letter
-                        val pop = remember(letter, contentKey) { Animatable(1f) }
-                        val wrongFlash = remember(letter, contentKey) { Animatable(0f) }
-                        LaunchedEffect(hintEpoch, hintLetter, letter, contentKey) {
-                            if (hintEpoch <= 0 || hintLetter != letter) return@LaunchedEffect
-                            pop.snapTo(1f)
-                            pop.animateTo(1.14f, tween(120))
-                            pop.animateTo(1f, tween(160))
-                        }
-                        LaunchedEffect(correctEpoch, correctLetter, letter, contentKey) {
-                            if (correctEpoch <= 0 || correctLetter != letter) return@LaunchedEffect
-                            pop.snapTo(1f)
-                            pop.animateTo(1.20f, tween(90))
-                            pop.animateTo(1f, tween(140))
-                        }
-                        LaunchedEffect(wrongFlashEpoch, wrongFlashLetter, letter, contentKey) {
-                            if (wrongFlashEpoch <= 0 || wrongFlashLetter != letter) return@LaunchedEffect
-                            wrongFlash.snapTo(1f)
-                            wrongFlash.animateTo(0f, tween(220))
-                        }
-                        Box(
-                            modifier =
-                                Modifier
-                                    .width(letterTileW)
-                                    .height(letterTileH)
-                                    .scale(pop.value)
-                                    .background(
-                                        when {
-                                            lockedThis -> Color(0xFFE8F5E9).copy(alpha = 0.98f)
-                                            selected -> Color(0xFFC8E6C9).copy(alpha = 0.95f)
-                                            else -> Color.White.copy(alpha = 0.88f)
-                                        },
-                                        tileShape,
-                                    )
-                                    .border(
-                                        2.dp,
-                                        when {
-                                            wrongFlash.value > 0.01f -> Color(0xFFE53935).copy(alpha = 0.95f)
-                                            lockedThis -> Color(0xFF2E7D32).copy(alpha = 0.85f)
-                                            selected -> Color(0xFF2E7D32).copy(alpha = 0.70f)
-                                            else -> Color(0xFF0B2B3D).copy(alpha = 0.14f)
-                                        },
-                                        tileShape,
-                                    )
-                                    .clickable(enabled = enabled && !lockedThis) {
-                                        onLetterPressed?.invoke(letter)
-                                        val nowSelected = if (selectedLetter == letter) null else letter
-                                        selectedLetter = nowSelected
-                                        val pickedChoiceId = selectedChoiceId
-                                        if (nowSelected != null && pickedChoiceId != null) {
-                                            val choice = wordColumn.firstOrNull { it.id == pickedChoiceId }
-                                            if (choice != null) {
-                                                tryLockMatch(nowSelected, choice)
-                                            } else {
-                                                selectedChoiceId = null
-                                            }
-                                        }
-                                    }
-                                    .onGloballyPositioned { coords ->
-                                        val p = coords.positionInRoot()
-                                        letterRects[letter] = Rect(p, Size(coords.size.width.toFloat(), coords.size.height.toFloat()))
-                                    },
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            if (wrongFlash.value > 0.01f) {
-                                Box(
-                                    Modifier
-                                        .fillMaxSize()
-                                        .background(Color(0xFFE53935).copy(alpha = 0.18f * wrongFlash.value), tileShape),
-                                )
-                            }
-                            Text(text = letter, fontSize = letterFontSp, fontWeight = FontWeight.Black, color = Color(0xFF0B2B3D))
-                        }
-                    }
-                }
-            }
+            SixStationArcStation6Board(
+                innerW = innerW,
+                innerH = innerH,
+                gap = gap,
+                tileH = tileH,
+                tileShape = tileShape,
+                lineInsetPx = lineInsetPx,
+                wordColumn = wordColumn,
+                letterColumn = letterColumn,
+                instructions = instructions,
+                enabled = enabled,
+                chapterId = chapterId,
+                stationId = stationId,
+                contentKey = contentKey,
+                captionSizeMultiplier = captionSizeMultiplier,
+                isCompactLandscapePhone = isCompactLandscapePhone,
+                isChapter3Station2MatchLetterToWord = isChapter3Station2MatchLetterToWord,
+                isLockedChoice = ::isLockedChoice,
+                isLockedLetter = ::isLockedLetter,
+                locked = locked,
+                selectedLetter = selectedLetter,
+                onSelectedLetterChange = { selectedLetter = it },
+                selectedChoiceId = selectedChoiceId,
+                onSelectedChoiceIdChange = { selectedChoiceId = it },
+                itemRects = itemRects,
+                letterRects = letterRects,
+                boardOriginInRoot = boardOriginInRoot,
+                onBoardOriginInRootChange = { boardOriginInRoot = it },
+                shake = shake,
+                glow = glow,
+                hintEpoch = hintEpoch,
+                hintChoiceId = hintChoiceId,
+                hintLetter = hintLetter,
+                correctEpoch = correctEpoch,
+                correctChoiceId = correctChoiceId,
+                correctLetter = correctLetter,
+                wrongFlashEpoch = wrongFlashEpoch,
+                wrongFlashChoiceId = wrongFlashChoiceId,
+                wrongFlashLetter = wrongFlashLetter,
+                onWordPressed = onWordPressed,
+                onLetterPressed = onLetterPressed,
+                tryLockMatch = ::tryLockMatch,
+                innerPictureScaleForChoice = innerPictureScaleForChoice,
+            )
         } else {
         Box(
             modifier =
@@ -691,7 +460,11 @@ fun MatchLetterToWordGame(
                     val cardH =
                         cardW *
                             LessonChoiceCardPictureAspect *
-                            if (chapterId == 1 && stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH) {
+                            if ((chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) &&
+                                stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH
+                            ) {
+                                0.70f
+                            } else if (isChapter3Station2MatchLetterToWord) {
                                 0.70f
                             } else {
                                 1f
@@ -755,13 +528,14 @@ fun MatchLetterToWordGame(
                                 isSelected = !lockedThis && selectedThis,
                                 wrongFlashAlpha = wrongFlash.value,
                                 onClick = {
-                                    if (!enabled || lockedThis) return@Card
-                                    onWordPressed?.invoke(ch.id)
-                                    val picked = selectedLetter
-                                    if (picked != null) {
-                                        tryLockMatch(picked, ch)
-                                    } else {
-                                        selectedChoiceId = if (selectedChoiceId == ch.id) null else ch.id
+                                    if (enabled && !lockedThis) {
+                                        onWordPressed?.invoke(ch.id)
+                                        val picked = selectedLetter
+                                        if (picked != null) {
+                                            tryLockMatch(picked, ch)
+                                        } else {
+                                            selectedChoiceId = if (selectedChoiceId == ch.id) null else ch.id
+                                        }
                                     }
                                 },
                                 modifier =
@@ -985,7 +759,11 @@ fun MatchLetterToWordGame(
                             val cardH =
                                 cardW *
                                     LessonChoiceCardPictureAspect *
-                                    if (chapterId == 1 && stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH) {
+                                    if ((chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) &&
+                                        stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH
+                                    ) {
+                                        0.70f
+                                    } else if (isChapter3Station2MatchLetterToWord) {
                                         0.70f
                                     } else {
                                         1f
@@ -1032,13 +810,14 @@ fun MatchLetterToWordGame(
                                 isSelected = !lockedThis && selectedThis,
                                 wrongFlashAlpha = wrongFlash.value,
                                 onClick = {
-                                    if (!enabled || lockedThis) return@Card
-                                    onWordPressed?.invoke(ch.id)
-                                    val picked = selectedLetter
-                                    if (picked != null) {
-                                        tryLockMatch(picked, ch)
-                                    } else {
-                                        selectedChoiceId = if (selectedChoiceId == ch.id) null else ch.id
+                                    if (enabled && !lockedThis) {
+                                        onWordPressed?.invoke(ch.id)
+                                        val picked = selectedLetter
+                                        if (picked != null) {
+                                            tryLockMatch(picked, ch)
+                                        } else {
+                                            selectedChoiceId = if (selectedChoiceId == ch.id) null else ch.id
+                                        }
                                     }
                                 },
                                 modifier =
@@ -1056,5 +835,336 @@ fun MatchLetterToWordGame(
             }
         }
     }
+    }
+}
+
+@Composable
+private fun SixStationArcStation6Board(
+    innerW: Dp,
+    innerH: Dp,
+    gap: Dp,
+    tileH: Dp,
+    tileShape: RoundedCornerShape,
+    lineInsetPx: Float,
+    wordColumn: List<LessonChoice>,
+    letterColumn: List<String>,
+    instructions: String,
+    enabled: Boolean,
+    chapterId: Int?,
+    stationId: Int?,
+    contentKey: Int,
+    captionSizeMultiplier: Float,
+    isCompactLandscapePhone: Boolean,
+    isChapter3Station2MatchLetterToWord: Boolean,
+    isLockedChoice: (String) -> Boolean,
+    isLockedLetter: (String) -> Boolean,
+    locked: Map<String, String>,
+    selectedLetter: String?,
+    onSelectedLetterChange: (String?) -> Unit,
+    selectedChoiceId: String?,
+    onSelectedChoiceIdChange: (String?) -> Unit,
+    itemRects: MutableMap<String, Rect>,
+    letterRects: MutableMap<String, Rect>,
+    boardOriginInRoot: Offset,
+    onBoardOriginInRootChange: (Offset) -> Unit,
+    shake: Animatable<Float, *>,
+    glow: Animatable<Float, *>,
+    hintEpoch: Int,
+    hintChoiceId: String?,
+    hintLetter: String?,
+    correctEpoch: Int,
+    correctChoiceId: String?,
+    correctLetter: String?,
+    wrongFlashEpoch: Int,
+    wrongFlashChoiceId: String?,
+    wrongFlashLetter: String?,
+    onWordPressed: ((String) -> Unit)?,
+    onLetterPressed: ((String) -> Unit)?,
+    tryLockMatch: (String, LessonChoice) -> Unit,
+    innerPictureScaleForChoice: (LessonChoice) -> Float,
+) {
+    val density = LocalDensity.current
+    val boardHorizontalPadding = 10.dp
+    val cardScale = 0.41f
+    val letterTileHeightScale = 0.46f
+    val letterFontSp = 30.sp
+    val topGroupOffsetY = (-24).dp
+    val columns = wordColumn.size.coerceIn(1, 6)
+    val rowInnerW = (innerW - boardHorizontalPadding * 2f).coerceAtLeast(1.dp)
+    val cardWBase =
+        ScreenFit.rowChildWidthDp(
+            rowInnerWidth = rowInnerW,
+            count = columns,
+            gap = gap,
+            minEach = 72.dp,
+            maxEach = 168.dp,
+        )
+    val cardWCurrent = cardWBase * cardScale
+    val perCardSlotW = (rowInnerW - gap * (columns - 1)) / columns
+    val maxWidthBoostToFit = (perCardSlotW / cardWCurrent).coerceAtLeast(1f)
+    val widthBoost = min(2f, maxWidthBoostToFit)
+    val sharedCardSize =
+        Chapter1Station4To6LessonChoiceCardSpec.station5And6CardSize(
+            maxWidth = innerW,
+            maxHeight = innerH,
+            choiceCount = columns,
+            pictureSizeMultiplier = 1f,
+            showWordCaption = true,
+        )
+    val cardWidthBoostForStation =
+        if ((chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) &&
+            stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH
+        ) {
+            1.20f
+        } else if (isChapter3Station2MatchLetterToWord) {
+            1.20f
+        } else {
+            1f
+        }
+    val baseCardW = sharedCardSize?.width ?: (cardWCurrent * widthBoost)
+    val cardW = (baseCardW * cardWidthBoostForStation).coerceAtMost(perCardSlotW)
+    val cardH =
+        cardW *
+            LessonChoiceCardPictureAspect *
+            if ((chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) &&
+                stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH
+            ) {
+                0.70f
+            } else if (isChapter3Station2MatchLetterToWord) {
+                0.70f
+            } else {
+                1f
+            }
+    val letterTileW = cardW
+    val letterTileH = (tileH * letterTileHeightScale).coerceAtLeast(44.dp)
+
+    Box(
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .onGloballyPositioned { coords ->
+                    onBoardOriginInRootChange(coords.positionInRoot())
+                },
+    ) {
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            locked.forEach { (letter, choiceId) ->
+                val lr = letterRects[letter]
+                val ir = itemRects[choiceId]
+                val from = ir?.let { Offset(it.center.x, it.bottom - lineInsetPx) }
+                val to = lr?.let { Offset(it.center.x, it.top + lineInsetPx) }
+                if (from != null && to != null) {
+                    val localA = from - boardOriginInRoot
+                    val localB = to - boardOriginInRoot
+                    drawLine(
+                        color = Color(0xFF7E57C2).copy(alpha = 0.95f),
+                        start = localA,
+                        end = localB,
+                        strokeWidth = 10f,
+                        cap = StrokeCap.Round,
+                    )
+                    if (glow.value > 0f) {
+                        drawLine(
+                            color = Color(0xFFB39DDB).copy(alpha = 0.70f * glow.value),
+                            start = localA,
+                            end = localB,
+                            strokeWidth = 18f,
+                            cap = StrokeCap.Round,
+                        )
+                    }
+                }
+            }
+        }
+
+        Column(
+            modifier =
+                Modifier
+                    .align(Alignment.TopCenter)
+                    .fillMaxWidth()
+                    .padding(top = 0.dp, start = 12.dp, end = 12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text(
+                text = instructions,
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF0B2B3D),
+                textAlign = TextAlign.Center,
+                modifier =
+                    Modifier
+                        .offset(y = topGroupOffsetY)
+                        .background(Color.White.copy(alpha = 0.72f), RoundedCornerShape(18.dp))
+                        .padding(horizontal = 14.dp, vertical = 4.dp),
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Row(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = boardHorizontalPadding)
+                        .offset(y = topGroupOffsetY)
+                        .offset { IntOffset(shake.value.roundToInt(), 0) },
+                horizontalArrangement = Arrangement.spacedBy(gap, Alignment.CenterHorizontally),
+            ) {
+                wordColumn.forEach { ch ->
+                    val lockedThis = isLockedChoice(ch.id)
+                    val selectedThis = selectedChoiceId == ch.id
+                    val pop = remember(ch.id, contentKey) { Animatable(1f) }
+                    val wrongFlash = remember(ch.id, contentKey) { Animatable(0f) }
+                    LaunchedEffect(hintEpoch, hintChoiceId, ch.id, contentKey) {
+                        if (hintEpoch <= 0 || hintChoiceId != ch.id) return@LaunchedEffect
+                        pop.snapTo(1f)
+                        pop.animateTo(1.12f, tween(120))
+                        pop.animateTo(1f, tween(160))
+                    }
+                    LaunchedEffect(correctEpoch, correctChoiceId, ch.id, contentKey) {
+                        if (correctEpoch <= 0 || correctChoiceId != ch.id) return@LaunchedEffect
+                        pop.snapTo(1f)
+                        pop.animateTo(1.18f, tween(90))
+                        pop.animateTo(1f, tween(140))
+                    }
+                    LaunchedEffect(wrongFlashEpoch, wrongFlashChoiceId, ch.id, contentKey) {
+                        if (wrongFlashEpoch <= 0 || wrongFlashChoiceId != ch.id) return@LaunchedEffect
+                        wrongFlash.snapTo(1f)
+                        wrongFlash.animateTo(0f, tween(220))
+                    }
+                    val captionSp =
+                        captionFontSizeForWordCard(
+                            density = density,
+                            cardWidth = cardW,
+                            word = ch.word,
+                            sizeMultiplier =
+                                captionSizeMultiplier *
+                                    0.92f *
+                                    if (isCompactLandscapePhone && chapterId == 2 && ch.word == "היפופוטם") {
+                                        0.95f
+                                    } else {
+                                        1f
+                                    },
+                            chapterId = chapterId,
+                            stationId = stationId,
+                        )
+                    val innerScale = innerPictureScaleForChoice(ch)
+                    Chapter1Station4To6LessonChoiceCardSpec.Card(
+                        choice = ch,
+                        enabled = enabled && !lockedThis,
+                        scale = pop.value,
+                        showWordCaption = true,
+                        cardWidth = cardW,
+                        cardHeight = cardH,
+                        captionFontSize = captionSp,
+                        innerPictureScale = innerScale,
+                        isCorrectPick = lockedThis,
+                        isSelected = !lockedThis && selectedThis,
+                        wrongFlashAlpha = wrongFlash.value,
+                        onClick = {
+                            if (enabled && !lockedThis) {
+                                onWordPressed?.invoke(ch.id)
+                                val picked = selectedLetter
+                                if (picked != null) {
+                                    tryLockMatch(picked, ch)
+                                } else {
+                                    onSelectedChoiceIdChange(if (selectedChoiceId == ch.id) null else ch.id)
+                                }
+                            }
+                        },
+                        modifier =
+                            Modifier
+                                .width(cardW)
+                                .onGloballyPositioned { coords ->
+                                    val p = coords.positionInRoot()
+                                    itemRects[ch.id] = Rect(p, Size(coords.size.width.toFloat(), coords.size.height.toFloat()))
+                                },
+                    )
+                }
+            }
+        }
+
+        Row(
+            modifier =
+                Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .padding(start = boardHorizontalPadding, end = boardHorizontalPadding, bottom = 12.dp)
+                    .offset { IntOffset(shake.value.roundToInt(), 0) },
+            horizontalArrangement = Arrangement.spacedBy(gap, Alignment.CenterHorizontally),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            letterColumn.forEach { letter ->
+                val lockedThis = isLockedLetter(letter)
+                val selected = selectedLetter == letter
+                val pop = remember(letter, contentKey) { Animatable(1f) }
+                val wrongFlash = remember(letter, contentKey) { Animatable(0f) }
+                LaunchedEffect(hintEpoch, hintLetter, letter, contentKey) {
+                    if (hintEpoch <= 0 || hintLetter != letter) return@LaunchedEffect
+                    pop.snapTo(1f)
+                    pop.animateTo(1.14f, tween(120))
+                    pop.animateTo(1f, tween(160))
+                }
+                LaunchedEffect(correctEpoch, correctLetter, letter, contentKey) {
+                    if (correctEpoch <= 0 || correctLetter != letter) return@LaunchedEffect
+                    pop.snapTo(1f)
+                    pop.animateTo(1.20f, tween(90))
+                    pop.animateTo(1f, tween(140))
+                }
+                LaunchedEffect(wrongFlashEpoch, wrongFlashLetter, letter, contentKey) {
+                    if (wrongFlashEpoch <= 0 || wrongFlashLetter != letter) return@LaunchedEffect
+                    wrongFlash.snapTo(1f)
+                    wrongFlash.animateTo(0f, tween(220))
+                }
+                Box(
+                    modifier =
+                        Modifier
+                            .width(letterTileW)
+                            .height(letterTileH)
+                            .scale(pop.value)
+                            .background(
+                                when {
+                                    lockedThis -> Color(0xFFE8F5E9).copy(alpha = 0.98f)
+                                    selected -> Color(0xFFC8E6C9).copy(alpha = 0.95f)
+                                    else -> Color.White.copy(alpha = 0.88f)
+                                },
+                                tileShape,
+                            )
+                            .border(
+                                2.dp,
+                                when {
+                                    wrongFlash.value > 0.01f -> Color(0xFFE53935).copy(alpha = 0.95f)
+                                    lockedThis -> Color(0xFF2E7D32).copy(alpha = 0.85f)
+                                    selected -> Color(0xFF2E7D32).copy(alpha = 0.70f)
+                                    else -> Color(0xFF0B2B3D).copy(alpha = 0.14f)
+                                },
+                                tileShape,
+                            )
+                            .clickable(enabled = enabled && !lockedThis) {
+                                onLetterPressed?.invoke(letter)
+                                val nowSelected = if (selectedLetter == letter) null else letter
+                                onSelectedLetterChange(nowSelected)
+                                val pickedChoiceId = selectedChoiceId
+                                if (nowSelected != null && pickedChoiceId != null) {
+                                    val choice = wordColumn.firstOrNull { it.id == pickedChoiceId }
+                                    if (choice != null) {
+                                        tryLockMatch(nowSelected, choice)
+                                    } else {
+                                        onSelectedChoiceIdChange(null)
+                                    }
+                                }
+                            }
+                            .onGloballyPositioned { coords ->
+                                val p = coords.positionInRoot()
+                                letterRects[letter] = Rect(p, Size(coords.size.width.toFloat(), coords.size.height.toFloat()))
+                            },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    if (wrongFlash.value > 0.01f) {
+                        Box(
+                            Modifier
+                                .fillMaxSize()
+                                .background(Color(0xFFE53935).copy(alpha = 0.18f * wrongFlash.value), tileShape),
+                        )
+                    }
+                    Text(text = letter, fontSize = letterFontSp, fontWeight = FontWeight.Black, color = Color(0xFF0B2B3D))
+                }
+            }
+        }
     }
 }

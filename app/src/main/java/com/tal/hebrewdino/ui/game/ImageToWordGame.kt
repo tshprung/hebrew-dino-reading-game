@@ -52,6 +52,7 @@ fun ImageToWordGame(
     instructionText: String,
     onPictureTapReplayWord: (() -> Unit)? = null,
     onWordPressed: ((choiceId: String) -> Unit)? = null,
+    innerPictureScaleForChoice: (LessonChoice) -> Float = { choice -> Chapter1Station5And6ImageMatchInnerScale.innerScale(choice) },
     onAttempt: (choiceId: String) -> Boolean,
     modifier: Modifier = Modifier,
 ) {
@@ -119,7 +120,7 @@ fun ImageToWordGame(
             if (correctChoice != null) {
                 val pictureTapReplays = onPictureTapReplayWord != null
                 val innerScale =
-                    Chapter1Station5And6ImageMatchInnerScale.innerScale(correctChoice) *
+                    innerPictureScaleForChoice(correctChoice) *
                         if (isCompactLandscapePhone) 1.50f else 1f
                 LessonChoiceCard(
                     choice = correctChoice,

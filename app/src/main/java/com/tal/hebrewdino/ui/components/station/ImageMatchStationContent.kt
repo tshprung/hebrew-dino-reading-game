@@ -8,6 +8,7 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import com.tal.hebrewdino.ui.domain.Chapter1Station5And6ImageMatchInnerScale
 import com.tal.hebrewdino.ui.domain.LessonChoice
 import com.tal.hebrewdino.ui.domain.Question
 import com.tal.hebrewdino.ui.game.ImageMatchGame
@@ -36,6 +37,9 @@ fun Chapter3Station6ImageToWordStationContent(
         instructionText = instructionText,
         onPictureTapReplayWord = onPictureTapReplayWord,
         onWordPressed = onWordPressed,
+        innerPictureScaleForChoice = { choice ->
+            Chapter1Station5And6ImageMatchInnerScale.innerScale(choice) * if (choice.word == "רגל") 0.70f else 1f
+        },
         onAttempt = onAttempt,
         modifier =
             modifier

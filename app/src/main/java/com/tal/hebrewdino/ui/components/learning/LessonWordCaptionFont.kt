@@ -38,10 +38,20 @@ fun captionFontSizeForWordCard(
                     stationId == Chapter1StationOrder.PICTURE_PICK_ALL &&
                     word == "שעון" -> 0.85f
                 // Feedback: shrink hippo by ~15%, surprise by ~10%.
-                word == "היפופוטם" -> 0.66f
-                word == "הפתעה" -> 0.77f
+                word == "היפופוטם" -> 0.528f
+                word == "הפתעה" -> 0.616f
                 word == "גלידה" -> 0.86f
                 word == "שולחן" -> 0.82f
+                word == "חולצה" -> 0.72f
+                word == "פרפר" -> 0.90f
+                word == "טיגריס" -> 0.72f
+                word == "צלחת" -> 0.81f
+                word == "נמלה" -> 0.90f
+                word == "טוסט" -> 0.95f
+                word == "דחליל" -> 0.76f
+                word == "צפרדע" -> 0.665f
+                word == "פילפל" -> 0.855f
+                word == "תפוח" -> 0.90f
                 // Feedback: balloon should be ~10% smaller everywhere.
                 word == "בלון" -> 0.90f
                 // Episode 1 station 5 feedback: bed caption −10% (keep readable, avoid any clipping).
@@ -54,6 +64,9 @@ fun captionFontSizeForWordCard(
                 word == "מכונית" -> 0.81f
                 // Feedback: "אבטיח" caption.
                 word == "אבטיח" -> 0.72f
+                word == "ארנב" -> 0.80f
+                word == "מוצץ" -> 0.80f
+                word == "ברווז" -> 0.90f
                 codePoints >= 9 -> 0.82f
                 codePoints >= 7 -> 0.88f
                 codePoints >= 6 -> 0.80f

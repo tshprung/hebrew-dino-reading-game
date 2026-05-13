@@ -29,6 +29,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
@@ -59,6 +60,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalContext
@@ -119,6 +121,10 @@ private val roadFractions: List<Pair<Float, Float>> =
     )
 
 private val stationFractions = JourneyMapLayout.stationFractions
+
+private val JourneyRoadShiftX = (-28).dp
+private val JourneyRoadShiftY = (-44).dp
+private val JourneyRoadEdgeMargin = 28.dp
 
 private data class JourneyProgressKey(
     val unlockedLevel: Int,
@@ -200,7 +206,6 @@ fun JourneyScreen(
     modifier: Modifier = Modifier,
 ) {
     val devToolsEnabled = DevTools.enabled(LocalContext.current)
-    val resolvedSubtitle = headerSubtitle // when null, hide subtitle (chapter 1 request)
     val nextPlayableSuggested =
         (1..playableLevels).firstOrNull { !completedLevels.contains(it) } ?: (playableLevels + 1)
     val allPlayableComplete = (1..playableLevels).all { level -> completedLevels.contains(level) }
@@ -326,9 +331,11 @@ fun JourneyScreen(
         onEndWalkComplete?.invoke()
     }
 
-    val roadScroll = rememberScrollState() // API compat; not used for horizontal scroll.
+    val roadScroll = rememberScrollState()
     val journeyNavChipColors = ChapterNavChipStyles.outlinedButtonColors()
     val journeyNavChipTextStyle = ChapterNavChipStyles.labelTextStyle()
+    val density = LocalDensity.current
+    var backButtonHeightPx by remember { mutableIntStateOf(0) }
 
     Box(modifier = modifier.fillMaxSize()) {
         Image(
@@ -347,13 +354,18 @@ fun JourneyScreen(
                         .padding(start = 8.dp, end = 8.dp, top = 4.dp),
                 verticalAlignment = Alignment.Top,
             ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    OutlinedButton(onClick = onBack, enabled = true, colors = journeyNavChipColors) {
-                        Text(text = "חזור", style = journeyNavChipTextStyle)
+                val backButtonHeightDp =
+                    with(density) {
+                        if (backButtonHeightPx > 0) backButtonHeightPx.toDp() else 44.dp
                     }
-                    if (collectedEggStripCount > 0) {
-                        Spacer(modifier = Modifier.height(JourneySpaceBelowBackBeforeEggs))
-                        StoryEggStrip(foundCount = collectedEggStripCount)
+                Box(modifier = Modifier.height(backButtonHeightDp)) {
+                    OutlinedButton(
+                        onClick = onBack,
+                        enabled = true,
+                        colors = journeyNavChipColors,
+                        modifier = Modifier.onSizeChanged { backButtonHeightPx = it.height },
+                    ) {
+                        Text(text = "חזור", style = journeyNavChipTextStyle)
                     }
                 }
                 Column(
@@ -370,21 +382,6 @@ fun JourneyScreen(
                         textAlign = TextAlign.Center,
                         modifier = Modifier.fillMaxWidth(),
                     )
-                    if (!resolvedSubtitle.isNullOrBlank()) {
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = resolvedSubtitle,
-                            modifier = Modifier.fillMaxWidth(),
-                            style =
-                                if (headerSubtitleCompact) {
-                                    MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Medium)
-                                } else {
-                                    MaterialTheme.typography.titleMedium
-                                },
-                            color = Color(0xFF0B2B3D).copy(alpha = if (headerSubtitleCompact) 0.78f else 1f),
-                            textAlign = TextAlign.Center,
-                        )
-                    }
                     Spacer(modifier = Modifier.height(6.dp))
                     Button(
                         onClick = { if (!walking && !journeyNavigationLocked) onPlayLevel(quickPlayLevel) },
@@ -437,10 +434,29 @@ fun JourneyScreen(
                         .fillMaxWidth()
                         .padding(start = 12.dp, end = 12.dp, bottom = 8.dp),
             ) {
-                val roadH = (maxHeight - 8.dp).coerceIn(156.dp, 292.dp)
+                val roadStripExtra = 36.dp
+                val minRoadH = 220.dp
+                val maxRoadH = 292.dp
+                val availableRoadH = (maxHeight - roadStripExtra).coerceAtLeast(1.dp)
+                val needsScroll = availableRoadH < minRoadH
+                val roadH =
+                    if (needsScroll) {
+                        minRoadH
+                    } else {
+                        availableRoadH.coerceAtMost(maxRoadH)
+                    }
 
                 Column(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .then(
+                                if (needsScroll) {
+                                    Modifier.verticalScroll(roadScroll)
+                                } else {
+                                    Modifier
+                                },
+                            ),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     JourneyRoadStrip(
@@ -460,12 +476,29 @@ fun JourneyScreen(
                         roadScrollState = roadScroll,
                         endMarker = endMarker,
                         roadHeight = roadH,
+                        modifier = Modifier.offset(y = JourneyRoadShiftY),
                         onStationClick = { levelId ->
                             if (!walking && !journeyNavigationLocked) onPlayLevel(levelId)
                         },
                     )
                 }
             }
+        }
+
+        if (collectedEggStripCount > 0) {
+            val backButtonHeightDp =
+                with(density) {
+                    if (backButtonHeightPx > 0) backButtonHeightPx.toDp() else 44.dp
+                }
+            StoryEggStrip(
+                foundCount = collectedEggStripCount,
+                modifier =
+                    Modifier
+                        .align(Alignment.TopStart)
+                        .statusBarsPadding()
+                        .padding(start = 8.dp, top = 4.dp)
+                        .offset(y = backButtonHeightDp + JourneySpaceBelowBackBeforeEggs),
+            )
         }
     }
 }
@@ -491,6 +524,7 @@ private fun JourneyRoadStrip(
     roadScrollState: ScrollState,
     endMarker: JourneyEndMarker,
     roadHeight: Dp = 300.dp,
+    modifier: Modifier = Modifier,
     onStationClick: (Int) -> Unit,
 ) {
     val density = LocalDensity.current
@@ -499,7 +533,7 @@ private fun JourneyRoadStrip(
     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
         BoxWithConstraints(
             modifier =
-                Modifier
+                modifier
                     .fillMaxWidth()
                     .height(roadHeight + 36.dp),
         ) {
@@ -510,7 +544,7 @@ private fun JourneyRoadStrip(
                     Modifier
                         .width(roadWidth)
                         .height(roadHeight)
-                        .offset(x = (-38).dp),
+                        .offset(x = JourneyRoadShiftX),
             ) {
                 val roadPts =
                     roadFractions
@@ -518,7 +552,7 @@ private fun JourneyRoadStrip(
                     stationFractions
             val wPx = with(density) { roadWidth.toPx() }
             val hPx = with(density) { roadHeight.toPx() }
-            val edgeMarginPx = with(density) { 38.dp.toPx() } // ~1cm
+            val edgeMarginPx = with(density) { JourneyRoadEdgeMargin.toPx() }
             val markerHalfPx = with(density) { 40.dp.toPx() }
             val maxCenterPx = (wPx - edgeMarginPx - markerHalfPx).coerceAtLeast(markerHalfPx)
 
@@ -952,12 +986,7 @@ private fun JourneyStationMarker(
                     run {
                         val base = MaterialTheme.typography.bodySmall
                         when {
-                            completed ->
-                                base.copy(
-                                    fontSize = base.fontSize * 2,
-                                    lineHeight = base.lineHeight * 2,
-                                    fontWeight = FontWeight.Bold,
-                                )
+                            completed -> base.copy(fontWeight = FontWeight.Bold)
                             isFutureTrack -> base.copy(fontWeight = FontWeight.Medium)
                             else -> base.copy(fontWeight = FontWeight.Bold)
                         }
