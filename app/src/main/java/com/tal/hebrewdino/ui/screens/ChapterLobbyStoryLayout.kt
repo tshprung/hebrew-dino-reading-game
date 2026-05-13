@@ -41,7 +41,6 @@ import androidx.compose.ui.unit.sp
 import com.tal.hebrewdino.R
 import com.tal.hebrewdino.ui.audio.VoicePlayer
 import com.tal.hebrewdino.ui.components.AnimatedTalkingCharacter
-import com.tal.hebrewdino.ui.components.learning.StoryEggStrip
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.tal.hebrewdino.ui.layout.ScreenFit
@@ -119,11 +118,7 @@ fun ChapterLobbyStoryLayout(
             verticalArrangement = Arrangement.SpaceBetween,
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            if (eggStripCount > 0) {
-                StoryEggStrip(foundCount = eggStripCount, modifier = Modifier.align(Alignment.CenterHorizontally))
-            } else {
-                Spacer(modifier = Modifier.height(8.dp))
-            }
+            Spacer(modifier = Modifier.height(8.dp))
 
             Column(
                 modifier = Modifier.weight(1f),
