@@ -31,7 +31,16 @@ fun captionFontSizeForWordCard(
                     word == "דבש" -> 0.80f
                 chapterId == 3 &&
                     stationId == 1 &&
-                    word == "שמש" -> 0.80f
+                    word == "שמש" -> 0.80f * 0.90f
+                chapterId == 3 &&
+                    stationId == 1 &&
+                    word == "מיטה" -> 0.90f * 0.80f
+                chapterId == 3 &&
+                    stationId == 1 &&
+                    word == "אבטיח" -> 0.72f * 0.80f
+                chapterId == 3 &&
+                    stationId == 1 &&
+                    word == "מכונית" -> 0.81f * 0.70f
                 chapterId == 6 &&
                     stationId == 1 &&
                     word == "חתול" -> 0.70f
@@ -62,6 +71,18 @@ fun captionFontSizeForWordCard(
                 chapterId == 6 &&
                     stationId == 1 &&
                     word == "ברווז" -> 0.90f * 0.80f
+                chapterId == 6 &&
+                    stationId == 1 &&
+                    word == "פרפר" -> 0.90f * 0.70f
+                chapterId == 6 &&
+                    stationId == 1 &&
+                    word == "תפוח" -> 0.90f * 0.70f
+                chapterId == 6 &&
+                    stationId == 1 &&
+                    word == "דבש" -> 0.70f
+                chapterId == 6 &&
+                    stationId == 1 &&
+                    word == "טיגריס" -> 0.72f * 0.70f
                 // Episode 4 feedback: window caption ~20% smaller.
                 word == "חלון" -> 0.80f
                 // Episode 4 feedback: bag caption ~20% smaller.

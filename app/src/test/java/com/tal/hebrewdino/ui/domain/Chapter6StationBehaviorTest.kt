@@ -20,7 +20,7 @@ class Chapter6StationBehaviorTest {
     }
 
     @Test
-    fun chapter6_station3_popAllLetters_options_include_all_letters_in_word() {
+    fun chapter6_station3_balloons_has_10_options_and_is_single_target_letter() {
         val plan = StationQuizPlans.chapter6(3)
         val session = LevelSession(plan = plan, letterPoolSpec = Chapter6LetterPoolSpec)
         val q = session.currentQuestion
@@ -28,13 +28,9 @@ class Chapter6StationBehaviorTest {
         assertTrue(q is Question.PopBalloonsQuestion)
         val pq = q as Question.PopBalloonsQuestion
         assertEquals(10, pq.options.size)
-        val word = session.chapter3PopAllLettersCurrentWord()?.first.orEmpty()
-        assertTrue(word.isNotEmpty())
-        val lettersInWord = word.toCharArray().map { it.toString() }.distinct()
-        for (l in lettersInWord) {
-            assertTrue("Expected $l to appear in options for word=$word", pq.options.contains(l))
-        }
-        assertEquals(word.first().toString(), pq.correctAnswer)
+        assertTrue(pq.correctAnswer.isNotBlank())
+        assertTrue(pq.options.contains(pq.correctAnswer))
+        assertTrue(session.chapter3PopAllLettersCurrentWord() == null)
     }
 
     @Test

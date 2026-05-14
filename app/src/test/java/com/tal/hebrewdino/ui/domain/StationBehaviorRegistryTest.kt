@@ -74,7 +74,7 @@ class StationBehaviorRegistryTest {
         assertEquals(StationTemplateId.MatchLetterToWord, StationBehaviorRegistry.getStationUiSpec(3, 2).templateId)
         val s3 = StationBehaviorRegistry.getStationUiSpec(3, 3)
         assertEquals(StationTemplateId.PopBalloons, s3.templateId)
-        assertTrue(s3.variants.contains(StationVariant.PopAllLettersInWord))
+        assertFalse(s3.variants.contains(StationVariant.PopAllLettersInWord))
         val s4 = StationBehaviorRegistry.getStationUiSpec(3, 4)
         assertEquals(StationTemplateId.PickLetter, s4.templateId)
         assertTrue(s4.variants.contains(StationVariant.HighlightedLetterInWord))
@@ -92,7 +92,7 @@ class StationBehaviorRegistryTest {
         assertEquals(StationTemplateId.MatchLetterToWord, StationBehaviorRegistry.getStationUiSpec(6, 2).templateId)
         val s3 = StationBehaviorRegistry.getStationUiSpec(6, 3)
         assertEquals(StationTemplateId.PopBalloons, s3.templateId)
-        assertTrue(s3.variants.contains(StationVariant.PopAllLettersInWord))
+        assertFalse(s3.variants.contains(StationVariant.PopAllLettersInWord))
         val s4 = StationBehaviorRegistry.getStationUiSpec(6, 4)
         assertEquals(StationTemplateId.PickLetter, s4.templateId)
         assertTrue(s4.variants.contains(StationVariant.HighlightedLetterInWord))
@@ -202,8 +202,9 @@ class StationBehaviorRegistryTest {
 
     @Test
     fun chapter3_special_variants_remain_unchanged() {
-        // St 3: PopAll
-        assertTrue(StationBehaviorRegistry.getStationUiSpec(3, 3).variants.contains(StationVariant.PopAllLettersInWord))
+        // St 3: balloons (non-pop-all)
+        assertEquals(StationTemplateId.PopBalloons, StationBehaviorRegistry.getStationUiSpec(3, 3).templateId)
+        assertFalse(StationBehaviorRegistry.getStationUiSpec(3, 3).variants.contains(StationVariant.PopAllLettersInWord))
         // St 4: Highlighted
         assertTrue(StationQuizPlans.chapter3(4).highlightedLetterInWordPickLetter)
         // St 5: Audio Recognition
@@ -420,17 +421,14 @@ class StationBehaviorRegistryTest {
 
     @Test
     fun chapter3_station3_balloonInstructionOverride_staysNull() {
-        assertNull(StationBehaviorRegistry.getStationUiSpec(3, 3).balloonInstructionOverride)
+        assertEquals("פוצץ את הבלונים עם האות:", StationBehaviorRegistry.getStationUiSpec(3, 3).balloonInstructionOverride)
     }
 
     @Test
     fun chapter3_station3_popAllBanner_and_skipHeaderBlock() {
         val s = StationBehaviorRegistry.getStationUiSpec(3, 3)
-        assertTrue(s.popBalloonsSkipInstructionHeaderBlock)
-        assertEquals(
-            StationInstructionCopy.PopBalloonsPopAllLettersInWord,
-            s.popBalloonsPopAllLettersBannerInstruction,
-        )
+        assertFalse(s.popBalloonsSkipInstructionHeaderBlock)
+        assertNull(s.popBalloonsPopAllLettersBannerInstruction)
     }
 
     @Test
