@@ -1,13 +1,55 @@
-## Hebrew Dino Reading Game (MVP)
+# Dino Reading Hebrew - Privacy Policy
 
-Android tablet game for learning Hebrew reading (letters → later nikkud → later blends), with a gentle “lost egg” dinosaur story.
+This repository hosts the privacy policy page for **Dino Reading Hebrew**, an educational Hebrew reading game for children.
 
-### MVP scope (phase 1)
-- Character select: **Dino** (boy) / **Dina** (girl)
-- Chapter 1 “Beach”: simple letter-pick levels (start with a small set)
-- Fully playable without parent help (voice guidance will be added via local audio clips)
+The privacy policy is published using GitHub Pages and is available at:
 
-### Requirements
-- Android Studio (recommended)
-- Android device/tablet (Android 8+)
+https://tshprung.github.io/dino-reading-hebrew-privacy/
 
+## About the app
+
+Dino Reading Hebrew helps children practice Hebrew letters and simple words through interactive learning activities, audio instructions, and child-friendly visuals.
+
+## Privacy summary
+
+Dino Reading Hebrew:
+
+- does not require login
+- does not show ads
+- does not collect personal information
+- does not use analytics
+- does not share data with third parties
+- stores game progress locally on the device only
+
+## Contact
+
+For questions about the app or privacy policy, contact:
+
+tshprung@gmail.com# Dino Reading Hebrew - Privacy Policy
+
+This repository hosts the privacy policy page for **Dino Reading Hebrew**, an educational Hebrew reading game for children.
+
+The privacy policy is published using GitHub Pages and is available at:
+
+https://tshprung.github.io/dino-reading-hebrew-privacy/
+
+## About the app
+
+Dino Reading Hebrew helps children practice Hebrew letters and simple words through interactive learning activities, audio instructions, and child-friendly visuals.
+
+## Privacy summary
+
+Dino Reading Hebrew:
+
+- does not require login
+- does not show ads
+- does not collect personal information
+- does not use analytics
+- does not share data with third parties
+- stores game progress locally on the device only
+
+## Contact
+
+For questions about the app or privacy policy, contact:
+
+tshprung@gmail.com
