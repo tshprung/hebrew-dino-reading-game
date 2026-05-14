@@ -38,6 +38,8 @@ import androidx.compose.ui.zIndex
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.font.FontWeight
@@ -46,6 +48,8 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import com.tal.hebrewdino.R
 import com.tal.hebrewdino.ui.audio.AudioClips
 import com.tal.hebrewdino.ui.audio.SoundPoolPlayer
@@ -85,7 +89,6 @@ import com.tal.hebrewdino.ui.components.station.PopBalloonsInstructionHeaderBloc
 import com.tal.hebrewdino.ui.components.station.PopBalloonsStationContent
 import com.tal.hebrewdino.ui.components.station.PictureStartsWithStationContent
 import com.tal.hebrewdino.ui.components.station.SagaImageMatchGameStationContent
-import androidx.compose.ui.platform.LocalContext
 import com.tal.hebrewdino.ui.layout.ScreenFit
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Job
@@ -93,7 +96,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.random.Random
 import android.os.SystemClock
-import androidx.compose.ui.unit.sp
 
 private enum class GamePhase { Intro, Play }
 
@@ -212,6 +214,13 @@ fun GameScreen(
     val episode4HelpSt15 = Episode4Help.isHelpColumnActive(chapterId, stationUiSpec)
     val sagaUsesPickLetterAudioStaging = isSagaEpisode(chapterId) && plan.mode == StationQuizMode.PickLetter
     val sagaUsesPopBalloonsAudioStaging = isSagaEpisode(chapterId) && plan.mode == StationQuizMode.PopBalloons
+    val usesPopBalloonsSoundPoolPrompt =
+        plan.mode == StationQuizMode.PopBalloons &&
+            (
+                sagaUsesPopBalloonsAudioStaging ||
+                    (chapterId == 6 && stationId == 3) ||
+                    (chapterId == TrainingV1Config.CHAPTER_ID && stationId == TrainingV1Config.STATION_WORD_BALLOONS)
+            )
     val sagaUsesFindGridAudioStaging = isSagaEpisode(chapterId) && plan.mode == StationQuizMode.FindLetterGrid
     val isChapter3HighlightedLetterInWordStation =
         stationUiSpec.templateId == StationTemplateId.PickLetter &&
@@ -237,10 +246,18 @@ fun GameScreen(
             stationUiSpec.hasVariant(StationVariant.PopAllLettersInWord) &&
             plan.mode == StationQuizMode.PopBalloons &&
             plan.popAllLettersInWord
+
+    val trainingRound: Int? =
+        if (chapterId == TrainingV1Config.CHAPTER_ID) {
+            topChromeProgressOverride?.first
+        } else {
+            null
+        }
     val scope = rememberCoroutineScope()
     val episode4Help = rememberEpisode4HelpController(stationId = stationId, scope = scope)
     val context = LocalContext.current
     val view = LocalView.current
+    val lifecycleOwner = LocalLifecycleOwner.current
     val voice = remember { VoicePlayer(context = context) }
     val sfx = remember { SoundPoolPlayer(context = context) }
     val gameFeedback = remember(stationId, sfx, view) { GameFeedback(scope, sfx, view) }
@@ -284,10 +301,13 @@ fun GameScreen(
     var station2CorrectPopCount by remember(stationId, session.currentIndex) { mutableIntStateOf(0) }
     var station1PinnedCorrectLetter by remember(stationId) { mutableStateOf<String?>(null) }
     val chapter3Station3BalloonHelpEnabled =
-        chapterId == 3 &&
-            stationId == 3 &&
+        (
+            ((chapterId == 3 || chapterId == 6) && stationId == 3) ||
+                (chapterId == TrainingV1Config.CHAPTER_ID && stationId == TrainingV1Config.STATION_WORD_BALLOONS)
+        ) &&
             stationUiSpec.templateId == StationTemplateId.PopBalloons &&
             !episode4HelpSt15
+    val showPopBalloonsTargetLetterChip = !listenOnly && !chapter3Station3BalloonHelpEnabled
     var chapter3Station3HintLocksChoices by remember(stationId) { mutableStateOf(false) }
     var chapter3Station3HintLetter by remember(stationId) { mutableStateOf<String?>(null) }
     val gameChoicesEnabled =
@@ -307,7 +327,7 @@ fun GameScreen(
             sfx.stopStream(station1VoiceStreamId)
             station1VoiceStreamId = 0
         }
-        if (sagaUsesPopBalloonsAudioStaging) {
+        if (usesPopBalloonsSoundPoolPrompt) {
             sfx.stopAllStreams()
             sfx.stopStream(station2VoiceStreamId)
             station2VoiceStreamId = 0
@@ -316,6 +336,22 @@ fun GameScreen(
             sfx.stopAllStreams()
             sfx.stopStream(station3VoiceStreamId)
             station3VoiceStreamId = 0
+        }
+    }
+
+    DisposableEffect(lifecycleOwner, stationId) {
+        val observer =
+            LifecycleEventObserver { _, event ->
+                if (event == Lifecycle.Event.ON_PAUSE || event == Lifecycle.Event.ON_STOP) {
+                    cancelFeedbackVoice()
+                }
+            }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+            cancelFeedbackVoice()
+            voice.release()
+            sfx.release()
         }
     }
 
@@ -488,10 +524,11 @@ fun GameScreen(
 
     // Episode 1 station 2: preload instruction + balloon feedback clips for low latency.
     LaunchedEffect(stationId, chapterId, letterPoolSpec) {
-        if (!(audioEnabled && sagaUsesPopBalloonsAudioStaging)) return@LaunchedEffect
+        if (!(audioEnabled && usesPopBalloonsSoundPoolPrompt)) return@LaunchedEffect
         val letters = letterPoolSpec.groups.flatten().distinct()
         val paths = ArrayList<String>()
         paths.add(AudioClips.PopBalloonsWithLetter)
+        paths.add(AudioClips.PopAllBalloonsWithLetter)
         paths.add(AudioClips.VoTryAgain1)
         paths.add(AudioClips.VoKolHakavod)
         paths.add(AudioClips.VoGoodJob2)
@@ -647,7 +684,7 @@ fun GameScreen(
                                 voice.playBlocking(intro)
                             }
                             val wordPath =
-                                if (chapterId == 3) {
+                                if (chapterId == 3 || chapterId == 6) {
                                     val ch3Word = "audio/ch3_word_${q.correctChoiceId}.wav"
                                     if (voice.hasAsset(ch3Word)) ch3Word else AudioClips.wordClipByCatalogId(q.correctChoiceId)
                                 } else {
@@ -783,7 +820,12 @@ fun GameScreen(
                             } else {
                                 voice.playSequenceBlocking(intro, wordPath)
                             }
-                        } else if ((sagaUsesPopBalloonsAudioStaging || plan.popAllLettersInWord) && q is Question.PopBalloonsQuestion) {
+                        } else if ((sagaUsesPopBalloonsAudioStaging ||
+                                plan.popAllLettersInWord ||
+                                (chapterId == 6 && stationId == 3) ||
+                                (chapterId == TrainingV1Config.CHAPTER_ID && stationId == TrainingV1Config.STATION_WORD_BALLOONS)) &&
+                            q is Question.PopBalloonsQuestion
+                        ) {
                             if (plan.popAllLettersInWord) {
                                 // Pop-all-letters-in-word: play the correct instruction, then the word (not a single letter).
                                 sfx.stopAllStreams()
@@ -797,7 +839,15 @@ fun GameScreen(
                             } else {
                                 // Station 2: we want minimal gap between intro and letter (skip intro trailing silence).
                                 // Prefer SoundPool overlap timing when duration is available; otherwise fall back to strict sequence.
-                                val intro = AudioClips.PopBalloonsWithLetter
+                                val intro =
+                                    if (chapterId == TrainingV1Config.CHAPTER_ID &&
+                                        stationId == TrainingV1Config.STATION_WORD_BALLOONS &&
+                                        voice.hasAsset(AudioClips.PopAllBalloonsWithLetter)
+                                    ) {
+                                        AudioClips.PopAllBalloonsWithLetter
+                                    } else {
+                                        AudioClips.PopBalloonsWithLetter
+                                    }
                                 val letterClip = AudioClips.letterNameClip(q.correctAnswer)
                                 val introMs = sfx.durationMs(intro) ?: 0L
                                 if (introMs > 0 && letterClip != null) {
@@ -1158,7 +1208,7 @@ fun GameScreen(
                                 chapterId == 4 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE -> 0L
                                 chapterId == 4 && stationId == Chapter1StationOrder.PICTURE_PICK_ALL -> 0L
                                 // Chapter 3 station 4 feedback: negative voice should be near-instant.
-                                chapterId == 3 && stationId == 4 -> 0L
+                                (chapterId == 3 || chapterId == 6) && stationId == 4 -> 0L
                                 // Episode 5 feedback: station 4 wrong response should feel near-instant.
                                 chapterId == 5 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE -> 0L
                                 else -> 110L
@@ -1486,7 +1536,8 @@ fun GameScreen(
                                             (
                                                 ((chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) &&
                                                     stationId == Chapter1StationOrder.BALLOON_POP) ||
-                                                    (chapterId == 3 && stationId == 3)
+                                                    ((chapterId == 3 || chapterId == 6) && stationId == 3) ||
+                                                    (chapterId == TrainingV1Config.CHAPTER_ID && stationId == TrainingV1Config.STATION_WORD_BALLOONS)
                                             )
                                     if (plan.mode != StationQuizMode.PickLetter && !sixStationArcSt2CompactLandscapePhone) {
                                         PopBalloonsInstructionHeaderBlock(
@@ -1496,6 +1547,7 @@ fun GameScreen(
                                             balloonInstructionOverride = stationUiSpec.balloonInstructionOverride,
                                             useEpisode4BalloonInstructionPanel = stationUiSpec.useEpisode4BalloonInstructionPanel,
                                             showSagaStation2InstructionLine = stationUiSpec.popBalloonsShowSagaStation2InstructionLine,
+                                            showTargetLetterChip = showPopBalloonsTargetLetterChip,
                                             episode4HelpSt15 = episode4HelpSt15,
                                             episode4HelpActiveHintLetter = episode4Help.activeHintLetter,
                                             hintHeaderScale = hintHeaderScale.value,
@@ -1915,6 +1967,7 @@ fun GameScreen(
                                                     balloonInstructionOverride = stationUiSpec.balloonInstructionOverride,
                                                     useEpisode4BalloonInstructionPanel = stationUiSpec.useEpisode4BalloonInstructionPanel,
                                                     showSagaStation2InstructionLine = stationUiSpec.popBalloonsShowSagaStation2InstructionLine,
+                                                    showTargetLetterChip = showPopBalloonsTargetLetterChip,
                                                     episode4HelpSt15 = episode4HelpSt15,
                                                     episode4HelpActiveHintLetter = episode4Help.activeHintLetter,
                                                     hintHeaderScale = hintHeaderScale.value,
@@ -2049,7 +2102,7 @@ fun GameScreen(
                                         if (!consumeTapCooldown()) return@picturePick
                                         cancelFeedbackVoice()
                                         if (audioEnabled && (
-                                                (chapterId == 3 && stationId == 1) ||
+                                                ((chapterId == 3 || chapterId == 6) && stationId == 1) ||
                                                     (chapterId == 2 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE)
                                             )
                                         ) {
@@ -2098,7 +2151,7 @@ fun GameScreen(
                                                     scope.launch {
                                                         correctTapPulseLetter = picked
                                                         correctTapPulseEpoch += 1
-                                                        if (audioEnabled && chapterId == 3 && stationId == 1) {
+                                                        if (audioEnabled && (chapterId == 3 || chapterId == 6) && stationId == 1) {
                                                             withTimeoutOrNull(1200L) { feedbackVoiceJob?.join() }
                                                         }
                                                         val isLast =
@@ -2146,7 +2199,7 @@ fun GameScreen(
                                                     cancelFeedbackVoice()
                                                     val id = current.correctChoiceId
                                                     val clip =
-                                                        if (chapterId == 3) {
+                                                        if (chapterId == 3 || chapterId == 6) {
                                                             val ch3Clip = "audio/ch3_word_${id}.wav"
                                                             if (voice.hasAsset(ch3Clip)) ch3Clip else AudioClips.wordClipByCatalogId(id)
                                                         } else {
@@ -2165,7 +2218,7 @@ fun GameScreen(
                                             feedbackVoiceJob =
                                                 scope.launch {
                                                     val clip =
-                                                        if (chapterId == 3) {
+                                                        if (chapterId == 3 || chapterId == 6) {
                                                             val ch3Clip = "audio/ch3_word_${choiceId}.wav"
                                                             if (voice.hasAsset(ch3Clip)) ch3Clip else AudioClips.wordClipByCatalogId(choiceId)
                                                         } else {
@@ -2183,7 +2236,7 @@ fun GameScreen(
                                                     scope.launch {
                                                         if (audioEnabled) {
                                                             val clip =
-                                                                if (chapterId == 3) {
+                                                                if (chapterId == 3 || chapterId == 6) {
                                                                     val ch3Clip = "audio/ch3_word_${choiceId}.wav"
                                                                     if (voice.hasAsset(ch3Clip)) ch3Clip else AudioClips.wordClipByCatalogId(choiceId)
                                                                 } else {
@@ -2241,7 +2294,8 @@ fun GameScreen(
                                                 (
                                                     ((chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) &&
                                                         stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH) ||
-                                                        (chapterId == 3 && stationId == 2)
+                                                        ((chapterId == 3 || chapterId == 6) && stationId == 2) ||
+                                                        (chapterId == TrainingV1Config.CHAPTER_ID && stationId == TrainingV1Config.STATION_MATCH_LETTER_TO_WORD)
                                                 ),
                                         letterTileSizeMultiplier = if (chapterId == TrainingV1Config.CHAPTER_ID) 1.10f else 1f,
                                         onWordPressed = { choiceId ->
@@ -2358,9 +2412,9 @@ fun GameScreen(
                                         question = current,
                                         headerInstructionText = displayImageMatchHeaderInstructionText,
                                         headerInstructionFontScale =
-                                            if (chapterId == TrainingV1Config.CHAPTER_ID) 1.35f else 1.35f * 2f,
+                                            (if (chapterId == TrainingV1Config.CHAPTER_ID) 1.35f else 1.35f * 2f),
                                         headerPromptWord =
-                                            if (chapterId == 3 && stationId == 6) {
+                                            if ((chapterId == 3 || chapterId == 6) && stationId == 6) {
                                                 current.targetWord
                                             } else {
                                                 null
@@ -2394,7 +2448,7 @@ fun GameScreen(
                                         hintCorrectChoiceId = current.correctChoiceId.takeIf { wrongTapsThisQuestion >= 2 },
                                         hintPulseEpoch = hintPulseEpoch,
                                         showWordCaptions =
-                                            !(chapterId == 3 && stationId == 6),
+                                            !((chapterId == 3 || chapterId == 6) && stationId == 6),
                                         captionSizeMultiplier =
                                             plan.imageMatchCaptionSizeMultiplier,
                                         pictureSizeMultiplier = plan.imageMatchPictureSizeMultiplier,
@@ -2413,7 +2467,7 @@ fun GameScreen(
                                                         if (isSagaEpisode(chapterId) && stationId == Chapter1StationOrder.PICTURE_PICK_ALL) {
                                                             // Episode 1 station 5: say the tapped WORD, then the existing "good job" flow will run.
                                                             // Episode 3 station 5: do NOT speak the word (word should appear only in the top prompt).
-                                                            if (chapterId != 3) {
+                                                            if (chapterId != 3 && chapterId != 6) {
                                                                 voice.playBlocking(AudioClips.wordClipByCatalogId(choiceId))
                                                             }
                                                         }

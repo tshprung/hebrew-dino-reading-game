@@ -40,10 +40,11 @@ fun TrainingV1RoundScreen(
     val basePlan = StationQuizPlans.trainingV1(stationId)
     val plan =
         when {
-            stationId == TrainingV1Config.STATION_WHICH_WORD_STARTS_WITH_LETTER && round == 2 ->
-                basePlan.copy(imageMatchCaptionSizeMultiplier = basePlan.imageMatchCaptionSizeMultiplier * 0.90f)
-            stationId == TrainingV1Config.STATION_WHICH_WORD_STARTS_WITH_LETTER && round == 9 ->
-                basePlan.copy(imageMatchCaptionSizeMultiplier = basePlan.imageMatchCaptionSizeMultiplier * 0.80f)
+            stationId == TrainingV1Config.STATION_WHICH_WORD_STARTS_WITH_LETTER && (round == 2 || round == 9) ->
+                basePlan.copy(
+                    imageMatchCaptionSizeMultiplier = basePlan.imageMatchCaptionSizeMultiplier * 0.50f,
+                    imageMatchPictureSizeMultiplier = basePlan.imageMatchPictureSizeMultiplier * 0.50f,
+                )
             else -> basePlan
         }
     LetterQuizStationScreen(

@@ -2,6 +2,7 @@ package com.tal.hebrewdino.ui.screens
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.sp
 import com.tal.hebrewdino.R
 import com.tal.hebrewdino.ui.audio.AudioClips
 
@@ -28,6 +29,7 @@ fun Chapter2IntroScreen(
         companion = ChapterLobbyCompanion.DinoOnly,
         narrationPlaying = false,
         voiceAssetPath = AudioClips.StoryMountainApproachIntro,
+        bodyLineHeightOverride = 24.sp,
         dinoContentDescription = "דינו",
         onContinue = onContinue,
         modifier = modifier,

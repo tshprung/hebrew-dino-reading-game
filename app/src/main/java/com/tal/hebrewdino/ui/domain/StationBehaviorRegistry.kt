@@ -253,7 +253,7 @@ object StationBehaviorRegistry {
                     contentTopInsetDp = 56f,
                     riskNotes = "Ch3 st2 match letter + word; unified MatchLetterToWord template.",
                 )
-            3 -> popBalloonsSpec(chapterId = 3, stationId = stationId, plan = plan, isPopAllLetters = true)
+            3 -> popBalloonsSpec(chapterId = 3, stationId = stationId, plan = plan, isPopAllLetters = false)
             4 ->
                 pickLetterSpec(
                     chapterId = 3,
@@ -370,15 +370,13 @@ object StationBehaviorRegistry {
                     chapterId = TrainingV1Config.CHAPTER_ID,
                     stationId = stationId,
                     plan = plan,
-                    isPopAllLetters = true,
+                    isPopAllLetters = false,
                 ).copy(
-                    variants = variantsFor(listenOnly = false, StationVariant.PopAllLettersInWord, StationVariant.Episode4Help),
-                    helpControlsEnabled = true,
-                    replayMode = StationReplayMode.ExistingStationSpecific,
+                    helpControlsEnabled = false,
+                    replayMode = StationReplayMode.None,
                     hintMode = StationHintMode.None,
                     hintDurationMs = null,
-                    popBalloonsPopAllLettersBannerInstruction = StationInstructionCopy.TrainingPopWordLetters,
-                    balloonPlayAreaStartInsetDp = 96f,
+                    balloonInstructionOverride = "פוצץ את כל הבלונים עם האות:",
                     contentTopInsetDp = 56f,
                 )
             TrainingV1Config.STATION_MATCH_LETTER_TO_WORD ->
@@ -386,9 +384,7 @@ object StationBehaviorRegistry {
                     chapterId = TrainingV1Config.CHAPTER_ID,
                     stationId = stationId,
                     plan = plan,
-                ).copy(
-                    matchLetterInstructionText = StationInstructionCopy.TrainingMatchLetterToWord,
-                    contentTopInsetDp = 72f,
+                    extraVariants = arrayOf(StationVariant.Finale),
                 )
             else -> error("Unexpected Training v1 stationId=$stationId")
         }
@@ -448,7 +444,6 @@ object StationBehaviorRegistry {
             1 ->
                 pictureStartsWithSpec(chapterId = 6, stationId = stationId, plan = plan)
                     .copy(
-                        contentTopInsetDp = 72f,
                         riskNotes = "Ch6 st1 picture; aligned with Chapter 3 station 1.",
                     )
             2 ->
@@ -461,9 +456,8 @@ object StationBehaviorRegistry {
                     riskNotes = "Ch6 st2 match letter + word; aligned with Chapter 3 station 2.",
                 )
             3 ->
-                popBalloonsSpec(chapterId = 6, stationId = stationId, plan = plan, isPopAllLetters = true)
+                popBalloonsSpec(chapterId = 6, stationId = stationId, plan = plan, isPopAllLetters = false)
                     .copy(
-                        contentTopInsetDp = 72f,
                         riskNotes = "Ch6 st3 pop-all; aligned with Chapter 3 station 3.",
                     )
             4 ->
@@ -480,7 +474,7 @@ object StationBehaviorRegistry {
                     hintDurationMs = null,
                     pickLetterInstructionOverride = null,
                     pickLetterHighlightedInWordInstruction = StationInstructionCopy.PickLetterHighlightedInWord,
-                    contentTopInsetDp = 72f,
+                    contentTopInsetDp = 56f,
                     riskNotes = "Ch6 st4 highlighted letter in word; aligned with Chapter 3 station 4.",
                 )
             5 ->
@@ -490,7 +484,7 @@ object StationBehaviorRegistry {
                     plan = plan,
                     extraVariants = arrayOf(StationVariant.Chapter3AudioLetterRecognition, StationVariant.Episode4Help),
                 ).copy(
-                    contentTopInsetDp = 72f,
+                    contentTopInsetDp = 56f,
                     riskNotes = "Ch6 st5 audio recognition; aligned with Chapter 3 station 5.",
                 )
             6 ->

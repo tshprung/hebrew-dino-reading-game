@@ -17,8 +17,7 @@ object Chapter6StationOrder {
                     questionCount = 8,
                     initialGroupIndex = 1,
                     imageMatchCaptionSizeMultiplier = 1.5f,
-                    imageMatchPictureSizeMultiplier = 1f,
-                    optionCount = 5,
+                    imageMatchPictureSizeMultiplier = 0.85f,
                     sortOptionLetters = true,
                 )
             2 ->
@@ -34,15 +33,14 @@ object Chapter6StationOrder {
             3 ->
                 StationQuizPlan(
                     mode = StationQuizMode.PopBalloons,
-                    questionCount = 5,
+                    questionCount = 6,
                     initialGroupIndex = 0,
-                    popAllLettersInWord = true,
                     optionCount = 10,
                 )
             4 ->
                 StationQuizPlan(
                     mode = StationQuizMode.PickLetter,
-                    questionCount = Chapter6Config.STATION_4_ROUND_COUNT,
+                    questionCount = Chapter3EpisodeContent.STATION_4_ROUND_COUNT,
                     initialGroupIndex = 0,
                     highlightedLetterInWordPickLetter = true,
                     optionCount = 6,

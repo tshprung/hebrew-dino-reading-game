@@ -25,6 +25,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -33,6 +34,8 @@ import com.tal.hebrewdino.R
 import com.tal.hebrewdino.ui.audio.AudioClips
 import com.tal.hebrewdino.ui.audio.VoicePlayer
 import com.tal.hebrewdino.ui.layout.ScreenFit
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -69,6 +72,7 @@ fun RewardScreen(
     fun rtl(text: String): String = "\u200F$text"
 
     val context = androidx.compose.ui.platform.LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
     val voice = remember { VoicePlayer(context = context) }
     var navigatedAway by remember(levelId) { mutableStateOf(false) }
     val isCompactLandscapePhone = ScreenFit.isCompactLandscapePhone()
@@ -77,8 +81,17 @@ fun RewardScreen(
             RewardStageMascotDrawables[Random.nextInt(RewardStageMascotDrawables.size)]
         }
 
-    DisposableEffect(Unit) {
+    DisposableEffect(lifecycleOwner, levelId) {
+        val observer =
+            LifecycleEventObserver { _, event ->
+                if (event == Lifecycle.Event.ON_PAUSE || event == Lifecycle.Event.ON_STOP) {
+                    voice.stopNow()
+                }
+            }
+        lifecycleOwner.lifecycle.addObserver(observer)
         onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+            voice.stopNow()
             voice.release()
         }
     }

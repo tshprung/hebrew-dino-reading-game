@@ -52,6 +52,7 @@ object AudioClips {
 
     /** Episode 1 station 2 prefix: "פוצץ את הבלונים עם האות". */
     const val PopBalloonsWithLetter = "audio/pop_balloons_with_letter.wav"
+    const val PopAllBalloonsWithLetter = "audio/pop_all_balloons_with_letter.wav"
 
     // SFX (optional). If missing from assets, playback will be skipped.
     const val SfxBalloonPop = "audio/sfx_pop.wav"

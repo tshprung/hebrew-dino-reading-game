@@ -270,6 +270,12 @@ class LevelSession(
                                     group = group,
                                     correctAnswer = correct,
                                     optionCount = plan.optionCount ?: 7,
+                                    correctBalloonCountRange =
+                                        if (letterPoolSpec === TrainingV1LetterPoolSpec) {
+                                            2..3
+                                        } else {
+                                            null
+                                        },
                                 )
                             }
                         }

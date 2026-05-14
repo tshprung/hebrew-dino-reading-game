@@ -63,7 +63,9 @@ import com.tal.hebrewdino.ui.components.learning.LessonChoiceCardCaptionSpacerHe
 import com.tal.hebrewdino.ui.components.learning.LessonChoiceCardPictureAspect
 import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
 import com.tal.hebrewdino.ui.domain.Chapter1Station4To6LessonChoiceCardSpec
+import com.tal.hebrewdino.ui.domain.HebrewLetterOrder
 import com.tal.hebrewdino.ui.domain.LessonChoice
+import com.tal.hebrewdino.ui.domain.TrainingV1Config
 import com.tal.hebrewdino.ui.layout.ScreenFit
 import kotlin.math.roundToInt
 import kotlin.math.min
@@ -138,17 +140,23 @@ fun MatchLetterToWordGame(
         remember(maxPairs, contentKey) {
             val words = maxPairs.shuffled(Random(contentKey * 7919L + maxPairs.hashCode()))
             val baseLetters = maxPairs.map { it.letter }.distinct()
-            // Avoid accidental “same index” alignment between letter i and word i (feels patterned).
-            var letters = baseLetters.shuffled(Random(contentKey * 3571L + 17))
-            repeat(12) { k ->
-                val aligned =
-                    letters.indices.any { i ->
-                        val w = words.getOrNull(i) ?: return@any false
-                        letters[i] == w.letter
+            val letters =
+                if (chapterId != null && chapterId in 3..6) {
+                    HebrewLetterOrder.sortForDisplay(baseLetters)
+                } else {
+                    // Avoid accidental “same index” alignment between letter i and word i (feels patterned).
+                    var shuffled = baseLetters.shuffled(Random(contentKey * 3571L + 17))
+                    repeat(12) { k ->
+                        val aligned =
+                            shuffled.indices.any { i ->
+                                val w = words.getOrNull(i) ?: return@any false
+                                shuffled[i] == w.letter
+                            }
+                        if (!aligned) return@repeat
+                        shuffled = baseLetters.shuffled(Random(contentKey * 3571L + 17 + k * 31))
                     }
-                if (!aligned) return@repeat
-                letters = baseLetters.shuffled(Random(contentKey * 3571L + 17 + k * 31))
-            }
+                    shuffled
+                }
             words to letters
         }
 
@@ -225,14 +233,15 @@ fun MatchLetterToWordGame(
                 stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH
         val isChapter3Station2MatchLetterToWord =
             isCompactLandscapePhone &&
-                chapterId == 3 &&
+                (chapterId == 3 || chapterId == 6) &&
                 stationId == 2
         val isPhoneSixStationArcStation6 =
             isCompactLandscapePhone &&
                 (
                     ((chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) &&
                         stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH) ||
-                        (chapterId == 3 && stationId == 2)
+                        ((chapterId == 3 || chapterId == 6) && stationId == 2) ||
+                        (chapterId == TrainingV1Config.CHAPTER_ID && stationId == TrainingV1Config.STATION_MATCH_LETTER_TO_WORD)
                 )
 
         // Header stays pinned; content below scales down if needed so nothing is clipped.
@@ -916,6 +925,11 @@ private fun SixStationArcStation6Board(
             stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH
         ) {
             1.20f
+        } else if (
+            chapterId == TrainingV1Config.CHAPTER_ID &&
+                stationId == TrainingV1Config.STATION_MATCH_LETTER_TO_WORD
+        ) {
+            1.20f
         } else if (isChapter3Station2MatchLetterToWord) {
             1.20f
         } else {
@@ -928,6 +942,11 @@ private fun SixStationArcStation6Board(
             LessonChoiceCardPictureAspect *
             if ((chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) &&
                 stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH
+            ) {
+                0.70f
+            } else if (
+                chapterId == TrainingV1Config.CHAPTER_ID &&
+                    stationId == TrainingV1Config.STATION_MATCH_LETTER_TO_WORD
             ) {
                 0.70f
             } else if (isChapter3Station2MatchLetterToWord) {

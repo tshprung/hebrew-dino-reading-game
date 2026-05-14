@@ -33,11 +33,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.TextUnit
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import com.tal.hebrewdino.R
 import com.tal.hebrewdino.ui.audio.VoicePlayer
 import com.tal.hebrewdino.ui.components.AnimatedTalkingCharacter
@@ -76,6 +80,7 @@ fun ChapterLobbyStoryLayout(
     narrationPlaying: Boolean = false,
     /** Optional narration WAV in assets (e.g. `audio/story_*.wav`). */
     voiceAssetPath: String? = null,
+    bodyLineHeightOverride: TextUnit? = null,
     dinoContentDescription: String,
     onContinue: () -> Unit,
     /** Optional content between title and body (e.g. Episode 4 clue row). */
@@ -83,11 +88,23 @@ fun ChapterLobbyStoryLayout(
     modifier: Modifier = Modifier,
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
     val voicePlayer = remember(voiceAssetPath) { voiceAssetPath?.let { VoicePlayer(context = context) } }
     var autoNarrationPlaying by remember(voiceAssetPath) { mutableStateOf(false) }
 
-    DisposableEffect(voicePlayer) {
-        onDispose { voicePlayer?.release() }
+    DisposableEffect(lifecycleOwner, voicePlayer) {
+        val observer =
+            LifecycleEventObserver { _, event ->
+                if (event == Lifecycle.Event.ON_PAUSE || event == Lifecycle.Event.ON_STOP) {
+                    voicePlayer?.stopNow()
+                }
+            }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+            voicePlayer?.stopNow()
+            voicePlayer?.release()
+        }
     }
 
     LaunchedEffect(voiceAssetPath) {
@@ -164,7 +181,7 @@ fun ChapterLobbyStoryLayout(
                                         style =
                                             MaterialTheme.typography.bodyLarge.copy(
                                                 fontWeight = FontWeight.SemiBold,
-                                                lineHeight = 18.sp,
+                                                lineHeight = bodyLineHeightOverride ?: 18.sp,
                                             ),
                                         color = Color(0xFF0B2B3D),
                                         textAlign = TextAlign.Center,
@@ -222,7 +239,7 @@ fun ChapterLobbyStoryLayout(
                                 }
                                 Text(
                                     text = body,
-                                    style = MaterialTheme.typography.titleLarge.copy(lineHeight = 30.sp),
+                                    style = MaterialTheme.typography.titleLarge.copy(lineHeight = bodyLineHeightOverride ?: 30.sp),
                                     color = Color(0xFF0B2B3D),
                                     textAlign = TextAlign.Center,
                                 )

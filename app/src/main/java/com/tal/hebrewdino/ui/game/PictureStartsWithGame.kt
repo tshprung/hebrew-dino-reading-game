@@ -362,7 +362,7 @@ fun PictureStartsWithGame(
                     )
                 val effectivePictureSizeMultiplier =
                     pictureSizeMultiplier *
-                        if (isCompactLandscapePhone && chapterId == 3 && stationId == 1) {
+                        if (isCompactLandscapePhone && (chapterId == 3 || chapterId == 6) && stationId == 1) {
                             0.70f
                         } else {
                             1f

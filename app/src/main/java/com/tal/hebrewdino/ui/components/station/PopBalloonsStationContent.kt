@@ -95,6 +95,7 @@ fun PopBalloonsInstructionHeaderBlock(
     balloonInstructionOverride: String?,
     useEpisode4BalloonInstructionPanel: Boolean,
     showSagaStation2InstructionLine: Boolean,
+    showTargetLetterChip: Boolean,
     episode4HelpSt15: Boolean,
     episode4HelpActiveHintLetter: String?,
     hintHeaderScale: Float,
@@ -172,7 +173,7 @@ fun PopBalloonsInstructionHeaderBlock(
                     horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    if (!listenOnly) {
+                    if (showTargetLetterChip) {
                         TargetLetterHeaderChip(
                             letter = correctAnswer,
                             fontSize = headerChipFont,
@@ -183,7 +184,7 @@ fun PopBalloonsInstructionHeaderBlock(
                     Station2PinnedBalloonMini(
                         letter = station2PinnedBalloonLetter!!,
                         balloonColor = station2PinnedBalloonColor ?: Color(0xFF6BCB77),
-                        showLetter = !listenOnly,
+                        showLetter = showTargetLetterChip,
                         modifier = Modifier.scale(hintHeaderScale),
                     )
                 }
@@ -208,7 +209,7 @@ fun PopBalloonsInstructionHeaderBlock(
                                 .padding(horizontal = 14.dp, vertical = instructionPadV),
                     )
                 }
-                if (!listenOnly) {
+                if (showTargetLetterChip) {
                     TargetLetterHeaderChip(
                         letter = correctAnswer,
                         fontSize = headerChipFont,

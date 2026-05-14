@@ -23,6 +23,45 @@ fun captionFontSizeForWordCard(
         val codePoints = word.codePointCount(0, word.length)
         val wordTight =
             when {
+                chapterId == 3 &&
+                    stationId == 1 &&
+                    word == "הפתעה" -> 0.616f * 0.80f
+                chapterId == 3 &&
+                    stationId == 1 &&
+                    word == "דבש" -> 0.80f
+                chapterId == 3 &&
+                    stationId == 1 &&
+                    word == "שמש" -> 0.80f
+                chapterId == 6 &&
+                    stationId == 1 &&
+                    word == "חתול" -> 0.70f
+                chapterId == 6 &&
+                    stationId == 1 &&
+                    word == "נמלה" -> 0.90f * 0.70f
+                chapterId == 6 &&
+                    stationId == 1 &&
+                    word == "צפרדע" -> 0.665f * 0.85f
+                chapterId == 6 &&
+                    stationId == 1 &&
+                    word == "פרח" -> 0.85f
+                chapterId == 6 &&
+                    stationId == 1 &&
+                    word == "כדור" -> 0.85f
+                chapterId == 6 &&
+                    stationId == 1 &&
+                    word == "טלפון" -> 0.86f * 0.80f
+                chapterId == 6 &&
+                    stationId == 1 &&
+                    word == "דחליל" -> 0.76f * 0.80f
+                chapterId == 6 &&
+                    stationId == 1 &&
+                    word == "קוביה" -> 0.80f
+                chapterId == 6 &&
+                    stationId == 1 &&
+                    word == "חולצה" -> 0.72f * 0.80f
+                chapterId == 6 &&
+                    stationId == 1 &&
+                    word == "ברווז" -> 0.90f * 0.80f
                 // Episode 4 feedback: window caption ~20% smaller.
                 word == "חלון" -> 0.80f
                 // Episode 4 feedback: bag caption ~20% smaller.
@@ -50,6 +89,7 @@ fun captionFontSizeForWordCard(
                 word == "טוסט" -> 0.95f
                 word == "דחליל" -> 0.76f
                 word == "צפרדע" -> 0.665f
+                chapterId == 4 && word == "פילפל" -> 0.855f * 0.90f
                 word == "פילפל" -> 0.855f
                 word == "תפוח" -> 0.90f
                 // Feedback: balloon should be ~10% smaller everywhere.
@@ -61,6 +101,7 @@ fun captionFontSizeForWordCard(
                 // Feedback: "למידה" caption.
                 word == "למידה" -> 0.81f
                 // Feedback: "מכונית" caption −10%.
+                chapterId == 1 && word == "מכונית" -> 0.81f * 0.90f
                 word == "מכונית" -> 0.81f
                 // Feedback: "אבטיח" caption.
                 word == "אבטיח" -> 0.72f

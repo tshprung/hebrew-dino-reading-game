@@ -12,6 +12,7 @@ class PopBalloonsGenerator(
         group: List<String>,
         correctAnswer: String,
         optionCount: Int = 9,
+        correctBalloonCountRange: IntRange? = null,
     ): Question.PopBalloonsQuestion {
         require(group.isNotEmpty()) { "Letter group must not be empty" }
         require(correctAnswer in group) { "correctAnswer must be in group" }
@@ -19,12 +20,24 @@ class PopBalloonsGenerator(
         val base = group.distinct()
         // Ensure at least one balloon for *each* letter in the chapter group.
         // Duplicates are allowed (including the correct letter); if correct repeats, user must pop all of them.
-        val repeatsCorrect = if (optionCount >= base.size + 2) 2 else 1
+        val defaultRepeatsCorrect = if (optionCount >= base.size + 2) 2 else 1
+        val desiredRepeatsCorrect = correctBalloonCountRange?.random(rnd)?.coerceAtLeast(1)
+        val repeatsCorrect =
+            if (desiredRepeatsCorrect != null && optionCount >= base.size + (desiredRepeatsCorrect - 1)) {
+                desiredRepeatsCorrect
+            } else {
+                defaultRepeatsCorrect
+            }
         val options =
             buildList {
                 addAll(base)
                 repeat(repeatsCorrect - 1) { add(correctAnswer) } // base already contains it
-                while (size < optionCount) add(base.random(rnd))
+                if (correctBalloonCountRange != null) {
+                    val fillerPool = base.filter { it != correctAnswer }.ifEmpty { base }
+                    while (size < optionCount) add(fillerPool.random(rnd))
+                } else {
+                    while (size < optionCount) add(base.random(rnd))
+                }
             }
                 // Shuffle twice to reduce repeated ordering in small option sets (e.g. PickLetter with 3 options),
                 // so letter placement “feels” different between rounds.

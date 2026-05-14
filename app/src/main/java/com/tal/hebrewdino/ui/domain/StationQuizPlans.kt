@@ -115,6 +115,11 @@ object StationQuizPlans {
     fun chapter6(stationId: Int): StationQuizPlan =
         Chapter6StationOrder.quizPlan(stationId).let { plan ->
             when (stationId) {
+                1 ->
+                    plan.copy(
+                        optionCount = 5,
+                        sortOptionLetters = true,
+                    )
                 5 ->
                     plan.copy(
                         sortOptionLetters = true,
@@ -168,8 +173,8 @@ object StationQuizPlans {
                     mode = StationQuizMode.PopBalloons,
                     questionCount = 1,
                     initialGroupIndex = 0,
-                    popAllLettersInWord = true,
-                    optionCount = 8,
+                    popAllLettersInWord = false,
+                    optionCount = 10,
                 )
             TrainingV1Config.STATION_MATCH_LETTER_TO_WORD ->
                 StationQuizPlan(
@@ -178,8 +183,8 @@ object StationQuizPlans {
                     initialGroupIndex = 0,
                     imageMatchChoiceCount = 3,
                     imageMatchAlwaysThreeChoices = true,
-                    imageMatchCaptionSizeMultiplier = 1.575f,
-                    imageMatchPictureSizeMultiplier = 1.15f,
+                    imageMatchCaptionSizeMultiplier = 1.5f,
+                    imageMatchPictureSizeMultiplier = 1f,
                     forbidVehicleSynonymsTogether = true,
                 )
             else -> error("Unknown Training v1 stationId=$stationId")
