@@ -369,6 +369,154 @@ private object WrongFeedbackActions {
     }
 }
 
+private object AdvanceAfterRoundActions {
+    suspend fun run(
+        scope: CoroutineScope,
+        audioEnabled: Boolean,
+        sagaEpisode: Boolean,
+        chapterId: Int,
+        stationId: Int,
+        isLast: Boolean,
+        ch3SpellMidWord: Boolean,
+        suppressInGameDinoProgress: Boolean,
+        sagaUsesPickLetterAudioStaging: Boolean,
+        sagaUsesPopBalloonsAudioStaging: Boolean,
+        sagaUsesFindGridAudioStaging: Boolean,
+        isChapter3HighlightedLetterInWordStation: Boolean,
+        isChapter3AudioLetterRecognitionStation: Boolean,
+        gameFeedback: GameFeedback,
+        voice: VoicePlayer,
+        cancelFeedbackVoice: () -> Unit,
+        getFeedbackVoiceJob: () -> Job?,
+        setFeedbackVoiceJob: (Job?) -> Unit,
+        setInputLocked: (Boolean) -> Unit,
+        setDinoVisual: (DinoVisual) -> Unit,
+        dinoForward: Animatable<Float, AnimationVector1D>,
+        forwardDir: Float,
+        dinoScale: Animatable<Float, AnimationVector1D>,
+        contentAlpha: Animatable<Float, AnimationVector1D>,
+        clearPinnedBalloon: () -> Unit,
+        session: LevelSession,
+        getCompletionCallbackFired: () -> Boolean,
+        markCompletionCallbackFired: () -> Unit,
+        onComplete: (stationId: Int, correctCount: Int, mistakeCount: Int) -> Unit,
+        onLevelCompleteHook: () -> Unit,
+    ) {
+        setInputLocked(true)
+        if (audioEnabled && !ch3SpellMidWord) onLevelCompleteHook()
+        if (audioEnabled) {
+            when {
+                sagaUsesPickLetterAudioStaging && isLast && chapterId != 3 -> gameFeedback.playCorrect()
+                sagaUsesPopBalloonsAudioStaging -> Unit
+                sagaUsesFindGridAudioStaging -> Unit
+                sagaEpisode && stationId == 6 -> Unit
+                isLast -> gameFeedback.playSuccessBig()
+                else -> gameFeedback.playCorrect()
+            }
+        }
+        if (!suppressInGameDinoProgress && !(isChapter3HighlightedLetterInWordStation && ch3SpellMidWord)) {
+            setDinoVisual(DinoVisual.Jump)
+        }
+        val episode1PraiseEligible =
+            audioEnabled &&
+                sagaEpisode &&
+                stationId in 2..5 &&
+                stationId != Chapter1StationOrder.PICTURE_PICK_ONE &&
+                !isChapter3AudioLetterRecognitionStation &&
+                Random.nextFloat() < Episode1PraiseChance
+        val otherPraiseEligible =
+            audioEnabled &&
+                !(sagaEpisode && stationId == 6) &&
+                !(sagaUsesPickLetterAudioStaging) &&
+                !(sagaEpisode && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) &&
+                !episode1PraiseEligible
+
+        if (episode1PraiseEligible) {
+            if (sagaUsesFindGridAudioStaging) {
+                withTimeoutOrNull(5000L) { getFeedbackVoiceJob()?.join() }
+            }
+            cancelFeedbackVoice()
+            val candidates =
+                mutableListOf(
+                    AudioClips.VoKolHakavod,
+                    AudioClips.VoNice1,
+                    AudioClips.VoGoodJob2,
+                    AudioClips.VoGoodJob1,
+                    AudioClips.VoPraiseMetzuyan,
+                    AudioClips.VoPraiseYofi,
+                    AudioClips.VoPraiseHitzlacht,
+                )
+            candidates.shuffle()
+            val arr = candidates.toTypedArray()
+            setFeedbackVoiceJob(scope.launch { voice.playFirstAvailableBlocking(*arr) })
+        } else if (otherPraiseEligible) {
+            if (sagaUsesFindGridAudioStaging) {
+                withTimeoutOrNull(5000L) { getFeedbackVoiceJob()?.join() }
+            }
+            cancelFeedbackVoice()
+            setFeedbackVoiceJob(
+                scope.launch {
+                    val pool = mutableListOf(AudioClips.VoKolHakavod, AudioClips.VoGoodJob1)
+                    pool.shuffle()
+                    voice.playFirstAvailableBlocking(*pool.toTypedArray())
+                },
+            )
+        }
+        if (!suppressInGameDinoProgress && !(isChapter3HighlightedLetterInWordStation && ch3SpellMidWord)) {
+            dinoForward.animateTo(dinoForward.value + forwardDir * 12f, spring(dampingRatio = 0.75f, stiffness = 520f))
+        }
+        val strongerSuccessPulse =
+            (sagaUsesPickLetterAudioStaging || sagaUsesFindGridAudioStaging) &&
+                !(isChapter3HighlightedLetterInWordStation && ch3SpellMidWord)
+        val station456SuccessPulse =
+            (sagaEpisode &&
+                (stationId == Chapter1StationOrder.PICTURE_PICK_ONE ||
+                    stationId == Chapter1StationOrder.PICTURE_PICK_ALL ||
+                    stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH))
+        if (!(isChapter3HighlightedLetterInWordStation && ch3SpellMidWord)) {
+            playSuccessPulse(
+                scope,
+                dinoScale,
+                peakScale =
+                    when {
+                        strongerSuccessPulse -> 1.28f
+                        station456SuccessPulse -> 1.24f
+                        else -> 1.14f
+                    },
+            )
+        }
+        delay(
+            when {
+                ch3SpellMidWord -> 38
+                sagaUsesFindGridAudioStaging -> 120
+                else -> 170
+            },
+        )
+        val waitPraiseBeforeFade =
+            sagaEpisode &&
+                (sagaUsesPopBalloonsAudioStaging ||
+                    sagaUsesFindGridAudioStaging ||
+                    stationId == Chapter1StationOrder.PICTURE_PICK_ONE)
+        if (sagaUsesPopBalloonsAudioStaging) {
+            withTimeoutOrNull(8000) { getFeedbackVoiceJob()?.join() }
+            clearPinnedBalloon()
+        } else if (sagaEpisode && (sagaUsesFindGridAudioStaging || stationId == Chapter1StationOrder.PICTURE_PICK_ONE)) {
+            withTimeoutOrNull(8000) { getFeedbackVoiceJob()?.join() }
+        }
+        contentAlpha.animateTo(0f, tween(BetweenQuestionFadeMs))
+        if (!waitPraiseBeforeFade) {
+            withTimeoutOrNull(2500) { getFeedbackVoiceJob()?.join() }
+        }
+        delay(5)
+        session.nextQuestion()
+        if (session.currentQuestion == null && !getCompletionCallbackFired()) {
+            markCompletionCallbackFired()
+            onComplete(stationId, session.correctCount, session.mistakeCount)
+        }
+        contentAlpha.animateTo(1f, tween(BetweenQuestionFadeMs))
+    }
+}
+
 /** Episode 4 stations 1–5 help "רמז": show target / lock choices for this long, then hide. */
 @Composable
 fun GameScreen(
@@ -798,140 +946,41 @@ fun GameScreen(
     }
 
     suspend fun advanceAfterRound(isLast: Boolean, ch3SpellMidWord: Boolean = false) {
-        inputLocked = true
-        if (audioEnabled && !ch3SpellMidWord) ChildGameAudioHooks.onLevelComplete()
-        // CRITICAL UX: do not block visuals/transitions on voice playback.
-        // Episode 1 station 2: keep end-of-round clean (no extra "success big" stack; last balloon already feels special).
-        if (audioEnabled) {
-            when {
-                sagaUsesPickLetterAudioStaging && isLast && chapterId != 3 -> gameFeedback.playCorrect()
-                sagaUsesPopBalloonsAudioStaging -> Unit
-                // Station 3 grid already plays per-tap SFX; avoid a second “pip” at round transition.
-                sagaUsesFindGridAudioStaging -> Unit
-                // Station 6: per-match already plays success cues; avoid stacking another SFX at round transition.
-                isSagaEpisode(chapterId) && stationId == 6 -> Unit
-                isLast -> gameFeedback.playSuccessBig()
-                else -> gameFeedback.playCorrect()
-            }
-        }
-        if (!suppressInGameDinoProgress && !(isChapter3HighlightedLetterInWordStation && ch3SpellMidWord)) {
-            dinoVisual = DinoVisual.Jump
-        }
-        // Episode 1: small praise pool (sometimes silent to keep pace). Station 1 stays unchanged/hardened.
-        // Station 6 (episode 1): "kol hakavod" is played per correct match; avoid double-speaking here.
-        val episode1PraiseEligible =
-            audioEnabled &&
-                isSagaEpisode(chapterId) &&
-                stationId in 2..5 &&
-                // Station 4: letter + praise is played on correct tap before advancing.
-                stationId != Chapter1StationOrder.PICTURE_PICK_ONE &&
-                // Episode 3 station 5 already plays praise on correct pick; avoid double praise between rounds.
-                !isChapter3AudioLetterRecognitionStation &&
-                Random.nextFloat() < Episode1PraiseChance
-        val otherPraiseEligible =
-            audioEnabled &&
-                !(isSagaEpisode(chapterId) && stationId == 6) &&
-                !(sagaUsesPickLetterAudioStaging) &&
-                !(isSagaEpisode(chapterId) && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) &&
-                !episode1PraiseEligible
-
-        if (episode1PraiseEligible) {
-            // Station 3: last correct tap starts target letter on SoundPool; don't cancel until it finishes
-            // or "כל הכבוד" overwrites the stream.
-            if (sagaUsesFindGridAudioStaging) {
-                withTimeoutOrNull(5000L) { feedbackVoiceJob?.join() }
-            }
-            cancelFeedbackVoice()
-            val candidates =
-                mutableListOf(
-                    AudioClips.VoKolHakavod,
-                    AudioClips.VoNice1,
-                    AudioClips.VoGoodJob2,
-                    AudioClips.VoGoodJob1,
-                    AudioClips.VoPraiseMetzuyan,
-                    AudioClips.VoPraiseYofi,
-                    AudioClips.VoPraiseHitzlacht,
-                )
-            // Shuffle to randomize while still using "first available" semantics.
-            candidates.shuffle()
-            val arr = candidates.toTypedArray()
-            feedbackVoiceJob =
-                if (sagaUsesFindGridAudioStaging) {
-                    // Use MediaPlayer so we don't rely on durationMs() (WAV header parsing can be off after editing).
-                    scope.launch { voice.playFirstAvailableBlocking(*arr) }
-                } else {
-                    scope.launch { voice.playFirstAvailableBlocking(*arr) }
-                }
-        } else if (otherPraiseEligible) {
-            if (sagaUsesFindGridAudioStaging) {
-                withTimeoutOrNull(5000L) { feedbackVoiceJob?.join() }
-            }
-            cancelFeedbackVoice()
-            feedbackVoiceJob =
-                scope.launch {
-                    val pool = mutableListOf(AudioClips.VoKolHakavod, AudioClips.VoGoodJob1)
-                    pool.shuffle()
-                    voice.playFirstAvailableBlocking(*pool.toTypedArray())
-                }
-        }
-        if (!suppressInGameDinoProgress && !(isChapter3HighlightedLetterInWordStation && ch3SpellMidWord)) {
-            dinoForward.animateTo(dinoForward.value + forwardDir * 12f, spring(dampingRatio = 0.75f, stiffness = 520f))
-        }
-        val strongerSuccessPulse =
-            (sagaUsesPickLetterAudioStaging || sagaUsesFindGridAudioStaging) &&
-                !(isChapter3HighlightedLetterInWordStation && ch3SpellMidWord)
-        val station456SuccessPulse =
-            (isSagaEpisode(chapterId) &&
-                (stationId == Chapter1StationOrder.PICTURE_PICK_ONE ||
-                    stationId == Chapter1StationOrder.PICTURE_PICK_ALL ||
-                    stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH))
-        if (!(isChapter3HighlightedLetterInWordStation && ch3SpellMidWord)) {
-            playSuccessPulse(
-                scope,
-                dinoScale,
-                peakScale =
-                    when {
-                        strongerSuccessPulse -> 1.28f
-                        station456SuccessPulse -> 1.24f
-                        else -> 1.14f
-                    },
-            )
-        }
-        // UX: short pause before transition.
-        delay(
-            when {
-                ch3SpellMidWord -> 38
-                sagaUsesFindGridAudioStaging -> 120
-                else -> 170
+        AdvanceAfterRoundActions.run(
+            scope = scope,
+            audioEnabled = audioEnabled,
+            sagaEpisode = isSagaEpisode(chapterId),
+            chapterId = chapterId,
+            stationId = stationId,
+            isLast = isLast,
+            ch3SpellMidWord = ch3SpellMidWord,
+            suppressInGameDinoProgress = suppressInGameDinoProgress,
+            sagaUsesPickLetterAudioStaging = sagaUsesPickLetterAudioStaging,
+            sagaUsesPopBalloonsAudioStaging = sagaUsesPopBalloonsAudioStaging,
+            sagaUsesFindGridAudioStaging = sagaUsesFindGridAudioStaging,
+            isChapter3HighlightedLetterInWordStation = isChapter3HighlightedLetterInWordStation,
+            isChapter3AudioLetterRecognitionStation = isChapter3AudioLetterRecognitionStation,
+            gameFeedback = gameFeedback,
+            voice = voice,
+            cancelFeedbackVoice = { cancelFeedbackVoice() },
+            getFeedbackVoiceJob = { feedbackVoiceJob },
+            setFeedbackVoiceJob = { job -> feedbackVoiceJob = job },
+            setInputLocked = { locked -> inputLocked = locked },
+            setDinoVisual = { v -> dinoVisual = v },
+            dinoForward = dinoForward,
+            forwardDir = forwardDir,
+            dinoScale = dinoScale,
+            contentAlpha = contentAlpha,
+            clearPinnedBalloon = {
+                station2PinnedBalloonLetter = null
+                station2PinnedBalloonColor = null
             },
+            session = session,
+            getCompletionCallbackFired = { completionCallbackFired },
+            markCompletionCallbackFired = { completionCallbackFired = true },
+            onComplete = onComplete,
+            onLevelCompleteHook = { ChildGameAudioHooks.onLevelComplete() },
         )
-        // Episode 1 station 2: praise + pinned balloon stay until voice ends.
-        // Episode 1 station 3: praise (SoundPool) must finish before fade — otherwise the screen goes blank mid-sentence.
-        val waitPraiseBeforeFade =
-            isSagaEpisode(chapterId) &&
-                (sagaUsesPopBalloonsAudioStaging ||
-                    sagaUsesFindGridAudioStaging ||
-                    stationId == Chapter1StationOrder.PICTURE_PICK_ONE)
-        if (sagaUsesPopBalloonsAudioStaging) {
-            withTimeoutOrNull(8000) { feedbackVoiceJob?.join() }
-            station2PinnedBalloonLetter = null
-            station2PinnedBalloonColor = null
-        } else if (isSagaEpisode(chapterId) && (sagaUsesFindGridAudioStaging || stationId == Chapter1StationOrder.PICTURE_PICK_ONE)) {
-            withTimeoutOrNull(8000) { feedbackVoiceJob?.join() }
-        }
-        contentAlpha.animateTo(0f, tween(BetweenQuestionFadeMs))
-        if (!waitPraiseBeforeFade) {
-            // Don't advance to next question until praise voice is finished (unless the user taps again on the next screen).
-            // Safety: never get stuck on a blank screen if a voice job hangs.
-            withTimeoutOrNull(2500) { feedbackVoiceJob?.join() }
-        }
-        delay(5)
-        session.nextQuestion()
-        if (session.currentQuestion == null && !completionCallbackFired) {
-            completionCallbackFired = true
-            onComplete(stationId, session.correctCount, session.mistakeCount)
-        }
-        contentAlpha.animateTo(1f, tween(BetweenQuestionFadeMs))
     }
 
     fun onWrongFeedback(
