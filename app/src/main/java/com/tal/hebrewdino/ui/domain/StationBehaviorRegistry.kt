@@ -102,6 +102,9 @@ object StationBehaviorRegistry {
         plan: StationQuizPlan
     ): StationUiSpec {
         val listenOnly = plan.listenOnlyTargetPrompt
+        val findGridSagaRevealStation =
+            (chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) &&
+                stationId == REVEAL_THEN_CHOOSE
         return StationUiSpec(
             chapterId = chapterId,
             stationId = stationId,
@@ -116,7 +119,8 @@ object StationBehaviorRegistry {
             findGridInlineInstructionOverride = "מצא את האות:",
             findGridInlineInstructionPanelStyle = InstructionPanelStyle.WhiteRounded,
             findGridSuppressHeaderTargetLetter = false,
-            findGridHideListenOnlyHeaderTargetLetter = listenOnly
+            findGridHideListenOnlyHeaderTargetLetter = listenOnly,
+            findGridSagaRevealStation = findGridSagaRevealStation,
         )
     }
 

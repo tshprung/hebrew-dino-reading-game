@@ -122,6 +122,8 @@ data class StationUiSpec(
      * or legacy Ch3-or-listenOnly rule (Ch3 has no find-grid today; value keeps parity with old branch).
      */
     val findGridSuppressHeaderTargetLetter: Boolean = false,
+    /** WIRED: Saga station 3 grid reveal mode (episodes 1–5 station 3); affects [FindLetterGridStationContent]. */
+    val findGridSagaRevealStation: Boolean = false,
     /** WIRED: Picture station instruction override (Ep4 st4); null uses GameScreen listen-only / default strings. */
     val pictureStartsWithInstructionOverride: String? = null,
     /**

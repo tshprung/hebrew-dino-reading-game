@@ -1132,14 +1132,10 @@ fun GameScreen(
                     } else {
                         when (current) {
                             is Question.FindLetterGridQuestion -> {
-                                val isSagaRevealStation =
-                                    isSagaEpisode(chapterId) &&
-                                        stationId == Chapter1StationOrder.REVEAL_THEN_CHOOSE
-                                FindLetterGridStationContent(
-                                    question = current,
-                                    modifier = Modifier.fillMaxSize(),
+                                FindLetterGridQuestionRenderer(
+                                    current = current,
                                     listenOnly = listenOnly,
-                                    isSagaRevealStation = isSagaRevealStation,
+                                    isSagaRevealStation = stationUiSpec.findGridSagaRevealStation,
                                     sagaUsesFindGridAudioStaging = sagaUsesFindGridAudioStaging,
                                     stationUiSpec = stationUiSpec,
                                     chapter3ContextWordHint =
@@ -1177,25 +1173,20 @@ fun GameScreen(
                                         if (sagaUsesFindGridAudioStaging) {
                                             sagaLetterTap@{ tapped ->
                                                 if (!audioEnabled) return@sagaLetterTap
-                                                // Cut any in-flight round intro / previous letter stream (ids are not tracked for intro).
                                                 sfx.stopAllStreams()
                                                 station3VoiceStreamId = 0
                                                 val isCorrect = tapped == current.targetLetter
                                                 feedbackVoiceJob =
                                                     scope.launch {
                                                         if (isCorrect) {
-                                                            // Correct: positive SFX only.
                                                             sfx.playFirstAvailable(AudioClips.SfxCorrect, volume = 0.62f)
                                                         } else {
-                                                            // Wrong: keep it lighter and varied (avoid stacking voice + SFX every time).
                                                             val tappedClip = AudioClips.letterNameClip(tapped)
                                                             when (Random.nextInt(100)) {
                                                                 in 0..39 -> {
-                                                                    // SFX only
                                                                     sfx.playFirstAvailable(AudioClips.SfxWrong, volume = 0.58f)
                                                                 }
                                                                 in 40..89 -> {
-                                                                    // Letter only
                                                                     if (tappedClip != null) {
                                                                         station3VoiceStreamId =
                                                                             sfx.playReturningStreamId(tappedClip, volume = 1f) ?: 0
@@ -1204,7 +1195,6 @@ fun GameScreen(
                                                                     }
                                                                 }
                                                                 else -> {
-                                                                    // Rare: both
                                                                     sfx.playFirstAvailable(AudioClips.SfxWrong, volume = 0.58f)
                                                                     if (tappedClip != null) {
                                                                         station3VoiceStreamId =
@@ -1230,7 +1220,6 @@ fun GameScreen(
                                         },
                                     onCellTapped = gridCellTap@{ index ->
                                         if (!consumeTapCooldown()) return@gridCellTap
-                                        // Station 3: wrong-tap voice is scheduled in onLetterTapped; cancel here would cut it off.
                                         if (!(sagaUsesFindGridAudioStaging)) {
                                             cancelFeedbackVoice()
                                         }
@@ -1258,6 +1247,7 @@ fun GameScreen(
                                             }
                                         }
                                     },
+                                    modifier = Modifier.fillMaxSize(),
                                 )
                             }
                             is Question.PopBalloonsQuestion -> {
