@@ -227,10 +227,9 @@ fun MatchLetterToWordGame(
         val innerH = maxHeight
         val isLandscape = innerW > innerH
         val isCompactLandscapePhone = ScreenFit.isCompactLandscapePhone()
-        val isCompactLandscapePhoneCh1Station6 =
-            isCompactLandscapePhone &&
-                chapterId == 1 &&
-                stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH
+        isCompactLandscapePhone &&
+            chapterId == 1 &&
+            stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH
         val isChapter3Station2MatchLetterToWord =
             isCompactLandscapePhone &&
                 (chapterId == 3 || chapterId == 6) &&
@@ -935,7 +934,7 @@ private fun SixStationArcStation6Board(
         } else {
             1f
         }
-    val baseCardW = sharedCardSize?.width ?: (cardWCurrent * widthBoost)
+    val baseCardW = sharedCardSize.width ?: (cardWCurrent * widthBoost)
     val cardW = (baseCardW * cardWidthBoostForStation).coerceAtMost(perCardSlotW)
     val cardH =
         cardW *

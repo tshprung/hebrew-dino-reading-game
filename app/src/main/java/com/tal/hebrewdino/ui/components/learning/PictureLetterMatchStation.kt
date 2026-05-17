@@ -39,8 +39,6 @@ fun PictureLetterMatchStation(
         backgroundRes = backgroundRes,
         onBack = onBack,
         onComplete = onComplete,
-        onLettersHelp = onLettersHelp,
-        onDebugStationAdvance = onDebugStationAdvance,
         suppressInGameDinoProgress = suppressInGameDinoProgress,
         modifier = modifier,
     )

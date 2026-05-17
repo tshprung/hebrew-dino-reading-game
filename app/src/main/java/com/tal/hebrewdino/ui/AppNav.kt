@@ -5,8 +5,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -20,9 +23,7 @@ import com.tal.hebrewdino.ui.domain.Chapter4Config
 import com.tal.hebrewdino.ui.domain.Chapter5Config
 import com.tal.hebrewdino.ui.domain.Chapter6Config
 import com.tal.hebrewdino.ui.domain.TrainingV1Config
-import com.tal.hebrewdino.ui.data.CharacterPrefs
 import com.tal.hebrewdino.ui.data.DinoCharacter
-import com.tal.hebrewdino.ui.data.ProgressPrefs
 import com.tal.hebrewdino.ui.screens.Chapter1LettersIntroScreen
 import com.tal.hebrewdino.ui.screens.Chapter2LettersIntroScreen
 import com.tal.hebrewdino.ui.screens.Chapter3IntroScreen
@@ -53,7 +54,6 @@ import com.tal.hebrewdino.ui.screens.Chapter6MidBoostScreen
 import com.tal.hebrewdino.ui.screens.Chapter6IntroScreen
 import com.tal.hebrewdino.ui.screens.Chapter6LettersIntroScreen
 import com.tal.hebrewdino.ui.screens.Chapter6LevelScreen
-import com.tal.hebrewdino.ui.screens.Chapter6MidBoostScreen
 import com.tal.hebrewdino.ui.screens.Chapter6OutroScreen
 import com.tal.hebrewdino.ui.screens.ForestIntroScreen
 import com.tal.hebrewdino.ui.screens.ForestOutroScreen
@@ -72,39 +72,45 @@ import com.tal.hebrewdino.ui.domain.DevTools
 fun AppNav() {
     val navController = rememberNavController()
     val context = LocalContext.current
-    val prefs = CharacterPrefs(context)
-    val progress = ProgressPrefs(context)
+    val mainViewModel: MainViewModel =
+        viewModel(
+            factory = remember(context) { MainViewModel.Factory(context) },
+        )
+    val prefs = mainViewModel.prefs
+    val progress = mainViewModel.progress
     val scope = rememberCoroutineScope()
-    val beachOutroSeen by progress.beachOutroSeenFlow.collectAsState(initial = false)
-    val chapter1MidBoostSeen by progress.chapter1MidBoostSeenFlow.collectAsState(initial = false)
-    val chapter2MidBoostSeen by progress.chapter2MidBoostSeenFlow.collectAsState(initial = false)
-    val chapter2UnlockedStation by progress.chapter2UnlockedStationFlow.collectAsState(initial = 1)
-    val chapter2CompletedStations by progress.chapter2CompletedStationsFlow.collectAsState(initial = emptySet())
-    val chapter2Completed by progress.chapter2CompletedFlow.collectAsState(initial = false)
-    val chapter3MidBoostSeen by progress.chapter3MidBoostSeenFlow.collectAsState(initial = false)
-    val chapter3UnlockedStation by progress.chapter3UnlockedStationFlow.collectAsState(initial = 1)
-    val chapter3CompletedStations by progress.chapter3CompletedStationsFlow.collectAsState(initial = emptySet())
-    val chapter3Completed by progress.chapter3CompletedFlow.collectAsState(initial = false)
-    val chapter4IntroSeen by progress.chapter4IntroSeenFlow.collectAsState(initial = false)
-    val chapter4LettersIntroSeen by progress.chapter4LettersIntroSeenFlow.collectAsState(initial = false)
-    val chapter4MidBoostSeen by progress.chapter4MidBoostSeenFlow.collectAsState(initial = false)
-    val chapter4UnlockedStation by progress.chapter4UnlockedStationFlow.collectAsState(initial = 1)
-    val chapter4CompletedStations by progress.chapter4CompletedStationsFlow.collectAsState(initial = emptySet())
-    val chapter4Completed by progress.chapter4CompletedFlow.collectAsState(initial = false)
-    val chapter5IntroSeen by progress.chapter5IntroSeenFlow.collectAsState(initial = false)
-    val chapter5LettersIntroSeen by progress.chapter5LettersIntroSeenFlow.collectAsState(initial = false)
-    val chapter5MidBoostSeen by progress.chapter5MidBoostSeenFlow.collectAsState(initial = false)
-    val chapter5UnlockedStation by progress.chapter5UnlockedStationFlow.collectAsState(initial = 1)
-    val chapter5CompletedStations by progress.chapter5CompletedStationsFlow.collectAsState(initial = emptySet())
-    val chapter5Completed by progress.chapter5CompletedFlow.collectAsState(initial = false)
-    val chapter6IntroSeen by progress.chapter6IntroSeenFlow.collectAsState(initial = false)
-    val chapter6LettersIntroSeen by progress.chapter6LettersIntroSeenFlow.collectAsState(initial = false)
-    val chapter6MidBoostSeen by progress.chapter6MidBoostSeenFlow.collectAsState(initial = false)
-    val chapter6UnlockedStation by progress.chapter6UnlockedStationFlow.collectAsState(initial = 1)
-    val chapter6CompletedStations by progress.chapter6CompletedStationsFlow.collectAsState(initial = emptySet())
-    val chapter6Completed by progress.chapter6CompletedFlow.collectAsState(initial = false)
-    val unlockedLevel by progress.unlockedLevelFlow.collectAsState(initial = 1)
-    val completedLevels by progress.completedLevelsFlow.collectAsState(initial = emptySet())
+    val uiState by mainViewModel.uiState.collectAsState()
+
+    val beachOutroSeen = uiState.beachOutroSeen
+    val chapter1MidBoostSeen = uiState.chapter1MidBoostSeen
+    val chapter2MidBoostSeen = uiState.chapter2MidBoostSeen
+    val chapter2UnlockedStation = uiState.chapter2UnlockedStation
+    val chapter2CompletedStations = uiState.chapter2CompletedStations
+    val chapter2Completed = uiState.chapter2Completed
+    val chapter3MidBoostSeen = uiState.chapter3MidBoostSeen
+    val chapter3UnlockedStation = uiState.chapter3UnlockedStation
+    val chapter3CompletedStations = uiState.chapter3CompletedStations
+    val chapter3Completed = uiState.chapter3Completed
+    uiState.chapter4IntroSeen
+    uiState.chapter4LettersIntroSeen
+    val chapter4MidBoostSeen = uiState.chapter4MidBoostSeen
+    val chapter4UnlockedStation = uiState.chapter4UnlockedStation
+    val chapter4CompletedStations = uiState.chapter4CompletedStations
+    val chapter4Completed = uiState.chapter4Completed
+    uiState.chapter5IntroSeen
+    uiState.chapter5LettersIntroSeen
+    val chapter5MidBoostSeen = uiState.chapter5MidBoostSeen
+    val chapter5UnlockedStation = uiState.chapter5UnlockedStation
+    val chapter5CompletedStations = uiState.chapter5CompletedStations
+    val chapter5Completed = uiState.chapter5Completed
+    uiState.chapter6IntroSeen
+    uiState.chapter6LettersIntroSeen
+    val chapter6MidBoostSeen = uiState.chapter6MidBoostSeen
+    val chapter6UnlockedStation = uiState.chapter6UnlockedStation
+    val chapter6CompletedStations = uiState.chapter6CompletedStations
+    val chapter6Completed = uiState.chapter6Completed
+    val unlockedLevel = uiState.unlockedLevel
+    val completedLevels = uiState.completedLevels
     val chapter1AllStationsComplete =
         (1..Chapter1Config.STATION_COUNT).all { station -> completedLevels.contains(station) }
     val chapter2AllStationsComplete =
@@ -162,7 +168,7 @@ fun AppNav() {
         prefs.setCharacter(DinoCharacter.Dino)
     }
 
-    NavHost(navController = navController, startDestination = startDestination) {
+    fun NavGraphBuilder.systemAndTrainingGraph() {
         composable(NavRoutes.Seasons) {
             SeasonsScreen(
                 onOpenSeason1 = {
@@ -288,6 +294,31 @@ fun AppNav() {
             )
         }
 
+        composable(NavRoutes.Settings) {
+            SettingsScreen(
+                onResetAll = {
+                    scope.launch {
+                        progress.resetAll()
+                        prefs.setCharacter(DinoCharacter.Dino)
+                        navController.navigate(NavRoutes.Chapters) {
+                            popUpTo(NavRoutes.Settings) { inclusive = true }
+                        }
+                    }
+                },
+                onResetChapters = { chapterIds ->
+                    scope.launch {
+                        progress.resetChapters(chapterIds)
+                        navController.navigate(NavRoutes.Chapters) {
+                            popUpTo(NavRoutes.Settings) { inclusive = true }
+                        }
+                    }
+                },
+                onBack = { navController.popBackStack() },
+            )
+        }
+    }
+
+    fun NavGraphBuilder.chapterOneToThreeGraph() {
         composable(NavRoutes.StoryIntro) {
             ForestIntroScreen(
                 character = DinoCharacter.Dino,
@@ -580,16 +611,6 @@ fun AppNav() {
             LevelScreen(
                 levelId = levelId,
                 onBack = { navController.popBackStack() },
-                onLettersHelp = {
-                    navController.navigate(NavRoutes.ChapterLettersIntro) { launchSingleTop = true }
-                },
-                onDebugStationAdvance =
-                    if (DevTools.enabled(context)) {
-                        { scope.launch { progress.debugUnlockNextChapter1Station() } }
-                    } else {
-                        null
-                    },
-                collectedEggStripCount = collectedEggStripCount,
                 suppressInGameDinoProgress = completedLevels.contains(levelId),
                 onComplete = { completedLevelId, correctCount, mistakeCount ->
                     scope.launch {
@@ -707,23 +728,10 @@ fun AppNav() {
 
         composable(NavRoutes.Ch3MidBoost) {
             Chapter3MidBoostScreen(
-                eggStripCount = collectedEggStripCount,
                 onContinue = {
                     scope.launch { progress.markChapter3MidBoostSeen() }
                     navController.navigate(NavRoutes.Ch3Journey) {
                         popUpTo(NavRoutes.Ch3MidBoost) { inclusive = true }
-                    }
-                },
-            )
-        }
-
-        composable(NavRoutes.Ch4MidBoost) {
-            Chapter4MidBoostScreen(
-                eggStripCount = collectedEggStripCount,
-                onContinue = {
-                    scope.launch { progress.markChapter4MidBoostSeen() }
-                    navController.navigate(NavRoutes.Ch4Journey) {
-                        popUpTo(NavRoutes.Ch4MidBoost) { inclusive = true }
                     }
                 },
             )
@@ -791,6 +799,31 @@ fun AppNav() {
             )
         }
 
+        composable(NavRoutes.StoryOutro) {
+            ForestOutroScreen(
+                character = DinoCharacter.Dino,
+                onContinue = {
+                    scope.launch { progress.markBeachOutroSeen() }
+                    navController.navigate(NavRoutes.Chapters) {
+                        popUpTo(NavRoutes.StoryOutro) { inclusive = true }
+                    }
+                },
+            )
+        }
+    }
+
+    fun NavGraphBuilder.chapterFourToSixGraph() {
+        composable(NavRoutes.Ch4MidBoost) {
+            Chapter4MidBoostScreen(
+                onContinue = {
+                    scope.launch { progress.markChapter4MidBoostSeen() }
+                    navController.navigate(NavRoutes.Ch4Journey) {
+                        popUpTo(NavRoutes.Ch4MidBoost) { inclusive = true }
+                    }
+                },
+            )
+        }
+
         composable(NavRoutes.Ch4Intro) {
             Chapter4IntroScreen(
                 eggStripCount = collectedEggStripCount,
@@ -821,8 +854,6 @@ fun AppNav() {
                 endMarkerReached = chapter4Completed || chapter4AllStationsComplete,
                 totalLevels = Chapter4Config.STATION_COUNT,
                 headerTitle = "פרק 4 - סיבוך בדרך",
-                headerSubtitle = null,
-                headerSubtitleCompact = true,
                 collectedEggStripCount = collectedEggStripCount,
                 endMarker = JourneyEndMarker.ClueLetterPe,
                 backgroundRes = R.drawable.forest_bg_journey_road,
@@ -940,7 +971,6 @@ fun AppNav() {
 
         composable(NavRoutes.Ch5MidBoost) {
             Chapter5MidBoostScreen(
-                eggStripCount = collectedEggStripCount,
                 onContinue = {
                     scope.launch { progress.markChapter5MidBoostSeen() }
                     navController.navigate(NavRoutes.Ch5Journey) {
@@ -980,8 +1010,6 @@ fun AppNav() {
                 endMarkerReached = chapter5Completed || chapter5AllStationsComplete,
                 totalLevels = Chapter5Config.STATION_COUNT,
                 headerTitle = "פרק 5 - הביצה השלישית",
-                headerSubtitle = null,
-                headerSubtitleCompact = true,
                 collectedEggStripCount = collectedEggStripCount,
                 // Third egg on the map should match the purple egg asset.
                 endMarker = JourneyEndMarker.PurpleEgg,
@@ -1100,7 +1128,6 @@ fun AppNav() {
 
         composable(NavRoutes.Ch6MidBoost) {
             Chapter6MidBoostScreen(
-                eggStripCount = collectedEggStripCount,
                 onContinue = {
                     scope.launch { progress.markChapter6MidBoostSeen() }
                     navController.navigate(NavRoutes.Ch6Journey) {
@@ -1140,8 +1167,6 @@ fun AppNav() {
                 endMarkerReached = chapter6Completed || chapter6AllStationsComplete,
                 totalLevels = Chapter6Config.STATION_COUNT,
                 headerTitle = "פרק 6 - חוזרים הביתה",
-                headerSubtitle = null,
-                headerSubtitleCompact = true,
                 collectedEggStripCount = collectedEggStripCount,
                 endMarker = JourneyEndMarker.Mom,
                 backgroundRes = R.drawable.forest_bg_journey_road,
@@ -1247,41 +1272,12 @@ fun AppNav() {
                 },
             )
         }
+    }
 
-        composable(NavRoutes.StoryOutro) {
-            ForestOutroScreen(
-                character = DinoCharacter.Dino,
-                onContinue = {
-                    scope.launch { progress.markBeachOutroSeen() }
-                    navController.navigate(NavRoutes.Chapters) {
-                        popUpTo(NavRoutes.StoryOutro) { inclusive = true }
-                    }
-                },
-            )
-        }
-
-        composable(NavRoutes.Settings) {
-            SettingsScreen(
-                onResetAll = {
-                    scope.launch {
-                        progress.resetAll()
-                        prefs.setCharacter(DinoCharacter.Dino)
-                        navController.navigate(NavRoutes.Chapters) {
-                            popUpTo(NavRoutes.Settings) { inclusive = true }
-                        }
-                    }
-                },
-                onResetChapters = { chapterIds ->
-                    scope.launch {
-                        progress.resetChapters(chapterIds)
-                        navController.navigate(NavRoutes.Chapters) {
-                            popUpTo(NavRoutes.Settings) { inclusive = true }
-                        }
-                    }
-                },
-                onBack = { navController.popBackStack() },
-            )
-        }
+    NavHost(navController = navController, startDestination = startDestination) {
+        systemAndTrainingGraph()
+        chapterOneToThreeGraph()
+        chapterFourToSixGraph()
     }
 }
 

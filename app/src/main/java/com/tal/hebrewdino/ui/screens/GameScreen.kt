@@ -1,32 +1,25 @@
 package com.tal.hebrewdino.ui.screens
 
+import android.os.SystemClock
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.AnimationVector1D
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -34,59 +27,52 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.zIndex
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLifecycleOwner
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.LocalLayoutDirection
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.tal.hebrewdino.R
 import com.tal.hebrewdino.ui.audio.AudioClips
+import com.tal.hebrewdino.ui.audio.GameAudioEngine
 import com.tal.hebrewdino.ui.audio.SoundPoolPlayer
 import com.tal.hebrewdino.ui.audio.VoicePlayer
-import com.tal.hebrewdino.ui.audio.GameAudioEngine
+import com.tal.hebrewdino.ui.components.Chapter3Station5ReplayColumn
+import com.tal.hebrewdino.ui.components.Episode4Stations15HelpColumn
+import com.tal.hebrewdino.ui.components.TargetLetterHeaderChip
 import com.tal.hebrewdino.ui.domain.AnswerResult
 import com.tal.hebrewdino.ui.domain.Chapter1Station5And6ImageMatchInnerScale
 import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
+import com.tal.hebrewdino.ui.domain.Episode4Help
+import com.tal.hebrewdino.ui.domain.InstructionPanelStyle
+import com.tal.hebrewdino.ui.domain.LetterPoolSpec
 import com.tal.hebrewdino.ui.domain.LevelSession
 import com.tal.hebrewdino.ui.domain.Question
-import com.tal.hebrewdino.ui.domain.LetterPoolSpec
-import com.tal.hebrewdino.ui.domain.Chapter3EpisodeContent
-import com.tal.hebrewdino.ui.domain.InstructionPanelStyle
 import com.tal.hebrewdino.ui.domain.StationBehaviorRegistry
 import com.tal.hebrewdino.ui.domain.StationInstructionCopy
 import com.tal.hebrewdino.ui.domain.StationQuizMode
-import com.tal.hebrewdino.ui.domain.StationReplayMode
+import com.tal.hebrewdino.ui.domain.StationQuizPlan
 import com.tal.hebrewdino.ui.domain.StationTemplateId
 import com.tal.hebrewdino.ui.domain.StationVariant
 import com.tal.hebrewdino.ui.domain.TrainingV1Config
 import com.tal.hebrewdino.ui.domain.hasVariant
-import com.tal.hebrewdino.ui.screens.StationHeaderMode
-import com.tal.hebrewdino.ui.domain.Episode4Help
-import com.tal.hebrewdino.ui.domain.StationQuizPlan
-import com.tal.hebrewdino.ui.components.Episode4Stations15HelpColumn
-import com.tal.hebrewdino.ui.components.Chapter3Station5ReplayColumn
-import com.tal.hebrewdino.ui.components.TargetLetterHeaderChip
 import com.tal.hebrewdino.ui.feedback.GameFeedback
 import com.tal.hebrewdino.ui.game.ChildGameAudioHooks
 import com.tal.hebrewdino.ui.layout.ScreenFit
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.random.Random
-import android.os.SystemClock
 
 private enum class GamePhase { Intro, Play }
 
@@ -95,9 +81,6 @@ private enum class DinoVisual { Idle, TryAgain, Jump }
 private const val IntroDurationMs = 450L
 
 private const val BetweenQuestionFadeMs = 80
-
-/** ~1 cm vertical gap between the back button and the collected-egg strip. */
-private val SpaceBelowBackBeforeEggs = 38.dp
 
 /** Chapters that use the shared six-station journey ([Chapter1StationOrder]); intros, art, and letter pools differ. */
 private val SixStationArcChapterRange = 1..5
@@ -641,12 +624,8 @@ fun GameScreen(
     backgroundRes: Int = R.drawable.forest_bg_level_overlay,
     onBack: () -> Unit,
     onComplete: (stationId: Int, correctCount: Int, mistakeCount: Int) -> Unit,
-    onLettersHelp: (() -> Unit)? = null,
-    onDebugStationAdvance: (() -> Unit)? = null,
     /** Replay of an already-completed station: no extra in-game dino motion after correct answers. */
     suppressInGameDinoProgress: Boolean = false,
-    /** Eggs already collected in prior chapter finales (shown upright under the status bar). */
-    collectedEggStripCount: Int = 0,
     modifier: Modifier = Modifier,
 ) {
     // UX: no audio for now (per request).
@@ -660,7 +639,7 @@ fun GameScreen(
         }
     val listenOnly = plan.listenOnlyTargetPrompt
     val stationUiSpec = remember(chapterId, stationId) { StationBehaviorRegistry.getStationUiSpec(chapterId, stationId) }
-    val episode4HelpSt15 = Episode4Help.isHelpColumnActive(chapterId, stationUiSpec)
+    val episode4HelpSt15 = Episode4Help.isHelpColumnActive(stationUiSpec)
     val sagaUsesPickLetterAudioStaging = stationUiSpec.audioStagingPickLetter
     val sagaUsesPopBalloonsAudioStaging = stationUiSpec.audioStagingPopBalloons
     val usesPopBalloonsSoundPoolPrompt = stationUiSpec.popBalloonsUseSoundPoolPrompt
@@ -690,12 +669,11 @@ fun GameScreen(
             plan.mode == StationQuizMode.PopBalloons &&
             plan.popAllLettersInWord
 
-    val trainingRound: Int? =
-        if (chapterId == TrainingV1Config.CHAPTER_ID) {
-            topChromeProgressOverride?.first
-        } else {
-            null
-        }
+    if (chapterId == TrainingV1Config.CHAPTER_ID) {
+        topChromeProgressOverride?.first
+    } else {
+        null
+    }
     val scope = rememberCoroutineScope()
     val episode4Help = rememberEpisode4HelpController(stationId = stationId, scope = scope)
     val context = LocalContext.current
@@ -2091,7 +2069,7 @@ fun GameScreen(
                                             // Short reward, no waiting.
                                             scope.launch { sfx.playFirstAvailable(AudioClips.SfxCorrect, volume = 0.58f) }
                                         },
-                                        onWrongMatch = { pickedLetter, pickedChoiceId ->
+                                        onWrongMatch = { _, _ ->
                                             // Letter/word are spoken on press; keep wrong feedback minimal (no extra voice stacking here).
                                         },
                                         onMatchAttempt = matchAttempt@{ correct ->
@@ -2194,7 +2172,7 @@ fun GameScreen(
                             modifier = Modifier.fillMaxSize().zIndex(3f),
                             contentAlignment = Alignment.Center,
                         ) {
-                            TargetLetterHeaderChip(letter = fullScreenBalloonHintLetter!!)
+                            TargetLetterHeaderChip(letter = fullScreenBalloonHintLetter)
                         }
                     }
                     }

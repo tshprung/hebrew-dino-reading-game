@@ -1,13 +1,5 @@
 package com.tal.hebrewdino.ui.screens
 
-data class GameScreenUiState(
-    val isIntroPhase: Boolean,
-    val isPlayPhase: Boolean,
-    val isInputLocked: Boolean,
-    val hintOverlayLetter: String?,
-    val showTargetLetterChip: Boolean,
-)
-
 sealed interface GameScreenAction {
     data object OnReplayPressed : GameScreenAction
 

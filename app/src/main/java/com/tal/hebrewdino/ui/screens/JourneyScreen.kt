@@ -1,7 +1,6 @@
 package com.tal.hebrewdino.ui.screens
 
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -13,7 +12,6 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -27,7 +25,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentWidth
-import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
@@ -71,7 +68,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.tal.hebrewdino.R
 import com.tal.hebrewdino.ui.components.ChapterNavChipStyles
 import com.tal.hebrewdino.ui.components.learning.DinoNestMark
@@ -82,9 +78,7 @@ import com.tal.hebrewdino.ui.domain.JourneyEndMarkerIdle
 import com.tal.hebrewdino.ui.domain.JourneyMapLayout
 import androidx.compose.ui.draw.scale
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.ui.zIndex
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlin.math.abs
@@ -194,9 +188,6 @@ fun JourneyScreen(
     /** Stations above this are shown locked until content ships (e.g. chapter 3). */
     playableLevels: Int = totalLevels,
     headerTitle: String = "פרק 1 - מצא את הביצה",
-    headerSubtitle: String? = null,
-    /** Softer, slightly smaller subtitle so long lines wrap calmly (e.g. chapter 3). */
-    headerSubtitleCompact: Boolean = false,
     /** Optional second character drawn beside Dino (e.g. mom in chapter 2). */
     companionImageRes: Int? = null,
     endMarker: JourneyEndMarker = JourneyEndMarker.Egg,
@@ -473,7 +464,6 @@ fun JourneyScreen(
                         dinoProgress = dinoProgress.value,
                         walkDrawable = walkFrames[walkFrame],
                         companionImageRes = companionImageRes,
-                        roadScrollState = roadScroll,
                         endMarker = endMarker,
                         roadHeight = roadH,
                         modifier = Modifier.offset(y = JourneyRoadShiftY),
@@ -521,7 +511,6 @@ private fun JourneyRoadStrip(
     dinoProgress: Float,
     walkDrawable: Int,
     companionImageRes: Int?,
-    roadScrollState: ScrollState,
     endMarker: JourneyEndMarker,
     roadHeight: Dp = 300.dp,
     modifier: Modifier = Modifier,

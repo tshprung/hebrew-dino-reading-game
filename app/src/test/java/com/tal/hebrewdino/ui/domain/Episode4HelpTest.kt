@@ -19,10 +19,10 @@ class Episode4HelpTest {
                 quizMode = StationQuizMode.PickLetter,
                 helpControlsEnabled = true,
             )
-        assertTrue(Episode4Help.isHelpColumnActive(4, ep4))
-        assertTrue(Episode4Help.isHelpColumnActive(5, ep4))
-        assertFalse(Episode4Help.isHelpColumnActive(4, ep4.copy(helpControlsEnabled = false)))
-        assertTrue(Episode4Help.isHelpColumnActive(3, ep4))
+        assertTrue(Episode4Help.isHelpColumnActive(ep4))
+        assertTrue(Episode4Help.isHelpColumnActive(ep4))
+        assertFalse(Episode4Help.isHelpColumnActive(ep4.copy(helpControlsEnabled = false)))
+        assertTrue(Episode4Help.isHelpColumnActive(ep4))
     }
 
     @Test

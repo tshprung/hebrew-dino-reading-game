@@ -17,7 +17,6 @@ fun Chapter1MidBoostScreen(
             "יופי! פתרת את החידות כמו בלש/ית אמיתי/ת.\n" +
                 "יש כאן סימנים שמובילים קדימה…\n" +
                 "בואו נמשיך ונראה אם נגיע לביצה.",
-        eggStripCount = 0,
         companion = ChapterLobbyCompanion.DinoOnly,
         voiceAssetPath = AudioClips.StoryCh1MidBoost,
         dinoContentDescription = "דינו",
@@ -38,7 +37,6 @@ fun Chapter2MidBoostScreen(
             "הולך לכם נהדר!\n" +
                 "עכשיו הדרך עולה למעלה, והעקבות נהיות ברורות יותר.\n" +
                 "עוד קצת—ואולי נגלה מי עבר כאן ומה הוא לקח.",
-        eggStripCount = 0,
         companion = ChapterLobbyCompanion.DinoOnly,
         voiceAssetPath = AudioClips.StoryCh2MidBoost,
         dinoContentDescription = "דינו",
@@ -49,7 +47,6 @@ fun Chapter2MidBoostScreen(
 
 @Composable
 fun Chapter3MidBoostScreen(
-    eggStripCount: Int,
     onContinue: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -60,7 +57,6 @@ fun Chapter3MidBoostScreen(
             "איזה יופי! אתם מתקדמים מצוין.\n" +
                 "עוד קצת והביצה הורודה כבר מרגישה קרובה.\n" +
                 "בואו נמשיך לגלות מה מחכה לנו בהמשך.",
-        eggStripCount = eggStripCount,
         companion = ChapterLobbyCompanion.DinoOnly,
         voiceAssetPath = AudioClips.StoryCh3MidBoost,
         dinoContentDescription = "דינו",
@@ -71,7 +67,6 @@ fun Chapter3MidBoostScreen(
 
 @Composable
 fun Chapter4MidBoostScreen(
-    eggStripCount: Int,
     onContinue: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -82,7 +77,6 @@ fun Chapter4MidBoostScreen(
             "אתם זוכרים ומחברים מילים ממש טוב.\n" +
                 "עוד קצת חיזוק ואתם מוכנים לעוד אתגרים.\n" +
                 "בואו נמשיך ביחד!",
-        eggStripCount = eggStripCount,
         companion = ChapterLobbyCompanion.DinoOnly,
         voiceAssetPath = AudioClips.StoryCh4MidBoost,
         dinoContentDescription = "דינו",
@@ -93,7 +87,6 @@ fun Chapter4MidBoostScreen(
 
 @Composable
 fun Chapter5MidBoostScreen(
-    eggStripCount: Int,
     onContinue: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -104,7 +97,6 @@ fun Chapter5MidBoostScreen(
             "אתם כבר מקשיבים וקוראים כמו בלשים אמיתיים.\n" +
                 "עוד קצת — ואולי נגיע לביצה השלישית.\n" +
                 "בואו נסיים את המסע!",
-        eggStripCount = eggStripCount,
         companion = ChapterLobbyCompanion.DinoOnly,
         voiceAssetPath = AudioClips.StoryCh5MidBoost,
         dinoContentDescription = "דינו",
@@ -115,7 +107,6 @@ fun Chapter5MidBoostScreen(
 
 @Composable
 fun Chapter6MidBoostScreen(
-    eggStripCount: Int,
     onContinue: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -126,7 +117,6 @@ fun Chapter6MidBoostScreen(
             "כמעט בבית!\n" +
                 "דינו כבר רואה את הדרך לאמא.\n" +
                 "נמשיך לתרגל ונחזיר את הביצים הביתה.",
-        eggStripCount = eggStripCount,
         companion = ChapterLobbyCompanion.DinoOnly,
         voiceAssetPath = AudioClips.StoryCh6MidBoost,
         dinoContentDescription = "דינו",

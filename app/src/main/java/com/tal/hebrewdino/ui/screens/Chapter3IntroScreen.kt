@@ -22,7 +22,6 @@ fun Chapter3IntroScreen(
                 "ונראה שהוא מתקרב למשהו חשוב.\n" +
                 "\n" +
                 "בואו נתקדם בזהירות ונגלה מה מחכה בהמשך.",
-        eggStripCount = eggStripCount,
         companion = ChapterLobbyCompanion.DinoOnly,
         narrationPlaying = false,
         voiceAssetPath = AudioClips.StoryMountainPathIntro,

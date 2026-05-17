@@ -1,17 +1,15 @@
 package com.tal.hebrewdino.ui.game
 
-import androidx.compose.foundation.border
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
@@ -21,39 +19,30 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
-import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.tal.hebrewdino.R
 import com.tal.hebrewdino.ui.components.TargetLetterHeaderChip
-import com.tal.hebrewdino.ui.components.learning.LessonChoiceCard
 import com.tal.hebrewdino.ui.components.learning.LessonChoiceCardPictureAspect
 import com.tal.hebrewdino.ui.components.learning.captionFontSizeForWordCard
 import com.tal.hebrewdino.ui.domain.Chapter1Station4To6LessonChoiceCardSpec
 import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
+import com.tal.hebrewdino.ui.domain.HebrewLetterOrder
 import com.tal.hebrewdino.ui.domain.LessonChoice
 import com.tal.hebrewdino.ui.domain.Question
-import com.tal.hebrewdino.ui.domain.HebrewLetterOrder
 import com.tal.hebrewdino.ui.layout.ScreenFit
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
-import androidx.compose.ui.draw.scale
-import androidx.compose.ui.platform.LocalLayoutDirection
-import androidx.compose.ui.unit.LayoutDirection
 import com.tal.hebrewdino.ui.screens.LetterOptions
 import kotlin.math.roundToInt
-import androidx.compose.ui.draw.alpha
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -119,9 +108,7 @@ fun PictureStartsWithGame(
         CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
             Box(modifier = modifier.fillMaxSize()) {
                 val instructionOffsetY =
-                    if (isCompactLandscapePhone &&
-                        (chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) &&
-                        stationId == Chapter1StationOrder.PICTURE_PICK_ONE
+                    if ((chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) && stationId == Chapter1StationOrder.PICTURE_PICK_ONE
                     ) {
                         (-22).dp
                     } else {
@@ -267,7 +254,7 @@ fun PictureStartsWithGame(
                             cardHeight = cardH,
                             captionFontSize = captionSp,
                             innerPictureScale = innerPictureScale,
-                            onClick = { if (pictureTapReplays) onPictureTapReplayWord?.invoke() },
+                            onClick = { if (pictureTapReplays) onPictureTapReplayWord.invoke() },
                             scale = 1f,
                             isCorrectPick = false,
                         )
@@ -391,7 +378,7 @@ fun PictureStartsWithGame(
                     cardHeight = cardH,
                     captionFontSize = captionSp,
                     innerPictureScale = innerPictureScale,
-                    onClick = { if (pictureTapReplays) onPictureTapReplayWord?.invoke() },
+                    onClick = { if (pictureTapReplays) onPictureTapReplayWord.invoke() },
                     scale = 1f,
                     isCorrectPick = false,
                 )

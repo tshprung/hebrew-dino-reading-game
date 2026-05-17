@@ -18,7 +18,7 @@ class LevelSession(
 
     private var lastCorrectAnswer: String? = null
     private var bag: MutableList<String> = mutableListOf()
-    private val seenLetters: MutableSet<String> = mutableSetOf()
+
     /** Correct catalog entry ids already used per letter (picture stations 4–5). */
     private val lessonWordUsedCorrectIdsByLetter: MutableMap<String, MutableSet<String>> = mutableMapOf()
 
@@ -423,8 +423,6 @@ class LevelSession(
         _currentQuestion = null
     }
 
-    fun consumeFirstTimeSeen(letter: String): Boolean = seenLetters.add(letter)
-
     private fun moveGroup(delta: Int) {
         val newIndex = min(maxGroupIndex, max(0, groupIndex + delta))
         if (newIndex != groupIndex) {
@@ -454,7 +452,7 @@ class LevelSession(
 
     private fun nextTwoDistinctCorrect(group: List<String>): Pair<String, String> {
         val first = nextBalancedCorrect(group)
-        var second = nextBalancedCorrect(group)
+        val second = nextBalancedCorrect(group)
         if (second != first) return first to second
         val others = group.filter { it != first }
         require(others.isNotEmpty()) { "Letter group needs at least two letters for finale" }

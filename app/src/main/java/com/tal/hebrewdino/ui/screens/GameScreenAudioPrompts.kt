@@ -4,7 +4,6 @@ import com.tal.hebrewdino.ui.audio.AudioClips
 import com.tal.hebrewdino.ui.audio.SoundPoolPlayer
 import com.tal.hebrewdino.ui.audio.VoicePlayer
 import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
-import com.tal.hebrewdino.ui.domain.Chapter3EpisodeContent
 import com.tal.hebrewdino.ui.domain.Question
 import kotlinx.coroutines.delay
 import kotlin.random.Random
@@ -114,17 +113,6 @@ internal suspend fun playEpisode4FindGridReplayLetterOnly(
         }
     }
     speakLetterPrompt(voice, q.targetLetter)
-}
-
-/** Episode 3 station 2: sentence prompt + the current word (no letter-name voice). */
-// Kept for backwards compatibility; Episode 3 station 2 prompt is now handled inline.
-internal suspend fun playChapter3FindAllLettersInWordPrompt(
-    voice: VoicePlayer,
-    round: Chapter3EpisodeContent.SpellRound,
-) {
-    // Legacy helper kept; Episode 3 flow now uses dedicated station clips.
-    val wordPath = AudioClips.wordClipByCatalogId(round.catalogId)
-    if (voice.hasAsset(wordPath)) voice.playBlocking(wordPath)
 }
 
 internal suspend fun replayEpisode4Stations15RoundAudio(

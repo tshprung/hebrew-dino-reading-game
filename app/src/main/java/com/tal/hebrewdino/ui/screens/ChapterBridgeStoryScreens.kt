@@ -31,7 +31,6 @@ fun Chapter2OutroScreen(
                 "ועכשיו יש כיוון ברור.\n" +
                 "\n" +
                 "בואו נתקדם אחרי העקבות בפרק הבא.",
-        eggStripCount = 1,
         companion = ChapterLobbyCompanion.DinoOnly,
         narrationPlaying = false,
         voiceAssetPath = AudioClips.StoryMountainApproachOutro,
@@ -58,7 +57,6 @@ fun Chapter3OutroScreen(
                 "\n" +
                 "הוא אוסף אותה בזהירות,\n" +
                 "וממשיך במסע למצוא את הביצה האחרונה.",
-        eggStripCount = eggStripCount,
         companion = ChapterLobbyCompanion.DinoOnly,
         narrationPlaying = false,
         voiceAssetPath = AudioClips.StoryMountainPathOutro,
@@ -85,7 +83,6 @@ fun Chapter4IntroScreen(
                 "עדיין לא מצאנו את הביצה השלישית — אבל כל תחנה מקרבת אותנו.\n" +
                 "\n" +
                 "בואו נאזין היטב ונמשיך יחד.",
-        eggStripCount = eggStripCount,
         companion = ChapterLobbyCompanion.DinoOnly,
         narrationPlaying = false,
         voiceAssetPath = AudioClips.StoryCh4Intro,
@@ -108,7 +105,6 @@ fun Chapter4OutroScreen(
             "מצאנו רמז! האות פ… הביצה בטח קרובה!\n" +
                 "\n" +
                 "דינו ממשיך קדימה — העקבות מובילות הלאה, והמסע עוד לא נגמר.",
-        eggStripCount = eggStripCount,
         companion = ChapterLobbyCompanion.DinoOnly,
         narrationPlaying = false,
         voiceAssetPath = AudioClips.StoryCh4ClueOutro,
@@ -151,7 +147,6 @@ fun Chapter5IntroScreen(
                 "\n" +
                 "עוד קצת קשב, עוד קצת חיזוק…\n" +
                 "ואולי הפעם נמצא אותה.",
-        eggStripCount = eggStripCount,
         companion = ChapterLobbyCompanion.DinoOnly,
         narrationPlaying = false,
         voiceAssetPath = AudioClips.StoryCh5Intro,
@@ -177,7 +172,6 @@ fun Chapter5OutroScreen(
                 "עכשיו אפשר לחשוב על הדרך חזרה הביתה…\n" +
                 "\n" +
                 "כל הכבוד! 🎉",
-        eggStripCount = eggStripCount,
         companion = ChapterLobbyCompanion.DinoOnly,
         narrationPlaying = false,
         voiceAssetPath = AudioClips.StoryCh5ThirdEggOutro,
@@ -201,7 +195,6 @@ fun Chapter6IntroScreen(
                 "עכשיו צריך לחזור הביתה לאמא.\n" +
                 "\n" +
                 "בדרך נתרגל את כל האותיות והמילים שלמדנו.",
-        eggStripCount = eggStripCount,
         companion = ChapterLobbyCompanion.DinoOnly,
         narrationPlaying = false,
         voiceAssetPath = AudioClips.StoryCh6Intro,
@@ -226,7 +219,6 @@ fun Chapter6OutroScreen(
                 "\n" +
                 "כל הכבוד — עזרתם לדינו לקרוא,\n" +
                 "להקשיב ולמצוא את הדרך הביתה!",
-        eggStripCount = eggStripCount,
         companion = ChapterLobbyCompanion.DinoOnly,
         narrationPlaying = false,
         voiceAssetPath = AudioClips.StoryCh6Outro,

@@ -31,10 +31,7 @@ fun Chapter5LevelScreen(
         backgroundRes = R.drawable.forest_bg_journey_road,
         onBack = onBack,
         onComplete = onComplete,
-        onLettersHelp = onLettersHelp,
-        onDebugStationAdvance = onDebugStationAdvance,
         suppressInGameDinoProgress = suppressInGameDinoProgress,
-        collectedEggStripCount = collectedEggStripCount,
         modifier = modifier,
     )
 }

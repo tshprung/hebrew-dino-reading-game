@@ -78,35 +78,7 @@ object Chapter3EpisodeContent {
 
     fun balloonWord(questionIndex: Int): String = balloonRounds[questionIndex.coerceIn(0, balloonRounds.lastIndex)].word
 
-    fun balloonCatalogId(questionIndex: Int): String = balloonRounds[questionIndex.coerceIn(0, balloonRounds.lastIndex)].catalogId
-
     fun balloonFirstLetter(questionIndex: Int): String = balloonWord(questionIndex).first().toString()
-
-    data class PopAllLettersRound(
-        val word: String,
-        val catalogId: String,
-        val correctLetter: String,
-    )
-
-    /** Station 3: 3 words; each word contributes one round per letter occurrence. */
-    private val popAllLettersRounds: List<PopAllLettersRound> =
-        listOf(
-            // גמל
-            PopAllLettersRound("גמל", "w_ג_1", "ג"),
-            PopAllLettersRound("גמל", "w_ג_1", "מ"),
-            PopAllLettersRound("גמל", "w_ג_1", "ל"),
-            // דבש
-            PopAllLettersRound("דבש", "w_ד_4", "ד"),
-            PopAllLettersRound("דבש", "w_ד_4", "ב"),
-            PopAllLettersRound("דבש", "w_ד_4", "ש"),
-            // שמש (ש appears twice → two separate rounds)
-            PopAllLettersRound("שמש", "w_ש_1", "ש"),
-            PopAllLettersRound("שמש", "w_ש_1", "מ"),
-            PopAllLettersRound("שמש", "w_ש_1", "ש"),
-        )
-
-    fun popAllLettersRound(questionIndex: Int): PopAllLettersRound =
-        popAllLettersRounds[questionIndex.coerceIn(0, popAllLettersRounds.lastIndex)]
 
     fun pickSpellRound(questionIndex: Int): SpellRound = spellRounds[questionIndex.coerceIn(0, spellRounds.lastIndex)]
 
@@ -128,20 +100,4 @@ object Chapter3EpisodeContent {
         return r.word to r.catalogId
     }
 
-    /** True when this round is the last letter of its word (praise plays after a correct tap). */
-    fun spellCompletesWordAfterCorrectRound(questionIndex: Int): Boolean {
-        val r = pickSpellRound(questionIndex)
-        return r.slotIndex == r.word.lastIndex
-    }
-
-    /** UI: revealed letters before the current slot (same [word] as this round). */
-    fun spellProgressLabel(round: SpellRound): String =
-        buildString {
-            round.word.forEachIndexed { i, ch ->
-                when {
-                    i < round.slotIndex -> append(ch)
-                    else -> append('━')
-                }
-            }
-        }
 }

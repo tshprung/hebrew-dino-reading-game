@@ -13,7 +13,7 @@ object Episode4Help {
     /**
      * True when the right-side help column should be shown (spec-driven).
      */
-    fun isHelpColumnActive(chapterId: Int, stationUiSpec: StationUiSpec): Boolean =
+    fun isHelpColumnActive(stationUiSpec: StationUiSpec): Boolean =
         stationUiSpec.helpControlsEnabled && stationUiSpec.variants.contains(StationVariant.Episode4Help)
 
     /**

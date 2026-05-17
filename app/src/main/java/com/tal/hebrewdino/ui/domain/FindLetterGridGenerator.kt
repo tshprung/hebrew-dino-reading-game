@@ -17,8 +17,7 @@ object FindLetterGridGenerator {
         require(group.isNotEmpty())
         require(targetLetter in group)
         val columns = if (rnd.nextBoolean()) 3 else 4
-        val rows = columns
-        val total = columns * rows
+        val total = columns * columns
         val desiredTargetCount = if (columns == 3) 3 else 4
         val maxTargets = (total - 2).coerceAtLeast(desiredTargetCount)
         val cappedMax = maxTargetCount?.coerceIn(desiredTargetCount, maxTargets) ?: maxTargets
@@ -32,7 +31,7 @@ object FindLetterGridGenerator {
         return Question.FindLetterGridQuestion(
             targetLetter = targetLetter,
             columns = columns,
-            rows = rows,
+            rows = columns,
             cells = cells,
         )
     }
