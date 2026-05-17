@@ -1391,27 +1391,19 @@ fun GameScreen(
                                     sagaUsesFindGridAudioStaging = sagaUsesFindGridAudioStaging,
                                     stationUiSpec = stationUiSpec,
                                     chapter3ContextWordHint =
-                                        if (chapterId == 3 && sagaUsesFindGridAudioStaging) {
+                                        if (stationUiSpec.findGridUseChapter3ContextWordHint && sagaUsesFindGridAudioStaging) {
                                             Chapter3EpisodeContent.gridHintWord(session.currentIndex)
                                         } else {
                                             null
                                         },
                                     floatingTargetLetterHint =
-                                        if (episode4HelpSt15 &&
-                                            (stationId == Chapter1StationOrder.REVEAL_THEN_CHOOSE ||
-                                                (chapterId == TrainingV1Config.CHAPTER_ID &&
-                                                    stationId == TrainingV1Config.STATION_FIND_HEARD_LETTER_IN_GRID))
-                                        ) {
+                                        if (episode4HelpSt15 && stationUiSpec.findGridUseEpisode4HelpHints) {
                                             episode4Help.activeHintLetter
                                         } else {
                                             null
                                         },
                                     episode4TargetCellsHintEpoch =
-                                        if (episode4HelpSt15 &&
-                                            (stationId == Chapter1StationOrder.REVEAL_THEN_CHOOSE ||
-                                                (chapterId == TrainingV1Config.CHAPTER_ID &&
-                                                    stationId == TrainingV1Config.STATION_FIND_HEARD_LETTER_IN_GRID))
-                                        ) {
+                                        if (episode4HelpSt15 && stationUiSpec.findGridUseEpisode4HelpHints) {
                                             episode4Help.station3GridHintEpoch
                                         } else {
                                             0

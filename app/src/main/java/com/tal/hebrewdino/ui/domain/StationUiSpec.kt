@@ -130,6 +130,8 @@ data class StationUiSpec(
     val findGridSuppressHeaderTargetLetter: Boolean = false,
     /** WIRED: Saga station 3 grid reveal mode (episodes 1–5 station 3); affects [FindLetterGridStationContent]. */
     val findGridSagaRevealStation: Boolean = false,
+    val findGridUseEpisode4HelpHints: Boolean = false,
+    val findGridUseChapter3ContextWordHint: Boolean = false,
     /** WIRED: Picture station instruction override (Ep4 st4); null uses GameScreen listen-only / default strings. */
     val pictureStartsWithInstructionOverride: String? = null,
     /**

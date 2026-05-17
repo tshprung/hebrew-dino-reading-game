@@ -153,6 +153,11 @@ object StationBehaviorRegistry {
         val findGridSagaRevealStation =
             (chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) &&
                 stationId == REVEAL_THEN_CHOOSE
+        val findGridUseEpisode4HelpHints =
+            stationId == REVEAL_THEN_CHOOSE ||
+                (chapterId == TrainingV1Config.CHAPTER_ID &&
+                    stationId == TrainingV1Config.STATION_FIND_HEARD_LETTER_IN_GRID)
+        val findGridUseChapter3ContextWordHint = chapterId == 3
         return StationUiSpec(
             chapterId = chapterId,
             stationId = stationId,
@@ -170,6 +175,8 @@ object StationBehaviorRegistry {
             findGridSuppressHeaderTargetLetter = false,
             findGridHideListenOnlyHeaderTargetLetter = listenOnly,
             findGridSagaRevealStation = findGridSagaRevealStation,
+            findGridUseEpisode4HelpHints = findGridUseEpisode4HelpHints,
+            findGridUseChapter3ContextWordHint = findGridUseChapter3ContextWordHint,
         )
     }
 
