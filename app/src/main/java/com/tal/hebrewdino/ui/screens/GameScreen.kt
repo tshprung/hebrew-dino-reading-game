@@ -1071,6 +1071,99 @@ fun GameScreen(
         )
     }
 
+    fun handlePickLetterPick(picked: String) {
+        cancelFeedbackVoice()
+        if (!consumeTapCooldown()) return
+        val result = session.submitAnswer(picked)
+        when (result) {
+            AnswerResult.Correct -> {
+                if (audioEnabled && !(sagaUsesPickLetterAudioStaging)) {
+                    ChildGameAudioHooks.onCorrect()
+                }
+                correctTapPulseLetter = picked
+                correctTapPulseEpoch += 1
+                if (audioEnabled && isChapter3HighlightedLetterInWordStation) {
+                    val wordDone =
+                        session.highlightedLetterInWordCompletesWordAfterCorrectRound()
+                    scope.launch {
+                        sfx.playFirstAvailable(AudioClips.SfxCorrect, volume = 0.62f)
+                        val letterName = AudioClips.letterNameClip(picked)
+                        if (letterName != null && voice.hasAsset(letterName)) {
+                            voice.playBlocking(letterName)
+                        }
+                        if (wordDone) {
+                            cancelFeedbackVoice()
+                            val praise =
+                                mutableListOf(
+                                    AudioClips.VoPraiseMetzuyan,
+                                    AudioClips.VoPraiseYofi,
+                                    AudioClips.VoPraiseHitzlacht,
+                                    AudioClips.VoNice1,
+                                    AudioClips.VoGoodJob2,
+                                    AudioClips.VoGoodJob1,
+                                )
+                            praise.shuffle()
+                            val job =
+                                scope.launch {
+                                    voice.playFirstAvailableBlocking(*praise.toTypedArray())
+                                }
+                            feedbackVoiceJob = job
+                            withTimeoutOrNull(2800L) { job.join() }
+                        }
+                        val isLast = session.currentIndex >= session.totalQuestions - 1
+                        advanceAfterRound(
+                            isLast,
+                            ch3SpellMidWord = !wordDone,
+                        )
+                    }
+                } else if (audioEnabled && sagaUsesPickLetterAudioStaging) {
+                    scope.launch {
+                        cancelFeedbackVoice()
+                        val letterName = AudioClips.letterNameClip(picked)
+                        if (letterName == null || !voice.hasAsset(letterName)) {
+                            val isLast =
+                                session.currentIndex >= session.totalQuestions - 1
+                            advanceAfterRound(isLast)
+                            return@launch
+                        }
+                        station1PinnedCorrectLetter = picked
+                        val praise =
+                            AudioClips.station1CorrectPraiseTailCandidates()
+                                .toMutableList()
+                        praise.shuffle()
+                        val job =
+                            scope.launch {
+                                voice.playBlocking(letterName)
+                                voice.playFirstAvailableBlocking(*praise.toTypedArray())
+                            }
+                        feedbackVoiceJob = job
+                        job.join()
+                        val isLast =
+                            session.currentIndex >= session.totalQuestions - 1
+                        advanceAfterRound(isLast)
+                    }
+                } else {
+                    scope.launch {
+                        val isLast = session.currentIndex >= session.totalQuestions - 1
+                        advanceAfterRound(isLast)
+                    }
+                }
+            }
+            AnswerResult.Wrong -> {
+                if (audioEnabled &&
+                    (!(sagaUsesPickLetterAudioStaging) || isChapter3HighlightedLetterInWordStation || isChapter3AudioLetterRecognitionStation)
+                ) {
+                    ChildGameAudioHooks.onWrong()
+                }
+                shakeEpoch += 1
+                wrongTapsThisQuestion += 1
+                if (wrongTapsThisQuestion >= 2) hintPulseEpoch += 1
+                onWrongFeedback(wrongPickedLetter = picked)
+            }
+            AnswerResult.Finished -> {}
+        }
+    }
+
     Box(modifier = modifier.fillMaxSize()) {
         GameScreenBackgroundLayer(
             chapterId = chapterId,
@@ -1326,104 +1419,7 @@ fun GameScreen(
                                                     voice.playBlocking(clip)
                                                 }
                                         },
-                                        onPick = pickLetterPick@{ picked ->
-                                            // UX: any tap should immediately cancel currently playing voice,
-                                            // even if we ignore the tap due to cooldown.
-                                            cancelFeedbackVoice()
-                                            if (!consumeTapCooldown()) return@pickLetterPick
-                                            // CRITICAL UX: visuals/SFX are immediate; voice is scheduled later.
-                                            val result = session.submitAnswer(picked)
-                                            when (result) {
-                                                AnswerResult.Correct -> {
-                                                    // Station 1: no SFX before speaking the letter name.
-                                                    if (audioEnabled && !(sagaUsesPickLetterAudioStaging)) {
-                                                        ChildGameAudioHooks.onCorrect()
-                                                    }
-                                                    correctTapPulseLetter = picked
-                                                    correctTapPulseEpoch += 1
-                                                    if (audioEnabled && isChapter3HighlightedLetterInWordStation) {
-                                                        val wordDone =
-                                                            session.highlightedLetterInWordCompletesWordAfterCorrectRound()
-                                                        scope.launch {
-                                                            sfx.playFirstAvailable(AudioClips.SfxCorrect, volume = 0.62f)
-                                                            val letterName = AudioClips.letterNameClip(picked)
-                                                            if (letterName != null && voice.hasAsset(letterName)) {
-                                                                voice.playBlocking(letterName)
-                                                            }
-                                                            if (wordDone) {
-                                                                cancelFeedbackVoice()
-                                                                val praise =
-                                                                    mutableListOf(
-                                                                        AudioClips.VoPraiseMetzuyan,
-                                                                        AudioClips.VoPraiseYofi,
-                                                                        AudioClips.VoPraiseHitzlacht,
-                                                                        AudioClips.VoNice1,
-                                                                        AudioClips.VoGoodJob2,
-                                                                        AudioClips.VoGoodJob1,
-                                                                    )
-                                                                praise.shuffle()
-                                                                val job =
-                                                                    scope.launch {
-                                                                        voice.playFirstAvailableBlocking(*praise.toTypedArray())
-                                                                    }
-                                                                feedbackVoiceJob = job
-                                                                withTimeoutOrNull(2800L) { job.join() }
-                                                            }
-                                                            val isLast = session.currentIndex >= session.totalQuestions - 1
-                                                            advanceAfterRound(
-                                                                isLast,
-                                                                ch3SpellMidWord = !wordDone,
-                                                            )
-                                                        }
-                                                    } else if (audioEnabled && sagaUsesPickLetterAudioStaging) {
-                                                        // Station 1: letter name then a random praise tail (SoundPool), then advance.
-                                                        scope.launch {
-                                                            cancelFeedbackVoice()
-                                                            val letterName = AudioClips.letterNameClip(picked)
-                                                            if (letterName == null || !voice.hasAsset(letterName)) {
-                                                                val isLast =
-                                                                    session.currentIndex >= session.totalQuestions - 1
-                                                                advanceAfterRound(isLast)
-                                                                return@launch
-                                                            }
-                                                            station1PinnedCorrectLetter = picked
-                                                            val praise =
-                                                                AudioClips.station1CorrectPraiseTailCandidates()
-                                                                    .toMutableList()
-                                                            praise.shuffle()
-                                                            val job =
-                                                                scope.launch {
-                                                                    voice.playBlocking(letterName)
-                                                                    voice.playFirstAvailableBlocking(*praise.toTypedArray())
-                                                                }
-                                                            feedbackVoiceJob = job
-                                                            job.join()
-                                                            val isLast =
-                                                                session.currentIndex >= session.totalQuestions - 1
-                                                            advanceAfterRound(isLast)
-                                                        }
-                                                    } else {
-                                                        scope.launch {
-                                                            val isLast = session.currentIndex >= session.totalQuestions - 1
-                                                            advanceAfterRound(isLast)
-                                                        }
-                                                    }
-                                                }
-                                                AnswerResult.Wrong -> {
-                                                    // Station 1: no SFX before speaking the letter name.
-                                                    if (audioEnabled &&
-                                                        (!(sagaUsesPickLetterAudioStaging) || isChapter3HighlightedLetterInWordStation || isChapter3AudioLetterRecognitionStation)
-                                                    ) {
-                                                        ChildGameAudioHooks.onWrong()
-                                                    }
-                                                    shakeEpoch += 1
-                                                    wrongTapsThisQuestion += 1
-                                                    if (wrongTapsThisQuestion >= 2) hintPulseEpoch += 1
-                                                    onWrongFeedback(wrongPickedLetter = picked)
-                                                }
-                                                AnswerResult.Finished -> {}
-                                            }
-                                        },
+                                        onPick = { picked -> handlePickLetterPick(picked) },
                                     )
                                 } else {
                                         val correctLetterSet =
