@@ -1246,6 +1246,40 @@ fun GameScreen(
         }
     }
 
+    @Composable
+    fun Chapter3Station5ReplayOverlay(modifier: Modifier) {
+        if (!((chapterId == 3 || chapterId == 6) && stationId == 5 && !episode4HelpSt15)) return
+        Chapter3Station5ReplayColumn(
+            replayEnabled = phase == GamePhase.Play,
+            onReplayLetter = {
+                if (!audioEnabled || phase != GamePhase.Play) return@Chapter3Station5ReplayColumn
+                val q = session.currentQuestion as? Question.PopBalloonsQuestion ?: return@Chapter3Station5ReplayColumn
+                cancelFeedbackVoice()
+                val letterClip = AudioClips.letterNameClip(q.correctAnswer) ?: return@Chapter3Station5ReplayColumn
+                if (voice.hasAsset(letterClip)) {
+                    feedbackVoiceJob = scope.launch { voice.playBlocking(letterClip) }
+                }
+            },
+            onReplayFull = {
+                if (!audioEnabled || phase != GamePhase.Play) return@Chapter3Station5ReplayColumn
+                val q = session.currentQuestion as? Question.PopBalloonsQuestion ?: return@Chapter3Station5ReplayColumn
+                cancelFeedbackVoice()
+                feedbackVoiceJob =
+                    scope.launch {
+                        val instruction = AudioClips.VoChooseLetter
+                        val letterClip = AudioClips.letterNameClip(q.correctAnswer)
+                        val parts =
+                            buildList {
+                                if (voice.hasAsset(instruction)) add(instruction)
+                                if (letterClip != null && voice.hasAsset(letterClip)) add(letterClip)
+                            }
+                        if (parts.isNotEmpty()) voice.playSequenceBlocking(*parts.toTypedArray())
+                    }
+            },
+            modifier = modifier,
+        )
+    }
+
     Box(modifier = modifier.fillMaxSize()) {
         GameScreenBackgroundLayer(
             chapterId = chapterId,
@@ -2166,41 +2200,13 @@ fun GameScreen(
                         .zIndex(6f),
             )
         }
-        if ((chapterId == 3 || chapterId == 6) && stationId == 5 && !episode4HelpSt15) {
-            Chapter3Station5ReplayColumn(
-                replayEnabled = phase == GamePhase.Play,
-                onReplayLetter = {
-                    if (!audioEnabled || phase != GamePhase.Play) return@Chapter3Station5ReplayColumn
-                    val q = session.currentQuestion as? Question.PopBalloonsQuestion ?: return@Chapter3Station5ReplayColumn
-                    cancelFeedbackVoice()
-                    val letterClip = AudioClips.letterNameClip(q.correctAnswer) ?: return@Chapter3Station5ReplayColumn
-                    if (voice.hasAsset(letterClip)) {
-                        feedbackVoiceJob = scope.launch { voice.playBlocking(letterClip) }
-                    }
-                },
-                onReplayFull = {
-                    if (!audioEnabled || phase != GamePhase.Play) return@Chapter3Station5ReplayColumn
-                    val q = session.currentQuestion as? Question.PopBalloonsQuestion ?: return@Chapter3Station5ReplayColumn
-                    cancelFeedbackVoice()
-                    feedbackVoiceJob =
-                        scope.launch {
-                            val instruction = AudioClips.VoChooseLetter
-                            val letterClip = AudioClips.letterNameClip(q.correctAnswer)
-                            val parts =
-                                buildList {
-                                    if (voice.hasAsset(instruction)) add(instruction)
-                                    if (letterClip != null && voice.hasAsset(letterClip)) add(letterClip)
-                                }
-                            if (parts.isNotEmpty()) voice.playSequenceBlocking(*parts.toTypedArray())
-                        }
-                },
-                modifier =
-                    Modifier
-                        .align(Alignment.CenterStart)
-                        .padding(start = 2.dp, top = 100.dp, bottom = 96.dp)
-                        .zIndex(6f),
-            )
-        }
+        Chapter3Station5ReplayOverlay(
+            modifier =
+                Modifier
+                    .align(Alignment.CenterStart)
+                    .padding(start = 2.dp, top = 100.dp, bottom = 96.dp)
+                    .zIndex(6f),
+        )
     }
 }
 
