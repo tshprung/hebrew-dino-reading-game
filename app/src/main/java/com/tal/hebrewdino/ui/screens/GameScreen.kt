@@ -1164,6 +1164,88 @@ fun GameScreen(
         }
     }
 
+    fun handlePictureStartsWithPick(picked: String) {
+        if (!consumeTapCooldown()) return
+        cancelFeedbackVoice()
+        if (audioEnabled && (
+                ((chapterId == 3 || chapterId == 6) && stationId == 1) ||
+                    (chapterId == 2 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE)
+            )
+        ) {
+            val clip = AudioClips.letterNameClip(picked)
+            if (clip != null && voice.hasAsset(clip)) {
+                feedbackVoiceJob = scope.launch { voice.playBlocking(clip) }
+            }
+        }
+        when (session.submitPictureStartsWith(picked)) {
+            AnswerResult.Correct -> {
+                if (audioEnabled) ChildGameAudioHooks.onCorrect()
+                if (chapterId == 4 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
+                    station4PinnedCorrectLetter = picked
+                }
+                if (isSagaEpisode(chapterId) && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
+                    scope.launch {
+                        correctTapPulseLetter = picked
+                        correctTapPulseEpoch += 1
+                        cancelFeedbackVoice()
+                        val letterName = AudioClips.letterNameClip(picked)
+                        val praise =
+                            mutableListOf(
+                                AudioClips.VoKolHakavod,
+                                AudioClips.VoNice1,
+                                AudioClips.VoGoodJob2,
+                                AudioClips.VoGoodJob1,
+                                AudioClips.VoPraiseMetzuyan,
+                                AudioClips.VoPraiseYofi,
+                                AudioClips.VoPraiseHitzlacht,
+                            )
+                        praise.shuffle()
+                        val job =
+                            scope.launch {
+                                if (letterName != null && voice.hasAsset(letterName)) {
+                                    voice.playBlocking(letterName)
+                                }
+                                voice.playFirstAvailableBlocking(*praise.toTypedArray())
+                            }
+                        feedbackVoiceJob = job
+                        job.join()
+                        val isLast =
+                            session.currentIndex >= session.totalQuestions - 1
+                        advanceAfterRound(isLast)
+                    }
+                } else {
+                    scope.launch {
+                        correctTapPulseLetter = picked
+                        correctTapPulseEpoch += 1
+                        if (audioEnabled && (chapterId == 3 || chapterId == 6) && stationId == 1) {
+                            withTimeoutOrNull(1200L) { feedbackVoiceJob?.join() }
+                        }
+                        val isLast =
+                            session.currentIndex >= session.totalQuestions - 1
+                        advanceAfterRound(isLast)
+                    }
+                }
+            }
+            AnswerResult.Wrong -> {
+                if (audioEnabled) ChildGameAudioHooks.onWrong()
+                wrongTapsThisQuestion += 1
+                if (wrongTapsThisQuestion >= 2) hintPulseEpoch += 1
+                if (isSagaEpisode(chapterId) && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
+                    station4WrongFlashLetter = picked
+                    station4WrongFlashEpoch += 1
+                    onWrongFeedback(wrongPickedLetter = picked)
+                } else {
+                    if (audioEnabled && (chapterId == 3 || chapterId == 6) && stationId == 1) {
+                        onWrongFeedback(wrongPickedLetterAlreadySpoken = true)
+                    } else {
+                        onWrongFeedback()
+                    }
+                }
+            }
+            AnswerResult.Finished -> {}
+        }
+    }
+
     Box(modifier = modifier.fillMaxSize()) {
         GameScreenBackgroundLayer(
             chapterId = chapterId,
@@ -1725,88 +1807,7 @@ fun GameScreen(
                                     wrongFlashLetter = station4WrongFlashLetter,
                                     wrongFlashEpoch = station4WrongFlashEpoch,
                                     entryPulseScale = 1f,
-                                    onPickLetter = picturePick@{ picked ->
-                                        if (!consumeTapCooldown()) return@picturePick
-                                        cancelFeedbackVoice()
-                                        if (audioEnabled && (
-                                                ((chapterId == 3 || chapterId == 6) && stationId == 1) ||
-                                                    (chapterId == 2 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE)
-                                            )
-                                        ) {
-                                            val clip = AudioClips.letterNameClip(picked)
-                                            if (clip != null && voice.hasAsset(clip)) {
-                                                feedbackVoiceJob = scope.launch { voice.playBlocking(clip) }
-                                            }
-                                        }
-                                        when (session.submitPictureStartsWith(picked)) {
-                                            AnswerResult.Correct -> {
-                                                if (audioEnabled) ChildGameAudioHooks.onCorrect()
-                                                if (chapterId == 4 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
-                                                    station4PinnedCorrectLetter = picked
-                                                }
-                                                if (isSagaEpisode(chapterId) && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
-                                                    scope.launch {
-                                                        correctTapPulseLetter = picked
-                                                        correctTapPulseEpoch += 1
-                                                        cancelFeedbackVoice()
-                                                        val letterName = AudioClips.letterNameClip(picked)
-                                                        val praise =
-                                                            mutableListOf(
-                                                                AudioClips.VoKolHakavod,
-                                                                AudioClips.VoNice1,
-                                                                AudioClips.VoGoodJob2,
-                                                                AudioClips.VoGoodJob1,
-                                                                AudioClips.VoPraiseMetzuyan,
-                                                                AudioClips.VoPraiseYofi,
-                                                                AudioClips.VoPraiseHitzlacht,
-                                                            )
-                                                        praise.shuffle()
-                                                        val job =
-                                                            scope.launch {
-                                                                if (letterName != null && voice.hasAsset(letterName)) {
-                                                                    voice.playBlocking(letterName)
-                                                                }
-                                                                voice.playFirstAvailableBlocking(*praise.toTypedArray())
-                                                            }
-                                                        feedbackVoiceJob = job
-                                                        job.join()
-                                                        val isLast =
-                                                            session.currentIndex >= session.totalQuestions - 1
-                                                        advanceAfterRound(isLast)
-                                                    }
-                                                } else {
-                                                    scope.launch {
-                                                        correctTapPulseLetter = picked
-                                                        correctTapPulseEpoch += 1
-                                                        if (audioEnabled && (chapterId == 3 || chapterId == 6) && stationId == 1) {
-                                                            withTimeoutOrNull(1200L) { feedbackVoiceJob?.join() }
-                                                        }
-                                                        val isLast =
-                                                            session.currentIndex >= session.totalQuestions - 1
-                                                        advanceAfterRound(isLast)
-                                                    }
-                                                }
-                                            }
-                                            AnswerResult.Wrong -> {
-                                                if (audioEnabled) ChildGameAudioHooks.onWrong()
-                                                wrongTapsThisQuestion += 1
-                                                if (wrongTapsThisQuestion >= 2) hintPulseEpoch += 1
-                                                if (isSagaEpisode(chapterId) && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
-                                                    station4WrongFlashLetter = picked
-                                                    station4WrongFlashEpoch += 1
-                                                    onWrongFeedback(wrongPickedLetter = picked)
-                                                } else {
-                                                if (audioEnabled && (chapterId == 3 || chapterId == 6) && stationId == 1) {
-                                                        // Let the tapped letter name play; wrong feedback is still immediate via visuals/SFX.
-                                                        onWrongFeedback(wrongPickedLetterAlreadySpoken = true)
-                                                    } else {
-                                                        onWrongFeedback()
-                                                    }
-                                                }
-                                            }
-                                            AnswerResult.Finished -> {}
-                                        }
-                                    },
+                                    onPickLetter = { picked -> handlePictureStartsWithPick(picked) },
                                 )
                             }
                             is Question.ImageMatchQuestion ->
