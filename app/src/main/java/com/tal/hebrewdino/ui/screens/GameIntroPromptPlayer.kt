@@ -108,12 +108,11 @@ internal suspend fun playIntroPrompt(
             }
         if (voice.hasAsset(intro)) voice.playBlocking(intro)
         val wordPath =
-            if (chapterId == 3 || chapterId == 6) {
-                val ch3Word = "audio/ch3_word_${q.correctChoiceId}.wav"
-                if (voice.hasAsset(ch3Word)) ch3Word else AudioClips.wordClipByCatalogId(q.correctChoiceId)
-            } else {
-                AudioClips.wordClipByCatalogId(q.correctChoiceId)
-            }
+            AudioClips.imageToWordClipByCatalogId(
+                catalogEntryId = q.correctChoiceId,
+                chapterId = chapterId,
+                voiceHasAsset = { path -> voice.hasAsset(path) },
+            )
         if (voice.hasAsset(wordPath)) voice.playBlocking(wordPath)
         return
     }

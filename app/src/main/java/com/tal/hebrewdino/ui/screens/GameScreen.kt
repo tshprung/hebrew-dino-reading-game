@@ -1890,12 +1890,11 @@ fun GameScreen(
                                                     cancelFeedbackVoice()
                                                     val id = current.correctChoiceId
                                                     val clip =
-                                                        if (chapterId == 3 || chapterId == 6) {
-                                                            val ch3Clip = "audio/ch3_word_${id}.wav"
-                                                            if (voice.hasAsset(ch3Clip)) ch3Clip else AudioClips.wordClipByCatalogId(id)
-                                                        } else {
-                                                            AudioClips.wordClipByCatalogId(id)
-                                                        }
+                                                        AudioClips.imageToWordClipByCatalogId(
+                                                            catalogEntryId = id,
+                                                            chapterId = chapterId,
+                                                            voiceHasAsset = { path -> voice.hasAsset(path) },
+                                                        )
                                                     if (voice.hasAsset(clip)) {
                                                         feedbackVoiceJob = scope.launch { voice.playBlocking(clip) }
                                                     }
@@ -1909,12 +1908,11 @@ fun GameScreen(
                                             feedbackVoiceJob =
                                                 scope.launch {
                                                     val clip =
-                                                        if (chapterId == 3 || chapterId == 6) {
-                                                            val ch3Clip = "audio/ch3_word_${choiceId}.wav"
-                                                            if (voice.hasAsset(ch3Clip)) ch3Clip else AudioClips.wordClipByCatalogId(choiceId)
-                                                        } else {
-                                                            AudioClips.wordClipByCatalogId(choiceId)
-                                                        }
+                                                        AudioClips.imageToWordClipByCatalogId(
+                                                            catalogEntryId = choiceId,
+                                                            chapterId = chapterId,
+                                                            voiceHasAsset = { path -> voice.hasAsset(path) },
+                                                        )
                                                     voice.playBlocking(clip)
                                                 }
                                         },
@@ -1927,12 +1925,11 @@ fun GameScreen(
                                                     scope.launch {
                                                         if (audioEnabled) {
                                                             val clip =
-                                                                if (chapterId == 3 || chapterId == 6) {
-                                                                    val ch3Clip = "audio/ch3_word_${choiceId}.wav"
-                                                                    if (voice.hasAsset(ch3Clip)) ch3Clip else AudioClips.wordClipByCatalogId(choiceId)
-                                                                } else {
-                                                                    AudioClips.wordClipByCatalogId(choiceId)
-                                                                }
+                                                                AudioClips.imageToWordClipByCatalogId(
+                                                                    catalogEntryId = choiceId,
+                                                                    chapterId = chapterId,
+                                                                    voiceHasAsset = { path -> voice.hasAsset(path) },
+                                                                )
                                                             voice.playBlocking(clip)
                                                             val praise =
                                                                 mutableListOf(
@@ -1986,9 +1983,12 @@ fun GameScreen(
                                         letterTileSizeMultiplier = if (chapterId == TrainingV1Config.CHAPTER_ID) 1.10f else 1f,
                                         onWordPressed = { choiceId ->
                                             speakNow {
-                                                val ch3Clip = "audio/ch3_word_${choiceId}.wav"
                                                 val clip =
-                                                    if (voice.hasAsset(ch3Clip)) ch3Clip else AudioClips.wordClipByCatalogId(choiceId)
+                                                    AudioClips.imageToWordClipByCatalogId(
+                                                        catalogEntryId = choiceId,
+                                                        chapterId = chapterId,
+                                                        voiceHasAsset = { path -> voice.hasAsset(path) },
+                                                    )
                                                 voice.playBlocking(clip)
                                             }
                                         },

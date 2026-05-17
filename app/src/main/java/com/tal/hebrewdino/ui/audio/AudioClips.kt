@@ -163,6 +163,18 @@ object AudioClips {
         return "audio/word_${catalogEntryId}.wav"
     }
 
+    fun imageToWordClipByCatalogId(
+        catalogEntryId: String,
+        chapterId: Int,
+        voiceHasAsset: (String) -> Boolean,
+    ): String {
+        if (chapterId == 3 || chapterId == 6) {
+            val ch3Clip = "audio/ch3_word_${catalogEntryId}.wav"
+            if (voiceHasAsset(ch3Clip)) return ch3Clip
+        }
+        return wordClipByCatalogId(catalogEntryId)
+    }
+
     // Letter-specific
     fun chooseLetterClip(letter: String): String? =
         when (letter) {
