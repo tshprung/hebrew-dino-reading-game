@@ -111,6 +111,17 @@ private data class SideHelpControls(
     val onHint: () -> Unit,
 )
 
+private class TapCooldown(private val minIntervalMs: Long = 130L) {
+    private var lastTapMs: Long = 0L
+
+    fun consume(): Boolean {
+        val now = SystemClock.elapsedRealtime()
+        if (now - lastTapMs < minIntervalMs) return false
+        lastTapMs = now
+        return true
+    }
+}
+
 /**
  * Episode 1 stations 2–3: start the letter name this far into the intro clip on SoundPool (overlap).
  * 0.94 ≈ halving the remaining pause vs 0.88 (i.e. moving halfway from 0.88 toward 1.0).
@@ -685,13 +696,8 @@ fun GameScreen(
     }
 
     // UX: global tap cooldown to prevent fast-tap flow breaks.
-    var lastTapMs by remember(stationId) { mutableLongStateOf(0L) }
-    fun consumeTapCooldown(): Boolean {
-        val now = SystemClock.elapsedRealtime()
-        if (now - lastTapMs < 130L) return false
-        lastTapMs = now
-        return true
-    }
+    val tapCooldown = remember(stationId) { TapCooldown() }
+    fun consumeTapCooldown(): Boolean = tapCooldown.consume()
 
     fun performSideHelpReplay() {
         feedbackVoiceJob =
