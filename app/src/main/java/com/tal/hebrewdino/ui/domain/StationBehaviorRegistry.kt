@@ -35,7 +35,8 @@ object StationBehaviorRegistry {
                 TrainingV1Config.CHAPTER_ID -> StationQuizPlans.trainingV1(sid)
                 else -> error("Unsupported chapterId=$chapterId")
             }
-        return when (chapterId) {
+        val base =
+            when (chapterId) {
             1 -> sixStationUiSpec(chapterId = 1, sid, plan)
             2 -> sixStationUiSpec(chapterId = 2, sid, plan)
             3 -> chapter3UiSpec(sid, plan)
@@ -45,6 +46,24 @@ object StationBehaviorRegistry {
             TrainingV1Config.CHAPTER_ID -> trainingV1UiSpec(sid, plan)
             else -> error("Unsupported chapterId=$chapterId")
         }
+
+        val isSagaEpisode = chapterId in 1..5
+        val audioStagingPickLetter = isSagaEpisode && plan.mode == StationQuizMode.PickLetter
+        val audioStagingPopBalloons = isSagaEpisode && plan.mode == StationQuizMode.PopBalloons
+        val audioStagingFindGrid = isSagaEpisode && plan.mode == StationQuizMode.FindLetterGrid
+        val popBalloonsUseSoundPoolPrompt =
+            plan.mode == StationQuizMode.PopBalloons &&
+                (
+                    audioStagingPopBalloons ||
+                        (chapterId == 6 && sid == 3) ||
+                        (chapterId == TrainingV1Config.CHAPTER_ID && sid == TrainingV1Config.STATION_WORD_BALLOONS)
+                )
+        return base.copy(
+            audioStagingPickLetter = audioStagingPickLetter,
+            audioStagingPopBalloons = audioStagingPopBalloons,
+            audioStagingFindGrid = audioStagingFindGrid,
+            popBalloonsUseSoundPoolPrompt = popBalloonsUseSoundPoolPrompt,
+        )
     }
 
     private fun pickLetterSpec(

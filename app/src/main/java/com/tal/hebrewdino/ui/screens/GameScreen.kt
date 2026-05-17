@@ -202,16 +202,10 @@ fun GameScreen(
     val listenOnly = plan.listenOnlyTargetPrompt
     val stationUiSpec = remember(chapterId, stationId) { StationBehaviorRegistry.getStationUiSpec(chapterId, stationId) }
     val episode4HelpSt15 = Episode4Help.isHelpColumnActive(chapterId, stationUiSpec)
-    val sagaUsesPickLetterAudioStaging = isSagaEpisode(chapterId) && plan.mode == StationQuizMode.PickLetter
-    val sagaUsesPopBalloonsAudioStaging = isSagaEpisode(chapterId) && plan.mode == StationQuizMode.PopBalloons
-    val usesPopBalloonsSoundPoolPrompt =
-        plan.mode == StationQuizMode.PopBalloons &&
-            (
-                sagaUsesPopBalloonsAudioStaging ||
-                    (chapterId == 6 && stationId == 3) ||
-                    (chapterId == TrainingV1Config.CHAPTER_ID && stationId == TrainingV1Config.STATION_WORD_BALLOONS)
-            )
-    val sagaUsesFindGridAudioStaging = isSagaEpisode(chapterId) && plan.mode == StationQuizMode.FindLetterGrid
+    val sagaUsesPickLetterAudioStaging = stationUiSpec.audioStagingPickLetter
+    val sagaUsesPopBalloonsAudioStaging = stationUiSpec.audioStagingPopBalloons
+    val usesPopBalloonsSoundPoolPrompt = stationUiSpec.popBalloonsUseSoundPoolPrompt
+    val sagaUsesFindGridAudioStaging = stationUiSpec.audioStagingFindGrid
     val isChapter3HighlightedLetterInWordStation =
         stationUiSpec.templateId == StationTemplateId.PickLetter &&
             stationUiSpec.hasVariant(StationVariant.HighlightedLetterInWord) &&
