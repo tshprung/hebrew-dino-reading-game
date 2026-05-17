@@ -797,6 +797,10 @@ fun GameScreen(
     // UX: global tap cooldown to prevent fast-tap flow breaks.
     val tapCooldown = remember(stationId) { TapCooldown() }
     fun consumeTapCooldown(): Boolean = tapCooldown.consume()
+    fun registerWrongTapForHintPulse() {
+        wrongTapsThisQuestion += 1
+        if (wrongTapsThisQuestion >= 2) hintPulseEpoch += 1
+    }
 
     fun performSideHelpReplay() {
         feedbackVoiceJob =
@@ -1156,8 +1160,7 @@ fun GameScreen(
                     ChildGameAudioHooks.onWrong()
                 }
                 shakeEpoch += 1
-                wrongTapsThisQuestion += 1
-                if (wrongTapsThisQuestion >= 2) hintPulseEpoch += 1
+                registerWrongTapForHintPulse()
                 onWrongFeedback(wrongPickedLetter = picked)
             }
             AnswerResult.Finished -> {}
@@ -1228,8 +1231,7 @@ fun GameScreen(
             }
             AnswerResult.Wrong -> {
                 if (audioEnabled) ChildGameAudioHooks.onWrong()
-                wrongTapsThisQuestion += 1
-                if (wrongTapsThisQuestion >= 2) hintPulseEpoch += 1
+                registerWrongTapForHintPulse()
                 if (isSagaEpisode(chapterId) && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
                     station4WrongFlashLetter = picked
                     station4WrongFlashEpoch += 1
@@ -1294,8 +1296,7 @@ fun GameScreen(
         }
         session.wrongTap()
         shakeEpoch += 1
-        wrongTapsThisQuestion += 1
-        if (wrongTapsThisQuestion >= 2) hintPulseEpoch += 1
+        registerWrongTapForHintPulse()
         val tappedLetter = question.cells.getOrNull(index)
         if (!(sagaUsesFindGridAudioStaging)) {
             onWrongFeedback(
@@ -1435,8 +1436,7 @@ fun GameScreen(
         }
         session.wrongTap()
         shakeEpoch += 1
-        wrongTapsThisQuestion += 1
-        if (wrongTapsThisQuestion >= 2) hintPulseEpoch += 1
+        registerWrongTapForHintPulse()
         if (sagaUsesPopBalloonsAudioStaging) {
             scope.launch {
                 inputLocked = true
@@ -1532,8 +1532,7 @@ fun GameScreen(
             }
             AnswerResult.Wrong -> {
                 if (audioEnabled) ChildGameAudioHooks.onWrong()
-                wrongTapsThisQuestion += 1
-                if (wrongTapsThisQuestion >= 2) hintPulseEpoch += 1
+                registerWrongTapForHintPulse()
                 onWrongFeedback(wrongWordCatalogId = choiceId)
                 false
             }
@@ -1590,8 +1589,7 @@ fun GameScreen(
             }
             AnswerResult.Wrong -> {
                 if (audioEnabled) ChildGameAudioHooks.onWrong()
-                wrongTapsThisQuestion += 1
-                if (wrongTapsThisQuestion >= 2) hintPulseEpoch += 1
+                registerWrongTapForHintPulse()
                 if (isSagaEpisode(chapterId) && stationId == Chapter1StationOrder.PICTURE_PICK_ALL) {
                     onWrongFeedback(wrongWordCatalogId = choiceId)
                 } else {
