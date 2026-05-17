@@ -80,6 +80,7 @@ import com.tal.hebrewdino.ui.components.TargetLetterHeaderChip
 import com.tal.hebrewdino.ui.feedback.GameFeedback
 import com.tal.hebrewdino.ui.game.ChildGameAudioHooks
 import com.tal.hebrewdino.ui.layout.ScreenFit
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -174,6 +175,199 @@ private const val Station4IntroToWordExtraPauseMs = 950L
 
 /** Episode 1: chance to play a short praise voice after a correct round. */
 private const val Episode1PraiseChance = 0.62f
+
+private object WrongFeedbackActions {
+    fun trigger(
+        scope: CoroutineScope,
+        audioEnabled: Boolean,
+        sagaEpisode: Boolean,
+        chapterId: Int,
+        stationId: Int,
+        sagaUsesPickLetterAudioStaging: Boolean,
+        isChapter3HighlightedLetterInWordStation: Boolean,
+        isChapter3AudioLetterRecognitionStation: Boolean,
+        gameFeedback: GameFeedback,
+        voice: VoicePlayer,
+        sfx: SoundPoolPlayer,
+        cancelFeedbackVoice: () -> Unit,
+        setFeedbackVoiceJob: (Job?) -> Unit,
+        optionsShake: Animatable<Float, AnimationVector1D>,
+        dinoSlip: Animatable<Float, AnimationVector1D>,
+        dinoTilt: Animatable<Float, AnimationVector1D>,
+        setDinoVisual: (DinoVisual) -> Unit,
+        setInputLocked: (Boolean) -> Unit,
+        onWrongHook: () -> Unit,
+        wrongPickedLetter: String? = null,
+        wrongWordCatalogId: String? = null,
+        wrongPickedLetterAlreadySpoken: Boolean = false,
+        wrongWordAlreadySpoken: Boolean = false,
+    ) {
+        scope.launch {
+            setInputLocked(true)
+            setDinoVisual(DinoVisual.TryAgain)
+            if (sagaEpisode) {
+                dinoSlip.snapTo(0f)
+                dinoTilt.snapTo(0f)
+                dinoTilt.animateTo(-7f, tween(90))
+                dinoSlip.animateTo(10f, tween(90))
+                dinoTilt.animateTo(6f, tween(110))
+                dinoSlip.animateTo(-6f, tween(110))
+                dinoTilt.animateTo(0f, tween(140))
+                dinoSlip.animateTo(0f, tween(140))
+            }
+            val strongerWrongShake =
+                (sagaEpisode && (stationId == Chapter1StationOrder.PICTURE_PICK_ONE || stationId == Chapter1StationOrder.PICTURE_PICK_ALL))
+            playShake(
+                scope,
+                optionsShake,
+                baseShakeAmplitudePx = if (sagaEpisode) 20f else 18f,
+                strength = if (strongerWrongShake) 1.25f else 1f,
+            )
+            if (audioEnabled) {
+                val allowWrongSfx =
+                    (!(sagaUsesPickLetterAudioStaging) || isChapter3HighlightedLetterInWordStation || isChapter3AudioLetterRecognitionStation) &&
+                        !(sagaEpisode && stationId == Chapter1StationOrder.PICTURE_PICK_ALL)
+                if (allowWrongSfx) {
+                    gameFeedback.playWrong()
+                    onWrongHook()
+                }
+                if (sagaUsesPickLetterAudioStaging && wrongPickedLetter != null && chapterId != 3) {
+                    cancelFeedbackVoice()
+                    setFeedbackVoiceJob(
+                        scope.launch {
+                            val letterClip = AudioClips.letterNameClip(wrongPickedLetter)
+                            val letterMs = letterClip?.let { sfx.durationMs(it) } ?: 0L
+                            val variant = Random.nextInt(100)
+                            if (variant < 20) {
+                                sfx.playFirstAvailable(
+                                    AudioClips.VoTryAgain2,
+                                    AudioClips.VoTryAgain1,
+                                    volume = 1f,
+                                )
+                                return@launch
+                            }
+                            if (variant < 55) {
+                                if (letterClip != null && voice.hasAsset(letterClip)) voice.playBlocking(letterClip)
+                                return@launch
+                            }
+
+                            if (letterClip != null && letterMs > 0L) {
+                                sfx.stopAllStreams()
+                                sfx.playReturningStreamId(letterClip, volume = 1f)
+                                val followLeadFrac =
+                                    Station1WrongLetterToFollowLeadFraction +
+                                        Station1WrongLetterToTryAgainGapBoost *
+                                        (1f - Station1WrongLetterToFollowLeadFraction)
+                                val lead =
+                                    (letterMs * followLeadFrac)
+                                        .toLong()
+                                        .coerceIn(16L, letterMs)
+                                delay(lead)
+                                sfx.playFirstAvailable(
+                                    AudioClips.VoTryAgain2,
+                                    AudioClips.VoTryAgain1,
+                                    volume = 1f,
+                                )
+                            } else {
+                                if (letterClip != null && voice.hasAsset(letterClip)) {
+                                    voice.playBlocking(letterClip)
+                                }
+                                voice.playFirstAvailableBlocking(AudioClips.VoTryAgain2, AudioClips.VoTryAgain1)
+                            }
+                        },
+                    )
+                    setDinoVisual(DinoVisual.Idle)
+                    setInputLocked(false)
+                    return@launch
+                }
+                if (sagaEpisode &&
+                    stationId == Chapter1StationOrder.PICTURE_PICK_ONE &&
+                    wrongPickedLetter != null
+                ) {
+                    cancelFeedbackVoice()
+                    setFeedbackVoiceJob(
+                        scope.launch {
+                            val lc = AudioClips.letterNameClip(wrongPickedLetter)
+                            val letterMs = lc?.let { sfx.durationMs(it) } ?: 0L
+                            if (lc != null && letterMs > 0L) {
+                                sfx.stopAllStreams()
+                                sfx.playReturningStreamId(lc, volume = 1f)
+                                val baseWrongFrac =
+                                    Station1WrongLetterToFollowLeadFraction *
+                                        Station4WrongLetterToFollowLeadScale
+                                val followLeadFrac =
+                                    baseWrongFrac +
+                                        Station4WrongLetterToTryAgainGapBoost * (1f - baseWrongFrac)
+                                val lead =
+                                    (letterMs * followLeadFrac)
+                                        .toLong()
+                                        .coerceIn(16L, letterMs)
+                                delay(lead)
+                                sfx.playFirstAvailable(
+                                    AudioClips.VoTryAgain2,
+                                    AudioClips.VoTryAgain1,
+                                    volume = 1f,
+                                )
+                            } else {
+                                if (lc != null && voice.hasAsset(lc)) {
+                                    voice.playBlocking(lc)
+                                }
+                                voice.playFirstAvailableBlocking(AudioClips.VoTryAgain2, AudioClips.VoTryAgain1)
+                            }
+                        },
+                    )
+                    setDinoVisual(DinoVisual.Idle)
+                    setInputLocked(false)
+                    return@launch
+                }
+                cancelFeedbackVoice()
+                setFeedbackVoiceJob(
+                    scope.launch {
+                        val feedbackDelayMs =
+                            when {
+                                chapterId == 4 && stationId == Chapter1StationOrder.TAP_LETTER -> 0L
+                                chapterId == 4 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE -> 0L
+                                chapterId == 4 && stationId == Chapter1StationOrder.PICTURE_PICK_ALL -> 0L
+                                (chapterId == 3 || chapterId == 6) && stationId == 4 -> 0L
+                                chapterId == 5 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE -> 0L
+                                else -> 110L
+                            }
+                        delay(feedbackDelayMs)
+                        if (wrongWordCatalogId != null && !wrongWordAlreadySpoken) {
+                            val wordPath = AudioClips.wordClipByCatalogId(wrongWordCatalogId)
+                            if (voice.hasAsset(wordPath)) voice.playBlocking(wordPath)
+                            voice.playFirstAvailableBlocking(AudioClips.VoTryAgain2, AudioClips.VoTryAgain1)
+                            return@launch
+                        }
+
+                        if (wrongPickedLetter != null) {
+                            if (chapterId == 5 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
+                                val lc = AudioClips.letterNameClip(wrongPickedLetter)
+                                if (lc != null && voice.hasAsset(lc)) {
+                                    voice.playBlocking(lc)
+                                }
+                                voice.playFirstAvailableBlocking(AudioClips.VoTryAgain2, AudioClips.VoTryAgain1)
+                                return@launch
+                            }
+                            if (!wrongPickedLetterAlreadySpoken) {
+                                val letterName = AudioClips.letterNameClip(wrongPickedLetter)
+                                if (letterName != null && voice.hasAsset(letterName)) {
+                                    voice.playBlocking(letterName)
+                                }
+                            }
+                            voice.playFirstAvailableBlocking(AudioClips.VoTryAgain2, AudioClips.VoTryAgain1)
+                            return@launch
+                        }
+
+                        voice.playFirstAvailableBlocking(AudioClips.VoTryAgain2, AudioClips.VoTryAgain1)
+                    },
+                )
+            }
+            setDinoVisual(DinoVisual.Idle)
+            setInputLocked(false)
+        }
+    }
+}
 
 /** Episode 4 stations 1–5 help "רמז": show target / lock choices for this long, then hide. */
 @Composable
@@ -746,178 +940,31 @@ fun GameScreen(
         wrongPickedLetterAlreadySpoken: Boolean = false,
         wrongWordAlreadySpoken: Boolean = false,
     ) {
-        scope.launch {
-            inputLocked = true
-            dinoVisual = DinoVisual.TryAgain
-            if (isSagaEpisode(chapterId)) {
-                // Tiny playful stumble on wrong tap (same across the six-station arc chapters).
-                dinoSlip.snapTo(0f)
-                dinoTilt.snapTo(0f)
-                dinoTilt.animateTo(-7f, tween(90))
-                dinoSlip.animateTo(10f, tween(90))
-                dinoTilt.animateTo(6f, tween(110))
-                dinoSlip.animateTo(-6f, tween(110))
-                dinoTilt.animateTo(0f, tween(140))
-                dinoSlip.animateTo(0f, tween(140))
-            }
-            val strongerWrongShake =
-                (isSagaEpisode(chapterId) && (stationId == Chapter1StationOrder.PICTURE_PICK_ONE || stationId == Chapter1StationOrder.PICTURE_PICK_ALL))
-            playShake(
-                scope,
-                optionsShake,
-                baseShakeAmplitudePx = if (isSagaEpisode(chapterId)) 20f else 18f,
-                strength = if (strongerWrongShake) 1.25f else 1f,
-            )
-            if (audioEnabled) {
-                // Station 1: no SFX; voice only. Episode 3 station 3: light SFX on wrong (no letter voice loop).
-                val allowWrongSfx =
-                    (!(sagaUsesPickLetterAudioStaging) || isChapter3HighlightedLetterInWordStation || isChapter3AudioLetterRecognitionStation) &&
-                        !(isSagaEpisode(chapterId) && stationId == Chapter1StationOrder.PICTURE_PICK_ALL)
-                if (allowWrongSfx) {
-                    gameFeedback.playWrong()
-                    ChildGameAudioHooks.onWrong()
-                }
-                // Station 1: wrong tap — keep it varied to reduce fatigue.
-                if (sagaUsesPickLetterAudioStaging && wrongPickedLetter != null && chapterId != 3) {
-                    cancelFeedbackVoice()
-                    feedbackVoiceJob =
-                        scope.launch {
-                            val letterClip = AudioClips.letterNameClip(wrongPickedLetter)
-                            val letterMs = letterClip?.let { sfx.durationMs(it) } ?: 0L
-                            // 0: try-again only, 1: letter only, 2+: letter + try-again (overlapped)
-                            val variant = Random.nextInt(100)
-                            if (variant < 20) {
-                                sfx.playFirstAvailable(
-                                    AudioClips.VoTryAgain2,
-                                    AudioClips.VoTryAgain1,
-                                    volume = 1f,
-                                )
-                                return@launch
-                            }
-                            if (variant < 55) {
-                                if (letterClip != null && voice.hasAsset(letterClip)) voice.playBlocking(letterClip)
-                                return@launch
-                            }
-
-                            if (letterClip != null && letterMs > 0L) {
-                                sfx.stopAllStreams()
-                                sfx.playReturningStreamId(letterClip, volume = 1f)
-                                val followLeadFrac =
-                                    Station1WrongLetterToFollowLeadFraction +
-                                        Station1WrongLetterToTryAgainGapBoost *
-                                        (1f - Station1WrongLetterToFollowLeadFraction)
-                                val lead =
-                                    (letterMs * followLeadFrac)
-                                        .toLong()
-                                        .coerceIn(16L, letterMs)
-                                delay(lead)
-                                sfx.playFirstAvailable(
-                                    AudioClips.VoTryAgain2,
-                                    AudioClips.VoTryAgain1,
-                                    volume = 1f,
-                                )
-                            } else {
-                                if (letterClip != null && voice.hasAsset(letterClip)) {
-                                    voice.playBlocking(letterClip)
-                                }
-                                voice.playFirstAvailableBlocking(AudioClips.VoTryAgain2, AudioClips.VoTryAgain1)
-                            }
-                        }
-                    dinoVisual = DinoVisual.Idle
-                    inputLocked = false
-                    return@launch
-                }
-                if (isSagaEpisode(chapterId) &&
-                    stationId == Chapter1StationOrder.PICTURE_PICK_ONE &&
-                    wrongPickedLetter != null
-                ) {
-                    cancelFeedbackVoice()
-                    feedbackVoiceJob =
-                        scope.launch {
-                            val lc = AudioClips.letterNameClip(wrongPickedLetter)
-                            val letterMs = lc?.let { sfx.durationMs(it) } ?: 0L
-                            if (lc != null && letterMs > 0L) {
-                                sfx.stopAllStreams()
-                                sfx.playReturningStreamId(lc, volume = 1f)
-                                val baseWrongFrac =
-                                    Station1WrongLetterToFollowLeadFraction *
-                                        Station4WrongLetterToFollowLeadScale
-                                val followLeadFrac =
-                                    baseWrongFrac +
-                                        Station4WrongLetterToTryAgainGapBoost * (1f - baseWrongFrac)
-                                val lead =
-                                    (letterMs * followLeadFrac)
-                                        .toLong()
-                                        .coerceIn(16L, letterMs)
-                                delay(lead)
-                                sfx.playFirstAvailable(
-                                    AudioClips.VoTryAgain2,
-                                    AudioClips.VoTryAgain1,
-                                    volume = 1f,
-                                )
-                            } else {
-                                if (lc != null && voice.hasAsset(lc)) {
-                                    voice.playBlocking(lc)
-                                }
-                                voice.playFirstAvailableBlocking(AudioClips.VoTryAgain2, AudioClips.VoTryAgain1)
-                            }
-                        }
-                    dinoVisual = DinoVisual.Idle
-                    inputLocked = false
-                    return@launch
-                }
-                cancelFeedbackVoice()
-                feedbackVoiceJob =
-                    scope.launch {
-                        val feedbackDelayMs =
-                            when {
-                                // Episode 4 feedback: station 1 and station 4 should feel near-instant on tap.
-                                chapterId == 4 && stationId == Chapter1StationOrder.TAP_LETTER -> 0L
-                                chapterId == 4 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE -> 0L
-                                chapterId == 4 && stationId == Chapter1StationOrder.PICTURE_PICK_ALL -> 0L
-                                // Chapter 3 station 4 feedback: negative voice should be near-instant.
-                                (chapterId == 3 || chapterId == 6) && stationId == 4 -> 0L
-                                // Episode 5 feedback: station 4 wrong response should feel near-instant.
-                                chapterId == 5 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE -> 0L
-                                else -> 110L
-                            }
-                        delay(feedbackDelayMs)
-                        if (wrongWordCatalogId != null && !wrongWordAlreadySpoken) {
-                            // One try-again line only ([playSequenceBlocking] would play every clip, so both try WAVs).
-                            val wordPath = AudioClips.wordClipByCatalogId(wrongWordCatalogId)
-                            if (voice.hasAsset(wordPath)) voice.playBlocking(wordPath)
-                            voice.playFirstAvailableBlocking(AudioClips.VoTryAgain2, AudioClips.VoTryAgain1)
-                            return@launch
-                        }
-
-                        if (wrongPickedLetter != null) {
-                            // Episode 5 station 4 UX: immediately say the tapped letter, then one try-again line.
-                            // Avoid "זה" prefix here; keep it short and don't overlap the letter audio.
-                            if (chapterId == 5 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
-                                val lc = AudioClips.letterNameClip(wrongPickedLetter)
-                                if (lc != null && voice.hasAsset(lc)) {
-                                    voice.playBlocking(lc)
-                                }
-                                voice.playFirstAvailableBlocking(AudioClips.VoTryAgain2, AudioClips.VoTryAgain1)
-                                return@launch
-                            }
-                            if (!wrongPickedLetterAlreadySpoken) {
-                                val letterName = AudioClips.letterNameClip(wrongPickedLetter)
-                                if (letterName != null && voice.hasAsset(letterName)) {
-                                    voice.playBlocking(letterName)
-                                }
-                            }
-                            voice.playFirstAvailableBlocking(AudioClips.VoTryAgain2, AudioClips.VoTryAgain1)
-                            return@launch
-                        }
-
-                        voice.playFirstAvailableBlocking(AudioClips.VoTryAgain2, AudioClips.VoTryAgain1)
-                    }
-            }
-            dinoVisual = DinoVisual.Idle
-            // Allow immediate retry; new taps cancel the previous feedback voice.
-            inputLocked = false
-        }
+        WrongFeedbackActions.trigger(
+            scope = scope,
+            audioEnabled = audioEnabled,
+            sagaEpisode = isSagaEpisode(chapterId),
+            chapterId = chapterId,
+            stationId = stationId,
+            sagaUsesPickLetterAudioStaging = sagaUsesPickLetterAudioStaging,
+            isChapter3HighlightedLetterInWordStation = isChapter3HighlightedLetterInWordStation,
+            isChapter3AudioLetterRecognitionStation = isChapter3AudioLetterRecognitionStation,
+            gameFeedback = gameFeedback,
+            voice = voice,
+            sfx = sfx,
+            cancelFeedbackVoice = { cancelFeedbackVoice() },
+            setFeedbackVoiceJob = { job -> feedbackVoiceJob = job },
+            optionsShake = optionsShake,
+            dinoSlip = dinoSlip,
+            dinoTilt = dinoTilt,
+            setDinoVisual = { v -> dinoVisual = v },
+            setInputLocked = { locked -> inputLocked = locked },
+            onWrongHook = { ChildGameAudioHooks.onWrong() },
+            wrongPickedLetter = wrongPickedLetter,
+            wrongWordCatalogId = wrongWordCatalogId,
+            wrongPickedLetterAlreadySpoken = wrongPickedLetterAlreadySpoken,
+            wrongWordAlreadySpoken = wrongWordAlreadySpoken,
+        )
     }
 
     Box(modifier = modifier.fillMaxSize()) {
