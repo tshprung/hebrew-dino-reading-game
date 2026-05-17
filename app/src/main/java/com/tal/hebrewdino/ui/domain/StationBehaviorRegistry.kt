@@ -81,6 +81,12 @@ object StationBehaviorRegistry {
         extraVariants: Array<StationVariant> = emptyArray(),
     ): StationUiSpec {
         val listenOnly = plan.listenOnlyTargetPrompt
+        val matchLetterCompactWideSpread =
+            ((chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) &&
+                stationId == FINALE_PICTURE_LETTER_MATCH) ||
+                ((chapterId == 3 || chapterId == 6) && stationId == 2) ||
+                (chapterId == TrainingV1Config.CHAPTER_ID && stationId == TrainingV1Config.STATION_MATCH_LETTER_TO_WORD)
+        val matchLetterVerticalNudgeDp = if (chapterId == TrainingV1Config.CHAPTER_ID) 0f else 19f
         return StationUiSpec(
             chapterId = chapterId,
             stationId = stationId,
@@ -93,6 +99,8 @@ object StationBehaviorRegistry {
             hintMode = StationHintMode.None,
             matchLetterInstructionReadablePanel = true,
             matchLetterInstructionText = StationInstructionCopy.MatchLetterFinale,
+            matchLetterCompactWideSpread = matchLetterCompactWideSpread,
+            matchLetterVerticalNudgeDp = matchLetterVerticalNudgeDp,
         )
     }
 
@@ -248,8 +256,17 @@ object StationBehaviorRegistry {
                         },
                     imageMatchShowTargetLetterChip = !listenOnly,
                     imageMatchHeaderInstructionOverride =
-                        StationInstructionCopy.ImageMatchFindWordStartingWithLetter,
+                        if (listenOnly) {
+                            StationInstructionCopy.ImageMatchListenFirst
+                        } else {
+                            StationInstructionCopy.ImageMatchFindWordStartingWithLetter
+                        },
                     imageMatchHeaderReadablePanel = true,
+                    imageMatchCompactLandscapeRtlWrapHeaderInstruction = true,
+                    imageMatchHeaderTopPaddingDp = 10f,
+                    imageMatchTargetLetterChipOffsetYDp = 0f,
+                    imageMatchVerticalNudgeDp = 19f,
+                    imageMatchSuppressEntryPulseEpoch = true,
                     riskNotes = "Image match three cards; Learning mode (Ch1, 2, 5).",
                 )
             FINALE_PICTURE_LETTER_MATCH ->
@@ -445,9 +462,18 @@ object StationBehaviorRegistry {
                     replayMode = if (listenOnly) StationReplayMode.TargetLetterOnly else StationReplayMode.None,
                     hintMode = if (listenOnly) StationHintMode.TemporaryTargetLetter else StationHintMode.None,
                     imageMatchHeaderInstructionOverride =
-                        StationInstructionCopy.ImageMatchFindWordStartingWithLetter,
+                        if (listenOnly) {
+                            StationInstructionCopy.ImageMatchListenFirst
+                        } else {
+                            StationInstructionCopy.ImageMatchFindWordStartingWithLetter
+                        },
                     imageMatchHeaderReadablePanel = true,
                     imageMatchShowTargetLetterChip = !listenOnly,
+                    imageMatchCompactLandscapeRtlWrapHeaderInstruction = true,
+                    imageMatchHeaderTopPaddingDp = 10f,
+                    imageMatchTargetLetterChipOffsetYDp = 0f,
+                    imageMatchVerticalNudgeDp = 19f,
+                    imageMatchSuppressEntryPulseEpoch = true,
                     riskNotes = "Image match st5 Learning mode.",
                 )
             FINALE_PICTURE_LETTER_MATCH ->

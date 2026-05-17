@@ -1822,8 +1822,8 @@ fun GameScreen(
                             }
                             is Question.ImageMatchQuestion ->
                                 if (stationUiSpec.templateId == StationTemplateId.ImageToWord) {
-                                    Chapter3Station6ImageToWordStationContent(
-                                        question = current,
+                                    ImageToWordQuestionRenderer(
+                                        current = current,
                                         contentKey = session.currentIndex,
                                         enabled = gameChoicesEnabled,
                                         entryPulseScale = entryPulseScale.value,
@@ -1922,19 +1922,14 @@ fun GameScreen(
                                         feedbackVoiceJob = scope.launch { play() }
                                     }
                                     var lastPraiseClip by remember(chapterId, stationId) { mutableStateOf<String?>(null) }
-                                    MatchLetterToWordStationContent(
+                                    MatchLetterToWordQuestionRenderer(
                                         choices = matchChoices,
+                                        stationUiSpec = stationUiSpec,
+                                        isCompactLandscapePhone = isCompactLandscapePhone,
                                         choicePairLimit = 3,
                                         contentKey = session.currentIndex,
                                         enabled = gameChoicesEnabled,
-                                        compactWideSpread =
-                                            isCompactLandscapePhone &&
-                                                (
-                                                    ((chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) &&
-                                                        stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH) ||
-                                                        ((chapterId == 3 || chapterId == 6) && stationId == 2) ||
-                                                        (chapterId == TrainingV1Config.CHAPTER_ID && stationId == TrainingV1Config.STATION_MATCH_LETTER_TO_WORD)
-                                                ),
+                                        entryPulseScale = entryPulseScale.value,
                                         letterTileSizeMultiplier = if (chapterId == TrainingV1Config.CHAPTER_ID) 1.10f else 1f,
                                         onWordPressed = { choiceId ->
                                             speakNow {
@@ -2009,86 +2004,31 @@ fun GameScreen(
                                                 }
                                             }
                                         },
-                                        entryPulseScale = entryPulseScale.value,
-                                        verticalNudgeDp =
-                                            if (chapterId == TrainingV1Config.CHAPTER_ID) {
-                                                0.dp
-                                            } else {
-                                                SixStationArcHalfCmNudge
-                                            },
                                     )
                                 } else {
-                                    val imageMatchVerticalNudge =
-                                        if (isSagaEpisode(chapterId) && stationId == Chapter1StationOrder.PICTURE_PICK_ALL) {
-                                            SixStationArcHalfCmNudge
-                                        } else {
-                                            0.dp
-                                        }
-                                    val rawImageMatchHeaderInstructionText =
-                                        stationUiSpec.imageMatchHeaderInstructionOverride
-                                            ?: when {
-                                                isSagaEpisode(chapterId) && stationId == Chapter1StationOrder.PICTURE_PICK_ALL ->
-                                                    if (listenOnly) {
-                                                        StationInstructionCopy.ImageMatchListenFirst
-                                                    } else {
-                                                        StationInstructionCopy.ImageMatchFindWordStartingWithLetter
-                                                    }
-                                                else ->
-                                                    null
-                                            }
-                                    val displayImageMatchHeaderInstructionText =
-                                        if (isCompactLandscapePhone &&
-                                            (chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) &&
-                                            stationId == Chapter1StationOrder.PICTURE_PICK_ALL &&
-                                            rawImageMatchHeaderInstructionText != null
+                                    val listenOnlyTemporaryHintLetter =
+                                        if (episode4HelpSt15 &&
+                                            stationUiSpec.templateId == StationTemplateId.ImageMatch &&
+                                            stationUiSpec.hintMode == com.tal.hebrewdino.ui.domain.StationHintMode.TemporaryTargetLetter
                                         ) {
-                                            ScreenFit.rtlUnicodeWrap(rawImageMatchHeaderInstructionText)
+                                            episode4Help.activeHintLetter
                                         } else {
-                                            rawImageMatchHeaderInstructionText
+                                            null
                                         }
-                                    SagaImageMatchGameStationContent(
-                                        question = current,
-                                        headerInstructionText = displayImageMatchHeaderInstructionText,
+                                    ImageMatchQuestionRenderer(
+                                        current = current,
+                                        stationUiSpec = stationUiSpec,
+                                        isCompactLandscapePhone = isCompactLandscapePhone,
                                         headerInstructionFontScale =
                                             (if (chapterId == TrainingV1Config.CHAPTER_ID) 1.35f else 1.35f * 2f),
-                                        headerPromptWord =
-                                            if ((chapterId == 3 || chapterId == 6) && stationId == 6) {
-                                                current.targetWord
-                                            } else {
-                                                null
-                                            },
-                                        showTargetLetterChip = stationUiSpec.imageMatchShowTargetLetterChip,
-                                        listenOnlyTemporaryHintLetter =
-                                            if (episode4HelpSt15 &&
-                                                stationUiSpec.templateId == StationTemplateId.ImageMatch &&
-                                                stationUiSpec.hintMode == com.tal.hebrewdino.ui.domain.StationHintMode.TemporaryTargetLetter
-                                            ) {
-                                                episode4Help.activeHintLetter
-                                            } else {
-                                                null
-                                            },
-                                        headerTopPaddingDp =
-                                            if (isSagaEpisode(chapterId) && stationId == Chapter1StationOrder.PICTURE_PICK_ALL) 10 else 0,
-                                        readableInstructionHeaderPanel = stationUiSpec.imageMatchHeaderReadablePanel,
-                                        targetLetterChipOffsetYDp =
-                                            if (isSagaEpisode(chapterId) && stationId == Chapter1StationOrder.PICTURE_PICK_ALL) 0 else -10,
+                                        listenOnlyTemporaryHintLetter = listenOnlyTemporaryHintLetter,
                                         contentKey = session.currentIndex,
                                         enabled = gameChoicesEnabled,
                                         shakePx = optionsShake.value,
-                                        entryPulseEpoch =
-                                            if (stationUiSpec.templateId == StationTemplateId.ImageMatch &&
-                                                stationId == Chapter1StationOrder.PICTURE_PICK_ALL
-                                            ) {
-                                                0
-                                            } else {
-                                                entryPulseEpoch
-                                            },
+                                        entryPulseEpoch = entryPulseEpoch,
                                         hintCorrectChoiceId = current.correctChoiceId.takeIf { wrongTapsThisQuestion >= 2 },
                                         hintPulseEpoch = hintPulseEpoch,
-                                        showWordCaptions =
-                                            !((chapterId == 3 || chapterId == 6) && stationId == 6),
-                                        captionSizeMultiplier =
-                                            plan.imageMatchCaptionSizeMultiplier,
+                                        captionSizeMultiplier = plan.imageMatchCaptionSizeMultiplier,
                                         pictureSizeMultiplier = plan.imageMatchPictureSizeMultiplier,
                                         innerPictureScaleForChoice = { choice ->
                                             Chapter1Station5And6ImageMatchInnerScale.innerScale(choice)
@@ -2103,8 +2043,6 @@ fun GameScreen(
                                                     if (audioEnabled) ChildGameAudioHooks.onCorrect()
                                                     scope.launch {
                                                         if (isSagaEpisode(chapterId) && stationId == Chapter1StationOrder.PICTURE_PICK_ALL) {
-                                                            // Episode 1 station 5: say the tapped WORD, then the existing "good job" flow will run.
-                                                            // Episode 3 station 5: do NOT speak the word (word should appear only in the top prompt).
                                                             if (chapterId != 3 && chapterId != 6) {
                                                                 voice.playBlocking(AudioClips.wordClipByCatalogId(choiceId))
                                                             }
@@ -2129,7 +2067,7 @@ fun GameScreen(
                                             }
                                         },
                                         entryPulseScale = entryPulseScale.value,
-                                        verticalNudgeDp = imageMatchVerticalNudge,
+                                        modifier = Modifier.fillMaxSize(),
                                     )
                                 }
                             is Question.FinaleSlotQuestion ->

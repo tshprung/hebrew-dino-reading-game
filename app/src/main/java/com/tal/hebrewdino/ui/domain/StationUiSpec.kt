@@ -149,14 +149,32 @@ data class StationUiSpec(
     val pictureStartsWithVerticalNudgeDp: Float = 0f,
     /** WIRED: Image-match header instruction override (Ep4 st5); null uses GameScreen fallbacks. */
     val imageMatchHeaderInstructionOverride: String? = null,
+    /** WIRED: Wrap image-match header instruction on compact landscape phone (saga station 5 behavior). */
+    val imageMatchCompactLandscapeRtlWrapHeaderInstruction: Boolean = false,
     /** WIRED: White readable header panel for image-match (Ep4 st5). */
     val imageMatchHeaderReadablePanel: Boolean = false,
     /** WIRED: Show target-letter chip in image-match header row (false for listen-only saga station 5). */
     val imageMatchShowTargetLetterChip: Boolean = true,
+    /** WIRED: Top padding above image-match header instruction line (dp). */
+    val imageMatchHeaderTopPaddingDp: Float = 0f,
+    /** WIRED: Vertical offset for target-letter chip in image-match header (dp). */
+    val imageMatchTargetLetterChipOffsetYDp: Float = -10f,
+    /** WIRED: Extra vertical nudge (dp) for image-match content (saga station 5 uses ~½ cm). */
+    val imageMatchVerticalNudgeDp: Float = 0f,
+    /** WIRED: When true, use headerPromptWord = question.targetWord (Episode 3/6 station 6 behavior). */
+    val imageMatchShowHeaderPromptWord: Boolean = false,
+    /** WIRED: Hide word captions under cards (Episode 3/6 station 6 behavior). */
+    val imageMatchHideWordCaptions: Boolean = false,
+    /** WIRED: Force entry pulse epoch to 0 for this station (saga station 5 image match). */
+    val imageMatchSuppressEntryPulseEpoch: Boolean = false,
     /** WIRED: [MatchLetterToWordGame] instructionReadablePanelOverride / chapter 3 station 2 panel. */
     val matchLetterInstructionReadablePanel: Boolean = false,
     /** WIRED: Persistent instructions for match-letter / finale UI; null falls back to game default copy. */
     val matchLetterInstructionText: String? = null,
+    /** WIRED: Wide spread layout in compact landscape phone for match-letter-to-word (station 6 / ch3+ch6 st2 / training). */
+    val matchLetterCompactWideSpread: Boolean = false,
+    /** WIRED: Extra vertical nudge (dp) for match-letter-to-word content (non-training uses ~½ cm). */
+    val matchLetterVerticalNudgeDp: Float = 0f,
     /** WIRED: Chapter 3 station 6 image→word header. */
     val imageToWordInstructionText: String? = null,
     /** WIRED: Inline find-grid instruction panel style (replaces chapterId==3 branch in [FindLetterGridGame]). */
