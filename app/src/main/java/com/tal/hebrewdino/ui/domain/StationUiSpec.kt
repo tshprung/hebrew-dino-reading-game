@@ -55,6 +55,7 @@ data class StationUiSpec(
     val variants: Set<StationVariant> = setOf(StationVariant.Standard),
     /** [DOCS] Mirror of plan mode; tests/registry alignment only. */
     val quizMode: StationQuizMode,
+    val showBetweenRoundIntroPulse: Boolean = true,
     /** WIRED: Episode 4 right-side replay/hint column eligibility (also gated by chapterId==4 in GameScreen). */
     val helpControlsEnabled: Boolean = false,
     /** WIRED: hint lock duration when help controls apply (Ep4 st1–5). */

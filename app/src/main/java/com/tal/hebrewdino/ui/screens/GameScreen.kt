@@ -1093,29 +1093,7 @@ fun GameScreen(
                     contentAlignment = Alignment.Center,
                 ) {
                     if (phase == GamePhase.Intro) {
-                        // Station 6: don't show the mid-screen intro pulse between rounds.
-                        if (!(stationId == 6 && current is Question.ImageMatchQuestion) &&
-                            // Station 1: don't show blinking letter between rounds.
-                            !(sagaUsesPickLetterAudioStaging) &&
-                            // Generic: listen-first pick-letter shouldn't flash the answer (review/hidden target).
-                            !(plan.listenOnlyTargetPrompt && plan.mode == StationQuizMode.PickLetter) &&
-                            // Generic: highlighted-letter-in-word station should not flash the answer.
-                            !(plan.highlightedLetterInWordPickLetter && plan.mode == StationQuizMode.PickLetter) &&
-                            // Generic: pop-all-letters-in-word station has its own banner; no flashing letter intro.
-                            !(plan.popAllLettersInWord && plan.mode == StationQuizMode.PopBalloons) &&
-                            // Episode 1/2 station 2 (balloons): no blinking letter intro.
-                            !(isSagaEpisode(chapterId) && stationId == 2 && current is Question.PopBalloonsQuestion) &&
-                            // Station 4: don't blink the word; keep it readable/stable.
-                            !(isSagaEpisode(chapterId) && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) &&
-                            // Station 5: no pulsing letter intro (go straight to choices).
-                            !(isSagaEpisode(chapterId) && stationId == Chapter1StationOrder.PICTURE_PICK_ALL) &&
-                            // Station 3: no pulsing letter intro before each round.
-                            !(sagaUsesFindGridAudioStaging) &&
-                            // Episode 3 stations 1-3: no blinking intro (word/letter).
-                            !((chapterId == 3 || chapterId == 6) && (stationId == 1 || stationId == 2 || stationId == 3)) &&
-                            // Training: keep rounds clean (no mid-screen intro pulse).
-                            !(chapterId == TrainingV1Config.CHAPTER_ID)
-                        ) {
+                        if (stationUiSpec.showBetweenRoundIntroPulse) {
                             IntroPulse(stationId = stationId, question = current, modifier = Modifier.fillMaxWidth())
                         }
                     } else {

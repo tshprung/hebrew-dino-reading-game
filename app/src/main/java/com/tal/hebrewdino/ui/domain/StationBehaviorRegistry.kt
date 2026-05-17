@@ -54,12 +54,19 @@ object StationBehaviorRegistry {
         extraVariants: Array<StationVariant> = emptyArray()
     ): StationUiSpec {
         val listenOnly = plan.listenOnlyTargetPrompt
+        val isSagaEpisode = chapterId in 1..5
+        val showBetweenRoundIntroPulse =
+            !(isSagaEpisode && stationId == TAP_LETTER) &&
+                !listenOnly &&
+                !plan.highlightedLetterInWordPickLetter &&
+                !plan.chapter3AudioLetterRecognition
         return StationUiSpec(
             chapterId = chapterId,
             stationId = stationId,
             templateId = StationTemplateId.PickLetter,
             variants = variantsFor(listenOnly, *extraVariants),
             quizMode = plan.mode,
+            showBetweenRoundIntroPulse = showBetweenRoundIntroPulse,
             findGridMaxTargetCount = plan.findLetterGridMaxTargetCount,
             helpControlsEnabled = listenOnly,
             replayMode = if (listenOnly) StationReplayMode.TargetLetterOnly else StationReplayMode.None,
@@ -81,18 +88,24 @@ object StationBehaviorRegistry {
         extraVariants: Array<StationVariant> = emptyArray(),
     ): StationUiSpec {
         val listenOnly = plan.listenOnlyTargetPrompt
+        val isSagaEpisode = chapterId in 1..5
         val matchLetterCompactWideSpread =
             ((chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) &&
                 stationId == FINALE_PICTURE_LETTER_MATCH) ||
                 ((chapterId == 3 || chapterId == 6) && stationId == 2) ||
                 (chapterId == TrainingV1Config.CHAPTER_ID && stationId == TrainingV1Config.STATION_MATCH_LETTER_TO_WORD)
         val matchLetterVerticalNudgeDp = if (chapterId == TrainingV1Config.CHAPTER_ID) 0f else 19f
+        val showBetweenRoundIntroPulse =
+            !(isSagaEpisode && stationId == FINALE_PICTURE_LETTER_MATCH) &&
+                !((chapterId == 3 || chapterId == 6) && stationId == 2) &&
+                chapterId != TrainingV1Config.CHAPTER_ID
         return StationUiSpec(
             chapterId = chapterId,
             stationId = stationId,
             templateId = StationTemplateId.MatchLetterToWord,
             variants = variantsFor(listenOnly, *extraVariants),
             quizMode = plan.mode,
+            showBetweenRoundIntroPulse = showBetweenRoundIntroPulse,
             findGridMaxTargetCount = plan.findLetterGridMaxTargetCount,
             helpControlsEnabled = false,
             replayMode = StationReplayMode.None,
@@ -110,6 +123,7 @@ object StationBehaviorRegistry {
         plan: StationQuizPlan
     ): StationUiSpec {
         val listenOnly = plan.listenOnlyTargetPrompt
+        val isSagaEpisode = chapterId in 1..5
         val findGridSagaRevealStation =
             (chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) &&
                 stationId == REVEAL_THEN_CHOOSE
@@ -119,6 +133,7 @@ object StationBehaviorRegistry {
             templateId = StationTemplateId.FindLetterGrid,
             variants = variantsFor(listenOnly),
             quizMode = plan.mode,
+            showBetweenRoundIntroPulse = !(isSagaEpisode && stationId == REVEAL_THEN_CHOOSE),
             findGridMaxTargetCount = plan.findLetterGridMaxTargetCount,
             helpControlsEnabled = listenOnly,
             replayMode = if (listenOnly) StationReplayMode.TargetLetterOnly else StationReplayMode.None,
@@ -138,6 +153,7 @@ object StationBehaviorRegistry {
         plan: StationQuizPlan
     ): StationUiSpec {
         val listenOnly = plan.listenOnlyTargetPrompt
+        val isSagaEpisode = chapterId in 1..5
         val pictureStartsWithCompactLandscapeRtlWrapInstruction =
             (chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) &&
                 stationId == PICTURE_PICK_ONE
@@ -155,6 +171,9 @@ object StationBehaviorRegistry {
             templateId = StationTemplateId.PictureStartsWith,
             variants = variantsFor(listenOnly),
             quizMode = plan.mode,
+            showBetweenRoundIntroPulse =
+                !(isSagaEpisode && stationId == PICTURE_PICK_ONE) &&
+                    !((chapterId == 3 || chapterId == 6) && stationId == 1),
             findGridMaxTargetCount = plan.findLetterGridMaxTargetCount,
             helpControlsEnabled = listenOnly,
             replayMode = if (listenOnly) StationReplayMode.TargetWordOnly else StationReplayMode.None,
@@ -176,6 +195,7 @@ object StationBehaviorRegistry {
         isPopAllLetters: Boolean = false
     ): StationUiSpec {
         val listenOnly = plan.listenOnlyTargetPrompt
+        val isSagaEpisode = chapterId in 1..5
         val popBalloonsCompactLandscapePhoneTuning =
             (chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) && stationId == BALLOON_POP ||
                 ((chapterId == 3 || chapterId == 6) && stationId == 3) ||
@@ -190,6 +210,11 @@ object StationBehaviorRegistry {
                 variantsFor(listenOnly)
             },
             quizMode = plan.mode,
+            showBetweenRoundIntroPulse =
+                !isPopAllLetters &&
+                    !(isSagaEpisode && stationId == BALLOON_POP) &&
+                    !((chapterId == 3 || chapterId == 6) && stationId == 3) &&
+                    chapterId != TrainingV1Config.CHAPTER_ID,
             findGridMaxTargetCount = plan.findLetterGridMaxTargetCount,
             helpControlsEnabled = listenOnly,
             replayMode = if (listenOnly) StationReplayMode.TargetLetterOnly else StationReplayMode.None,
@@ -233,6 +258,7 @@ object StationBehaviorRegistry {
                     templateId = StationTemplateId.ImageMatch,
                     variants = variantsFor(listenOnly),
                     quizMode = plan.mode,
+                    showBetweenRoundIntroPulse = false,
                     findGridMaxTargetCount = plan.findLetterGridMaxTargetCount,
                     helpControlsEnabled = listenOnly,
                     replayMode =
@@ -327,6 +353,7 @@ object StationBehaviorRegistry {
                     templateId = StationTemplateId.ImageToWord,
                     variants = variantsFor(listenOnly = false, StationVariant.Chapter3ImageToWord),
                     quizMode = plan.mode,
+                    showBetweenRoundIntroPulse = false,
                     findGridMaxTargetCount = plan.findLetterGridMaxTargetCount,
                     helpControlsEnabled = false,
                     replayMode = StationReplayMode.ExistingStationSpecific,
@@ -362,6 +389,7 @@ object StationBehaviorRegistry {
                     templateId = StationTemplateId.ImageMatch,
                     variants = variantsFor(listenOnly = false, StationVariant.Episode4Help),
                     quizMode = plan.mode,
+                    showBetweenRoundIntroPulse = false,
                     findGridMaxTargetCount = plan.findLetterGridMaxTargetCount,
                     helpControlsEnabled = true,
                     replayMode = StationReplayMode.TargetLetterOnly,
@@ -379,6 +407,7 @@ object StationBehaviorRegistry {
                     templateId = StationTemplateId.ImageToWord,
                     variants = variantsFor(listenOnly = false),
                     quizMode = plan.mode,
+                    showBetweenRoundIntroPulse = false,
                     findGridMaxTargetCount = plan.findLetterGridMaxTargetCount,
                     helpControlsEnabled = false,
                     replayMode = StationReplayMode.None,
@@ -393,6 +422,7 @@ object StationBehaviorRegistry {
                     templateId = StationTemplateId.FindLetterGrid,
                     variants = variantsFor(listenOnly = true, StationVariant.Episode4Help),
                     quizMode = plan.mode,
+                    showBetweenRoundIntroPulse = false,
                     findGridMaxTargetCount = plan.findLetterGridMaxTargetCount,
                     helpControlsEnabled = true,
                     hintDurationMs = 2100L,
@@ -411,6 +441,7 @@ object StationBehaviorRegistry {
                     plan = plan,
                     isPopAllLetters = false,
                 ).copy(
+                    showBetweenRoundIntroPulse = false,
                     helpControlsEnabled = false,
                     replayMode = StationReplayMode.None,
                     hintMode = StationHintMode.None,
@@ -456,6 +487,7 @@ object StationBehaviorRegistry {
                     templateId = StationTemplateId.ImageMatch,
                     variants = variantsFor(listenOnly),
                     quizMode = plan.mode,
+                    showBetweenRoundIntroPulse = false,
                     findGridMaxTargetCount = plan.findLetterGridMaxTargetCount,
                     helpControlsEnabled = listenOnly,
                     hintDurationMs = if (listenOnly) 2100L else null,
@@ -542,6 +574,7 @@ object StationBehaviorRegistry {
                     templateId = StationTemplateId.ImageToWord,
                     variants = variantsFor(listenOnly = false, StationVariant.Chapter3ImageToWord),
                     quizMode = plan.mode,
+                    showBetweenRoundIntroPulse = false,
                     findGridMaxTargetCount = plan.findLetterGridMaxTargetCount,
                     helpControlsEnabled = false,
                     replayMode = StationReplayMode.ExistingStationSpecific,
