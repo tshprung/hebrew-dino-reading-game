@@ -54,6 +54,7 @@ import com.tal.hebrewdino.R
 import com.tal.hebrewdino.ui.audio.AudioClips
 import com.tal.hebrewdino.ui.audio.SoundPoolPlayer
 import com.tal.hebrewdino.ui.audio.VoicePlayer
+import com.tal.hebrewdino.ui.audio.GameAudioEngine
 import com.tal.hebrewdino.ui.domain.AnswerResult
 import com.tal.hebrewdino.ui.domain.Chapter1Station5And6ImageMatchInnerScale
 import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
@@ -258,8 +259,9 @@ fun GameScreen(
     val context = LocalContext.current
     val view = LocalView.current
     val lifecycleOwner = LocalLifecycleOwner.current
-    val voice = remember { VoicePlayer(context = context) }
-    val sfx = remember { SoundPoolPlayer(context = context) }
+    val audio = remember { GameAudioEngine(context = context) }
+    val voice = audio.voice
+    val sfx = audio.sfx
     val gameFeedback = remember(stationId, sfx, view) { GameFeedback(scope, sfx, view) }
     var completionCallbackFired by remember(stationId) { mutableStateOf(false) }
 
@@ -350,8 +352,7 @@ fun GameScreen(
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(observer)
             cancelFeedbackVoice()
-            voice.release()
-            sfx.release()
+            audio.release()
         }
     }
 
@@ -479,13 +480,6 @@ fun GameScreen(
         }
     var jumpFrameIndex by remember(stationId) { mutableIntStateOf(0) }
     val forwardDir = if (LocalLayoutDirection.current == LayoutDirection.Rtl) -1f else 1f
-
-    DisposableEffect(Unit) {
-        onDispose {
-            voice.release()
-            sfx.release()
-        }
-    }
 
     // Station 1: preload ALL voice clips as early as possible (screen entry),
     // so instruction playback has near-zero latency when the first question appears.
