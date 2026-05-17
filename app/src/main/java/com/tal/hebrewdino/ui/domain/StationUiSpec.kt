@@ -60,6 +60,7 @@ data class StationUiSpec(
     val audioStagingPopBalloons: Boolean = false,
     val audioStagingFindGrid: Boolean = false,
     val popBalloonsUseSoundPoolPrompt: Boolean = false,
+    val popBalloonsHelpControlsEnabled: Boolean = false,
     /** WIRED: Episode 4 right-side replay/hint column eligibility (also gated by chapterId==4 in GameScreen). */
     val helpControlsEnabled: Boolean = false,
     /** WIRED: hint lock duration when help controls apply (Ep4 st1–5). */

@@ -285,19 +285,13 @@ fun GameScreen(
     /** Episode 1 station 2: counts correct pops within the current question (for pop SFX variety). */
     var station2CorrectPopCount by remember(stationId, session.currentIndex) { mutableIntStateOf(0) }
     var station1PinnedCorrectLetter by remember(stationId) { mutableStateOf<String?>(null) }
-    val chapter3Station3BalloonHelpEnabled =
-        (
-            ((chapterId == 3 || chapterId == 6) && stationId == 3) ||
-                (chapterId == TrainingV1Config.CHAPTER_ID && stationId == TrainingV1Config.STATION_WORD_BALLOONS)
-        ) &&
-            stationUiSpec.templateId == StationTemplateId.PopBalloons &&
-            !episode4HelpSt15
-    val showPopBalloonsTargetLetterChip = !listenOnly && !chapter3Station3BalloonHelpEnabled
+    val popBalloonsHelpControlsEnabled = stationUiSpec.popBalloonsHelpControlsEnabled && !episode4HelpSt15
+    val showPopBalloonsTargetLetterChip = !listenOnly && !popBalloonsHelpControlsEnabled
     val balloonHelp = rememberBalloonHelpController(stationId = stationId, scope = scope)
     val gameChoicesEnabled =
         !inputLocked &&
             !episode4Help.hintLocksChoices &&
-            !(chapter3Station3BalloonHelpEnabled && balloonHelp.hintLocksChoices)
+            !(popBalloonsHelpControlsEnabled && balloonHelp.hintLocksChoices)
 
     fun cancelFeedbackVoice() {
         feedbackVoiceJob?.cancel()
@@ -429,7 +423,7 @@ fun GameScreen(
     }
 
     fun performChapter3Station3HelpReplay() {
-        if (!audioEnabled || !chapter3Station3BalloonHelpEnabled || phase != GamePhase.Play) return
+        if (!audioEnabled || !popBalloonsHelpControlsEnabled || phase != GamePhase.Play) return
         val q = session.currentQuestion as? Question.PopBalloonsQuestion ?: return
         cancelFeedbackVoice()
         val letter = q.correctAnswer
@@ -445,7 +439,7 @@ fun GameScreen(
     }
 
     fun performChapter3Station3HelpHint() {
-        if (!chapter3Station3BalloonHelpEnabled || phase != GamePhase.Play) return
+        if (!popBalloonsHelpControlsEnabled || phase != GamePhase.Play) return
         val q = session.currentQuestion as? Question.PopBalloonsQuestion ?: return
         balloonHelp.performHint(
             letter = q.correctAnswer,
@@ -2013,7 +2007,7 @@ fun GameScreen(
                     val fullScreenBalloonHintLetter =
                         when {
                             episode4HelpSt15 -> episode4Help.activeHintLetter
-                            chapter3Station3BalloonHelpEnabled -> balloonHelp.hintLetter
+                            popBalloonsHelpControlsEnabled -> balloonHelp.hintLetter
                             else -> null
                         }
                     if (phase == GamePhase.Play &&
@@ -2070,7 +2064,7 @@ fun GameScreen(
                         .zIndex(6f),
             )
         }
-        if (chapter3Station3BalloonHelpEnabled) {
+        if (popBalloonsHelpControlsEnabled) {
             Episode4Stations15HelpColumn(
                 replayEnabled = phase == GamePhase.Play,
                 hintEnabled = phase == GamePhase.Play && !balloonHelp.hintLocksChoices,

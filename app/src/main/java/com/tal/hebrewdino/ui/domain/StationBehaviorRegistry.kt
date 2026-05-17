@@ -58,11 +58,18 @@ object StationBehaviorRegistry {
                         (chapterId == 6 && sid == 3) ||
                         (chapterId == TrainingV1Config.CHAPTER_ID && sid == TrainingV1Config.STATION_WORD_BALLOONS)
                 )
+        val popBalloonsHelpControlsEnabled =
+            base.templateId == StationTemplateId.PopBalloons &&
+                (
+                    ((chapterId == 3 || chapterId == 6) && sid == 3) ||
+                        (chapterId == TrainingV1Config.CHAPTER_ID && sid == TrainingV1Config.STATION_WORD_BALLOONS)
+                )
         return base.copy(
             audioStagingPickLetter = audioStagingPickLetter,
             audioStagingPopBalloons = audioStagingPopBalloons,
             audioStagingFindGrid = audioStagingFindGrid,
             popBalloonsUseSoundPoolPrompt = popBalloonsUseSoundPoolPrompt,
+            popBalloonsHelpControlsEnabled = popBalloonsHelpControlsEnabled,
         )
     }
 
