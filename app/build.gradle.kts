@@ -8,11 +8,11 @@ android {
     compileSdk = 37
 
     defaultConfig {
-        applicationId = "com.tal.hebrewdino"
+        applicationId = "com.talshprung.dinoreadinghebrew"
         minSdk = 26
-        targetSdk = 34
-        versionCode = 1
-        versionName = "1.0.0"
+        targetSdk = 35
+        versionCode = 3
+        versionName = "1.0.2"
     }
 
     buildTypes {
