@@ -310,12 +310,11 @@ fun GameScreen(
             stationUiSpec.templateId == StationTemplateId.PopBalloons &&
             !episode4HelpSt15
     val showPopBalloonsTargetLetterChip = !listenOnly && !chapter3Station3BalloonHelpEnabled
-    var chapter3Station3HintLocksChoices by remember(stationId) { mutableStateOf(false) }
-    var chapter3Station3HintLetter by remember(stationId) { mutableStateOf<String?>(null) }
+    val balloonHelp = rememberBalloonHelpController(stationId = stationId, scope = scope)
     val gameChoicesEnabled =
         !inputLocked &&
             !episode4Help.hintLocksChoices &&
-            !(chapter3Station3BalloonHelpEnabled && chapter3Station3HintLocksChoices)
+            !(chapter3Station3BalloonHelpEnabled && balloonHelp.hintLocksChoices)
 
     fun cancelFeedbackVoice() {
         feedbackVoiceJob?.cancel()
@@ -464,15 +463,11 @@ fun GameScreen(
 
     fun performChapter3Station3HelpHint() {
         if (!chapter3Station3BalloonHelpEnabled || phase != GamePhase.Play) return
-        if (chapter3Station3HintLocksChoices) return
         val q = session.currentQuestion as? Question.PopBalloonsQuestion ?: return
-        chapter3Station3HintLocksChoices = true
-        chapter3Station3HintLetter = q.correctAnswer
-        scope.launch {
-            delay(Episode4Help.HINT_REVEAL_FALLBACK_MS)
-            chapter3Station3HintLetter = null
-            chapter3Station3HintLocksChoices = false
-        }
+        balloonHelp.performHint(
+            letter = q.correctAnswer,
+            durationMs = Episode4Help.HINT_REVEAL_FALLBACK_MS,
+        )
     }
     val jumpFrames =
         remember(stationId) {
@@ -598,8 +593,7 @@ fun GameScreen(
         station4WrongFlashLetter = null
         station4PinnedCorrectLetter = null
         episode4Help.resetForNewQuestion()
-        chapter3Station3HintLocksChoices = false
-        chapter3Station3HintLetter = null
+        balloonHelp.reset()
         station1PinnedCorrectLetter = null
         station2PinnedBalloonLetter = null
         station2PinnedBalloonColor = null
@@ -2520,7 +2514,7 @@ fun GameScreen(
                     val fullScreenBalloonHintLetter =
                         when {
                             episode4HelpSt15 -> episode4Help.activeHintLetter
-                            chapter3Station3BalloonHelpEnabled -> chapter3Station3HintLetter
+                            chapter3Station3BalloonHelpEnabled -> balloonHelp.hintLetter
                             else -> null
                         }
                     if (phase == GamePhase.Play &&
@@ -2580,7 +2574,7 @@ fun GameScreen(
         if (chapter3Station3BalloonHelpEnabled) {
             Episode4Stations15HelpColumn(
                 replayEnabled = phase == GamePhase.Play,
-                hintEnabled = phase == GamePhase.Play && !chapter3Station3HintLocksChoices,
+                hintEnabled = phase == GamePhase.Play && !balloonHelp.hintLocksChoices,
                 onReplay = { performChapter3Station3HelpReplay() },
                 onHint = { performChapter3Station3HelpHint() },
                 modifier =
