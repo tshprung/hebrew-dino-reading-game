@@ -1246,6 +1246,44 @@ fun GameScreen(
         }
     }
 
+    fun handleFindGridSagaGridLetterTapped(
+        tapped: String,
+        question: Question.FindLetterGridQuestion,
+    ) {
+        if (!audioEnabled) return
+        sfx.stopAllStreams()
+        station3VoiceStreamId = 0
+        val isCorrect = tapped == question.targetLetter
+        feedbackVoiceJob =
+            scope.launch {
+                if (isCorrect) {
+                    sfx.playFirstAvailable(AudioClips.SfxCorrect, volume = 0.62f)
+                } else {
+                    val tappedClip = AudioClips.letterNameClip(tapped)
+                    when (Random.nextInt(100)) {
+                        in 0..39 -> {
+                            sfx.playFirstAvailable(AudioClips.SfxWrong, volume = 0.58f)
+                        }
+                        in 40..89 -> {
+                            if (tappedClip != null) {
+                                station3VoiceStreamId =
+                                    sfx.playReturningStreamId(tappedClip, volume = 1f) ?: 0
+                            } else {
+                                sfx.playFirstAvailable(AudioClips.SfxWrong, volume = 0.58f)
+                            }
+                        }
+                        else -> {
+                            sfx.playFirstAvailable(AudioClips.SfxWrong, volume = 0.58f)
+                            if (tappedClip != null) {
+                                station3VoiceStreamId =
+                                    sfx.playReturningStreamId(tappedClip, volume = 1f) ?: 0
+                            }
+                        }
+                    }
+                }
+            }
+    }
+
     @Composable
     fun Chapter3Station5ReplayOverlay(modifier: Modifier) {
         if (!((chapterId == 3 || chapterId == 6) && stationId == 5 && !episode4HelpSt15)) return
@@ -1415,40 +1453,7 @@ fun GameScreen(
                                     optionsShakePx = optionsShake.value,
                                     onSagaGridLetterTapped =
                                         if (sagaUsesFindGridAudioStaging) {
-                                            sagaLetterTap@{ tapped ->
-                                                if (!audioEnabled) return@sagaLetterTap
-                                                sfx.stopAllStreams()
-                                                station3VoiceStreamId = 0
-                                                val isCorrect = tapped == current.targetLetter
-                                                feedbackVoiceJob =
-                                                    scope.launch {
-                                                        if (isCorrect) {
-                                                            sfx.playFirstAvailable(AudioClips.SfxCorrect, volume = 0.62f)
-                                                        } else {
-                                                            val tappedClip = AudioClips.letterNameClip(tapped)
-                                                            when (Random.nextInt(100)) {
-                                                                in 0..39 -> {
-                                                                    sfx.playFirstAvailable(AudioClips.SfxWrong, volume = 0.58f)
-                                                                }
-                                                                in 40..89 -> {
-                                                                    if (tappedClip != null) {
-                                                                        station3VoiceStreamId =
-                                                                            sfx.playReturningStreamId(tappedClip, volume = 1f) ?: 0
-                                                                    } else {
-                                                                        sfx.playFirstAvailable(AudioClips.SfxWrong, volume = 0.58f)
-                                                                    }
-                                                                }
-                                                                else -> {
-                                                                    sfx.playFirstAvailable(AudioClips.SfxWrong, volume = 0.58f)
-                                                                    if (tappedClip != null) {
-                                                                        station3VoiceStreamId =
-                                                                            sfx.playReturningStreamId(tappedClip, volume = 1f) ?: 0
-                                                                    }
-                                                                }
-                                                            }
-                                                        }
-                                                    }
-                                            }
+                                            { tapped -> handleFindGridSagaGridLetterTapped(tapped, current) }
                                         } else {
                                             null
                                         },
