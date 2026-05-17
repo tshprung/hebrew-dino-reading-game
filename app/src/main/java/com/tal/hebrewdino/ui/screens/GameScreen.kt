@@ -609,268 +609,34 @@ fun GameScreen(
             if (audioEnabled) {
                 dinoTalking = true
                 try {
-                        // No artificial delay before instruction voice.
-                        // Station 1: use SoundPool for ultra-low-latency voice.
-                        if (isChapter3HighlightedLetterInWordStation && q is Question.PopBalloonsQuestion) {
-                            // Chapter 3 station 4:
-                            // - First letter of a word: full instruction + word + letter.
-                            // - Subsequent letters of the same word: word + letter only.
-                            val round = session.highlightedLetterInWordRound() ?: return@launch
-                            sfx.stopAllStreams()
-                            val intro = AudioClips.Ch3St4FindHighlightedLetterInWordInstruction
-                            val parts =
-                                buildList {
-                                    if (round.slotIndex == 0 && voice.hasAsset(intro)) add(intro)
-                                    // UX: say the word first, then the letter (matches on-screen context).
-                                    add(AudioClips.wordClipByCatalogId(round.catalogId))
-                                    AudioClips.letterNameClip(round.correctLetter)?.let { add(it) }
-                                }.filter { voice.hasAsset(it) }
-                            if (parts.isNotEmpty()) {
-                                voice.playSequenceBlocking(*parts.toTypedArray())
-                            }
-                        } else if (isChapter3AudioLetterRecognitionStation && q is Question.PopBalloonsQuestion) {
-                            sfx.stopAllStreams()
-                            val instruction = AudioClips.VoChooseLetter
-                            val letterClip = AudioClips.letterNameClip(q.correctAnswer)
-                            val parts =
-                                buildList {
-                                    if (voice.hasAsset(instruction)) add(instruction)
-                                    if (letterClip != null) add(letterClip)
-                                }.filter { voice.hasAsset(it) }
-                            if (parts.isNotEmpty()) voice.playSequenceBlocking(*parts.toTypedArray())
-                        } else if (stationUiSpec.templateId == StationTemplateId.ImageMatch && stationId == Chapter1StationOrder.PICTURE_PICK_ALL && q is Question.ImageMatchQuestion) {
-                            sfx.stopAllStreams()
-                            val intro =
-                                listOf(AudioClips.ChoosePictureStartsWithLetter, AudioClips.WhichWordStartsWithLetter)
-                                    .firstOrNull { voice.hasAsset(it) }
-                                    ?: AudioClips.WhichWordStartsWithLetter
-                            val letterName = AudioClips.letterNameClip(q.targetLetter)
-                            val parts =
-                                buildList {
-                                    if (voice.hasAsset(intro)) add(intro)
-                                    if (letterName != null) add(letterName)
-                                }.filter { voice.hasAsset(it) }
-                            if (parts.isNotEmpty()) {
-                                voice.playSequenceBlocking(*parts.toTypedArray())
-                            } else {
-                                speakLetterPrompt(voice, q.targetLetter)
-                            }
-                        } else if (stationUiSpec.templateId == StationTemplateId.MatchLetterToWord && q is Question.ImageMatchQuestion) {
-                            sfx.stopAllStreams()
-                            if (voice.hasAsset(AudioClips.MatchLetterToWordInstructions)) {
-                                voice.playBlocking(AudioClips.MatchLetterToWordInstructions)
-                            }
-                        } else if (stationUiSpec.templateId == StationTemplateId.ImageToWord && q is Question.ImageMatchQuestion) {
-                            sfx.stopAllStreams()
-                            val intro =
-                                if (voice.hasAsset(AudioClips.Ch3ImageToWordInstructions)) {
-                                    AudioClips.Ch3ImageToWordInstructions
-                                } else {
-                                    AudioClips.ImageToWordInstructions
-                                }
-                            if (voice.hasAsset(intro)) {
-                                voice.playBlocking(intro)
-                            }
-                            val wordPath =
-                                if (chapterId == 3 || chapterId == 6) {
-                                    val ch3Word = "audio/ch3_word_${q.correctChoiceId}.wav"
-                                    if (voice.hasAsset(ch3Word)) ch3Word else AudioClips.wordClipByCatalogId(q.correctChoiceId)
-                                } else {
-                                    AudioClips.wordClipByCatalogId(q.correctChoiceId)
-                                }
-                            if (voice.hasAsset(wordPath)) {
-                                voice.playBlocking(wordPath)
-                            }
-                        } else if (sagaUsesPickLetterAudioStaging) {
-                            val target =
-                                when (q) {
-                                    is Question.PopBalloonsQuestion -> q.correctAnswer
-                                    is Question.FindLetterGridQuestion -> q.targetLetter
-                                    is Question.PictureStartsWithQuestion -> q.correctLetter
-                                    is Question.ImageMatchQuestion -> q.targetLetter
-                                    is Question.FinaleSlotQuestion -> null
-                                }
-                            if (target != null) {
-                                val letterClip = AudioClips.letterNameClip(target)
-                                val intro =
-                                    if ((chapterId == 4 || chapterId == 5) && stationId == Chapter1StationOrder.TAP_LETTER) {
-                                        if (voice.hasAsset(AudioClips.VoBachorEtHaot)) {
-                                            AudioClips.VoBachorEtHaot
-                                        } else {
-                                            AudioClips.VoChooseLetter
-                                        }
-                                    } else {
-                                        AudioClips.VoChooseLetter
-                                    }
-                                val introMs = sfx.durationMs(intro) ?: 0L
-                                if (introMs > 0L && letterClip != null) {
-                                    sfx.stopAllStreams()
-                                    sfx.playReturningStreamId(intro, volume = 1f)
-                                    val lead =
-                                        (introMs * Station1IntroLetterLeadFraction * Station1IntroToLetterLeadScale)
-                                            .toLong()
-                                            .coerceIn(16L, introMs)
-                                    delay(lead)
-                                    sfx.playReturningStreamId(letterClip, volume = 1f)
-                                } else {
-                                    voice.playSequenceBlocking(
-                                        intro,
-                                        letterClip ?: "",
-                                    )
-                                }
-                            }
-                        } else if (sagaUsesFindGridAudioStaging && q is Question.FindLetterGridQuestion) {
-                            playSagaFindGridIntroSoundPool(sfx, voice, q, chapterId, StationIntroLetterLeadFraction)
-                        } else if (chapterId == 6 && stationId == 4 && q is Question.PictureStartsWithQuestion) {
-                            sfx.stopAllStreams()
-                            val clip = AudioClips.WhichLetterDoesWordStart
-                            val wordPath = AudioClips.wordClipByCatalogId(q.catalogEntryId)
-                            if (voice.hasAsset(clip)) voice.playBlocking(clip)
-                            if (voice.hasAsset(wordPath)) voice.playBlocking(wordPath)
-                        } else if ((chapterId == 3 || chapterId == 6) && stationId == 1 && q is Question.PictureStartsWithQuestion) {
-                            sfx.stopAllStreams()
-                            // Episode 3 station 1: reuse Episode 1 station 4 instruction voice.
-                            val clip = AudioClips.WhichLetterDoesWordStart
-                            val wordPath = AudioClips.wordClipByCatalogId(q.catalogEntryId)
-                            if (voice.hasAsset(clip)) voice.playBlocking(clip)
-                            if (voice.hasAsset(wordPath)) voice.playBlocking(wordPath)
-                        } else if ((chapterId == 3 || chapterId == 6) && stationId == 2 && q is Question.ImageMatchQuestion) {
-                            // Episode 3 station 2: reuse Episode 1 station 6 instruction voice.
-                            sfx.stopAllStreams()
-                            voice.playBlocking(AudioClips.MatchLetterToWordInstructions)
-                        } else if (chapterId == TrainingV1Config.CHAPTER_ID &&
-                            stationId == TrainingV1Config.STATION_HEAR_LETTER_CHOOSE &&
-                            q is Question.PopBalloonsQuestion
-                        ) {
-                            sfx.stopAllStreams()
-                            val intro = AudioClips.VoChooseLetter
-                            val letterClip = AudioClips.letterNameClip(q.correctAnswer)
-                            val parts =
-                                buildList {
-                                    if (voice.hasAsset(intro)) add(intro)
-                                    if (letterClip != null && voice.hasAsset(letterClip)) add(letterClip)
-                                }
-                            if (parts.isNotEmpty()) {
-                                voice.playSequenceBlocking(*parts.toTypedArray())
-                            } else {
-                                speakLetterPrompt(voice, q.correctAnswer)
-                            }
-                        } else if (chapterId == TrainingV1Config.CHAPTER_ID &&
-                            stationId == TrainingV1Config.STATION_WHICH_WORD_STARTS_WITH_LETTER &&
-                            q is Question.ImageMatchQuestion
-                        ) {
-                            sfx.stopAllStreams()
-                            val intro =
-                                if (voice.hasAsset(AudioClips.WhichWordStartsWithLetter)) {
-                                    AudioClips.WhichWordStartsWithLetter
-                                } else {
-                                    AudioClips.ChoosePictureStartsWithLetter
-                                }
-                            val letterClip = AudioClips.letterNameClip(q.targetLetter)
-                            val parts =
-                                buildList {
-                                    if (voice.hasAsset(intro)) add(intro)
-                                    if (letterClip != null && voice.hasAsset(letterClip)) add(letterClip)
-                                }
-                            if (parts.isNotEmpty()) {
-                                voice.playSequenceBlocking(*parts.toTypedArray())
-                            } else {
-                                speakLetterPrompt(voice, q.targetLetter)
-                            }
-                        } else if (chapterId == TrainingV1Config.CHAPTER_ID &&
-                            stationId == TrainingV1Config.STATION_MATCH_LETTER_TO_WORD &&
-                            q is Question.ImageMatchQuestion
-                        ) {
-                            sfx.stopAllStreams()
-                            if (voice.hasAsset(AudioClips.MatchLetterToWordInstructions)) {
-                                voice.playBlocking(AudioClips.MatchLetterToWordInstructions)
-                            }
-                        } else if (isSagaEpisode(chapterId) && stationId == Chapter1StationOrder.PICTURE_PICK_ONE && q is Question.PictureStartsWithQuestion) {
-                            // Station 4: reduce gap between intro and word by skipping intro trailing silence.
-                            val intro = AudioClips.WhichLetterDoesWordStart
-                            val wordPath = AudioClips.wordClipByCatalogId(q.catalogEntryId)
-                            val introMs = sfx.durationMs(intro) ?: 0L
-                            if (introMs > 0 && voice.hasAsset(wordPath)) {
-                                sfx.stopAllStreams()
-                                sfx.playReturningStreamId(intro, volume = 1f)
-                                val baseIntroWordLeadFrac =
-                                    Station4IntroWordLeadFraction * Station4IntroToWordLeadScale
-                                val introWordLeadFrac =
-                                    baseIntroWordLeadFrac +
-                                        Station4IntroToWordGapBoost * (1f - baseIntroWordLeadFrac)
-                                val lead =
-                                    (introMs * introWordLeadFrac)
-                                        .toLong()
-                                        .coerceIn(16L, introMs)
-                                delay(lead + Station4IntroToWordExtraPauseMs)
-                                sfx.stopAllStreams()
-                                voice.playBlocking(wordPath)
-                            } else {
-                                voice.playSequenceBlocking(intro, wordPath)
-                            }
-                        } else if ((sagaUsesPopBalloonsAudioStaging ||
-                                plan.popAllLettersInWord ||
-                                (chapterId == 6 && stationId == 3) ||
-                                (chapterId == TrainingV1Config.CHAPTER_ID && stationId == TrainingV1Config.STATION_WORD_BALLOONS)) &&
-                            q is Question.PopBalloonsQuestion
-                        ) {
-                            if (plan.popAllLettersInWord) {
-                                // Pop-all-letters-in-word: play the correct instruction, then the word (not a single letter).
-                                sfx.stopAllStreams()
-                                val clip = AudioClips.Ch3St3PopAllLettersInWordInstruction
-                                val (_, catalogId) =
-                                    session.chapter3PopAllLettersCurrentWord()
-                                        ?: error("Missing pop-all letters word for index ${session.currentIndex}")
-                                val wordPath = AudioClips.wordClipByCatalogId(catalogId)
-                                if (voice.hasAsset(clip)) voice.playBlocking(clip)
-                                if (voice.hasAsset(wordPath)) voice.playBlocking(wordPath)
-                            } else {
-                                // Station 2: we want minimal gap between intro and letter (skip intro trailing silence).
-                                // Prefer SoundPool overlap timing when duration is available; otherwise fall back to strict sequence.
-                                val intro =
-                                    if (chapterId == TrainingV1Config.CHAPTER_ID &&
-                                        stationId == TrainingV1Config.STATION_WORD_BALLOONS &&
-                                        voice.hasAsset(AudioClips.PopAllBalloonsWithLetter)
-                                    ) {
-                                        AudioClips.PopAllBalloonsWithLetter
-                                    } else {
-                                        AudioClips.PopBalloonsWithLetter
-                                    }
-                                val letterClip = AudioClips.letterNameClip(q.correctAnswer)
-                                val introMs = sfx.durationMs(intro) ?: 0L
-                                if (introMs > 0 && letterClip != null) {
-                                    // Let intro keep playing on one stream; start letter before the very end.
-                                    sfx.stopAllStreams()
-                                    sfx.playReturningStreamId(intro, volume = 1f)
-                                    val baseIntroLeadFrac =
-                                        Station2BalloonIntroLetterLeadFraction * Station2IntroToLetterLeadScale
-                                    val introLeadFrac =
-                                        baseIntroLeadFrac +
-                                            Station2BalloonIntroToLetterGapBoost * (1f - baseIntroLeadFrac)
-                                    val lead =
-                                        (introMs * introLeadFrac)
-                                            .toLong()
-                                            .coerceIn(16L, introMs)
-                                    delay(lead + Station2BalloonIntroToLetterExtraPauseMs)
-                                    sfx.playReturningStreamId(letterClip, volume = 1f)
-                                } else {
-                                    // Fallback: strict sequential.
-                                    voice.playSequenceBlocking(
-                                        intro,
-                                        letterClip ?: "",
-                                    )
-                                }
-                            }
-                        } else {
-                            speakPromptForQuestion(
-                                voice,
-                                sfx,
-                                stationId = stationId,
-                                chapterId = chapterId,
-                                listenOnlyTargetPrompt = listenOnly,
-                                q = q,
-                            )
-                        }
+                    playIntroPrompt(
+                        audioEnabled = audioEnabled,
+                        chapterId = chapterId,
+                        stationId = stationId,
+                        listenOnlyTargetPrompt = listenOnly,
+                        stationTemplateId = stationUiSpec.templateId,
+                        planPopAllLettersInWord = plan.popAllLettersInWord,
+                        isSagaEpisode = isSagaEpisode(chapterId),
+                        sagaUsesPickLetterAudioStaging = sagaUsesPickLetterAudioStaging,
+                        sagaUsesPopBalloonsAudioStaging = sagaUsesPopBalloonsAudioStaging,
+                        sagaUsesFindGridAudioStaging = sagaUsesFindGridAudioStaging,
+                        isChapter3HighlightedLetterInWordStation = isChapter3HighlightedLetterInWordStation,
+                        isChapter3AudioLetterRecognitionStation = isChapter3AudioLetterRecognitionStation,
+                        session = session,
+                        q = q,
+                        voice = voice,
+                        sfx = sfx,
+                        station1IntroLetterLeadFraction = Station1IntroLetterLeadFraction,
+                        station1IntroToLetterLeadScale = Station1IntroToLetterLeadScale,
+                        station2BalloonIntroLetterLeadFraction = Station2BalloonIntroLetterLeadFraction,
+                        station2IntroToLetterLeadScale = Station2IntroToLetterLeadScale,
+                        station2BalloonIntroToLetterGapBoost = Station2BalloonIntroToLetterGapBoost,
+                        station2BalloonIntroToLetterExtraPauseMs = Station2BalloonIntroToLetterExtraPauseMs,
+                        station4IntroWordLeadFraction = Station4IntroWordLeadFraction,
+                        station4IntroToWordLeadScale = Station4IntroToWordLeadScale,
+                        station4IntroToWordGapBoost = Station4IntroToWordGapBoost,
+                        station4IntroToWordExtraPauseMs = Station4IntroToWordExtraPauseMs,
+                    )
                 } finally {
                     dinoTalking = false
                 }
@@ -1494,8 +1260,10 @@ fun GameScreen(
                                     },
                                 )
                             }
-                            is Question.PopBalloonsQuestion ->
-                                Column(
+                            is Question.PopBalloonsQuestion -> {
+                                @Composable
+                                fun RenderPopBalloonsQuestion() {
+                                    Column(
                                     modifier =
                                         Modifier
                                             .fillMaxSize()
@@ -1509,7 +1277,7 @@ fun GameScreen(
                                             ),
                                     horizontalAlignment = Alignment.CenterHorizontally,
                                     verticalArrangement = Arrangement.Top,
-                                ) {
+                                    ) {
                                     if (plan.popAllLettersInWord) {
                                         Chapter3SagaPopBalloonsWordBanner(
                                             popAllLettersWord =
@@ -1989,7 +1757,11 @@ fun GameScreen(
                                             )
                                         }
                                     }
+                                    }
                                 }
+
+                                RenderPopBalloonsQuestion()
+                            }
                             is Question.PictureStartsWithQuestion -> {
                                 val pictureInstructionText =
                                     when {
