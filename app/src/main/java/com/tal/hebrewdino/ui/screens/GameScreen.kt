@@ -80,16 +80,7 @@ import com.tal.hebrewdino.ui.components.Chapter3Station5ReplayColumn
 import com.tal.hebrewdino.ui.components.TargetLetterHeaderChip
 import com.tal.hebrewdino.ui.feedback.GameFeedback
 import com.tal.hebrewdino.ui.game.ChildGameAudioHooks
-import com.tal.hebrewdino.ui.components.station.FindLetterGridStationContent
-import com.tal.hebrewdino.ui.game.FinaleGame
-import com.tal.hebrewdino.ui.components.station.Chapter3SagaPopBalloonsWordBanner
-import com.tal.hebrewdino.ui.components.station.Chapter3Station6ImageToWordStationContent
-import com.tal.hebrewdino.ui.components.station.MatchLetterToWordStationContent
 import com.tal.hebrewdino.ui.components.station.PickLetterStationContent
-import com.tal.hebrewdino.ui.components.station.PopBalloonsInstructionHeaderBlock
-import com.tal.hebrewdino.ui.components.station.PopBalloonsStationContent
-import com.tal.hebrewdino.ui.components.station.PictureStartsWithStationContent
-import com.tal.hebrewdino.ui.components.station.SagaImageMatchGameStationContent
 import com.tal.hebrewdino.ui.layout.ScreenFit
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Job
@@ -2071,8 +2062,8 @@ fun GameScreen(
                                     )
                                 }
                             is Question.FinaleSlotQuestion ->
-                                FinaleGame(
-                                    question = current,
+                                FinaleSlotQuestionRenderer(
+                                    current = current,
                                     contentKey = session.currentIndex,
                                     enabled = gameChoicesEnabled,
                                     shakeEpoch = shakeEpoch,
