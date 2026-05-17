@@ -111,6 +111,8 @@ data class StationUiSpec(
     val balloonPlayAreaStartInsetDp: Float = 0f,
     /** WIRED: Suppress full-screen center hint overlay for balloons (Ep4 st2 uses inline hint). */
     val excludeFullScreenBalloonHintOverlay: Boolean = false,
+    /** WIRED: Use the compact landscape phone tuning for balloon stations (smaller balloons/header overlay). */
+    val popBalloonsCompactLandscapePhoneTuning: Boolean = false,
     /** WIRED: Find-grid inline instruction when in saga station 3 grid mode (Ep4 explicit; others use listenOnly fallback). */
     val findGridInlineInstructionOverride: String? = null,
     /** WIRED: Hide written target letter in find-grid header (Ep4 listen-first station 3). */

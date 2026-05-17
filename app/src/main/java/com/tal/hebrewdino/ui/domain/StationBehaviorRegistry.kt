@@ -151,6 +151,10 @@ object StationBehaviorRegistry {
         isPopAllLetters: Boolean = false
     ): StationUiSpec {
         val listenOnly = plan.listenOnlyTargetPrompt
+        val popBalloonsCompactLandscapePhoneTuning =
+            (chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) && stationId == BALLOON_POP ||
+                ((chapterId == 3 || chapterId == 6) && stationId == 3) ||
+                (chapterId == TrainingV1Config.CHAPTER_ID && stationId == TrainingV1Config.STATION_WORD_BALLOONS)
         return StationUiSpec(
             chapterId = chapterId,
             stationId = stationId,
@@ -180,6 +184,7 @@ object StationBehaviorRegistry {
             useEpisode4BalloonInstructionPanel = listenOnly,
             balloonPlayAreaStartInsetDp = if (listenOnly) 96f else 0f,
             excludeFullScreenBalloonHintOverlay = listenOnly,
+            popBalloonsCompactLandscapePhoneTuning = popBalloonsCompactLandscapePhoneTuning,
             popBalloonsShowSagaStation2InstructionLine = !isPopAllLetters
         )
     }
