@@ -73,6 +73,16 @@ object StationBehaviorRegistry {
         )
     }
 
+    fun findGridContextWordHint(
+        stationUiSpec: StationUiSpec,
+        questionIndex: Int,
+        sagaUsesFindGridAudioStaging: Boolean,
+    ): String? {
+        if (!sagaUsesFindGridAudioStaging) return null
+        if (!stationUiSpec.findGridUseChapter3ContextWordHint) return null
+        return Chapter3EpisodeContent.gridHintWord(questionIndex)
+    }
+
     private fun pickLetterSpec(
         chapterId: Int,
         stationId: Int,

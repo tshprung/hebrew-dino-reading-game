@@ -1391,11 +1391,11 @@ fun GameScreen(
                                     sagaUsesFindGridAudioStaging = sagaUsesFindGridAudioStaging,
                                     stationUiSpec = stationUiSpec,
                                     chapter3ContextWordHint =
-                                        if (stationUiSpec.findGridUseChapter3ContextWordHint && sagaUsesFindGridAudioStaging) {
-                                            Chapter3EpisodeContent.gridHintWord(session.currentIndex)
-                                        } else {
-                                            null
-                                        },
+                                        StationBehaviorRegistry.findGridContextWordHint(
+                                            stationUiSpec = stationUiSpec,
+                                            questionIndex = session.currentIndex,
+                                            sagaUsesFindGridAudioStaging = sagaUsesFindGridAudioStaging,
+                                        ),
                                     floatingTargetLetterHint =
                                         if (episode4HelpSt15 && stationUiSpec.findGridUseEpisode4HelpHints) {
                                             episode4Help.activeHintLetter
