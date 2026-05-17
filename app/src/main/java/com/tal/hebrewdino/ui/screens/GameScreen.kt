@@ -103,6 +103,13 @@ private val SixStationArcChapterRange = 1..5
 
 private fun isSagaEpisode(chapterId: Int): Boolean = chapterId in SixStationArcChapterRange
 
+private data class SideHelpControls(
+    val replayEnabled: Boolean,
+    val hintEnabled: Boolean,
+    val onReplay: () -> Unit,
+    val onHint: () -> Unit,
+)
+
 /**
  * Episode 1 stations 2–3: start the letter name this far into the intro clip on SoundPool (overlap).
  * 0.94 ≈ halving the remaining pause vs 0.88 (i.e. moving halfway from 0.88 toward 1.0).
@@ -2039,29 +2046,33 @@ fun GameScreen(
                 )
             }
         }
-        if (episode4HelpSt15) {
+        val sideHelpControls: SideHelpControls? =
+            when {
+                episode4HelpSt15 ->
+                    SideHelpControls(
+                        replayEnabled = phase == GamePhase.Play,
+                        hintEnabled =
+                            phase == GamePhase.Play &&
+                                !episode4Help.hintLocksChoices &&
+                                stationUiSpec.hintMode != com.tal.hebrewdino.ui.domain.StationHintMode.None,
+                        onReplay = { performEpisode4HelpReplay() },
+                        onHint = { performEpisode4HelpHint() },
+                    )
+                popBalloonsHelpControlsEnabled ->
+                    SideHelpControls(
+                        replayEnabled = phase == GamePhase.Play,
+                        hintEnabled = phase == GamePhase.Play && !balloonHelp.hintLocksChoices,
+                        onReplay = { performChapter3Station3HelpReplay() },
+                        onHint = { performChapter3Station3HelpHint() },
+                    )
+                else -> null
+            }
+        if (sideHelpControls != null) {
             Episode4Stations15HelpColumn(
-                // Replay must stay available while choices are locked for feedback; only letter/grid taps use inputLocked.
-                replayEnabled = phase == GamePhase.Play,
-                hintEnabled =
-                    phase == GamePhase.Play &&
-                        !episode4Help.hintLocksChoices &&
-                        stationUiSpec.hintMode != com.tal.hebrewdino.ui.domain.StationHintMode.None,
-                onReplay = { performEpisode4HelpReplay() },
-                onHint = { performEpisode4HelpHint() },
-                modifier =
-                    Modifier
-                        .align(Alignment.CenterStart)
-                        .padding(start = 2.dp, top = 100.dp, bottom = 96.dp)
-                        .zIndex(6f),
-            )
-        }
-        if (popBalloonsHelpControlsEnabled) {
-            Episode4Stations15HelpColumn(
-                replayEnabled = phase == GamePhase.Play,
-                hintEnabled = phase == GamePhase.Play && !balloonHelp.hintLocksChoices,
-                onReplay = { performChapter3Station3HelpReplay() },
-                onHint = { performChapter3Station3HelpHint() },
+                replayEnabled = sideHelpControls.replayEnabled,
+                hintEnabled = sideHelpControls.hintEnabled,
+                onReplay = sideHelpControls.onReplay,
+                onHint = sideHelpControls.onHint,
                 modifier =
                     Modifier
                         .align(Alignment.CenterStart)
