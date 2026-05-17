@@ -1284,6 +1284,40 @@ fun GameScreen(
             }
     }
 
+    fun handleFindGridCellTapped(
+        index: Int,
+        question: Question.FindLetterGridQuestion,
+    ) {
+        if (!consumeTapCooldown()) return
+        if (!(sagaUsesFindGridAudioStaging)) {
+            cancelFeedbackVoice()
+        }
+        session.wrongTap()
+        shakeEpoch += 1
+        wrongTapsThisQuestion += 1
+        if (wrongTapsThisQuestion >= 2) hintPulseEpoch += 1
+        val tappedLetter = question.cells.getOrNull(index)
+        if (!(sagaUsesFindGridAudioStaging)) {
+            onWrongFeedback(
+                wrongPickedLetter = tappedLetter,
+                wrongPickedLetterAlreadySpoken = false,
+            )
+        }
+    }
+
+    fun handleFindGridCompleted() {
+        if (!consumeTapCooldown()) return
+        scope.launch {
+            when (session.completeCurrentRound()) {
+                AnswerResult.Correct -> {
+                    val isLast = session.currentIndex >= session.totalQuestions - 1
+                    advanceAfterRound(isLast)
+                }
+                else -> {}
+            }
+        }
+    }
+
     @Composable
     fun Chapter3Station5ReplayOverlay(modifier: Modifier) {
         if (!((chapterId == 3 || chapterId == 6) && stationId == 5 && !episode4HelpSt15)) return
@@ -1467,35 +1501,8 @@ fun GameScreen(
                                         } else {
                                             null
                                         },
-                                    onCellTapped = gridCellTap@{ index ->
-                                        if (!consumeTapCooldown()) return@gridCellTap
-                                        if (!(sagaUsesFindGridAudioStaging)) {
-                                            cancelFeedbackVoice()
-                                        }
-                                        session.wrongTap()
-                                        shakeEpoch += 1
-                                        wrongTapsThisQuestion += 1
-                                        if (wrongTapsThisQuestion >= 2) hintPulseEpoch += 1
-                                        val tappedLetter = current.cells.getOrNull(index)
-                                        if (!(sagaUsesFindGridAudioStaging)) {
-                                            onWrongFeedback(
-                                                wrongPickedLetter = tappedLetter,
-                                                wrongPickedLetterAlreadySpoken = false,
-                                            )
-                                        }
-                                    },
-                                    onCompleted = gridComplete@{
-                                        if (!consumeTapCooldown()) return@gridComplete
-                                        scope.launch {
-                                            when (session.completeCurrentRound()) {
-                                                AnswerResult.Correct -> {
-                                                    val isLast = session.currentIndex >= session.totalQuestions - 1
-                                                    advanceAfterRound(isLast)
-                                                }
-                                                else -> {}
-                                            }
-                                        }
-                                    },
+                                    onCellTapped = { index -> handleFindGridCellTapped(index, current) },
+                                    onCompleted = { handleFindGridCompleted() },
                                     modifier = Modifier.fillMaxSize(),
                                 )
                             }
