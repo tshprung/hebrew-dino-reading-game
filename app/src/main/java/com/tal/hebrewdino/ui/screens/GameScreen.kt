@@ -1498,6 +1498,81 @@ fun GameScreen(
         }
     }
 
+    fun handleImageToWordAttempt(choiceId: String): Boolean {
+        if (!consumeTapCooldown()) return false
+        cancelFeedbackVoice()
+        return when (session.submitImageMatch(choiceId)) {
+            AnswerResult.Correct -> {
+                if (audioEnabled) ChildGameAudioHooks.onCorrect()
+                scope.launch {
+                    if (audioEnabled) {
+                        val clip =
+                            AudioClips.imageToWordClipByCatalogId(
+                                catalogEntryId = choiceId,
+                                chapterId = chapterId,
+                                voiceHasAsset = { path -> voice.hasAsset(path) },
+                            )
+                        voice.playBlocking(clip)
+                        val praise =
+                            mutableListOf(
+                                AudioClips.VoPraiseMetzuyan,
+                                AudioClips.VoPraiseYofi,
+                                AudioClips.VoPraiseHitzlacht,
+                                AudioClips.VoNice1,
+                                AudioClips.VoGoodJob2,
+                                AudioClips.VoGoodJob1,
+                            )
+                        praise.shuffle()
+                        voice.playFirstAvailableBlocking(*praise.toTypedArray())
+                    }
+                    val isLast = session.currentIndex >= session.totalQuestions - 1
+                    advanceAfterRound(isLast)
+                }
+                true
+            }
+            AnswerResult.Wrong -> {
+                if (audioEnabled) ChildGameAudioHooks.onWrong()
+                wrongTapsThisQuestion += 1
+                if (wrongTapsThisQuestion >= 2) hintPulseEpoch += 1
+                onWrongFeedback(wrongWordCatalogId = choiceId)
+                false
+            }
+            AnswerResult.Finished -> false
+        }
+    }
+
+    fun handleImageMatchAttempt(choiceId: String): Boolean {
+        if (!consumeTapCooldown()) return false
+        cancelFeedbackVoice()
+        return when (session.submitImageMatch(choiceId)) {
+            AnswerResult.Correct -> {
+                if (audioEnabled) ChildGameAudioHooks.onCorrect()
+                scope.launch {
+                    if (isSagaEpisode(chapterId) && stationId == Chapter1StationOrder.PICTURE_PICK_ALL) {
+                        if (chapterId != 3 && chapterId != 6) {
+                            voice.playBlocking(AudioClips.wordClipByCatalogId(choiceId))
+                        }
+                    }
+                    val isLast = session.currentIndex >= session.totalQuestions - 1
+                    advanceAfterRound(isLast)
+                }
+                true
+            }
+            AnswerResult.Wrong -> {
+                if (audioEnabled) ChildGameAudioHooks.onWrong()
+                wrongTapsThisQuestion += 1
+                if (wrongTapsThisQuestion >= 2) hintPulseEpoch += 1
+                if (isSagaEpisode(chapterId) && stationId == Chapter1StationOrder.PICTURE_PICK_ALL) {
+                    onWrongFeedback(wrongWordCatalogId = choiceId)
+                } else {
+                    onWrongFeedback()
+                }
+                false
+            }
+            AnswerResult.Finished -> false
+        }
+    }
+
     @Composable
     fun Chapter3Station5ReplayOverlay(modifier: Modifier) {
         if (!((chapterId == 3 || chapterId == 6) && stationId == 5 && !episode4HelpSt15)) return
@@ -1917,47 +1992,7 @@ fun GameScreen(
                                                 }
                                         },
                                         onAttempt = ch3ImgAttempt@{ choiceId ->
-                                            if (!consumeTapCooldown()) return@ch3ImgAttempt false
-                                            cancelFeedbackVoice()
-                                            when (session.submitImageMatch(choiceId)) {
-                                                AnswerResult.Correct -> {
-                                                    if (audioEnabled) ChildGameAudioHooks.onCorrect()
-                                                    scope.launch {
-                                                        if (audioEnabled) {
-                                                            val clip =
-                                                                AudioClips.imageToWordClipByCatalogId(
-                                                                    catalogEntryId = choiceId,
-                                                                    chapterId = chapterId,
-                                                                    voiceHasAsset = { path -> voice.hasAsset(path) },
-                                                                )
-                                                            voice.playBlocking(clip)
-                                                            val praise =
-                                                                mutableListOf(
-                                                                    AudioClips.VoPraiseMetzuyan,
-                                                                    AudioClips.VoPraiseYofi,
-                                                                    AudioClips.VoPraiseHitzlacht,
-                                                                    AudioClips.VoNice1,
-                                                                    AudioClips.VoGoodJob2,
-                                                                    AudioClips.VoGoodJob1,
-                                                                )
-                                                            praise.shuffle()
-                                                            voice.playFirstAvailableBlocking(*praise.toTypedArray())
-                                                        }
-                                                        val isLast = session.currentIndex >= session.totalQuestions - 1
-                                                        advanceAfterRound(isLast)
-                                                    }
-                                                    true
-                                                }
-                                                AnswerResult.Wrong -> {
-                                                    if (audioEnabled) ChildGameAudioHooks.onWrong()
-                                                    wrongTapsThisQuestion += 1
-                                                    if (wrongTapsThisQuestion >= 2) hintPulseEpoch += 1
-                                                    // Station 6: play error SFX AND say which word was pressed.
-                                                    onWrongFeedback(wrongWordCatalogId = choiceId)
-                                                    false
-                                                }
-                                                AnswerResult.Finished -> false
-                                            }
+                                            handleImageToWordAttempt(choiceId)
                                         },
                                     )
                                 } else if (
@@ -2089,35 +2124,7 @@ fun GameScreen(
                                         chapterId = chapterId,
                                         stationId = stationId,
                                         onAttempt = imageMatchAttempt@{ choiceId ->
-                                            if (!consumeTapCooldown()) return@imageMatchAttempt false
-                                            cancelFeedbackVoice()
-                                            when (session.submitImageMatch(choiceId)) {
-                                                AnswerResult.Correct -> {
-                                                    if (audioEnabled) ChildGameAudioHooks.onCorrect()
-                                                    scope.launch {
-                                                        if (isSagaEpisode(chapterId) && stationId == Chapter1StationOrder.PICTURE_PICK_ALL) {
-                                                            if (chapterId != 3 && chapterId != 6) {
-                                                                voice.playBlocking(AudioClips.wordClipByCatalogId(choiceId))
-                                                            }
-                                                        }
-                                                        val isLast = session.currentIndex >= session.totalQuestions - 1
-                                                        advanceAfterRound(isLast)
-                                                    }
-                                                    true
-                                                }
-                                                AnswerResult.Wrong -> {
-                                                    if (audioEnabled) ChildGameAudioHooks.onWrong()
-                                                    wrongTapsThisQuestion += 1
-                                                    if (wrongTapsThisQuestion >= 2) hintPulseEpoch += 1
-                                                    if (isSagaEpisode(chapterId) && stationId == Chapter1StationOrder.PICTURE_PICK_ALL) {
-                                                        onWrongFeedback(wrongWordCatalogId = choiceId)
-                                                    } else {
-                                                        onWrongFeedback()
-                                                    }
-                                                    false
-                                                }
-                                                AnswerResult.Finished -> false
-                                            }
+                                            handleImageMatchAttempt(choiceId)
                                         },
                                         entryPulseScale = entryPulseScale.value,
                                         modifier = Modifier.fillMaxSize(),
