@@ -1670,34 +1670,16 @@ fun GameScreen(
                                         else ->
                                             StationInstructionCopy.PictureStartsWithDefault
                                     }
-                                val displayPictureInstructionText =
-                                    if (isCompactLandscapePhone &&
-                                        (chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) &&
-                                        stationId == Chapter1StationOrder.PICTURE_PICK_ONE
-                                    ) {
-                                        ScreenFit.rtlUnicodeWrap(pictureInstructionText)
-                                    } else {
-                                        pictureInstructionText
-                                    }
                                 val pictureInstructionReadablePanel =
                                     stationUiSpec.pictureStartsWithReadablePanel ||
                                         stationUiSpec.pictureStartsWithInstructionPanelStyle == InstructionPanelStyle.WhiteRounded
                                 val pictureShowWordCaption =
-                                    !(
-                                        listenOnly &&
-                                            isSagaEpisode(chapterId) &&
-                                            stationId == Chapter1StationOrder.PICTURE_PICK_ONE &&
-                                            stationUiSpec.hidePictureWordCaptionWhenListenOnlySaga
-                                    )
-                                val pictureVerticalNudge =
-                                    if (isSagaEpisode(chapterId) && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
-                                        SixStationArcHalfCmNudge
-                                    } else {
-                                        0.dp
-                                    }
-                                PictureStartsWithStationContent(
-                                    question = current,
-                                    instructionText = displayPictureInstructionText,
+                                    !(listenOnly && stationUiSpec.hidePictureWordCaptionWhenListenOnlySaga)
+                                PictureStartsWithQuestionRenderer(
+                                    current = current,
+                                    stationUiSpec = stationUiSpec,
+                                    isCompactLandscapePhone = isCompactLandscapePhone,
+                                    instructionText = pictureInstructionText,
                                     instructionReadablePanel = pictureInstructionReadablePanel,
                                     showWordCaption = pictureShowWordCaption,
                                     onPictureTapReplayWord =
@@ -1754,7 +1736,6 @@ fun GameScreen(
                                     wrongFlashLetter = station4WrongFlashLetter,
                                     wrongFlashEpoch = station4WrongFlashEpoch,
                                     entryPulseScale = 1f,
-                                    verticalNudgeDp = pictureVerticalNudge,
                                     onPickLetter = picturePick@{ picked ->
                                         if (!consumeTapCooldown()) return@picturePick
                                         cancelFeedbackVoice()

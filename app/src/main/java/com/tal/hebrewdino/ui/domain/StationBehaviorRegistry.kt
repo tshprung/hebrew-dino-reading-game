@@ -130,6 +130,17 @@ object StationBehaviorRegistry {
         plan: StationQuizPlan
     ): StationUiSpec {
         val listenOnly = plan.listenOnlyTargetPrompt
+        val pictureStartsWithCompactLandscapeRtlWrapInstruction =
+            (chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) &&
+                stationId == PICTURE_PICK_ONE
+        val pictureStartsWithVerticalNudgeDp =
+            if ((chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) &&
+                stationId == PICTURE_PICK_ONE
+            ) {
+                19f
+            } else {
+                0f
+            }
         return StationUiSpec(
             chapterId = chapterId,
             stationId = stationId,
@@ -142,9 +153,11 @@ object StationBehaviorRegistry {
             hintMode = if (listenOnly) StationHintMode.TemporaryStartingLetter else StationHintMode.None,
             hintDurationMs = if (listenOnly) 2100L else null,
             pictureStartsWithInstructionOverride = "באיזו אות מתחילה המילה:",
+            pictureStartsWithCompactLandscapeRtlWrapInstruction = pictureStartsWithCompactLandscapeRtlWrapInstruction,
             pictureStartsWithReadablePanel = true,
             pictureStartsWithInstructionPanelStyle = InstructionPanelStyle.WhiteRounded,
-            hidePictureWordCaptionWhenListenOnlySaga = listenOnly
+            hidePictureWordCaptionWhenListenOnlySaga = listenOnly,
+            pictureStartsWithVerticalNudgeDp = pictureStartsWithVerticalNudgeDp,
         )
     }
 

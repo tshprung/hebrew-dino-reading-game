@@ -127,6 +127,11 @@ data class StationUiSpec(
     /** WIRED: Picture station instruction override (Ep4 st4); null uses GameScreen listen-only / default strings. */
     val pictureStartsWithInstructionOverride: String? = null,
     /**
+     * WIRED: When true and in compact landscape phone, wrap picture instruction with RTL unicode markers
+     * (matches the saga station 4 behavior from GameScreen).
+     */
+    val pictureStartsWithCompactLandscapeRtlWrapInstruction: Boolean = false,
+    /**
      * WIRED: When non-null and GameScreen applies listen-first saga station 4 rule, this instruction
      * replaces the default listen-only saga string.
      */
@@ -140,6 +145,8 @@ data class StationUiSpec(
      * Used as: showCaption = !(listenOnly && saga && st4 && this).
      */
     val hidePictureWordCaptionWhenListenOnlySaga: Boolean = false,
+    /** WIRED: Extra vertical nudge (dp) for picture station content (saga station 4 uses ~½ cm). */
+    val pictureStartsWithVerticalNudgeDp: Float = 0f,
     /** WIRED: Image-match header instruction override (Ep4 st5); null uses GameScreen fallbacks. */
     val imageMatchHeaderInstructionOverride: String? = null,
     /** WIRED: White readable header panel for image-match (Ep4 st5). */
