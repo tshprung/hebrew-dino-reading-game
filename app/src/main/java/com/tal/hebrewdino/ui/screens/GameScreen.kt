@@ -122,6 +122,105 @@ private class TapCooldown(private val minIntervalMs: Long = 130L) {
     }
 }
 
+private object GameAudioPreloader {
+    suspend fun preloadStation1(
+        audioEnabled: Boolean,
+        sagaUsesPickLetterAudioStaging: Boolean,
+        chapterId: Int,
+        letterPoolSpec: LetterPoolSpec,
+        voice: VoicePlayer,
+        sfx: SoundPoolPlayer,
+    ) {
+        if (!(audioEnabled && sagaUsesPickLetterAudioStaging)) return
+        val poolLetters = letterPoolSpec.groups.flatten().distinct()
+        voice.warmUp(
+            AudioClips.VoChooseLetter,
+            AudioClips.VoBachorEtHaot,
+            AudioClips.VoFindLetter,
+            AudioClips.VoKolHakavod,
+        )
+        val perLetterPaths =
+            poolLetters.flatMap { letter ->
+                listOfNotNull(
+                    AudioClips.chooseLetterClip(letter),
+                    AudioClips.station1WrongCombined(letter),
+                    AudioClips.letterNameClip(letter),
+                )
+            }
+        val station1IntroExtras =
+            if (chapterId == 4) {
+                arrayOf(AudioClips.VoBachorEtHaot)
+            } else {
+                emptyArray()
+            }
+        sfx.preload(
+            AudioClips.VoChooseLetter,
+            *station1IntroExtras,
+            *perLetterPaths.toTypedArray(),
+            AudioClips.VoTryAgain1,
+            AudioClips.VoTryAgain2,
+            *AudioClips.station1CorrectPraiseTailCandidates(),
+        )
+    }
+
+    suspend fun preloadPopBalloons(
+        audioEnabled: Boolean,
+        usesPopBalloonsSoundPoolPrompt: Boolean,
+        letterPoolSpec: LetterPoolSpec,
+        sfx: SoundPoolPlayer,
+    ) {
+        if (!(audioEnabled && usesPopBalloonsSoundPoolPrompt)) return
+        val letters = letterPoolSpec.groups.flatten().distinct()
+        val paths = ArrayList<String>()
+        paths.add(AudioClips.PopBalloonsWithLetter)
+        paths.add(AudioClips.PopAllBalloonsWithLetter)
+        paths.add(AudioClips.VoTryAgain1)
+        paths.add(AudioClips.VoKolHakavod)
+        paths.add(AudioClips.VoGoodJob2)
+        paths.add(AudioClips.SfxBalloonPopSoft)
+        paths.add(AudioClips.SfxBalloonPopWrongFunny)
+        paths.add(AudioClips.SfxBalloonPop)
+        paths.add(AudioClips.SfxStation2PopSoft1)
+        paths.add(AudioClips.SfxStation2PopSoft2)
+        paths.add(AudioClips.SfxStation2PopPlop)
+        paths.add(AudioClips.SfxStation2PopFinale)
+        for (letter in letters) {
+            AudioClips.letterNameClip(letter)?.let(paths::add)
+            AudioClips.wrongSentenceClip(letter)?.let(paths::add)
+            AudioClips.station1WrongCombined(letter)?.let(paths::add)
+        }
+        sfx.preload(*paths.distinct().toTypedArray())
+    }
+
+    suspend fun preloadFindGrid(
+        audioEnabled: Boolean,
+        sagaUsesFindGridAudioStaging: Boolean,
+        letterPoolSpec: LetterPoolSpec,
+        voice: VoicePlayer,
+        sfx: SoundPoolPlayer,
+    ) {
+        if (!(audioEnabled && sagaUsesFindGridAudioStaging)) return
+        val letters = letterPoolSpec.groups.flatten().distinct()
+        voice.warmUp(AudioClips.VoFindLetter, AudioClips.VoChooseLetter, AudioClips.VoKolHakavod)
+        for (l in letters) {
+            AudioClips.letterNameClip(l)?.let { voice.warmUp(it) }
+        }
+        val paths = ArrayList<String>()
+        paths.add(AudioClips.VoFindLetter)
+        paths.add(AudioClips.VoChooseLetter)
+        for (l in letters) {
+            AudioClips.chooseLetterClip(l)?.let(paths::add)
+            AudioClips.letterNameClip(l)?.let(paths::add)
+        }
+        paths.add(AudioClips.VoTryAgain1)
+        paths.add(AudioClips.VoNice1)
+        paths.add(AudioClips.VoKolHakavod)
+        paths.add(AudioClips.SfxWrong)
+        paths.add(AudioClips.SfxCorrect)
+        sfx.preload(*paths.distinct().toTypedArray())
+    }
+}
+
 /**
  * Episode 1 stations 2–3: start the letter name this far into the intro clip on SoundPool (overlap).
  * 0.94 ≈ halving the remaining pause vs 0.88 (i.e. moving halfway from 0.88 toward 1.0).
@@ -741,85 +840,35 @@ fun GameScreen(
     // Station 1: preload ALL voice clips as early as possible (screen entry),
     // so instruction playback has near-zero latency when the first question appears.
     LaunchedEffect(stationId, chapterId, letterPoolSpec) {
-        if (!(audioEnabled && sagaUsesPickLetterAudioStaging)) return@LaunchedEffect
-        val poolLetters = letterPoolSpec.groups.flatten().distinct()
-        voice.warmUp(
-            AudioClips.VoChooseLetter,
-            AudioClips.VoBachorEtHaot,
-            AudioClips.VoFindLetter,
-            AudioClips.VoKolHakavod,
-        )
-        val perLetterPaths =
-            poolLetters.flatMap { letter ->
-                listOfNotNull(
-                    AudioClips.chooseLetterClip(letter),
-                    AudioClips.station1WrongCombined(letter),
-                    AudioClips.letterNameClip(letter),
-                )
-            }
-        val station1IntroExtras =
-            if (chapterId == 4) {
-                arrayOf(AudioClips.VoBachorEtHaot)
-            } else {
-                emptyArray()
-            }
-        sfx.preload(
-            AudioClips.VoChooseLetter,
-            *station1IntroExtras,
-            *perLetterPaths.toTypedArray(),
-            AudioClips.VoTryAgain1,
-            AudioClips.VoTryAgain2,
-            *AudioClips.station1CorrectPraiseTailCandidates(),
+        GameAudioPreloader.preloadStation1(
+            audioEnabled = audioEnabled,
+            sagaUsesPickLetterAudioStaging = sagaUsesPickLetterAudioStaging,
+            chapterId = chapterId,
+            letterPoolSpec = letterPoolSpec,
+            voice = voice,
+            sfx = sfx,
         )
     }
 
     // Episode 1 station 2: preload instruction + balloon feedback clips for low latency.
     LaunchedEffect(stationId, chapterId, letterPoolSpec) {
-        if (!(audioEnabled && usesPopBalloonsSoundPoolPrompt)) return@LaunchedEffect
-        val letters = letterPoolSpec.groups.flatten().distinct()
-        val paths = ArrayList<String>()
-        paths.add(AudioClips.PopBalloonsWithLetter)
-        paths.add(AudioClips.PopAllBalloonsWithLetter)
-        paths.add(AudioClips.VoTryAgain1)
-        paths.add(AudioClips.VoKolHakavod)
-        paths.add(AudioClips.VoGoodJob2)
-        paths.add(AudioClips.SfxBalloonPopSoft)
-        paths.add(AudioClips.SfxBalloonPopWrongFunny)
-        paths.add(AudioClips.SfxBalloonPop)
-        // Preferred natural Station 2 pops (may be missing until provided).
-        paths.add(AudioClips.SfxStation2PopSoft1)
-        paths.add(AudioClips.SfxStation2PopSoft2)
-        paths.add(AudioClips.SfxStation2PopPlop)
-        paths.add(AudioClips.SfxStation2PopFinale)
-        for (letter in letters) {
-            AudioClips.letterNameClip(letter)?.let(paths::add)
-            AudioClips.wrongSentenceClip(letter)?.let(paths::add)
-            AudioClips.station1WrongCombined(letter)?.let(paths::add)
-        }
-        sfx.preload(*paths.distinct().toTypedArray())
+        GameAudioPreloader.preloadPopBalloons(
+            audioEnabled = audioEnabled,
+            usesPopBalloonsSoundPoolPrompt = usesPopBalloonsSoundPoolPrompt,
+            letterPoolSpec = letterPoolSpec,
+            sfx = sfx,
+        )
     }
 
     // Episode 1–4 station 3: warm instruction (MediaPlayer); preload tap SFX + letter clips for SoundPool.
     LaunchedEffect(stationId, chapterId, letterPoolSpec) {
-        if (!(audioEnabled && sagaUsesFindGridAudioStaging)) return@LaunchedEffect
-        val letters = letterPoolSpec.groups.flatten().distinct()
-        voice.warmUp(AudioClips.VoFindLetter, AudioClips.VoChooseLetter, AudioClips.VoKolHakavod)
-        for (l in letters) {
-            AudioClips.letterNameClip(l)?.let { voice.warmUp(it) }
-        }
-        val paths = ArrayList<String>()
-        paths.add(AudioClips.VoFindLetter)
-        paths.add(AudioClips.VoChooseLetter)
-        for (l in letters) {
-            AudioClips.chooseLetterClip(l)?.let(paths::add)
-            AudioClips.letterNameClip(l)?.let(paths::add)
-        }
-        paths.add(AudioClips.VoTryAgain1)
-        paths.add(AudioClips.VoNice1)
-        paths.add(AudioClips.VoKolHakavod)
-        paths.add(AudioClips.SfxWrong)
-        paths.add(AudioClips.SfxCorrect)
-        sfx.preload(*paths.distinct().toTypedArray())
+        GameAudioPreloader.preloadFindGrid(
+            audioEnabled = audioEnabled,
+            sagaUsesFindGridAudioStaging = sagaUsesFindGridAudioStaging,
+            letterPoolSpec = letterPoolSpec,
+            voice = voice,
+            sfx = sfx,
+        )
     }
 
     LaunchedEffect(stationId) {
