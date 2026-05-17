@@ -1318,6 +1318,186 @@ fun GameScreen(
         }
     }
 
+    suspend fun handlePopBalloonsPopSfx(
+        letter: String,
+        isCorrect: Boolean,
+        finalCorrectBalloon: Boolean,
+        balloonIndex: Int,
+    ) {
+        if (!audioEnabled) return
+        cancelFeedbackVoice()
+        if (sagaUsesPopBalloonsAudioStaging) {
+            feedbackVoiceJob =
+                scope.launch {
+                    sfx.stopStream(station2VoiceStreamId)
+                    station2VoiceStreamId = 0
+                    if (isCorrect) {
+                        val variant = station2CorrectPopCount++
+                        val rate =
+                            if (variant % 2 == 0) {
+                                0.98f
+                            } else {
+                                1.02f
+                            }
+                        val pops =
+                            AudioClips.station2CorrectPopPlaylist(
+                                variant,
+                                finalCorrectBalloon,
+                            )
+                        val popPlayed =
+                            sfx.playFirstAvailableReturningPathAndStreamId(
+                                *pops,
+                                volume = if (finalCorrectBalloon) 0.72f else 0.64f,
+                                rate = rate,
+                            )
+                        val popPath = popPlayed?.first
+                        val popMs = popPath?.let { sfx.durationMs(it) } ?: 0L
+                        val r = rate.coerceIn(0.8f, 1.25f)
+                        val popWaitMs =
+                            when {
+                                popPath == null -> 0L
+                                popMs > 0 ->
+                                    (popMs / r).toLong().coerceAtLeast(16L) +
+                                        Station2PopTailPaddingMs
+                                else ->
+                                    Station2PopFallbackDurationMs +
+                                        Station2PopTailPaddingMs
+                            }.coerceAtMost(5000L)
+                        if (popWaitMs > 0) delay(popWaitMs)
+                        sfx.stopAllStreams()
+                        val speakLetter = finalCorrectBalloon || Random.nextFloat() < 0.35f
+                        if (speakLetter) {
+                            val letterClip = AudioClips.letterNameClip(letter)
+                            if (letterClip != null) {
+                                station2VoiceStreamId =
+                                    sfx.playReturningStreamId(letterClip, volume = 1f) ?: 0
+                                val d = sfx.durationMs(letterClip) ?: 0L
+                                if (d > 0) delay(d)
+                            }
+                        }
+                    } else {
+                        val wrongPops =
+                            AudioClips.station2WrongPopPlaylist(balloonIndex)
+                        val wrongPopPlayed =
+                            sfx.playFirstAvailableReturningPathAndStreamId(
+                                *wrongPops,
+                                volume = 0.56f,
+                                rate = 1f,
+                            )
+                        val wrongPopPath = wrongPopPlayed?.first
+                        val wrongPopMs = wrongPopPath?.let { sfx.durationMs(it) } ?: 0L
+                        val wrongWaitMs =
+                            when {
+                                wrongPopPath == null -> 0L
+                                wrongPopMs > 0 ->
+                                    wrongPopMs.coerceAtLeast(16L) +
+                                        Station2PopTailPaddingMs
+                                else ->
+                                    Station2PopFallbackDurationMs +
+                                        Station2PopTailPaddingMs
+                            }.coerceAtMost(5000L)
+                        if (wrongWaitMs > 0) delay(wrongWaitMs)
+                        sfx.stopAllStreams()
+                        val letterClip = AudioClips.letterNameClip(letter)
+                        if (letterClip != null && voice.hasAsset(letterClip)) {
+                            voice.playBlocking(letterClip)
+                        }
+                        voice.playFirstAvailableBlocking(
+                            AudioClips.VoTryAgain2,
+                            AudioClips.VoTryAgain1,
+                        )
+                    }
+                }
+            return
+        }
+        scope.launch {
+            sfx.playFirstAvailable(
+                if (isCorrect) AudioClips.SfxBalloonPopSoft else AudioClips.SfxBalloonPopWrongFunny,
+                AudioClips.SfxBalloonPopSoft,
+                AudioClips.SfxBalloonPop,
+                volume = if (isCorrect) 0.88f else 0.32f,
+            )
+        }
+        val clip = AudioClips.letterNameClip(letter)
+        if (clip != null) {
+            feedbackVoiceJob =
+                scope.launch {
+                    delay(90)
+                    voice.playSequenceBlocking(clip)
+                }
+        }
+    }
+
+    fun handlePopBalloonsWrongPick() {
+        if (!consumeTapCooldown()) return
+        if (!(sagaUsesPopBalloonsAudioStaging)) {
+            cancelFeedbackVoice()
+        }
+        session.wrongTap()
+        shakeEpoch += 1
+        wrongTapsThisQuestion += 1
+        if (wrongTapsThisQuestion >= 2) hintPulseEpoch += 1
+        if (sagaUsesPopBalloonsAudioStaging) {
+            scope.launch {
+                inputLocked = true
+                dinoVisual = DinoVisual.TryAgain
+                val strongerWrongShake =
+                    (isSagaEpisode(chapterId) &&
+                        (stationId == Chapter1StationOrder.PICTURE_PICK_ONE ||
+                            stationId == Chapter1StationOrder.PICTURE_PICK_ALL))
+                playShake(
+                    scope,
+                    optionsShake,
+                    baseShakeAmplitudePx =
+                        if (isSagaEpisode(chapterId)) 20f else 18f,
+                    strength = if (strongerWrongShake) 1.25f else 1f,
+                )
+                dinoVisual = DinoVisual.Idle
+                inputLocked = false
+            }
+        } else {
+            onWrongFeedback()
+        }
+    }
+
+    fun handlePopBalloonsAllCorrectPopped(
+        lastLetter: String,
+        poppedBalloonColor: Color,
+        isChapter3PopAllLettersStation: Boolean,
+    ) {
+        val ch1St2 = sagaUsesPopBalloonsAudioStaging
+        if (ch1St2 && chapterId != 4 && chapterId != 5) {
+            station2PinnedBalloonLetter = lastLetter
+            station2PinnedBalloonColor = poppedBalloonColor
+        } else if (!ch1St2) {
+            cancelFeedbackVoice()
+        }
+        if (isChapter3PopAllLettersStation) {
+            scope.launch {
+                session.completeCurrentRound()
+                if (audioEnabled) ChildGameAudioHooks.onCorrect()
+                val isLast = session.currentIndex >= session.totalQuestions - 1
+                advanceAfterRound(isLast)
+            }
+        } else {
+            when (session.submitAnswer(lastLetter)) {
+                AnswerResult.Correct ->
+                    scope.launch {
+                        if (ch1St2) {
+                            withTimeoutOrNull(4000) { feedbackVoiceJob?.join() }
+                            cancelFeedbackVoice()
+                        }
+                        if (audioEnabled && !ch1St2) {
+                            ChildGameAudioHooks.onCorrect()
+                        }
+                        val isLast = session.currentIndex >= session.totalQuestions - 1
+                        advanceAfterRound(isLast)
+                    }
+                else -> {}
+            }
+        }
+    }
+
     @Composable
     fun Chapter3Station5ReplayOverlay(modifier: Modifier) {
         if (!((chapterId == 3 || chapterId == 6) && stationId == 5 && !episode4HelpSt15)) return
@@ -1558,173 +1738,18 @@ fun GameScreen(
                                         val maxVisibleBalloonCount =
                                             if (isCompactLandscapePhone && stationUiSpec.popBalloonsCompactLandscapePhoneTuning) 8 else null
                                         val onPopSfx: suspend (String, Boolean, Boolean, Int) -> Unit =
-                                            popBalloonSfx@{ letter, isCorrect, finalCorrectBalloon, balloonIndex ->
-                                                if (!audioEnabled) return@popBalloonSfx
-                                                cancelFeedbackVoice()
-                                                if (sagaUsesPopBalloonsAudioStaging) {
-                                                    feedbackVoiceJob =
-                                                        scope.launch {
-                                                            sfx.stopStream(station2VoiceStreamId)
-                                                            station2VoiceStreamId = 0
-                                                            if (isCorrect) {
-                                                                val variant = station2CorrectPopCount++
-                                                                val rate =
-                                                                    if (variant % 2 == 0) {
-                                                                        0.98f
-                                                                    } else {
-                                                                        1.02f
-                                                                    }
-                                                                val pops =
-                                                                    AudioClips.station2CorrectPopPlaylist(
-                                                                        variant,
-                                                                        finalCorrectBalloon,
-                                                                    )
-                                                                val popPlayed =
-                                                                    sfx.playFirstAvailableReturningPathAndStreamId(
-                                                                        *pops,
-                                                                        volume = if (finalCorrectBalloon) 0.72f else 0.64f,
-                                                                        rate = rate,
-                                                                    )
-                                                                val popPath = popPlayed?.first
-                                                                val popMs = popPath?.let { sfx.durationMs(it) } ?: 0L
-                                                                val r = rate.coerceIn(0.8f, 1.25f)
-                                                                val popWaitMs =
-                                                                    when {
-                                                                        popPath == null -> 0L
-                                                                        popMs > 0 ->
-                                                                            (popMs / r).toLong().coerceAtLeast(16L) +
-                                                                                Station2PopTailPaddingMs
-                                                                        else ->
-                                                                            Station2PopFallbackDurationMs +
-                                                                                Station2PopTailPaddingMs
-                                                                    }.coerceAtMost(5000L)
-                                                                if (popWaitMs > 0) delay(popWaitMs)
-                                                                sfx.stopAllStreams()
-                                                                val speakLetter = finalCorrectBalloon || Random.nextFloat() < 0.35f
-                                                                if (speakLetter) {
-                                                                    val letterClip = AudioClips.letterNameClip(letter)
-                                                                    if (letterClip != null) {
-                                                                        station2VoiceStreamId =
-                                                                            sfx.playReturningStreamId(letterClip, volume = 1f) ?: 0
-                                                                        val d = sfx.durationMs(letterClip) ?: 0L
-                                                                        if (d > 0) delay(d)
-                                                                    }
-                                                                }
-                                                            } else {
-                                                                val wrongPops =
-                                                                    AudioClips.station2WrongPopPlaylist(balloonIndex)
-                                                                val wrongPopPlayed =
-                                                                    sfx.playFirstAvailableReturningPathAndStreamId(
-                                                                        *wrongPops,
-                                                                        volume = 0.56f,
-                                                                        rate = 1f,
-                                                                    )
-                                                                val wrongPopPath = wrongPopPlayed?.first
-                                                                val wrongPopMs = wrongPopPath?.let { sfx.durationMs(it) } ?: 0L
-                                                                val wrongWaitMs =
-                                                                    when {
-                                                                        wrongPopPath == null -> 0L
-                                                                        wrongPopMs > 0 ->
-                                                                            wrongPopMs.coerceAtLeast(16L) +
-                                                                                Station2PopTailPaddingMs
-                                                                        else ->
-                                                                            Station2PopFallbackDurationMs +
-                                                                                Station2PopTailPaddingMs
-                                                                    }.coerceAtMost(5000L)
-                                                                if (wrongWaitMs > 0) delay(wrongWaitMs)
-                                                                sfx.stopAllStreams()
-                                                                val letterClip = AudioClips.letterNameClip(letter)
-                                                                if (letterClip != null && voice.hasAsset(letterClip)) {
-                                                                    voice.playBlocking(letterClip)
-                                                                }
-                                                                voice.playFirstAvailableBlocking(
-                                                                    AudioClips.VoTryAgain2,
-                                                                    AudioClips.VoTryAgain1,
-                                                                )
-                                                            }
-                                                        }
-                                                    return@popBalloonSfx
-                                                }
-                                                scope.launch {
-                                                    sfx.playFirstAvailable(
-                                                        if (isCorrect) AudioClips.SfxBalloonPopSoft else AudioClips.SfxBalloonPopWrongFunny,
-                                                        AudioClips.SfxBalloonPopSoft,
-                                                        AudioClips.SfxBalloonPop,
-                                                        volume = if (isCorrect) 0.88f else 0.32f,
-                                                    )
-                                                }
-                                                val clip = AudioClips.letterNameClip(letter)
-                                                if (clip != null) {
-                                                    feedbackVoiceJob =
-                                                        scope.launch {
-                                                            delay(90)
-                                                            voice.playSequenceBlocking(clip)
-                                                        }
-                                                }
+                                            { letter, isCorrect, finalCorrectBalloon, balloonIndex ->
+                                                handlePopBalloonsPopSfx(letter, isCorrect, finalCorrectBalloon, balloonIndex)
                                             }
-                                        val onWrongPick =
-                                            popWrong@{
-                                                if (!consumeTapCooldown()) return@popWrong
-                                                if (!(sagaUsesPopBalloonsAudioStaging)) {
-                                                    cancelFeedbackVoice()
-                                                }
-                                                session.wrongTap()
-                                                shakeEpoch += 1
-                                                wrongTapsThisQuestion += 1
-                                                if (wrongTapsThisQuestion >= 2) hintPulseEpoch += 1
-                                                if (sagaUsesPopBalloonsAudioStaging) {
-                                                    scope.launch {
-                                                        inputLocked = true
-                                                        dinoVisual = DinoVisual.TryAgain
-                                                        val strongerWrongShake =
-                                                            (isSagaEpisode(chapterId) && (stationId == Chapter1StationOrder.PICTURE_PICK_ONE || stationId == Chapter1StationOrder.PICTURE_PICK_ALL))
-                                                        playShake(
-                                                            scope,
-                                                            optionsShake,
-                                                            baseShakeAmplitudePx =
-                                                                if (isSagaEpisode(chapterId)) 20f else 18f,
-                                                            strength = if (strongerWrongShake) 1.25f else 1f,
-                                                        )
-                                                        dinoVisual = DinoVisual.Idle
-                                                        inputLocked = false
-                                                    }
-                                                } else {
-                                                    onWrongFeedback()
-                                                }
+                                        val onWrongPick = { handlePopBalloonsWrongPick() }
+                                        val onAllCorrectPopped: (String, Color) -> Unit =
+                                            { lastLetter, poppedBalloonColor ->
+                                                handlePopBalloonsAllCorrectPopped(
+                                                    lastLetter = lastLetter,
+                                                    poppedBalloonColor = poppedBalloonColor,
+                                                    isChapter3PopAllLettersStation = isChapter3PopAllLettersStation,
+                                                )
                                             }
-                                        val onAllCorrectPopped: (String, Color) -> Unit = { lastLetter, poppedBalloonColor ->
-                                            val ch1St2 = sagaUsesPopBalloonsAudioStaging
-                                            if (ch1St2 && chapterId != 4 && chapterId != 5) {
-                                                station2PinnedBalloonLetter = lastLetter
-                                                station2PinnedBalloonColor = poppedBalloonColor
-                                            } else if (!ch1St2) {
-                                                cancelFeedbackVoice()
-                                            }
-                                            if (isChapter3PopAllLettersStation) {
-                                                scope.launch {
-                                                    session.completeCurrentRound()
-                                                    if (audioEnabled) ChildGameAudioHooks.onCorrect()
-                                                    val isLast = session.currentIndex >= session.totalQuestions - 1
-                                                    advanceAfterRound(isLast)
-                                                }
-                                            } else {
-                                                when (session.submitAnswer(lastLetter)) {
-                                                    AnswerResult.Correct ->
-                                                        scope.launch {
-                                                            if (ch1St2) {
-                                                                withTimeoutOrNull(4000) { feedbackVoiceJob?.join() }
-                                                                cancelFeedbackVoice()
-                                                            }
-                                                            if (audioEnabled && !ch1St2) {
-                                                                ChildGameAudioHooks.onCorrect()
-                                                            }
-                                                            val isLast = session.currentIndex >= session.totalQuestions - 1
-                                                            advanceAfterRound(isLast)
-                                                        }
-                                                    else -> {}
-                                                }
-                                            }
-                                        }
                                         val episode4CorrectBalloonHintEpoch =
                                             if (episode4HelpSt15 && stationId == Chapter1StationOrder.BALLOON_POP) {
                                                 episode4Help.station2BalloonHintEpoch
