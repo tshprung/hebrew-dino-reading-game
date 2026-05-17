@@ -1541,6 +1541,36 @@ fun GameScreen(
         }
     }
 
+    fun handleImageToWordReplayCorrectChoice() {
+        if (!audioEnabled) return
+        cancelFeedbackVoice()
+        val q = session.currentQuestion as? Question.ImageMatchQuestion ?: return
+        val clip =
+            AudioClips.imageToWordClipByCatalogId(
+                catalogEntryId = q.correctChoiceId,
+                chapterId = chapterId,
+                voiceHasAsset = { path -> voice.hasAsset(path) },
+            )
+        if (voice.hasAsset(clip)) {
+            feedbackVoiceJob = scope.launch { voice.playBlocking(clip) }
+        }
+    }
+
+    fun handleImageToWordWordPressed(choiceId: String) {
+        if (!audioEnabled) return
+        cancelFeedbackVoice()
+        feedbackVoiceJob =
+            scope.launch {
+                val clip =
+                    AudioClips.imageToWordClipByCatalogId(
+                        catalogEntryId = choiceId,
+                        chapterId = chapterId,
+                        voiceHasAsset = { path -> voice.hasAsset(path) },
+                    )
+                voice.playBlocking(clip)
+            }
+    }
+
     fun handleImageMatchAttempt(choiceId: String): Boolean {
         if (!consumeTapCooldown()) return false
         cancelFeedbackVoice()
@@ -1962,34 +1992,13 @@ fun GameScreen(
                                         onPictureTapReplayWord =
                                             if (audioEnabled) {
                                                 {
-                                                    cancelFeedbackVoice()
-                                                    val id = current.correctChoiceId
-                                                    val clip =
-                                                        AudioClips.imageToWordClipByCatalogId(
-                                                            catalogEntryId = id,
-                                                            chapterId = chapterId,
-                                                            voiceHasAsset = { path -> voice.hasAsset(path) },
-                                                        )
-                                                    if (voice.hasAsset(clip)) {
-                                                        feedbackVoiceJob = scope.launch { voice.playBlocking(clip) }
-                                                    }
+                                                    handleImageToWordReplayCorrectChoice()
                                                 }
                                             } else {
                                                 null
                                             },
                                         onWordPressed = ch3ImgWord@{ choiceId ->
-                                            if (!audioEnabled) return@ch3ImgWord
-                                            cancelFeedbackVoice()
-                                            feedbackVoiceJob =
-                                                scope.launch {
-                                                    val clip =
-                                                        AudioClips.imageToWordClipByCatalogId(
-                                                            catalogEntryId = choiceId,
-                                                            chapterId = chapterId,
-                                                            voiceHasAsset = { path -> voice.hasAsset(path) },
-                                                        )
-                                                    voice.playBlocking(clip)
-                                                }
+                                            handleImageToWordWordPressed(choiceId)
                                         },
                                         onAttempt = ch3ImgAttempt@{ choiceId ->
                                             handleImageToWordAttempt(choiceId)
