@@ -2016,6 +2016,63 @@ fun GameScreen(
                                         feedbackVoiceJob = scope.launch { play() }
                                     }
                                     var lastPraiseClip by remember(chapterId, stationId) { mutableStateOf<String?>(null) }
+                                    val matchPraiseClips =
+                                        listOf(
+                                            AudioClips.VoPraiseMetzuyan,
+                                            AudioClips.VoPraiseYofi,
+                                            AudioClips.VoPraiseHitzlacht,
+                                            AudioClips.VoNice1,
+                                            AudioClips.VoGoodJob2,
+                                            AudioClips.VoGoodJob1,
+                                        )
+
+                                    fun handleMatchWordPressed(choiceId: String) {
+                                        speakNow {
+                                            val clip =
+                                                AudioClips.imageToWordClipByCatalogId(
+                                                    catalogEntryId = choiceId,
+                                                    chapterId = chapterId,
+                                                    voiceHasAsset = { path -> voice.hasAsset(path) },
+                                                )
+                                            voice.playBlocking(clip)
+                                        }
+                                    }
+
+                                    fun handleMatchLetterPressed(letter: String) {
+                                        val clip = AudioClips.letterNameClip(letter) ?: return
+                                        speakNow { voice.playBlocking(clip) }
+                                    }
+
+                                    fun handleMatchSolved() {
+                                        if (!consumeTapCooldown()) return
+                                        scope.launch {
+                                            withTimeoutOrNull(4500L) { feedbackVoiceJob?.join() }
+                                            if (audioEnabled) {
+                                                cancelFeedbackVoice()
+                                                val job =
+                                                    scope.launch {
+                                                        val candidates = matchPraiseClips.filter { it != lastPraiseClip }
+                                                        val pickFrom =
+                                                            if (candidates.isNotEmpty()) candidates else listOfNotNull(lastPraiseClip)
+                                                        val picked = pickFrom.shuffled().firstOrNull()
+                                                        if (picked != null) {
+                                                            lastPraiseClip = picked
+                                                            voice.playBlocking(picked)
+                                                        }
+                                                    }
+                                                feedbackVoiceJob = job
+                                                withTimeoutOrNull(3000L) { job.join() }
+                                            }
+                                            when (session.completeCurrentRound()) {
+                                                AnswerResult.Correct -> {
+                                                    if (audioEnabled) ChildGameAudioHooks.onCorrect()
+                                                    val isLast = session.currentIndex >= session.totalQuestions - 1
+                                                    advanceAfterRound(isLast)
+                                                }
+                                                else -> {}
+                                            }
+                                        }
+                                    }
                                     MatchLetterToWordQuestionRenderer(
                                         choices = matchChoices,
                                         stationUiSpec = stationUiSpec,
@@ -2026,19 +2083,10 @@ fun GameScreen(
                                         entryPulseScale = entryPulseScale.value,
                                         letterTileSizeMultiplier = if (chapterId == TrainingV1Config.CHAPTER_ID) 1.10f else 1f,
                                         onWordPressed = { choiceId ->
-                                            speakNow {
-                                                val clip =
-                                                    AudioClips.imageToWordClipByCatalogId(
-                                                        catalogEntryId = choiceId,
-                                                        chapterId = chapterId,
-                                                        voiceHasAsset = { path -> voice.hasAsset(path) },
-                                                    )
-                                                voice.playBlocking(clip)
-                                            }
+                                            handleMatchWordPressed(choiceId)
                                         },
                                         onLetterPressed = matchLetterTap@{ letter ->
-                                            val clip = AudioClips.letterNameClip(letter) ?: return@matchLetterTap
-                                            speakNow { voice.playBlocking(clip) }
+                                            handleMatchLetterPressed(letter)
                                         },
                                         onCorrectMatch = matchCorrect@{ _ ->
                                             if (!audioEnabled) return@matchCorrect
@@ -2063,43 +2111,7 @@ fun GameScreen(
                                             stationUiSpec.matchLetterInstructionText
                                                 ?: StationInstructionCopy.MatchLetterFinale,
                                         onSolved = matchSolved@{
-                                            if (!consumeTapCooldown()) return@matchSolved
-                                            scope.launch {
-                                                // Station 6 request: clear/advance only after the last pressed letter/word finishes.
-                                                withTimeoutOrNull(4500L) { feedbackVoiceJob?.join() }
-                                                // Add a clear, single positive praise between rounds (voice, not stacked).
-                                                if (audioEnabled) {
-                                                    cancelFeedbackVoice()
-                                                    val job =
-                                                        scope.launch {
-                                                            val candidates =
-                                                                listOf(
-                                                                    AudioClips.VoPraiseMetzuyan,
-                                                                    AudioClips.VoPraiseYofi,
-                                                                    AudioClips.VoPraiseHitzlacht,
-                                                                    AudioClips.VoNice1,
-                                                                    AudioClips.VoGoodJob2,
-                                                                    AudioClips.VoGoodJob1,
-                                                                ).filter { it != lastPraiseClip }
-                                                            val pickFrom = if (candidates.isNotEmpty()) candidates else listOfNotNull(lastPraiseClip)
-                                                            val picked = pickFrom.shuffled().firstOrNull()
-                                                            if (picked != null) {
-                                                                lastPraiseClip = picked
-                                                                voice.playBlocking(picked)
-                                                            }
-                                                        }
-                                                    feedbackVoiceJob = job
-                                                    withTimeoutOrNull(3000L) { job.join() }
-                                                }
-                                                when (session.completeCurrentRound()) {
-                                                    AnswerResult.Correct -> {
-                                                        if (audioEnabled) ChildGameAudioHooks.onCorrect()
-                                                        val isLast = session.currentIndex >= session.totalQuestions - 1
-                                                        advanceAfterRound(isLast)
-                                                    }
-                                                    else -> {}
-                                                }
-                                            }
+                                            handleMatchSolved()
                                         },
                                     )
                                 } else {
