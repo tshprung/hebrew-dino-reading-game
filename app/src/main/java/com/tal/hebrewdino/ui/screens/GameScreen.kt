@@ -352,103 +352,36 @@ fun GameScreen(
     }
 
     fun performSideHelpReplay() {
-        if (phase != GamePhase.Play) return
-        if (episode4HelpSt15) {
-            if (!audioEnabled) return
-            val q = session.currentQuestion ?: return
-            cancelFeedbackVoice()
-            sfx.stopAllStreams()
-            stopStagingSfx(stopAllStreams = false)
-            feedbackVoiceJob =
-                scope.launch {
-                    if (plan.highlightedLetterInWordPickLetter && q is Question.PopBalloonsQuestion) {
-                        val round = session.highlightedLetterInWordRound() ?: return@launch
-                        val wordPath = AudioClips.wordClipByCatalogId(round.catalogId)
-                        val letterClip = AudioClips.letterNameClip(round.correctLetter)
-                        val parts =
-                            buildList {
-                                if (voice.hasAsset(wordPath)) add(wordPath)
-                                if (letterClip != null && voice.hasAsset(letterClip)) add(letterClip)
-                            }
-                        if (parts.isNotEmpty()) {
-                            voice.playSequenceBlocking(*parts.toTypedArray())
-                        } else {
-                            if (letterClip != null) speakLetterPrompt(voice, round.correctLetter)
-                        }
-                        return@launch
-                    }
-                    if (plan.popAllLettersInWord && q is Question.PopBalloonsQuestion) {
-                        val catalogId = session.chapter3PopAllLettersCurrentWord()?.second
-                        if (!catalogId.isNullOrBlank()) {
-                            val wordPath = AudioClips.wordClipByCatalogId(catalogId)
-                            if (voice.hasAsset(wordPath)) voice.playBlocking(wordPath)
-                        }
-                        return@launch
-                    }
-                    when (stationUiSpec.replayMode) {
-                        StationReplayMode.TargetLetterOnly -> {
-                            val letter = Episode4Help.targetLetterForHelpHint(q) ?: return@launch
-                            val letterClip = AudioClips.letterNameClip(letter)
-                            if (letterClip != null) {
-                                val id = sfx.playReturningStreamId(letterClip, volume = 1f)
-                                if (id != null) return@launch
-                                if (voice.hasAsset(letterClip)) {
-                                    voice.playBlocking(letterClip)
-                                    return@launch
-                                }
-                            }
-                            if (chapterId == TrainingV1Config.CHAPTER_ID) return@launch
-                            speakLetterPrompt(voice, letter)
-                        }
-                        StationReplayMode.TargetWordOnly -> {
-                            if (q is Question.PictureStartsWithQuestion) {
-                                val wordPath = AudioClips.wordClipByCatalogId(q.catalogEntryId)
-                                if (voice.hasAsset(wordPath)) voice.playBlocking(wordPath)
-                            }
-                        }
-                        else -> replayEpisode4Stations15RoundAudio(sfx = sfx, voice = voice, stationId = stationId, q = q)
-                    }
-                }
-            return
-        }
-        if (popBalloonsHelpControlsEnabled) {
-            if (!audioEnabled) return
-            val q = session.currentQuestion as? Question.PopBalloonsQuestion ?: return
-            cancelFeedbackVoice()
-            val letter = q.correctAnswer
-            val letterClip = AudioClips.letterNameClip(letter)
-            feedbackVoiceJob =
-                scope.launch {
-                    if (letterClip != null && voice.hasAsset(letterClip)) {
-                        voice.playBlocking(letterClip)
-                        return@launch
-                    }
-                    speakLetterPrompt(voice, letter)
-                }
-        }
+        feedbackVoiceJob =
+            SideHelpActions.startReplay(
+                audioEnabled = audioEnabled,
+                isPlayPhase = phase == GamePhase.Play,
+                episode4HelpEnabled = episode4HelpSt15,
+                popBalloonsHelpEnabled = popBalloonsHelpControlsEnabled,
+                chapterId = chapterId,
+                stationId = stationId,
+                plan = plan,
+                stationUiSpec = stationUiSpec,
+                session = session,
+                voice = voice,
+                sfx = sfx,
+                cancelFeedbackVoice = { cancelFeedbackVoice() },
+                stopStagingSfx = { stopAll -> stopStagingSfx(stopAllStreams = stopAll) },
+                scope = scope,
+            )
     }
 
     fun performSideHelpHint() {
-        if (phase != GamePhase.Play) return
-        if (episode4HelpSt15) {
-            val q = session.currentQuestion ?: return
-            val letter = Episode4Help.targetLetterForHelpHint(q)
-            episode4Help.performHint(
-                isHelpEnabled = true,
-                isPlayPhase = true,
-                letter = letter,
-                stationId = stationId,
-                hintDurationMs = stationUiSpec.hintDurationMs,
-            )
-            return
-        }
-        if (popBalloonsHelpControlsEnabled) {
-            val q = session.currentQuestion as? Question.PopBalloonsQuestion ?: return
-            balloonHelp.performHint(
-                letter = q.correctAnswer,
-                durationMs = Episode4Help.HINT_REVEAL_FALLBACK_MS,
-            )
-        }
+        SideHelpActions.performHint(
+            isPlayPhase = phase == GamePhase.Play,
+            episode4HelpEnabled = episode4HelpSt15,
+            popBalloonsHelpEnabled = popBalloonsHelpControlsEnabled,
+            stationId = stationId,
+            stationUiSpec = stationUiSpec,
+            session = session,
+            episode4Help = episode4Help,
+            balloonHelp = balloonHelp,
+        )
     }
     val jumpFrames =
         remember(stationId) {
