@@ -293,28 +293,31 @@ fun GameScreen(
             !episode4Help.hintLocksChoices &&
             !(popBalloonsHelpControlsEnabled && balloonHelp.hintLocksChoices)
 
+    fun stopStagingSfx(stopAllStreams: Boolean) {
+        if (sagaUsesPickLetterAudioStaging) {
+            if (stopAllStreams) sfx.stopAllStreams()
+            sfx.stopStream(station1VoiceStreamId)
+            station1VoiceStreamId = 0
+        }
+        if (usesPopBalloonsSoundPoolPrompt) {
+            if (stopAllStreams) sfx.stopAllStreams()
+            sfx.stopStream(station2VoiceStreamId)
+            station2VoiceStreamId = 0
+        }
+        if (sagaUsesFindGridAudioStaging) {
+            if (stopAllStreams) sfx.stopAllStreams()
+            sfx.stopStream(station3VoiceStreamId)
+            station3VoiceStreamId = 0
+        }
+    }
+
     fun cancelFeedbackVoice() {
         feedbackVoiceJob?.cancel()
         feedbackVoiceJob = null
         promptVoiceJob?.cancel()
         promptVoiceJob = null
         voice.stopNow()
-        if (sagaUsesPickLetterAudioStaging) {
-            // Station 1 uses SoundPool for letter + praise tail; stop all streams so no tail leaks into the next round.
-            sfx.stopAllStreams()
-            sfx.stopStream(station1VoiceStreamId)
-            station1VoiceStreamId = 0
-        }
-        if (usesPopBalloonsSoundPoolPrompt) {
-            sfx.stopAllStreams()
-            sfx.stopStream(station2VoiceStreamId)
-            station2VoiceStreamId = 0
-        }
-        if (sagaUsesFindGridAudioStaging) {
-            sfx.stopAllStreams()
-            sfx.stopStream(station3VoiceStreamId)
-            station3VoiceStreamId = 0
-        }
+        stopStagingSfx(stopAllStreams = true)
     }
 
     DisposableEffect(lifecycleOwner, stationId) {
@@ -346,18 +349,7 @@ fun GameScreen(
         val q = session.currentQuestion ?: return
         cancelFeedbackVoice()
         sfx.stopAllStreams()
-        if (sagaUsesPickLetterAudioStaging) {
-            sfx.stopStream(station1VoiceStreamId)
-            station1VoiceStreamId = 0
-        }
-        if (sagaUsesPopBalloonsAudioStaging) {
-            sfx.stopStream(station2VoiceStreamId)
-            station2VoiceStreamId = 0
-        }
-        if (sagaUsesFindGridAudioStaging) {
-            sfx.stopStream(station3VoiceStreamId)
-            station3VoiceStreamId = 0
-        }
+        stopStagingSfx(stopAllStreams = false)
         feedbackVoiceJob =
             scope.launch {
                 if (plan.highlightedLetterInWordPickLetter && q is Question.PopBalloonsQuestion) {
