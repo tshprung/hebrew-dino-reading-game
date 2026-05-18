@@ -1,5 +1,6 @@
 package com.tal.hebrewdino.ui.game
 
+import android.annotation.SuppressLint
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
@@ -52,6 +53,7 @@ import com.tal.hebrewdino.ui.components.learning.captionFontSizeForWordCard
 import kotlin.math.roundToInt
 import kotlinx.coroutines.launch
 
+@SuppressLint("UnusedBoxWithConstraintsScope")
 @Composable
 fun ImageMatchGame(
     question: Question.ImageMatchQuestion,
@@ -178,23 +180,18 @@ fun ImageMatchGame(
                 val maxPictureHeight =
                     (maxHeight - cardsAreaVerticalPadding * 2 - perCardExtraHeight)
                         .coerceAtLeast(60.dp)
-                val maxCardWByHeight = maxPictureHeight / LessonChoiceCardPictureAspect
-                val cardShrink = if (isCompactLandscapePhoneSixStationArcStation5) 0.80f else 1f
+                maxPictureHeight / LessonChoiceCardPictureAspect
                 val sharedCardSize =
-                    if (isCompactLandscapePhoneSixStationArcStation5) {
-                        Chapter1Station4To6LessonChoiceCardSpec.station5And6CardSize(
-                            maxWidth = rowInnerWidth,
-                            maxHeight = maxHeight,
-                            choiceCount = choiceCount,
-                            pictureSizeMultiplier = pictureSizeMultiplier,
-                            showWordCaption = showWordCaptions,
-                        )
-                    } else {
-                        null
-                    }
+                    Chapter1Station4To6LessonChoiceCardSpec.station5And6CardSize(
+                        maxWidth = rowInnerWidth,
+                        maxHeight = maxHeight,
+                        choiceCount = choiceCount,
+                        pictureSizeMultiplier = pictureSizeMultiplier,
+                        showWordCaption = showWordCaptions,
+                    )
                 val effectiveCardWTwo =
-                    sharedCardSize?.width ?: (minOf(cardWTwo, maxCardWByHeight) * cardShrink).coerceAtLeast(60.dp)
-                val cardHTwo = sharedCardSize?.height ?: (effectiveCardWTwo * LessonChoiceCardPictureAspect)
+                    sharedCardSize.width
+                val cardHTwo = sharedCardSize.height
 
                 CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
                     Row(
@@ -202,7 +199,7 @@ fun ImageMatchGame(
                             Modifier
                                 .fillMaxWidth()
                                 .fillMaxHeight()
-                                .padding(top = if (isCompactLandscapePhoneSixStationArcStation5) 0.dp else headerTopPaddingDp.dp),
+                                .padding(top = 0.dp),
                         verticalAlignment = Alignment.Top,
                         horizontalArrangement = Arrangement.spacedBy(columnGap),
                     ) {
@@ -243,7 +240,7 @@ fun ImageMatchGame(
                                         sizeMultiplier =
                                             captionSizeMultiplier *
                                                 0.92f *
-                                                if (isCompactLandscapePhone && chapterId == 2 && choice.word == "היפופוטם") {
+                                                if (chapterId == 2 && choice.word == "היפופוטם") {
                                                     0.95f
                                                 } else {
                                                     1f
@@ -288,36 +285,25 @@ fun ImageMatchGame(
                         Column(
                             modifier = Modifier.width(sidePanelW).fillMaxHeight(),
                             horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = if (isCompactLandscapePhoneSixStationArcStation5) Arrangement.Top else Arrangement.Center,
+                            verticalArrangement = Arrangement.Top,
                         ) {
                         if (headerInstructionText != null) {
                             val effectiveFontSize =
-                                if (isCompactLandscapePhoneSixStationArcStation5) {
-                                    if (rowInnerWidth < 480.dp) 24.sp else 28.sp
-                                } else {
-                                    val baseSize = MaterialTheme.typography.titleMedium.fontSize
-                                    val phoneHeaderScale = minOf(headerInstructionFontScale, 1.05f) * 0.55f
-                                    val targetSize = (baseSize.value * phoneHeaderScale).sp
-                                    if (targetSize.value < 14f) 14.sp else targetSize
-                                }
+                                if (rowInnerWidth < 480.dp) 24.sp else 28.sp
                             Text(
                                 text = headerInstructionText,
                                 style =
                                     MaterialTheme.typography.titleMedium.copy(
                                         fontSize = effectiveFontSize,
                                         fontWeight = FontWeight.Bold,
-                                        lineHeight = if (isCompactLandscapePhoneSixStationArcStation5) (effectiveFontSize.value * 1.10f).sp else 16.sp,
+                                        lineHeight = (effectiveFontSize.value * 1.10f).sp,
                                     ),
                                 color = Color(0xFF0B2B3D),
                                 textAlign = TextAlign.Center,
                                 modifier =
                                     Modifier
                                         .then(
-                                            if (isCompactLandscapePhoneSixStationArcStation5) {
-                                                Modifier.offset(y = (-18).dp)
-                                            } else {
-                                                Modifier
-                                            },
+                                            Modifier.offset(y = (-18).dp),
                                         )
                                         .padding(horizontal = 6.dp)
                                         .then(
@@ -369,48 +355,40 @@ fun ImageMatchGame(
                 ) {
                     if (headerInstructionText != null) {
                         val effectiveHeaderScale =
-                            if (isCompactLandscapePhoneSixStationArcStation5) {
-                                minOf(headerInstructionFontScale, 1.05f)
-                            } else {
-                                headerInstructionFontScale
-                            }
+                            headerInstructionFontScale
                         Text(
                             text = headerInstructionText,
                             style =
                                 MaterialTheme.typography.titleMedium.copy(
                                     fontSize = MaterialTheme.typography.titleMedium.fontSize * effectiveHeaderScale,
                                     fontWeight = FontWeight.Bold,
-                                    lineHeight = if (isCompactLandscapePhoneSixStationArcStation5) 20.sp else MaterialTheme.typography.titleMedium.lineHeight,
+                                    lineHeight = MaterialTheme.typography.titleMedium.lineHeight,
                                 ),
                             color = Color(0xFF0B2B3D),
                             textAlign = TextAlign.Center,
                             modifier =
                                 Modifier
-                                    .padding(horizontal = if (isCompactLandscapePhoneSixStationArcStation5) 6.dp else 8.dp)
+                                    .padding(horizontal = 8.dp)
                                     .then(
                                         if (readableInstructionHeaderPanel) {
                                             Modifier
                                                 .background(Color.White.copy(alpha = 0.72f), RoundedCornerShape(18.dp))
                                                 .padding(
                                                     horizontal = 14.dp,
-                                                    vertical = if (isCompactLandscapePhoneSixStationArcStation5) 5.dp else 8.dp,
+                                                    vertical = 8.dp,
                                                 )
                                         } else {
                                             Modifier
                                         },
                                     ),
                         )
-                        Spacer(modifier = Modifier.height(if (isCompactLandscapePhoneSixStationArcStation5) 4.dp else 6.dp))
+                        Spacer(modifier = Modifier.height(6.dp))
                     }
                     if (headerPromptWord != null) {
                         Text(
                             text = headerPromptWord,
                             fontSize =
-                                if (isCompactLandscapePhoneSixStationArcStation5) {
-                                    if (rowInnerWidth < 420.dp) 42.sp else 48.sp
-                                } else {
-                                    if (rowInnerWidth < 420.dp) 52.sp else 60.sp
-                                },
+                                if (rowInnerWidth < 420.dp) 52.sp else 60.sp,
                             fontWeight = FontWeight.Black,
                             color = Color(0xFF0B2B3D),
                             textAlign = TextAlign.Center,
@@ -419,18 +397,14 @@ fun ImageMatchGame(
                                     .background(Color(0xFFFFF59D).copy(alpha = 0.95f), shape = RoundedCornerShape(16.dp))
                                     .padding(horizontal = 18.dp, vertical = 6.dp),
                         )
-                        Spacer(modifier = Modifier.height(if (isCompactLandscapePhoneSixStationArcStation5) 6.dp else 10.dp))
+                        Spacer(modifier = Modifier.height(10.dp))
                     }
                     if (showTargetLetterChip) {
                         // Station 5 (all chapters): match station 3 target-letter chip style, and sit a bit lower.
                         TargetLetterHeaderChip(
                             letter = question.targetLetter,
                             fontSize =
-                                if (isCompactLandscapePhoneSixStationArcStation5) {
-                                    if (rowInnerWidth < 420.dp) 42.sp else 46.sp
-                                } else {
-                                    if (rowInnerWidth < 420.dp) 52.sp else 56.sp
-                                },
+                                if (rowInnerWidth < 420.dp) 52.sp else 56.sp,
                             modifier =
                                 Modifier
                                     .padding(top = 2.dp)
@@ -440,18 +414,14 @@ fun ImageMatchGame(
                         TargetLetterHeaderChip(
                             letter = listenOnlyTemporaryHintLetter,
                             fontSize =
-                                if (isCompactLandscapePhoneSixStationArcStation5) {
-                                    if (rowInnerWidth < 420.dp) 42.sp else 46.sp
-                                } else {
-                                    if (rowInnerWidth < 420.dp) 52.sp else 56.sp
-                                },
+                                if (rowInnerWidth < 420.dp) 52.sp else 56.sp,
                             modifier =
                                 Modifier
                                     .padding(top = 2.dp)
                                     .offset(y = targetLetterChipOffsetYDp.dp),
                         )
                     }
-                    Spacer(modifier = Modifier.height(if (isCompactLandscapePhoneSixStationArcStation5) 10.dp else if (narrowRow) 16.dp else 20.dp))
+                    Spacer(modifier = Modifier.height(if (narrowRow) 16.dp else 20.dp))
                     Row(
                         modifier =
                             Modifier

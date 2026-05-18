@@ -1,5 +1,6 @@
 package com.tal.hebrewdino.ui.screens
 
+import android.annotation.SuppressLint
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.AnimationVector1D
 import androidx.compose.animation.core.RepeatMode
@@ -272,6 +273,7 @@ private fun Chapter3LevelOverlayScrim(
     }
 }
 
+@SuppressLint("UnusedBoxWithConstraintsScope")
 @Composable
 internal fun IntroPulse(
     stationId: Int,

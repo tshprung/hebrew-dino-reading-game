@@ -29,11 +29,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalView
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
@@ -46,19 +44,12 @@ import com.tal.hebrewdino.ui.audio.AudioClips
 import com.tal.hebrewdino.ui.audio.GameAudioEngine
 import com.tal.hebrewdino.ui.audio.SoundPoolPlayer
 import com.tal.hebrewdino.ui.audio.VoicePlayer
-import com.tal.hebrewdino.ui.components.Chapter3Station5ReplayColumn
 import com.tal.hebrewdino.ui.components.Episode4Stations15HelpColumn
-import com.tal.hebrewdino.ui.components.TargetLetterHeaderChip
-import com.tal.hebrewdino.ui.domain.AnswerResult
-import com.tal.hebrewdino.ui.domain.Chapter1Station5And6ImageMatchInnerScale
 import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
 import com.tal.hebrewdino.ui.domain.Episode4Help
-import com.tal.hebrewdino.ui.domain.InstructionPanelStyle
 import com.tal.hebrewdino.ui.domain.LetterPoolSpec
 import com.tal.hebrewdino.ui.domain.LevelSession
-import com.tal.hebrewdino.ui.domain.Question
 import com.tal.hebrewdino.ui.domain.StationBehaviorRegistry
-import com.tal.hebrewdino.ui.domain.StationInstructionCopy
 import com.tal.hebrewdino.ui.domain.StationQuizMode
 import com.tal.hebrewdino.ui.domain.StationQuizPlan
 import com.tal.hebrewdino.ui.domain.StationTemplateId
@@ -1180,7 +1171,6 @@ fun GameScreen(
                                 scope = scope,
                                 voice = voice,
                                 sfx = sfx,
-                                getFeedbackVoiceJob = { feedbackVoiceJob },
                                 setFeedbackVoiceJob = { job -> feedbackVoiceJob = job },
                                 onWrongFeedback = { wrongPickedLetter ->
                                     onWrongFeedback(wrongPickedLetter = wrongPickedLetter)

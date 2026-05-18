@@ -11,7 +11,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.tal.hebrewdino.R
 
@@ -19,13 +18,6 @@ private val EggImageSize = 44.dp
 private val EggStackSpacing = 8.dp
 private val EggStripPaddingH = 12.dp
 private val EggStripPaddingV = 8.dp
-
-/** Total height of [StoryEggStrip] for a given [foundCount] (vertical stack). */
-fun storyEggStripVerticalHeight(foundCount: Int): Dp {
-    if (foundCount <= 0) return 0.dp
-    val n = foundCount.coerceIn(1, 3)
-    return EggStripPaddingV * 2 + EggImageSize * n + EggStackSpacing * (n - 1).coerceAtLeast(0)
-}
 
 /**
  * Shows up to three collected story eggs (white → pink → cream), upright, stacked top-to-bottom.

@@ -86,8 +86,6 @@ internal fun PickLetterQuestionRenderer(
                 } else {
                     stationUiSpec.pickLetterRepeatLetterButtonLabel
                 },
-            sagaUsesPickLetterAudioStaging = sagaUsesPickLetterAudioStaging,
-            station1PinnedCorrectLetter = station1PinnedCorrectLetter,
             pickLetterInstructionOverride = stationUiSpec.pickLetterInstructionOverride,
             pickLetterSagaStation1CompactPreamble = stationUiSpec.pickLetterSagaStation1CompactPreamble,
             showSagaStation1CompactPreamble =
@@ -98,7 +96,6 @@ internal fun PickLetterQuestionRenderer(
                     !isChapter3AudioLetterRecognitionStation &&
                     !stationUiSpec.pickLetterListenOnlyHebrewPanel &&
                     !isChapter3HighlightedLetterInWordStation,
-            pickLetterAllowPinnedCorrectShortcut = stationUiSpec.pickLetterAllowPinnedCorrectShortcut,
             boxTopPaddingDp = pickLetterBoxTopPaddingDp,
             letterOptionsExtraTopPaddingDp = letterOptionsExtraTopPaddingDp,
             enabled = enabled,

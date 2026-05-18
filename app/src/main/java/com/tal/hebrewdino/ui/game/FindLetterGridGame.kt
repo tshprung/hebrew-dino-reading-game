@@ -180,18 +180,17 @@ fun FindLetterGridGame(
 
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
         val nudgeDown = maxHeight * nudgeFrac
-        val headerBoxH =
-            when {
-                hideListenOnlyHeaderTargetLetter && contextWordHint == null -> 0.dp
-                contextWordHint != null && suppressHeaderTargetLetter && question.columns >= 4 -> 88.dp
-                contextWordHint != null && suppressHeaderTargetLetter -> 96.dp
-                contextWordHint != null && question.columns >= 4 -> 118.dp
-                contextWordHint != null -> 128.dp
-                question.columns >= 4 -> 74.dp
-                else -> 82.dp
-            }
-        val topPaddingH = 6.dp
-        val outerW = maxWidth
+        when {
+            hideListenOnlyHeaderTargetLetter && contextWordHint == null -> 0.dp
+            contextWordHint != null && suppressHeaderTargetLetter && question.columns >= 4 -> 88.dp
+            contextWordHint != null && suppressHeaderTargetLetter -> 96.dp
+            contextWordHint != null && question.columns >= 4 -> 118.dp
+            contextWordHint != null -> 128.dp
+            question.columns >= 4 -> 74.dp
+            else -> 82.dp
+        }
+        6.dp
+        maxWidth
 
         if (useTwoColumn) {
             val sidePanelW = 200.dp
@@ -362,11 +361,7 @@ fun FindLetterGridGame(
                     ) {
                         if (contextWordHint == null && inlineInstructionText != null) {
                             val displayInstructionText =
-                                if (isCompactLandscapePhone) {
-                                    ScreenFit.rtlUnicodeWrap(inlineInstructionText)
-                                } else {
-                                    inlineInstructionText
-                                }
+                                ScreenFit.rtlUnicodeWrap(inlineInstructionText)
                             Text(
                                 text = displayInstructionText,
                                 fontSize =

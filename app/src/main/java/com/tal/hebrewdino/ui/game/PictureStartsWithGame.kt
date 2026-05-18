@@ -1,5 +1,6 @@
 package com.tal.hebrewdino.ui.game
 
+import android.annotation.SuppressLint
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -44,6 +45,7 @@ import com.tal.hebrewdino.ui.layout.ScreenFit
 import com.tal.hebrewdino.ui.screens.LetterOptions
 import kotlin.math.roundToInt
 
+@SuppressLint("UnusedBoxWithConstraintsScope")
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun PictureStartsWithGame(

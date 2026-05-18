@@ -934,7 +934,7 @@ private fun SixStationArcStation6Board(
         } else {
             1f
         }
-    val baseCardW = sharedCardSize.width ?: (cardWCurrent * widthBoost)
+    val baseCardW = sharedCardSize.width
     val cardW = (baseCardW * cardWidthBoostForStation).coerceAtMost(perCardSlotW)
     val cardH =
         cardW *

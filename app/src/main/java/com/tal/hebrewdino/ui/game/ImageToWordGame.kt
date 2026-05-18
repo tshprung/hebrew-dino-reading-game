@@ -1,5 +1,6 @@
 package com.tal.hebrewdino.ui.game
 
+import android.annotation.SuppressLint
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
@@ -44,6 +45,7 @@ import com.tal.hebrewdino.ui.layout.ScreenFit
 import kotlin.math.roundToInt
 import kotlinx.coroutines.launch
 
+@SuppressLint("UnusedBoxWithConstraintsScope")
 @Composable
 fun ImageToWordGame(
     question: Question.ImageMatchQuestion,
@@ -131,7 +133,7 @@ fun ImageToWordGame(
                     cardHeight = pictureCardH,
                     captionFontSize = 1.sp,
                     innerPictureScale = innerScale,
-                    onClick = { if (pictureTapReplays) onPictureTapReplayWord?.invoke() },
+                    onClick = { if (pictureTapReplays) onPictureTapReplayWord.invoke() },
                 )
             } else {
                 Spacer(modifier = Modifier.height(pictureCardH))

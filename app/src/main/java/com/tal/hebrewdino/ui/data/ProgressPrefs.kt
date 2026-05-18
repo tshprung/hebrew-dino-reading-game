@@ -86,23 +86,11 @@ class ProgressPrefs(private val context: Context) {
                 .toSet()
         }
 
-    val beachIntroSeenFlow: Flow<Boolean> =
-        context.dataStore.data.map { prefs -> prefs[beachIntroSeenKey] ?: false }
-
     val beachOutroSeenFlow: Flow<Boolean> =
         context.dataStore.data.map { prefs -> prefs[beachOutroSeenKey] ?: false }
 
-    val chapter1LettersIntroSeenFlow: Flow<Boolean> =
-        context.dataStore.data.map { prefs -> prefs[chapter1LettersIntroSeenKey] ?: false }
-
     val chapter1MidBoostSeenFlow: Flow<Boolean> =
         context.dataStore.data.map { prefs -> prefs[chapter1MidBoostSeenKey] ?: false }
-
-    val chapter2IntroSeenFlow: Flow<Boolean> =
-        context.dataStore.data.map { prefs -> prefs[chapter2IntroSeenKey] ?: false }
-
-    val chapter2LettersIntroSeenFlow: Flow<Boolean> =
-        context.dataStore.data.map { prefs -> prefs[chapter2LettersIntroSeenKey] ?: false }
 
     val chapter2MidBoostSeenFlow: Flow<Boolean> =
         context.dataStore.data.map { prefs -> prefs[chapter2MidBoostSeenKey] ?: false }
@@ -127,12 +115,6 @@ class ProgressPrefs(private val context: Context) {
 
     val chapter2CompletedFlow: Flow<Boolean> =
         context.dataStore.data.map { prefs -> prefs[chapter2CompletedKey] ?: false }
-
-    val chapter3IntroSeenFlow: Flow<Boolean> =
-        context.dataStore.data.map { prefs -> prefs[chapter3IntroSeenKey] ?: false }
-
-    val chapter3LettersIntroSeenFlow: Flow<Boolean> =
-        context.dataStore.data.map { prefs -> prefs[chapter3LettersIntroSeenKey] ?: false }
 
     val chapter3MidBoostSeenFlow: Flow<Boolean> =
         context.dataStore.data.map { prefs -> prefs[chapter3MidBoostSeenKey] ?: false }

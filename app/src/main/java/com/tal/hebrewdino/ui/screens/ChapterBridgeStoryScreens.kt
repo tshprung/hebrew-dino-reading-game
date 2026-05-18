@@ -42,7 +42,6 @@ fun Chapter2OutroScreen(
 
 @Composable
 fun Chapter3OutroScreen(
-    eggStripCount: Int,
     onContinue: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -68,7 +67,6 @@ fun Chapter3OutroScreen(
 
 @Composable
 fun Chapter4IntroScreen(
-    eggStripCount: Int,
     onContinue: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -94,7 +92,6 @@ fun Chapter4IntroScreen(
 
 @Composable
 fun Chapter4OutroScreen(
-    eggStripCount: Int,
     onContinue: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -134,7 +131,6 @@ fun Chapter4OutroScreen(
 
 @Composable
 fun Chapter5IntroScreen(
-    eggStripCount: Int,
     onContinue: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -158,7 +154,6 @@ fun Chapter5IntroScreen(
 
 @Composable
 fun Chapter5OutroScreen(
-    eggStripCount: Int,
     onContinue: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -183,7 +178,6 @@ fun Chapter5OutroScreen(
 
 @Composable
 fun Chapter6IntroScreen(
-    eggStripCount: Int,
     onContinue: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -206,7 +200,6 @@ fun Chapter6IntroScreen(
 
 @Composable
 fun Chapter6OutroScreen(
-    eggStripCount: Int,
     onContinue: () -> Unit,
     modifier: Modifier = Modifier,
 ) {

@@ -14,34 +14,22 @@ import java.util.concurrent.ConcurrentHashMap
 import kotlin.coroutines.resume
 
 class SoundPoolPlayer(context: Context) {
-    companion object {
-        /** Kid-game SFX; pool creation is still wrapped in [runCatching] — null pool = silent no-op. */
-        const val ENABLED: Boolean = true
-    }
+    companion object;
 
     private val appContext = context.applicationContext
 
-    /**
-     * When [ENABLED] is false, do not allocate a native SoundPool at all (some devices crash on
-     * pool creation even if we never call [play]). When true, creation can still fail — then all
-     * calls no-op.
-     */
     private val soundPool: SoundPool? =
-        if (!ENABLED) {
-            null
-        } else {
-            runCatching {
-                SoundPool.Builder()
-                    .setMaxStreams(2)
-                    .setAudioAttributes(
-                        AudioAttributes.Builder()
-                            .setUsage(AudioAttributes.USAGE_GAME)
-                            .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                            .build(),
-                    )
-                    .build()
-            }.getOrNull()
-        }
+        runCatching {
+            SoundPool.Builder()
+                .setMaxStreams(2)
+                .setAudioAttributes(
+                    AudioAttributes.Builder()
+                        .setUsage(AudioAttributes.USAGE_GAME)
+                        .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                        .build(),
+                )
+                .build()
+        }.getOrNull()
 
     private val loadedSoundIdByPath = ConcurrentHashMap<String, Int>()
     private val readySoundIds = ConcurrentHashMap<Int, Boolean>()
@@ -58,7 +46,6 @@ class SoundPoolPlayer(context: Context) {
     }
 
     suspend fun play(assetPath: String, volume: Float = 1f, rate: Float = 1f) {
-        if (!ENABLED) return
         val pool = soundPool ?: return
         val soundId = loadIfNeeded(pool, assetPath) ?: return
         val streamId = pool.play(soundId, volume, volume, 1, 0, rate.coerceIn(0.8f, 1.25f))
@@ -70,7 +57,6 @@ class SoundPoolPlayer(context: Context) {
      * Returns null if the asset couldn't be loaded/played.
      */
     suspend fun playReturningStreamId(assetPath: String, volume: Float = 1f, rate: Float = 1f): Int? {
-        if (!ENABLED) return null
         val pool = soundPool ?: return null
         val soundId = loadIfNeeded(pool, assetPath) ?: return null
         val streamId = pool.play(soundId, volume, volume, 1, 0, rate.coerceIn(0.8f, 1.25f))
@@ -90,7 +76,6 @@ class SoundPoolPlayer(context: Context) {
         volume: Float = 1f,
         rate: Float = 1f,
     ): String? {
-        if (!ENABLED) return null
         val pool = soundPool ?: return null
         val r = rate.coerceIn(0.8f, 1.25f)
         for (p in assetPaths) {
@@ -111,7 +96,6 @@ class SoundPoolPlayer(context: Context) {
         volume: Float = 1f,
         rate: Float = 1f,
     ): Pair<String, Int>? {
-        if (!ENABLED) return null
         val pool = soundPool ?: return null
         val r = rate.coerceIn(0.8f, 1.25f)
         for (p in assetPaths) {
@@ -127,7 +111,6 @@ class SoundPoolPlayer(context: Context) {
     }
 
     fun stopStream(streamId: Int?) {
-        if (!ENABLED) return
         val pool = soundPool ?: return
         val id = streamId ?: return
         if (id == 0) return
@@ -140,7 +123,6 @@ class SoundPoolPlayer(context: Context) {
      * guarantee no overlap even if durations are slightly off.
      */
     fun stopAllStreams() {
-        if (!ENABLED) return
         val pool = soundPool ?: return
         val ids = activeStreamIds.keys.toList()
         for (id in ids) {
@@ -196,7 +178,6 @@ class SoundPoolPlayer(context: Context) {
     }
 
     suspend fun preload(vararg assetPaths: String) {
-        if (!ENABLED) return
         val pool = soundPool ?: return
         for (p in assetPaths) {
             if (p.isBlank()) continue

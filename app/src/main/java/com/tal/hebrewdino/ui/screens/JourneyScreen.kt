@@ -1,5 +1,6 @@
 package com.tal.hebrewdino.ui.screens
 
+import android.annotation.SuppressLint
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -170,6 +171,7 @@ private fun xyAlongStationChain(f: Float, stationPts: List<Pair<Float, Float>>):
     return (x0 + (x1 - x0) * t) to (y0 + (y1 - y0) * t)
 }
 
+@SuppressLint("UnusedBoxWithConstraintsScope")
 @Composable
 fun JourneyScreen(
     unlockedLevel: Int,
@@ -493,6 +495,7 @@ fun JourneyScreen(
     }
 }
 
+@SuppressLint("UnusedBoxWithConstraintsScope")
 @Composable
 private fun JourneyRoadStrip(
     totalLevels: Int,
@@ -745,7 +748,7 @@ private fun JourneyRoadStrip(
                         levelId <= unlockedLevel &&
                         !completed &&
                         levelId > nextSuggested
-                val suggested = interactive && !completed && levelId == nextSuggested
+                val suggested = interactive && !completed
                 val isLast = levelId == totalLevels
 
                 JourneyStationMarker(

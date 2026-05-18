@@ -28,10 +28,5 @@ class CharacterPrefs(private val context: Context) {
         context.dataStore.edit { it[key] = character.name }
     }
 
-    suspend fun clearCharacter() {
-        context.dataStore.edit { prefs ->
-            prefs.remove(key)
-        }
-    }
 }
 

@@ -29,7 +29,7 @@ fun AnimatedTalkingCharacter(
             frameIndex = 0
             return@LaunchedEffect
         }
-        while (isActive && isTalking) {
+        while (isActive) {
             delay(frameMillis)
             frameIndex = (frameIndex + 1) % talkFrameResIds.size
         }

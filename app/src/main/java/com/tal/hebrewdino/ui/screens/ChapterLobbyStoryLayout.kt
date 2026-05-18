@@ -1,5 +1,6 @@
 package com.tal.hebrewdino.ui.screens
 
+import android.annotation.SuppressLint
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -69,6 +70,7 @@ private val momTalkFrames =
         R.drawable.mom_talk_3_flipped,
     )
 
+@SuppressLint("UnusedBoxWithConstraintsScope")
 @Composable
 fun ChapterLobbyStoryLayout(
     backgroundRes: Int,

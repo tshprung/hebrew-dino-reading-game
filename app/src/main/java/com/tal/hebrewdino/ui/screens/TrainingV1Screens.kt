@@ -9,7 +9,6 @@ import com.tal.hebrewdino.ui.domain.TrainingV1LetterPoolSpec
 
 @Composable
 fun TrainingV1IntroScreen(
-    eggStripCount: Int,
     onContinue: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -63,7 +62,6 @@ fun TrainingV1RoundScreen(
 
 @Composable
 fun TrainingV1CompleteScreen(
-    eggStripCount: Int,
     onContinue: () -> Unit,
     modifier: Modifier = Modifier,
 ) {

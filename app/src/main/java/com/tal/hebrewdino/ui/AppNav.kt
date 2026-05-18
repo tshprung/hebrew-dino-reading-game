@@ -251,7 +251,6 @@ fun AppNav() {
 
         composable(NavRoutes.TrainingIntro) {
             TrainingV1IntroScreen(
-                eggStripCount = collectedEggStripCount,
                 onContinue = { navController.navigate("${NavRoutes.TrainingRound}/1") },
             )
         }
@@ -285,7 +284,6 @@ fun AppNav() {
 
         composable(NavRoutes.TrainingComplete) {
             TrainingV1CompleteScreen(
-                eggStripCount = collectedEggStripCount,
                 onContinue = {
                     navController.navigate(NavRoutes.Chapters) {
                         popUpTo(NavRoutes.TrainingIntro) { inclusive = true }
@@ -411,7 +409,6 @@ fun AppNav() {
 
         composable(NavRoutes.Ch3Intro) {
             Chapter3IntroScreen(
-                eggStripCount = collectedEggStripCount,
                 onContinue = {
                     scope.launch { progress.markChapter3IntroSeen() }
                     // After intro, always show letters presentation, then continue to journey.
@@ -555,16 +552,6 @@ fun AppNav() {
             Chapter2LevelScreen(
                 stationId = stationId,
                 onBack = { navController.popBackStack() },
-                onLettersHelp = {
-                    navController.navigate(NavRoutes.Ch2Letters) { launchSingleTop = true }
-                },
-                onDebugStationAdvance =
-                    if (DevTools.enabled(context)) {
-                        { scope.launch { progress.debugUnlockNextChapter2Station() } }
-                    } else {
-                        null
-                    },
-                collectedEggStripCount = collectedEggStripCount,
                 suppressInGameDinoProgress = chapter2CompletedStations.contains(stationId),
                 onComplete = { completedStationId, correctCount, mistakeCount ->
                     scope.launch {
@@ -585,10 +572,6 @@ fun AppNav() {
             Chapter3LevelScreen(
                 stationId = stationId,
                 onBack = { navController.popBackStack() },
-                onLettersHelp = {
-                    navController.navigate(NavRoutes.Ch3Letters) { launchSingleTop = true }
-                },
-                onDebugStationAdvance = null,
                 suppressInGameDinoProgress = chapter3CompletedStations.contains(stationId),
                 onComplete = { completedStationId, correctCount, mistakeCount ->
                     scope.launch {
@@ -790,7 +773,6 @@ fun AppNav() {
 
         composable(NavRoutes.Ch3StoryOutro) {
             Chapter3OutroScreen(
-                eggStripCount = collectedEggStripCount,
                 onContinue = {
                     navController.navigate(NavRoutes.Chapters) {
                         popUpTo(NavRoutes.Ch3StoryOutro) { inclusive = true }
@@ -826,7 +808,6 @@ fun AppNav() {
 
         composable(NavRoutes.Ch4Intro) {
             Chapter4IntroScreen(
-                eggStripCount = collectedEggStripCount,
                 onContinue = {
                     scope.launch { progress.markChapter4IntroSeen() }
                     navController.navigate(NavRoutes.Ch4Letters) {
@@ -897,16 +878,6 @@ fun AppNav() {
             Chapter4LevelScreen(
                 stationId = stationId,
                 onBack = { navController.popBackStack() },
-                onLettersHelp = {
-                    navController.navigate(NavRoutes.Ch4Letters) { launchSingleTop = true }
-                },
-                onDebugStationAdvance =
-                    if (DevTools.enabled(context)) {
-                        { scope.launch { progress.debugUnlockNextChapter4Station() } }
-                    } else {
-                        null
-                    },
-                collectedEggStripCount = collectedEggStripCount,
                 suppressInGameDinoProgress = chapter4CompletedStations.contains(stationId),
                 onComplete = { completedStationId, correctCount, mistakeCount ->
                     scope.launch {
@@ -960,7 +931,6 @@ fun AppNav() {
 
         composable(NavRoutes.Ch4Outro) {
             Chapter4OutroScreen(
-                eggStripCount = collectedEggStripCount,
                 onContinue = {
                     navController.navigate(NavRoutes.Chapters) {
                         popUpTo(NavRoutes.Ch4Outro) { inclusive = true }
@@ -982,7 +952,6 @@ fun AppNav() {
 
         composable(NavRoutes.Ch5Intro) {
             Chapter5IntroScreen(
-                eggStripCount = collectedEggStripCount,
                 onContinue = {
                     scope.launch { progress.markChapter5IntroSeen() }
                     navController.navigate(NavRoutes.Ch5Letters) {
@@ -1054,16 +1023,6 @@ fun AppNav() {
             Chapter5LevelScreen(
                 stationId = stationId,
                 onBack = { navController.popBackStack() },
-                onLettersHelp = {
-                    navController.navigate(NavRoutes.Ch5Letters) { launchSingleTop = true }
-                },
-                onDebugStationAdvance =
-                    if (DevTools.enabled(context)) {
-                        { scope.launch { progress.debugUnlockNextChapter5Station() } }
-                    } else {
-                        null
-                    },
-                collectedEggStripCount = collectedEggStripCount,
                 suppressInGameDinoProgress = chapter5CompletedStations.contains(stationId),
                 onComplete = { completedStationId, correctCount, mistakeCount ->
                     scope.launch {
@@ -1117,7 +1076,6 @@ fun AppNav() {
 
         composable(NavRoutes.Ch5Outro) {
             Chapter5OutroScreen(
-                eggStripCount = collectedEggStripCount,
                 onContinue = {
                     navController.navigate(NavRoutes.Chapters) {
                         popUpTo(NavRoutes.Ch5Outro) { inclusive = true }
@@ -1139,7 +1097,6 @@ fun AppNav() {
 
         composable(NavRoutes.Ch6Intro) {
             Chapter6IntroScreen(
-                eggStripCount = collectedEggStripCount,
                 onContinue = {
                     scope.launch { progress.markChapter6IntroSeen() }
                     navController.navigate(NavRoutes.Ch6Letters) {
@@ -1208,9 +1165,6 @@ fun AppNav() {
             Chapter6LevelScreen(
                 stationId = stationId,
                 onBack = { navController.popBackStack() },
-                onLettersHelp = { navController.navigate(NavRoutes.Ch6Letters) { launchSingleTop = true } },
-                onDebugStationAdvance = null,
-                collectedEggStripCount = collectedEggStripCount,
                 suppressInGameDinoProgress = chapter6CompletedStations.contains(stationId),
                 onComplete = { completedStationId, correctCount, mistakeCount ->
                     scope.launch {
@@ -1264,7 +1218,6 @@ fun AppNav() {
 
         composable(NavRoutes.Ch6Outro) {
             Chapter6OutroScreen(
-                eggStripCount = collectedEggStripCount,
                 onContinue = {
                     navController.navigate(NavRoutes.Chapters) {
                         popUpTo(NavRoutes.Ch6Outro) { inclusive = true }

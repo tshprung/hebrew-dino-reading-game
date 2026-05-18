@@ -15,8 +15,6 @@ import kotlin.coroutines.resume
 
 class VoicePlayer(context: Context) {
     companion object {
-        /** Enable voice playback (assets under `audio/`). */
-        const val ENABLED: Boolean = true
         private const val TAG: String = "VoicePlayer"
     }
 
@@ -32,7 +30,6 @@ class VoicePlayer(context: Context) {
      * It only touches the asset on a background thread so it is likely cached by the time we need it.
      */
     suspend fun warmUp(assetPath: String) {
-        if (!ENABLED) return
         if (assetPath.isBlank()) return
         withContext(Dispatchers.IO) {
             try {
@@ -44,7 +41,6 @@ class VoicePlayer(context: Context) {
     }
 
     suspend fun warmUp(vararg assetPaths: String) {
-        if (!ENABLED) return
         for (p in assetPaths) warmUp(p)
     }
 
@@ -77,7 +73,6 @@ class VoicePlayer(context: Context) {
     }
 
     suspend fun playBlocking(assetPath: String) {
-        if (!ENABLED) return
         mutex.withLock {
             stopLocked()
             player = MediaPlayer()
@@ -113,7 +108,6 @@ class VoicePlayer(context: Context) {
     }
 
     suspend fun playFirstAvailableBlocking(vararg assetPaths: String) {
-        if (!ENABLED) return
         for (p in assetPaths) {
             if (p.isBlank()) continue
             val ok = exists(p)
@@ -130,7 +124,6 @@ class VoicePlayer(context: Context) {
      * If the coroutine is cancelled (e.g. user taps again), playback stops immediately.
      */
     suspend fun playSequenceBlocking(vararg assetPaths: String) {
-        if (!ENABLED) return
         // Keep the mutex for the whole sequence so nothing else can interleave.
         mutex.withLock {
             for (p in assetPaths) {

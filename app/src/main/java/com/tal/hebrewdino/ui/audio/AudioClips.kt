@@ -1,16 +1,11 @@
 package com.tal.hebrewdino.ui.audio
 
 object AudioClips {
-    // System voice lines
-    const val VoStart = "audio/vo_start.wav"
     const val VoChooseLetter = "audio/vo_choose_letter.wav"
     /** Episode 4 station 1: spoken "בחור את האות" (then letter name clip). Add `assets/audio/vo_bachor_et_haot.wav`; falls back to [VoChooseLetter] if missing. */
     const val VoBachorEtHaot = "audio/vo_bachor_et_haot.wav"
     /** Optional "מצא את האות"; station 1 intro may alternate with [VoChooseLetter]. */
     const val VoFindLetter = "audio/vo_find_letter.wav"
-    const val VoClickLetter = "audio/vo_click_letter.wav"
-    const val VoWhichLetter = "audio/vo_which_letter.wav"
-    const val VoListenChoose = "audio/vo_listen_choose.wav"
     const val VoGoodJob1 = "audio/vo_good_job_1.wav"
     const val VoGoodJob2 = "audio/vo_good_job_2.wav"
     const val VoTryAgain1 = "audio/vo_try_again_1.wav"
@@ -41,13 +36,8 @@ object AudioClips {
     /** Episode 3 station 6: dedicated recording (optional). */
     const val Ch3ImageToWordInstructions = "audio/ch3_image_to_word_instructions.wav"
 
-    // Episode 3 — optional sentence-based instructions (recordings; fall back to legacy prompts if missing).
-    const val Ch3St1PictureStartsWithInstruction = "audio/ch3_st1_picture_starts_with.wav"
-    const val Ch3St2MatchLetterToWordInstruction = "audio/ch3_st2_match_letter_to_word.wav"
     const val Ch3St3PopAllLettersInWordInstruction = "audio/ch3_st3_pop_all_letters_in_word.wav"
     const val Ch3St4FindHighlightedLetterInWordInstruction = "audio/ch3_st4_find_highlighted_letter_in_word.wav"
-    const val Ch3St5AudioLetterRecognitionInstruction = "audio/ch3_st5_audio_letter_recognition.wav"
-    const val Ch3St6ImageMatchWordInstruction = "audio/ch3_st6_image_match_word.wav"
     // (Old ch3 instruction constants removed/renamed; keep files if you already recorded them — they just won't be used.)
 
     /** Episode 1 station 2 prefix: "פוצץ את הבלונים עם האות". */
@@ -102,7 +92,7 @@ object AudioClips {
     const val StoryMountainPathIntro = "audio/story_mountain_path_intro.wav"
     const val StoryMountainPathOutro = "audio/story_mountain_path_outro.wav"
     const val StoryCh4Intro = "audio/story_ch4_intro.wav"
-    const val StoryCh4HomeOutro = "audio/story_ch4_home_outro.wav"
+
     /** Episode 4 finale: clue narration (record `audio/story_ch4_clue_outro.wav`; optional until present). */
     const val StoryCh4ClueOutro = "audio/story_ch4_clue_outro.wav"
     /** Episode 5 (optional narration). */

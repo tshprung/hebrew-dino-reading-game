@@ -18,7 +18,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.random.Random
 
 internal object PopBalloonsActions {
-    suspend fun handlePopSfx(
+    fun handlePopSfx(
         audioEnabled: Boolean,
         sagaUsesPopBalloonsAudioStaging: Boolean,
         letter: String,

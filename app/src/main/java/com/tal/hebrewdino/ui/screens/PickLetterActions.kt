@@ -25,7 +25,6 @@ internal object PickLetterActions {
         scope: CoroutineScope,
         voice: VoicePlayer,
         sfx: SoundPoolPlayer,
-        getFeedbackVoiceJob: () -> Job?,
         setFeedbackVoiceJob: (Job?) -> Unit,
         onWrongFeedback: (wrongPickedLetter: String) -> Unit,
         advanceAfterRound: suspend (isLast: Boolean, ch3SpellMidWord: Boolean) -> Unit,

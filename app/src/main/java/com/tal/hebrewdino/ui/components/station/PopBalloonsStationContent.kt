@@ -140,7 +140,7 @@ fun PopBalloonsInstructionHeaderBlock(
                     if (episode4HelpSt15 && episode4HelpActiveHintLetter != null) {
                         Spacer(modifier = Modifier.height(10.dp))
                         TargetLetterHeaderChip(
-                            letter = episode4HelpActiveHintLetter!!,
+                            letter = episode4HelpActiveHintLetter,
                             fontSize = headerChipFont,
                             modifier = Modifier.scale(hintHeaderScale),
                         )
@@ -182,7 +182,7 @@ fun PopBalloonsInstructionHeaderBlock(
                         Spacer(modifier = Modifier.width(10.dp))
                     }
                     Station2PinnedBalloonMini(
-                        letter = station2PinnedBalloonLetter!!,
+                        letter = station2PinnedBalloonLetter,
                         balloonColor = station2PinnedBalloonColor ?: Color(0xFF6BCB77),
                         showLetter = showTargetLetterChip,
                         modifier = Modifier.scale(hintHeaderScale),

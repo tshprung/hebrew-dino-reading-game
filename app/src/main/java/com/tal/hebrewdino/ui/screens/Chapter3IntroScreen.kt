@@ -7,7 +7,6 @@ import com.tal.hebrewdino.ui.audio.AudioClips
 
 @Composable
 fun Chapter3IntroScreen(
-    eggStripCount: Int,
     onContinue: () -> Unit,
     modifier: Modifier = Modifier,
 ) {

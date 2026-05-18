@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -41,7 +40,7 @@ import com.tal.hebrewdino.ui.screens.LetterOptions
  * Caller owns session submission, audio, cooldowns, and advancement.
  */
 @Composable
-fun ColumnScope.PickLetterStationContent(
+fun PickLetterStationContent(
     question: Question.PopBalloonsQuestion,
     highlightedInWordWord: String?,
     highlightedInWordSlotIndex: Int?,
@@ -51,12 +50,9 @@ fun ColumnScope.PickLetterStationContent(
     showListenOnlyHebrewPanel: Boolean,
     listenOnlyPanelInstruction: String?,
     repeatLetterButtonLabel: String?,
-    sagaUsesPickLetterAudioStaging: Boolean,
-    station1PinnedCorrectLetter: String?,
     pickLetterInstructionOverride: String?,
     pickLetterSagaStation1CompactPreamble: String?,
     showSagaStation1CompactPreamble: Boolean,
-    pickLetterAllowPinnedCorrectShortcut: Boolean,
     boxTopPaddingDp: Dp,
     letterOptionsExtraTopPaddingDp: Dp,
     enabled: Boolean,
