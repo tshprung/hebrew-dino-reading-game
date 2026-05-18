@@ -761,15 +761,6 @@ fun GameScreen(
     // UX: global tap cooldown to prevent fast-tap flow breaks.
     val tapCooldown = remember(stationId) { TapCooldown() }
     fun consumeTapCooldown(): Boolean = tapCooldown.consume()
-    fun registerWrongTapForHintPulse() {
-        val (updatedWrongTaps, updatedHintEpoch) =
-            HintPulseActions.registerWrongTapForHintPulse(
-                wrongTapsThisQuestion = gameViewModel.wrongTapsThisQuestion,
-                hintPulseEpoch = gameViewModel.hintPulseEpoch,
-            )
-        gameViewModel.wrongTapsThisQuestion = updatedWrongTaps
-        gameViewModel.hintPulseEpoch = updatedHintEpoch
-    }
 
     fun performSideHelpReplay() {
         feedbackVoiceJob =
@@ -1166,7 +1157,7 @@ fun GameScreen(
                                 cancelFeedbackVoice = { cancelFeedbackVoice() },
                                 session = session,
                                 bumpShakeEpoch = { gameViewModel.shakeEpoch += 1 },
-                                registerWrongTapForHintPulse = { registerWrongTapForHintPulse() },
+                                registerWrongTapForHintPulse = { HintPulseActions.registerWrongTapForHintPulse(gameViewModel) },
                                 onWrongFeedback = { wrongPickedLetter, wrongPickedLetterAlreadySpoken ->
                                     onWrongFeedback(
                                         wrongPickedLetter = wrongPickedLetter,
@@ -1206,7 +1197,7 @@ fun GameScreen(
                                 getFeedbackVoiceJob = { feedbackVoiceJob },
                                 setFeedbackVoiceJob = { job -> feedbackVoiceJob = job },
                                 bumpShakeEpoch = { gameViewModel.shakeEpoch += 1 },
-                                registerWrongTapForHintPulse = { registerWrongTapForHintPulse() },
+                                registerWrongTapForHintPulse = { HintPulseActions.registerWrongTapForHintPulse(gameViewModel) },
                                 onWrongFeedback = { wrongPickedLetter ->
                                     onWrongFeedback(wrongPickedLetter = wrongPickedLetter)
                                 },
@@ -1247,7 +1238,7 @@ fun GameScreen(
                                 onWrongFeedback = { onWrongFeedback() },
                                 session = session,
                                 bumpShakeEpoch = { gameViewModel.shakeEpoch += 1 },
-                                registerWrongTapForHintPulse = { registerWrongTapForHintPulse() },
+                                registerWrongTapForHintPulse = { HintPulseActions.registerWrongTapForHintPulse(gameViewModel) },
                                 chapterId = chapterId,
                                 stationId = stationId,
                                 scope = scope,
@@ -1295,7 +1286,7 @@ fun GameScreen(
                                     gameViewModel.correctTapPulseEpoch += 1
                                 },
                                 advanceAfterRound = { isLast -> advanceAfterRound(isLast) },
-                                registerWrongTapForHintPulse = { registerWrongTapForHintPulse() },
+                                registerWrongTapForHintPulse = { HintPulseActions.registerWrongTapForHintPulse(gameViewModel) },
                                 flashStation4WrongLetter = { letter ->
                                     gameViewModel.station4WrongFlashLetter = letter
                                     gameViewModel.station4WrongFlashEpoch += 1
@@ -1341,7 +1332,7 @@ fun GameScreen(
                                 scope = scope,
                                 voice = voice,
                                 advanceAfterRound = { isLast -> advanceAfterRound(isLast) },
-                                registerWrongTapForHintPulse = { registerWrongTapForHintPulse() },
+                                registerWrongTapForHintPulse = { HintPulseActions.registerWrongTapForHintPulse(gameViewModel) },
                                 onWrongFeedback = { wrongWordCatalogId ->
                                     onWrongFeedback(wrongWordCatalogId = wrongWordCatalogId)
                                 },
@@ -1360,7 +1351,7 @@ fun GameScreen(
                                 scope = scope,
                                 voice = voice,
                                 advanceAfterRound = { isLast -> advanceAfterRound(isLast) },
-                                registerWrongTapForHintPulse = { registerWrongTapForHintPulse() },
+                                registerWrongTapForHintPulse = { HintPulseActions.registerWrongTapForHintPulse(gameViewModel) },
                                 onWrongFeedback = { wrongWordCatalogId, generic ->
                                     if (generic) {
                                         onWrongFeedback()
