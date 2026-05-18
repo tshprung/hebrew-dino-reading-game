@@ -928,14 +928,12 @@ fun GameScreen(
         )
     }
 
-    LaunchedEffect(dinoVisual) {
-        if (dinoVisual != DinoVisual.Jump) return@LaunchedEffect
-        repeat(9) { i ->
-            jumpFrameIndex = i % jumpFrames.size
-            delay(85)
-        }
-        dinoVisual = DinoVisual.Idle
-    }
+    DinoJumpAnimation(
+        dinoVisual = dinoVisual,
+        jumpFramesCount = jumpFrames.size,
+        setJumpFrameIndex = { idx -> jumpFrameIndex = idx },
+        setDinoVisual = { v -> dinoVisual = v },
+    )
 
     LaunchedEffect(hintPulseEpoch, stationId) {
         if (hintPulseEpoch <= 0) return@LaunchedEffect
