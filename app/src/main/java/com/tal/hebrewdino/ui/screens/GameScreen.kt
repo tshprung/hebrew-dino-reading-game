@@ -866,15 +866,16 @@ fun GameScreen(
 
     val current = session.currentQuestion
     if (current == null) {
-        // Safety: if we reached the end and for some reason the snapshotFlow completion path didn't navigate yet,
-        // fire completion once so we never get "blank screen stuck".
-        LaunchedEffect(stationId, session.currentIndex) {
-            if (!completionCallbackFired) {
-                completionCallbackFired = true
-                onComplete(stationId, session.correctCount, session.mistakeCount)
-            }
-        }
-        Box(modifier = modifier.fillMaxSize())
+        GameCompletionSafety(
+            stationId = stationId,
+            sessionCurrentIndex = session.currentIndex,
+            completionCallbackFired = completionCallbackFired,
+            markCompletionCallbackFired = { completionCallbackFired = true },
+            sessionCorrectCount = session.correctCount,
+            sessionMistakeCount = session.mistakeCount,
+            onComplete = onComplete,
+            modifier = modifier,
+        )
         return
     }
 
