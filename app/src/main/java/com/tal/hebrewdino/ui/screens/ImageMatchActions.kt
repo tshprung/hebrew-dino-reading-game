@@ -14,6 +14,7 @@ import kotlinx.coroutines.launch
 internal object ImageMatchActions {
     fun handleImageToWordAttempt(
         choiceId: String,
+        gameViewModel: GameViewModel,
         consumeTapCooldown: () -> Boolean,
         cancelFeedbackVoice: () -> Unit,
         audioEnabled: Boolean,
@@ -22,7 +23,6 @@ internal object ImageMatchActions {
         scope: CoroutineScope,
         voice: VoicePlayer,
         advanceAfterRound: suspend (Boolean) -> Unit,
-        registerWrongTapForHintPulse: () -> Unit,
         onWrongFeedback: (wrongWordCatalogId: String?) -> Unit,
     ): Boolean {
         if (!consumeTapCooldown()) return false
@@ -58,7 +58,7 @@ internal object ImageMatchActions {
             }
             AnswerResult.Wrong -> {
                 if (audioEnabled) ChildGameAudioHooks.onWrong()
-                registerWrongTapForHintPulse()
+                HintPulseActions.registerWrongTapForHintPulse(gameViewModel)
                 onWrongFeedback(choiceId)
                 false
             }
@@ -115,6 +115,7 @@ internal object ImageMatchActions {
 
     fun handleImageMatchAttempt(
         choiceId: String,
+        gameViewModel: GameViewModel,
         consumeTapCooldown: () -> Boolean,
         cancelFeedbackVoice: () -> Unit,
         audioEnabled: Boolean,
@@ -125,7 +126,6 @@ internal object ImageMatchActions {
         scope: CoroutineScope,
         voice: VoicePlayer,
         advanceAfterRound: suspend (Boolean) -> Unit,
-        registerWrongTapForHintPulse: () -> Unit,
         onWrongFeedback: (wrongWordCatalogId: String?, generic: Boolean) -> Unit,
     ): Boolean {
         if (!consumeTapCooldown()) return false
@@ -146,7 +146,7 @@ internal object ImageMatchActions {
             }
             AnswerResult.Wrong -> {
                 if (audioEnabled) ChildGameAudioHooks.onWrong()
-                registerWrongTapForHintPulse()
+                HintPulseActions.registerWrongTapForHintPulse(gameViewModel)
                 if (sagaEpisode && stationId == Chapter1StationOrder.PICTURE_PICK_ALL) {
                     onWrongFeedback(choiceId, false)
                 } else {

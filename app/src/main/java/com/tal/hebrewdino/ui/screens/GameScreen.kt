@@ -1294,6 +1294,7 @@ fun GameScreen(
                         handleImageToWordAttempt = { choiceId ->
                             ImageMatchActions.handleImageToWordAttempt(
                                 choiceId = choiceId,
+                                gameViewModel = gameViewModel,
                                 consumeTapCooldown = { consumeTapCooldown() },
                                 cancelFeedbackVoice = { cancelFeedbackVoice() },
                                 audioEnabled = audioEnabled,
@@ -1302,7 +1303,6 @@ fun GameScreen(
                                 scope = scope,
                                 voice = voice,
                                 advanceAfterRound = { isLast -> advanceAfterRound(isLast) },
-                                registerWrongTapForHintPulse = { HintPulseActions.registerWrongTapForHintPulse(gameViewModel) },
                                 onWrongFeedback = { wrongWordCatalogId ->
                                     onWrongFeedback(wrongWordCatalogId = wrongWordCatalogId)
                                 },
@@ -1311,6 +1311,7 @@ fun GameScreen(
                         handleImageMatchAttempt = { choiceId ->
                             ImageMatchActions.handleImageMatchAttempt(
                                 choiceId = choiceId,
+                                gameViewModel = gameViewModel,
                                 consumeTapCooldown = { consumeTapCooldown() },
                                 cancelFeedbackVoice = { cancelFeedbackVoice() },
                                 audioEnabled = audioEnabled,
@@ -1321,7 +1322,6 @@ fun GameScreen(
                                 scope = scope,
                                 voice = voice,
                                 advanceAfterRound = { isLast -> advanceAfterRound(isLast) },
-                                registerWrongTapForHintPulse = { HintPulseActions.registerWrongTapForHintPulse(gameViewModel) },
                                 onWrongFeedback = { wrongWordCatalogId, generic ->
                                     if (generic) {
                                         onWrongFeedback()
