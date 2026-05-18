@@ -59,11 +59,10 @@ internal object FindGridActions {
 
     fun handleCellTapped(
         consumeTapCooldown: () -> Boolean,
+        gameViewModel: GameViewModel,
         sagaUsesFindGridAudioStaging: Boolean,
         cancelFeedbackVoice: () -> Unit,
         session: LevelSession,
-        bumpShakeEpoch: () -> Unit,
-        registerWrongTapForHintPulse: () -> Unit,
         onWrongFeedback: (wrongPickedLetter: String?, wrongPickedLetterAlreadySpoken: Boolean) -> Unit,
         index: Int,
         question: Question.FindLetterGridQuestion,
@@ -73,8 +72,8 @@ internal object FindGridActions {
             cancelFeedbackVoice()
         }
         session.wrongTap()
-        bumpShakeEpoch()
-        registerWrongTapForHintPulse()
+        gameViewModel.shakeEpoch += 1
+        HintPulseActions.registerWrongTapForHintPulse(gameViewModel)
         val tappedLetter = question.cells.getOrNull(index)
         if (!sagaUsesFindGridAudioStaging) {
             onWrongFeedback(tappedLetter, false)

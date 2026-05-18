@@ -1144,11 +1144,10 @@ fun GameScreen(
                         handleFindGridCellTapped = { index, question ->
                             FindGridActions.handleCellTapped(
                                 consumeTapCooldown = { consumeTapCooldown() },
+                                gameViewModel = gameViewModel,
                                 sagaUsesFindGridAudioStaging = sagaUsesFindGridAudioStaging,
                                 cancelFeedbackVoice = { cancelFeedbackVoice() },
                                 session = session,
-                                bumpShakeEpoch = { gameViewModel.shakeEpoch += 1 },
-                                registerWrongTapForHintPulse = { HintPulseActions.registerWrongTapForHintPulse(gameViewModel) },
                                 onWrongFeedback = { wrongPickedLetter, wrongPickedLetterAlreadySpoken ->
                                     onWrongFeedback(
                                         wrongPickedLetter = wrongPickedLetter,
