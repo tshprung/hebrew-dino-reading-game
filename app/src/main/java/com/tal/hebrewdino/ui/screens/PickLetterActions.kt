@@ -14,6 +14,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 internal object PickLetterActions {
     fun handlePick(
         picked: String,
+        gameViewModel: GameViewModel,
         consumeTapCooldown: () -> Boolean,
         cancelFeedbackVoice: () -> Unit,
         audioEnabled: Boolean,
@@ -24,8 +25,6 @@ internal object PickLetterActions {
         scope: CoroutineScope,
         voice: VoicePlayer,
         sfx: SoundPoolPlayer,
-        setCorrectTapPulse: (letter: String) -> Unit,
-        setStation1PinnedCorrectLetter: (String?) -> Unit,
         getFeedbackVoiceJob: () -> Job?,
         setFeedbackVoiceJob: (Job?) -> Unit,
         bumpShakeEpoch: () -> Unit,
@@ -40,7 +39,8 @@ internal object PickLetterActions {
                 if (audioEnabled && !sagaUsesPickLetterAudioStaging) {
                     ChildGameAudioHooks.onCorrect()
                 }
-                setCorrectTapPulse(picked)
+                gameViewModel.correctTapPulseLetter = picked
+                gameViewModel.correctTapPulseEpoch += 1
                 if (audioEnabled && isChapter3HighlightedLetterInWordStation) {
                     val wordDone = session.highlightedLetterInWordCompletesWordAfterCorrectRound()
                     scope.launch {
@@ -83,7 +83,7 @@ internal object PickLetterActions {
                             advanceAfterRound(isLast, false)
                             return@launch
                         }
-                        setStation1PinnedCorrectLetter(picked)
+                        gameViewModel.station1PinnedCorrectLetter = picked
                         val praise =
                             AudioClips.station1CorrectPraiseTailCandidates()
                                 .toMutableList()

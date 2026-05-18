@@ -1170,6 +1170,7 @@ fun GameScreen(
                         handlePickLetterPick = { picked ->
                             PickLetterActions.handlePick(
                                 picked = picked,
+                                gameViewModel = gameViewModel,
                                 consumeTapCooldown = { consumeTapCooldown() },
                                 cancelFeedbackVoice = { cancelFeedbackVoice() },
                                 audioEnabled = audioEnabled,
@@ -1180,11 +1181,6 @@ fun GameScreen(
                                 scope = scope,
                                 voice = voice,
                                 sfx = sfx,
-                                setCorrectTapPulse = { letter ->
-                                    gameViewModel.correctTapPulseLetter = letter
-                                    gameViewModel.correctTapPulseEpoch += 1
-                                },
-                                setStation1PinnedCorrectLetter = { letter -> gameViewModel.station1PinnedCorrectLetter = letter },
                                 getFeedbackVoiceJob = { feedbackVoiceJob },
                                 setFeedbackVoiceJob = { job -> feedbackVoiceJob = job },
                                 bumpShakeEpoch = { gameViewModel.shakeEpoch += 1 },
