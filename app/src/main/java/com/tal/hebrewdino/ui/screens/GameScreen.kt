@@ -1226,77 +1226,6 @@ fun GameScreen(
         }
     }
 
-    fun handleFindGridSagaGridLetterTapped(
-        tapped: String,
-        question: Question.FindLetterGridQuestion,
-    ) {
-        if (!audioEnabled) return
-        sfx.stopAllStreams()
-        station3VoiceStreamId = 0
-        val isCorrect = tapped == question.targetLetter
-        feedbackVoiceJob =
-            scope.launch {
-                if (isCorrect) {
-                    sfx.playFirstAvailable(AudioClips.SfxCorrect, volume = 0.62f)
-                } else {
-                    val tappedClip = AudioClips.letterNameClip(tapped)
-                    when (Random.nextInt(100)) {
-                        in 0..39 -> {
-                            sfx.playFirstAvailable(AudioClips.SfxWrong, volume = 0.58f)
-                        }
-                        in 40..89 -> {
-                            if (tappedClip != null) {
-                                station3VoiceStreamId =
-                                    sfx.playReturningStreamId(tappedClip, volume = 1f) ?: 0
-                            } else {
-                                sfx.playFirstAvailable(AudioClips.SfxWrong, volume = 0.58f)
-                            }
-                        }
-                        else -> {
-                            sfx.playFirstAvailable(AudioClips.SfxWrong, volume = 0.58f)
-                            if (tappedClip != null) {
-                                station3VoiceStreamId =
-                                    sfx.playReturningStreamId(tappedClip, volume = 1f) ?: 0
-                            }
-                        }
-                    }
-                }
-            }
-    }
-
-    fun handleFindGridCellTapped(
-        index: Int,
-        question: Question.FindLetterGridQuestion,
-    ) {
-        if (!consumeTapCooldown()) return
-        if (!(sagaUsesFindGridAudioStaging)) {
-            cancelFeedbackVoice()
-        }
-        session.wrongTap()
-        shakeEpoch += 1
-        registerWrongTapForHintPulse()
-        val tappedLetter = question.cells.getOrNull(index)
-        if (!(sagaUsesFindGridAudioStaging)) {
-            onWrongFeedback(
-                wrongPickedLetter = tappedLetter,
-                wrongPickedLetterAlreadySpoken = false,
-            )
-        }
-    }
-
-    fun handleFindGridCompleted() {
-        if (!consumeTapCooldown()) return
-        scope.launch {
-            when (session.completeCurrentRound()) {
-                AnswerResult.Correct -> {
-                    val isLast = session.currentIndex >= session.totalQuestions - 1
-                    advanceAfterRound(isLast)
-                }
-                else -> {}
-            }
-        }
-    }
-
     fun handleImageToWordAttempt(choiceId: String): Boolean {
         if (!consumeTapCooldown()) return false
         cancelFeedbackVoice()
@@ -1581,10 +1510,42 @@ fun GameScreen(
                         consumeTapCooldown = { consumeTapCooldown() },
                         performSideHelpReplay = { performSideHelpReplay() },
                         handleFindGridSagaGridLetterTapped = { tapped, question ->
-                            handleFindGridSagaGridLetterTapped(tapped, question)
+                            FindGridActions.handleSagaGridLetterTapped(
+                                audioEnabled = audioEnabled,
+                                tapped = tapped,
+                                question = question,
+                                scope = scope,
+                                sfx = sfx,
+                                setFeedbackVoiceJob = { job -> feedbackVoiceJob = job },
+                                setStation3VoiceStreamId = { id -> station3VoiceStreamId = id },
+                            )
                         },
-                        handleFindGridCellTapped = { index, question -> handleFindGridCellTapped(index, question) },
-                        handleFindGridCompleted = { handleFindGridCompleted() },
+                        handleFindGridCellTapped = { index, question ->
+                            FindGridActions.handleCellTapped(
+                                consumeTapCooldown = { consumeTapCooldown() },
+                                sagaUsesFindGridAudioStaging = sagaUsesFindGridAudioStaging,
+                                cancelFeedbackVoice = { cancelFeedbackVoice() },
+                                session = session,
+                                bumpShakeEpoch = { shakeEpoch += 1 },
+                                registerWrongTapForHintPulse = { registerWrongTapForHintPulse() },
+                                onWrongFeedback = { wrongPickedLetter, wrongPickedLetterAlreadySpoken ->
+                                    onWrongFeedback(
+                                        wrongPickedLetter = wrongPickedLetter,
+                                        wrongPickedLetterAlreadySpoken = wrongPickedLetterAlreadySpoken,
+                                    )
+                                },
+                                index = index,
+                                question = question,
+                            )
+                        },
+                        handleFindGridCompleted = {
+                            FindGridActions.handleCompleted(
+                                consumeTapCooldown = { consumeTapCooldown() },
+                                scope = scope,
+                                session = session,
+                                advanceAfterRound = { isLast -> advanceAfterRound(isLast) },
+                            )
+                        },
                         handlePickLetterPick = { picked -> handlePickLetterPick(picked) },
                         handlePopBalloonsPopSfx = { letter, isCorrect, finalCorrectBalloon, balloonIndex ->
                             PopBalloonsActions.handlePopSfx(
