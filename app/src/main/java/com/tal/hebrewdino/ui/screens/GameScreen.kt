@@ -698,9 +698,6 @@ fun GameScreen(
     val hintHeaderScale = remember(stationId) { Animatable(1f) }
     var entryPulseEpoch by remember(stationId) { mutableIntStateOf(0) }
     val entryPulseScale = remember(stationId) { Animatable(1f) }
-    var station4WrongFlashEpoch by remember(stationId, session.currentIndex) { mutableIntStateOf(0) }
-    var station4WrongFlashLetter by remember(stationId, session.currentIndex) { mutableStateOf<String?>(null) }
-    var station4PinnedCorrectLetter by remember(stationId, session.currentIndex) { mutableStateOf<String?>(null) }
     var feedbackVoiceJob by remember(stationId) { mutableStateOf<Job?>(null) }
     var promptVoiceJob by remember(stationId) { mutableStateOf<Job?>(null) }
     var station1VoiceStreamId by remember(stationId) { mutableIntStateOf(0) }
@@ -712,11 +709,8 @@ fun GameScreen(
      * Episode 1 station 2: after the last correct balloon, show a small balloon (last pop) beside the
      * main target chip until round-end praise finishes — not a second letter chip.
      */
-    var station2PinnedBalloonLetter by remember(stationId) { mutableStateOf<String?>(null) }
-    var station2PinnedBalloonColor by remember(stationId) { mutableStateOf<Color?>(null) }
     /** Episode 1 station 2: counts correct pops within the current question (for pop SFX variety). */
     var station2CorrectPopCount by remember(stationId, session.currentIndex) { mutableIntStateOf(0) }
-    var station1PinnedCorrectLetter by remember(stationId) { mutableStateOf<String?>(null) }
     val popBalloonsHelpControlsEnabled = stationUiSpec.popBalloonsHelpControlsEnabled && !episode4HelpSt15
     val showPopBalloonsTargetLetterChip = !listenOnly && !popBalloonsHelpControlsEnabled
     val balloonHelp = rememberBalloonHelpController(stationId = stationId, scope = scope)
@@ -911,14 +905,17 @@ fun GameScreen(
             setInputLocked = { locked -> gameViewModel.inputLocked = locked },
             setWrongTapsThisQuestion = { gameViewModel.wrongTapsThisQuestion = it },
             setCorrectTapPulseLetter = { gameViewModel.correctTapPulseLetter = it },
-            clearStation4WrongFlashLetter = { station4WrongFlashLetter = null },
-            clearStation4PinnedCorrectLetter = { station4PinnedCorrectLetter = null },
+            clearStation4WrongFlashLetter = {
+                gameViewModel.station4WrongFlashLetter = null
+                gameViewModel.station4WrongFlashEpoch = 0
+            },
+            clearStation4PinnedCorrectLetter = { gameViewModel.station4PinnedCorrectLetter = null },
             resetEpisode4HelpForNewQuestion = { episode4Help.resetForNewQuestion() },
             resetBalloonHelpForNewQuestion = { balloonHelp.reset() },
-            clearStation1PinnedCorrectLetter = { station1PinnedCorrectLetter = null },
+            clearStation1PinnedCorrectLetter = { gameViewModel.station1PinnedCorrectLetter = null },
             clearPinnedBalloon = {
-                station2PinnedBalloonLetter = null
-                station2PinnedBalloonColor = null
+                gameViewModel.station2PinnedBalloonLetter = null
+                gameViewModel.station2PinnedBalloonColor = null
             },
             cancelFeedbackVoice = { cancelFeedbackVoice() },
             setPromptVoiceJob = { job -> promptVoiceJob = job },
@@ -976,8 +973,8 @@ fun GameScreen(
             dinoScale = dinoScale,
             contentAlpha = contentAlpha,
             clearPinnedBalloon = {
-                station2PinnedBalloonLetter = null
-                station2PinnedBalloonColor = null
+                gameViewModel.station2PinnedBalloonLetter = null
+                gameViewModel.station2PinnedBalloonColor = null
             },
             session = session,
             getCompletionCallbackFired = { completionCallbackFired },
@@ -1144,9 +1141,9 @@ fun GameScreen(
                         popBalloonsHelpControlsEnabled = popBalloonsHelpControlsEnabled,
                         balloonHelpHintLetter = balloonHelp.hintLetter,
                         showPopBalloonsTargetLetterChip = showPopBalloonsTargetLetterChip,
-                        station1PinnedCorrectLetter = station1PinnedCorrectLetter,
-                        station2PinnedBalloonLetter = station2PinnedBalloonLetter,
-                        station2PinnedBalloonColor = station2PinnedBalloonColor,
+                        station1PinnedCorrectLetter = gameViewModel.station1PinnedCorrectLetter,
+                        station2PinnedBalloonLetter = gameViewModel.station2PinnedBalloonLetter,
+                        station2PinnedBalloonColor = gameViewModel.station2PinnedBalloonColor,
                         hintHeaderScale = hintHeaderScale.value,
                         enabled = gameChoicesEnabled,
                         shakeEpoch = shakeEpoch,
@@ -1154,9 +1151,9 @@ fun GameScreen(
                         hintPulseEpoch = gameViewModel.hintPulseEpoch,
                         correctTapPulseLetter = gameViewModel.correctTapPulseLetter,
                         correctTapPulseEpoch = gameViewModel.correctTapPulseEpoch,
-                        station4WrongFlashLetter = station4WrongFlashLetter,
-                        station4WrongFlashEpoch = station4WrongFlashEpoch,
-                        station4PinnedCorrectLetter = station4PinnedCorrectLetter,
+                        station4WrongFlashLetter = gameViewModel.station4WrongFlashLetter,
+                        station4WrongFlashEpoch = gameViewModel.station4WrongFlashEpoch,
+                        station4PinnedCorrectLetter = gameViewModel.station4PinnedCorrectLetter,
                         entryPulseEpoch = entryPulseEpoch,
                         entryPulseScale = entryPulseScale.value,
                         optionsShakePx = optionsShake.value,
@@ -1223,7 +1220,7 @@ fun GameScreen(
                                     gameViewModel.correctTapPulseLetter = letter
                                     gameViewModel.correctTapPulseEpoch += 1
                                 },
-                                setStation1PinnedCorrectLetter = { letter -> station1PinnedCorrectLetter = letter },
+                                setStation1PinnedCorrectLetter = { letter -> gameViewModel.station1PinnedCorrectLetter = letter },
                                 getFeedbackVoiceJob = { feedbackVoiceJob },
                                 setFeedbackVoiceJob = { job -> feedbackVoiceJob = job },
                                 bumpShakeEpoch = { shakeEpoch += 1 },
@@ -1287,8 +1284,8 @@ fun GameScreen(
                                 audioEnabled = audioEnabled,
                                 cancelFeedbackVoice = { cancelFeedbackVoice() },
                                 setStation2PinnedBalloon = { letter, color ->
-                                    station2PinnedBalloonLetter = letter
-                                    station2PinnedBalloonColor = color
+                                    gameViewModel.station2PinnedBalloonLetter = letter
+                                    gameViewModel.station2PinnedBalloonColor = color
                                 },
                                 session = session,
                                 scope = scope,
@@ -1310,7 +1307,7 @@ fun GameScreen(
                                 voice = voice,
                                 getFeedbackVoiceJob = { feedbackVoiceJob },
                                 setFeedbackVoiceJob = { job -> feedbackVoiceJob = job },
-                                setStation4PinnedCorrectLetter = { letter -> station4PinnedCorrectLetter = letter },
+                                setStation4PinnedCorrectLetter = { letter -> gameViewModel.station4PinnedCorrectLetter = letter },
                                 setCorrectTapPulse = { letter ->
                                     gameViewModel.correctTapPulseLetter = letter
                                     gameViewModel.correctTapPulseEpoch += 1
@@ -1318,8 +1315,8 @@ fun GameScreen(
                                 advanceAfterRound = { isLast -> advanceAfterRound(isLast) },
                                 registerWrongTapForHintPulse = { registerWrongTapForHintPulse() },
                                 flashStation4WrongLetter = { letter ->
-                                    station4WrongFlashLetter = letter
-                                    station4WrongFlashEpoch += 1
+                                    gameViewModel.station4WrongFlashLetter = letter
+                                    gameViewModel.station4WrongFlashEpoch += 1
                                 },
                                 onWrongFeedback = { wrongPickedLetter, wrongPickedLetterAlreadySpoken ->
                                     onWrongFeedback(
