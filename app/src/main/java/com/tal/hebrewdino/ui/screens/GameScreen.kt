@@ -731,30 +731,30 @@ fun GameScreen(
             !(popBalloonsHelpControlsEnabled && balloonHelp.hintLocksChoices)
 
     fun stopStagingSfx(stopAllStreams: Boolean) {
-        if (sagaUsesPickLetterAudioStaging) {
-            if (stopAllStreams) sfx.stopAllStreams()
-            sfx.stopStream(station1VoiceStreamId)
-            station1VoiceStreamId = 0
-        }
-        if (usesPopBalloonsSoundPoolPrompt) {
-            if (stopAllStreams) sfx.stopAllStreams()
-            sfx.stopStream(station2VoiceStreamId)
-            station2VoiceStreamId = 0
-        }
-        if (sagaUsesFindGridAudioStaging) {
-            if (stopAllStreams) sfx.stopAllStreams()
-            sfx.stopStream(station3VoiceStreamId)
-            station3VoiceStreamId = 0
-        }
+        GameAudioActions.stopStagingSfx(
+            sagaUsesPickLetterAudioStaging = sagaUsesPickLetterAudioStaging,
+            usesPopBalloonsSoundPoolPrompt = usesPopBalloonsSoundPoolPrompt,
+            sagaUsesFindGridAudioStaging = sagaUsesFindGridAudioStaging,
+            sfx = sfx,
+            stopAllStreams = stopAllStreams,
+            getStation1VoiceStreamId = { station1VoiceStreamId },
+            setStation1VoiceStreamId = { id -> station1VoiceStreamId = id },
+            getStation2VoiceStreamId = { station2VoiceStreamId },
+            setStation2VoiceStreamId = { id -> station2VoiceStreamId = id },
+            getStation3VoiceStreamId = { station3VoiceStreamId },
+            setStation3VoiceStreamId = { id -> station3VoiceStreamId = id },
+        )
     }
 
     fun cancelFeedbackVoice() {
-        feedbackVoiceJob?.cancel()
-        feedbackVoiceJob = null
-        promptVoiceJob?.cancel()
-        promptVoiceJob = null
-        voice.stopNow()
-        stopStagingSfx(stopAllStreams = true)
+        GameAudioActions.cancelFeedbackVoice(
+            voice = voice,
+            getFeedbackVoiceJob = { feedbackVoiceJob },
+            setFeedbackVoiceJob = { job -> feedbackVoiceJob = job },
+            getPromptVoiceJob = { promptVoiceJob },
+            setPromptVoiceJob = { job -> promptVoiceJob = job },
+            stopStagingSfx = { stopAll -> stopStagingSfx(stopAllStreams = stopAll) },
+        )
     }
 
     DisposableEffect(lifecycleOwner, stationId) {
