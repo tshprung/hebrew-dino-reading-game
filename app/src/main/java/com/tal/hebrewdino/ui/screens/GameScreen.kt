@@ -1270,10 +1270,6 @@ fun GameScreen(
                                 setFeedbackVoiceJob = { job -> feedbackVoiceJob = job },
                                 advanceAfterRound = { isLast -> advanceAfterRound(isLast) },
                                 registerWrongTapForHintPulse = { HintPulseActions.registerWrongTapForHintPulse(gameViewModel) },
-                                flashStation4WrongLetter = { letter ->
-                                    gameViewModel.station4WrongFlashLetter = letter
-                                    gameViewModel.station4WrongFlashEpoch += 1
-                                },
                                 onWrongFeedback = { wrongPickedLetter, wrongPickedLetterAlreadySpoken ->
                                     onWrongFeedback(
                                         wrongPickedLetter = wrongPickedLetter,

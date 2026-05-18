@@ -28,7 +28,6 @@ internal object PictureStartsWithActions {
         setFeedbackVoiceJob: (Job?) -> Unit,
         advanceAfterRound: suspend (Boolean) -> Unit,
         registerWrongTapForHintPulse: () -> Unit,
-        flashStation4WrongLetter: (String) -> Unit,
         onWrongFeedback: (wrongPickedLetter: String?, wrongPickedLetterAlreadySpoken: Boolean) -> Unit,
     ) {
         if (!consumeTapCooldown()) return
@@ -95,7 +94,8 @@ internal object PictureStartsWithActions {
                 if (audioEnabled) ChildGameAudioHooks.onWrong()
                 registerWrongTapForHintPulse()
                 if (sagaEpisode && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
-                    flashStation4WrongLetter(picked)
+                    gameViewModel.station4WrongFlashLetter = picked
+                    gameViewModel.station4WrongFlashEpoch += 1
                     onWrongFeedback(picked, false)
                 } else {
                     if (audioEnabled && (chapterId == 3 || chapterId == 6) && stationId == 1) {
