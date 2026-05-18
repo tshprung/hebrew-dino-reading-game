@@ -40,6 +40,7 @@ import androidx.compose.ui.zIndex
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.tal.hebrewdino.R
 import com.tal.hebrewdino.ui.audio.AudioClips
 import com.tal.hebrewdino.ui.audio.GameAudioEngine
@@ -631,12 +632,12 @@ fun GameScreen(
     // UX: no audio for now (per request).
     val audioEnabled = true
 
-    // Must include letterPoolSpec + chapterId: station 1 plan is identical across chapters 1–4 (same mode/count),
-    // but the letter pool differs — reusing a cached LevelSession would throw in generators / desync UI.
-    val session =
-        remember(stationId, letterPoolSpec, chapterId, plan) {
-            LevelSession(plan = plan, letterPoolSpec = letterPoolSpec)
-        }
+    val gameViewModel: GameViewModel =
+        viewModel(
+            key = "game-$chapterId-$stationId",
+            factory = remember(plan, letterPoolSpec) { GameViewModel.Factory(plan = plan, letterPoolSpec = letterPoolSpec) },
+        )
+    val session = gameViewModel.session
     val listenOnly = plan.listenOnlyTargetPrompt
     val stationUiSpec = remember(chapterId, stationId) { StationBehaviorRegistry.getStationUiSpec(chapterId, stationId) }
     val episode4HelpSt15 = Episode4Help.isHelpColumnActive(stationUiSpec)
@@ -685,8 +686,6 @@ fun GameScreen(
     val gameFeedback = remember(stationId, sfx, view) { GameFeedback(scope, sfx, view) }
     var completionCallbackFired by remember(stationId) { mutableStateOf(false) }
 
-    var phase by remember(stationId) { mutableStateOf(GamePhase.Intro) }
-    var inputLocked by remember(stationId) { mutableStateOf(true) }
     val contentAlpha = remember(stationId) { Animatable(1f) }
     val optionsShake = remember(stationId) { Animatable(0f) }
     var dinoVisual by remember(stationId) { mutableStateOf(DinoVisual.Idle) }
@@ -726,7 +725,7 @@ fun GameScreen(
     val showPopBalloonsTargetLetterChip = !listenOnly && !popBalloonsHelpControlsEnabled
     val balloonHelp = rememberBalloonHelpController(stationId = stationId, scope = scope)
     val gameChoicesEnabled =
-        !inputLocked &&
+        !gameViewModel.inputLocked &&
             !episode4Help.hintLocksChoices &&
             !(popBalloonsHelpControlsEnabled && balloonHelp.hintLocksChoices)
 
@@ -789,7 +788,7 @@ fun GameScreen(
         feedbackVoiceJob =
             SideHelpActions.startReplay(
                 audioEnabled = audioEnabled,
-                isPlayPhase = phase == GamePhase.Play,
+                isPlayPhase = gameViewModel.phase == GamePhase.Play,
                 episode4HelpEnabled = episode4HelpSt15,
                 popBalloonsHelpEnabled = popBalloonsHelpControlsEnabled,
                 chapterId = chapterId,
@@ -807,7 +806,7 @@ fun GameScreen(
 
     fun performSideHelpHint() {
         SideHelpActions.performHint(
-            isPlayPhase = phase == GamePhase.Play,
+            isPlayPhase = gameViewModel.phase == GamePhase.Play,
             episode4HelpEnabled = episode4HelpSt15,
             popBalloonsHelpEnabled = popBalloonsHelpControlsEnabled,
             stationId = stationId,
@@ -912,8 +911,8 @@ fun GameScreen(
             station4IntroToWordLeadScale = Station4IntroToWordLeadScale,
             station4IntroToWordGapBoost = Station4IntroToWordGapBoost,
             station4IntroToWordExtraPauseMs = Station4IntroToWordExtraPauseMs,
-            setPhase = { p -> phase = p },
-            setInputLocked = { locked -> inputLocked = locked },
+            setPhase = { p -> gameViewModel.phase = p },
+            setInputLocked = { locked -> gameViewModel.inputLocked = locked },
             setWrongTapsThisQuestion = { wrongTapsThisQuestion = it },
             setCorrectTapPulseLetter = { correctTapPulseLetter = it },
             clearStation4WrongFlashLetter = { station4WrongFlashLetter = null },
@@ -974,7 +973,7 @@ fun GameScreen(
             cancelFeedbackVoice = { cancelFeedbackVoice() },
             getFeedbackVoiceJob = { feedbackVoiceJob },
             setFeedbackVoiceJob = { job -> feedbackVoiceJob = job },
-            setInputLocked = { locked -> inputLocked = locked },
+            setInputLocked = { locked -> gameViewModel.inputLocked = locked },
             setDinoVisual = { v -> dinoVisual = v },
             dinoForward = dinoForward,
             forwardDir = forwardDir,
@@ -1016,7 +1015,7 @@ fun GameScreen(
             dinoSlip = dinoSlip,
             dinoTilt = dinoTilt,
             setDinoVisual = { v -> dinoVisual = v },
-            setInputLocked = { locked -> inputLocked = locked },
+            setInputLocked = { locked -> gameViewModel.inputLocked = locked },
             onWrongHook = { ChildGameAudioHooks.onWrong() },
             wrongPickedLetter = wrongPickedLetter,
             wrongWordCatalogId = wrongWordCatalogId,
@@ -1082,7 +1081,9 @@ fun GameScreen(
                     GameScreenDinoLayer(
                         idleRes = dinoDrawable,
                         talkFrameResIds = talkFrames,
-                        isTalking = dinoTalking || (isSagaEpisode(chapterId) && inputLocked && dinoVisual == DinoVisual.Jump),
+                        isTalking =
+                            dinoTalking ||
+                                (isSagaEpisode(chapterId) && gameViewModel.inputLocked && dinoVisual == DinoVisual.Jump),
                         dinoForward = dinoForward,
                         dinoSlip = dinoSlip,
                         dinoTilt = dinoTilt,
@@ -1124,7 +1125,7 @@ fun GameScreen(
                     contentAlignment = Alignment.Center,
                 ) {
                     GameQuestionHost(
-                        phase = phase,
+                        phase = gameViewModel.phase,
                         stationUiSpec = stationUiSpec,
                         stationId = stationId,
                         chapterId = chapterId,
@@ -1276,7 +1277,7 @@ fun GameScreen(
                                 stationId = stationId,
                                 scope = scope,
                                 optionsShake = optionsShake,
-                                setInputLocked = { locked -> inputLocked = locked },
+                                setInputLocked = { locked -> gameViewModel.inputLocked = locked },
                                 setDinoVisual = { v -> dinoVisual = v },
                             )
                         },
@@ -1416,7 +1417,9 @@ fun GameScreen(
                 GameScreenDinoLayer(
                     idleRes = dinoDrawable,
                     talkFrameResIds = talkFrames,
-                    isTalking = dinoTalking || (isSagaEpisode(chapterId) && inputLocked && dinoVisual == DinoVisual.Jump),
+                    isTalking =
+                        dinoTalking ||
+                            (isSagaEpisode(chapterId) && gameViewModel.inputLocked && dinoVisual == DinoVisual.Jump),
                     dinoForward = dinoForward,
                     dinoSlip = dinoSlip,
                     dinoTilt = dinoTilt,
@@ -1428,9 +1431,9 @@ fun GameScreen(
             when {
                 episode4HelpSt15 ->
                     SideHelpControls(
-                        replayEnabled = phase == GamePhase.Play,
+                        replayEnabled = gameViewModel.phase == GamePhase.Play,
                         hintEnabled =
-                            phase == GamePhase.Play &&
+                            gameViewModel.phase == GamePhase.Play &&
                                 !episode4Help.hintLocksChoices &&
                                 stationUiSpec.hintMode != com.tal.hebrewdino.ui.domain.StationHintMode.None,
                         onReplay = { performSideHelpReplay() },
@@ -1438,8 +1441,8 @@ fun GameScreen(
                     )
                 popBalloonsHelpControlsEnabled ->
                     SideHelpControls(
-                        replayEnabled = phase == GamePhase.Play,
-                        hintEnabled = phase == GamePhase.Play && !balloonHelp.hintLocksChoices,
+                        replayEnabled = gameViewModel.phase == GamePhase.Play,
+                        hintEnabled = gameViewModel.phase == GamePhase.Play && !balloonHelp.hintLocksChoices,
                         onReplay = { performSideHelpReplay() },
                         onHint = { performSideHelpHint() },
                     )
@@ -1462,7 +1465,7 @@ fun GameScreen(
             chapterId = chapterId,
             stationId = stationId,
             episode4HelpSt15 = episode4HelpSt15,
-            phase = phase,
+            phase = gameViewModel.phase,
             audioEnabled = audioEnabled,
             session = session,
             scope = scope,
