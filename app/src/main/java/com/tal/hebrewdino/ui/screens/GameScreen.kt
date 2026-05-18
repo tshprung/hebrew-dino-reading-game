@@ -1183,8 +1183,6 @@ fun GameScreen(
                                 sfx = sfx,
                                 getFeedbackVoiceJob = { feedbackVoiceJob },
                                 setFeedbackVoiceJob = { job -> feedbackVoiceJob = job },
-                                bumpShakeEpoch = { gameViewModel.shakeEpoch += 1 },
-                                registerWrongTapForHintPulse = { HintPulseActions.registerWrongTapForHintPulse(gameViewModel) },
                                 onWrongFeedback = { wrongPickedLetter ->
                                     onWrongFeedback(wrongPickedLetter = wrongPickedLetter)
                                 },
@@ -1225,8 +1223,6 @@ fun GameScreen(
                                 cancelFeedbackVoice = { cancelFeedbackVoice() },
                                 onWrongFeedback = { onWrongFeedback() },
                                 session = session,
-                                bumpShakeEpoch = { gameViewModel.shakeEpoch += 1 },
-                                registerWrongTapForHintPulse = { HintPulseActions.registerWrongTapForHintPulse(gameViewModel) },
                                 chapterId = chapterId,
                                 stationId = stationId,
                                 scope = scope,
@@ -1266,7 +1262,6 @@ fun GameScreen(
                                 getFeedbackVoiceJob = { feedbackVoiceJob },
                                 setFeedbackVoiceJob = { job -> feedbackVoiceJob = job },
                                 advanceAfterRound = { isLast -> advanceAfterRound(isLast) },
-                                registerWrongTapForHintPulse = { HintPulseActions.registerWrongTapForHintPulse(gameViewModel) },
                                 onWrongFeedback = { wrongPickedLetter, wrongPickedLetterAlreadySpoken ->
                                     onWrongFeedback(
                                         wrongPickedLetter = wrongPickedLetter,

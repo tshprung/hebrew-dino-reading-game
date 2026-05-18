@@ -150,8 +150,6 @@ internal object PopBalloonsActions {
         cancelFeedbackVoice: () -> Unit,
         onWrongFeedback: () -> Unit,
         session: LevelSession,
-        bumpShakeEpoch: () -> Unit,
-        registerWrongTapForHintPulse: () -> Unit,
         chapterId: Int,
         stationId: Int,
         scope: CoroutineScope,
@@ -163,8 +161,8 @@ internal object PopBalloonsActions {
             cancelFeedbackVoice()
         }
         session.wrongTap()
-        bumpShakeEpoch()
-        registerWrongTapForHintPulse()
+        gameViewModel.shakeEpoch += 1
+        HintPulseActions.registerWrongTapForHintPulse(gameViewModel)
         if (sagaUsesPopBalloonsAudioStaging) {
             scope.launch {
                 gameViewModel.inputLocked = true

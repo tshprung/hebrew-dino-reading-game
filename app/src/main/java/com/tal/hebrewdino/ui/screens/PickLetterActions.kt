@@ -27,8 +27,6 @@ internal object PickLetterActions {
         sfx: SoundPoolPlayer,
         getFeedbackVoiceJob: () -> Job?,
         setFeedbackVoiceJob: (Job?) -> Unit,
-        bumpShakeEpoch: () -> Unit,
-        registerWrongTapForHintPulse: () -> Unit,
         onWrongFeedback: (wrongPickedLetter: String) -> Unit,
         advanceAfterRound: suspend (isLast: Boolean, ch3SpellMidWord: Boolean) -> Unit,
     ) {
@@ -111,8 +109,8 @@ internal object PickLetterActions {
                 ) {
                     ChildGameAudioHooks.onWrong()
                 }
-                bumpShakeEpoch()
-                registerWrongTapForHintPulse()
+                gameViewModel.shakeEpoch += 1
+                HintPulseActions.registerWrongTapForHintPulse(gameViewModel)
                 onWrongFeedback(picked)
             }
             AnswerResult.Finished -> {}
