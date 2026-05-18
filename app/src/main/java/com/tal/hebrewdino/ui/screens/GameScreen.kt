@@ -776,8 +776,13 @@ fun GameScreen(
     val tapCooldown = remember(stationId) { TapCooldown() }
     fun consumeTapCooldown(): Boolean = tapCooldown.consume()
     fun registerWrongTapForHintPulse() {
-        wrongTapsThisQuestion += 1
-        if (wrongTapsThisQuestion >= 2) hintPulseEpoch += 1
+        val (updatedWrongTaps, updatedHintEpoch) =
+            HintPulseActions.registerWrongTapForHintPulse(
+                wrongTapsThisQuestion = wrongTapsThisQuestion,
+                hintPulseEpoch = hintPulseEpoch,
+            )
+        wrongTapsThisQuestion = updatedWrongTaps
+        hintPulseEpoch = updatedHintEpoch
     }
 
     fun performSideHelpReplay() {
