@@ -55,6 +55,12 @@ data class StationUiSpec(
     val variants: Set<StationVariant> = setOf(StationVariant.Standard),
     /** [DOCS] Mirror of plan mode; tests/registry alignment only. */
     val quizMode: StationQuizMode,
+    val showBetweenRoundIntroPulse: Boolean = true,
+    val audioStagingPickLetter: Boolean = false,
+    val audioStagingPopBalloons: Boolean = false,
+    val audioStagingFindGrid: Boolean = false,
+    val popBalloonsUseSoundPoolPrompt: Boolean = false,
+    val popBalloonsHelpControlsEnabled: Boolean = false,
     /** WIRED: Episode 4 right-side replay/hint column eligibility (also gated by chapterId==4 in GameScreen). */
     val helpControlsEnabled: Boolean = false,
     /** WIRED: hint lock duration when help controls apply (Ep4 st1–5). */
@@ -111,6 +117,8 @@ data class StationUiSpec(
     val balloonPlayAreaStartInsetDp: Float = 0f,
     /** WIRED: Suppress full-screen center hint overlay for balloons (Ep4 st2 uses inline hint). */
     val excludeFullScreenBalloonHintOverlay: Boolean = false,
+    /** WIRED: Use the compact landscape phone tuning for balloon stations (smaller balloons/header overlay). */
+    val popBalloonsCompactLandscapePhoneTuning: Boolean = false,
     /** WIRED: Find-grid inline instruction when in saga station 3 grid mode (Ep4 explicit; others use listenOnly fallback). */
     val findGridInlineInstructionOverride: String? = null,
     /** WIRED: Hide written target letter in find-grid header (Ep4 listen-first station 3). */
@@ -120,8 +128,17 @@ data class StationUiSpec(
      * or legacy Ch3-or-listenOnly rule (Ch3 has no find-grid today; value keeps parity with old branch).
      */
     val findGridSuppressHeaderTargetLetter: Boolean = false,
+    /** WIRED: Saga station 3 grid reveal mode (episodes 1–5 station 3); affects [FindLetterGridStationContent]. */
+    val findGridSagaRevealStation: Boolean = false,
+    val findGridUseEpisode4HelpHints: Boolean = false,
+    val findGridUseChapter3ContextWordHint: Boolean = false,
     /** WIRED: Picture station instruction override (Ep4 st4); null uses GameScreen listen-only / default strings. */
     val pictureStartsWithInstructionOverride: String? = null,
+    /**
+     * WIRED: When true and in compact landscape phone, wrap picture instruction with RTL unicode markers
+     * (matches the saga station 4 behavior from GameScreen).
+     */
+    val pictureStartsWithCompactLandscapeRtlWrapInstruction: Boolean = false,
     /**
      * WIRED: When non-null and GameScreen applies listen-first saga station 4 rule, this instruction
      * replaces the default listen-only saga string.
@@ -136,16 +153,36 @@ data class StationUiSpec(
      * Used as: showCaption = !(listenOnly && saga && st4 && this).
      */
     val hidePictureWordCaptionWhenListenOnlySaga: Boolean = false,
+    /** WIRED: Extra vertical nudge (dp) for picture station content (saga station 4 uses ~½ cm). */
+    val pictureStartsWithVerticalNudgeDp: Float = 0f,
     /** WIRED: Image-match header instruction override (Ep4 st5); null uses GameScreen fallbacks. */
     val imageMatchHeaderInstructionOverride: String? = null,
+    /** WIRED: Wrap image-match header instruction on compact landscape phone (saga station 5 behavior). */
+    val imageMatchCompactLandscapeRtlWrapHeaderInstruction: Boolean = false,
     /** WIRED: White readable header panel for image-match (Ep4 st5). */
     val imageMatchHeaderReadablePanel: Boolean = false,
     /** WIRED: Show target-letter chip in image-match header row (false for listen-only saga station 5). */
     val imageMatchShowTargetLetterChip: Boolean = true,
+    /** WIRED: Top padding above image-match header instruction line (dp). */
+    val imageMatchHeaderTopPaddingDp: Float = 0f,
+    /** WIRED: Vertical offset for target-letter chip in image-match header (dp). */
+    val imageMatchTargetLetterChipOffsetYDp: Float = -10f,
+    /** WIRED: Extra vertical nudge (dp) for image-match content (saga station 5 uses ~½ cm). */
+    val imageMatchVerticalNudgeDp: Float = 0f,
+    /** WIRED: When true, use headerPromptWord = question.targetWord (Episode 3/6 station 6 behavior). */
+    val imageMatchShowHeaderPromptWord: Boolean = false,
+    /** WIRED: Hide word captions under cards (Episode 3/6 station 6 behavior). */
+    val imageMatchHideWordCaptions: Boolean = false,
+    /** WIRED: Force entry pulse epoch to 0 for this station (saga station 5 image match). */
+    val imageMatchSuppressEntryPulseEpoch: Boolean = false,
     /** WIRED: [MatchLetterToWordGame] instructionReadablePanelOverride / chapter 3 station 2 panel. */
     val matchLetterInstructionReadablePanel: Boolean = false,
     /** WIRED: Persistent instructions for match-letter / finale UI; null falls back to game default copy. */
     val matchLetterInstructionText: String? = null,
+    /** WIRED: Wide spread layout in compact landscape phone for match-letter-to-word (station 6 / ch3+ch6 st2 / training). */
+    val matchLetterCompactWideSpread: Boolean = false,
+    /** WIRED: Extra vertical nudge (dp) for match-letter-to-word content (non-training uses ~½ cm). */
+    val matchLetterVerticalNudgeDp: Float = 0f,
     /** WIRED: Chapter 3 station 6 image→word header. */
     val imageToWordInstructionText: String? = null,
     /** WIRED: Inline find-grid instruction panel style (replaces chapterId==3 branch in [FindLetterGridGame]). */

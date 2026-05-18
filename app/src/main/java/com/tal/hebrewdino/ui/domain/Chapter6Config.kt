@@ -49,15 +49,8 @@ object Chapter6Config {
             }
         }
 
-    val STATION_4_ROUND_COUNT: Int = spellRounds.size
-
     fun pickSpellRound(questionIndex: Int): SpellRound =
         spellRounds[questionIndex.coerceIn(0, spellRounds.lastIndex)]
-
-    fun spellCompletesWordAfterCorrectRound(questionIndex: Int): Boolean {
-        val r = pickSpellRound(questionIndex)
-        return r.slotIndex == r.word.lastIndex
-    }
 
     fun balloonWordCatalogPairs(): List<Pair<String, String>> =
         LessonWordCatalog.entries

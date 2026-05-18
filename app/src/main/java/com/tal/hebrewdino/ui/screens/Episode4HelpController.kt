@@ -7,9 +7,19 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import com.tal.hebrewdino.ui.audio.AudioClips
+import com.tal.hebrewdino.ui.audio.SoundPoolPlayer
+import com.tal.hebrewdino.ui.audio.VoicePlayer
 import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
 import com.tal.hebrewdino.ui.domain.Episode4Help
+import com.tal.hebrewdino.ui.domain.LevelSession
+import com.tal.hebrewdino.ui.domain.Question
+import com.tal.hebrewdino.ui.domain.StationReplayMode
+import com.tal.hebrewdino.ui.domain.StationUiSpec
+import com.tal.hebrewdino.ui.domain.StationQuizPlan
+import com.tal.hebrewdino.ui.domain.TrainingV1Config
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -80,5 +90,129 @@ fun rememberEpisode4HelpController(
             scope = scope,
             defaultHintRevealMs = Episode4Help.HINT_REVEAL_FALLBACK_MS,
         )
+    }
+}
+
+internal object SideHelpActions {
+    fun startReplay(
+        audioEnabled: Boolean,
+        isPlayPhase: Boolean,
+        episode4HelpEnabled: Boolean,
+        popBalloonsHelpEnabled: Boolean,
+        chapterId: Int,
+        stationId: Int,
+        plan: StationQuizPlan,
+        stationUiSpec: StationUiSpec,
+        session: LevelSession,
+        voice: VoicePlayer,
+        sfx: SoundPoolPlayer,
+        cancelFeedbackVoice: () -> Unit,
+        stopStagingSfx: (stopAllStreams: Boolean) -> Unit,
+        scope: CoroutineScope,
+    ): Job? {
+        if (!isPlayPhase) return null
+        if (episode4HelpEnabled) {
+            if (!audioEnabled) return null
+            val q = session.currentQuestion ?: return null
+            cancelFeedbackVoice()
+            sfx.stopAllStreams()
+            stopStagingSfx(false)
+            return scope.launch {
+                if (plan.highlightedLetterInWordPickLetter && q is Question.PopBalloonsQuestion) {
+                    val round = session.highlightedLetterInWordRound() ?: return@launch
+                    val wordPath = AudioClips.wordClipByCatalogId(round.catalogId)
+                    val letterClip = AudioClips.letterNameClip(round.correctLetter)
+                    val parts =
+                        buildList {
+                            if (voice.hasAsset(wordPath)) add(wordPath)
+                            if (letterClip != null && voice.hasAsset(letterClip)) add(letterClip)
+                        }
+                    if (parts.isNotEmpty()) {
+                        voice.playSequenceBlocking(*parts.toTypedArray())
+                    } else {
+                        if (letterClip != null) speakLetterPrompt(voice, round.correctLetter)
+                    }
+                    return@launch
+                }
+                if (plan.popAllLettersInWord && q is Question.PopBalloonsQuestion) {
+                    val catalogId = session.chapter3PopAllLettersCurrentWord()?.second
+                    if (!catalogId.isNullOrBlank()) {
+                        val wordPath = AudioClips.wordClipByCatalogId(catalogId)
+                        if (voice.hasAsset(wordPath)) voice.playBlocking(wordPath)
+                    }
+                    return@launch
+                }
+                when (stationUiSpec.replayMode) {
+                    StationReplayMode.TargetLetterOnly -> {
+                        val letter = Episode4Help.targetLetterForHelpHint(q) ?: return@launch
+                        val letterClip = AudioClips.letterNameClip(letter)
+                        if (letterClip != null) {
+                            val id = sfx.playReturningStreamId(letterClip, volume = 1f)
+                            if (id != null) return@launch
+                            if (voice.hasAsset(letterClip)) {
+                                voice.playBlocking(letterClip)
+                                return@launch
+                            }
+                        }
+                        if (chapterId == TrainingV1Config.CHAPTER_ID) return@launch
+                        speakLetterPrompt(voice, letter)
+                    }
+                    StationReplayMode.TargetWordOnly -> {
+                        if (q is Question.PictureStartsWithQuestion) {
+                            val wordPath = AudioClips.wordClipByCatalogId(q.catalogEntryId)
+                            if (voice.hasAsset(wordPath)) voice.playBlocking(wordPath)
+                        }
+                    }
+                    else -> replayEpisode4Stations15RoundAudio(sfx = sfx, voice = voice, stationId = stationId, q = q)
+                }
+            }
+        }
+        if (popBalloonsHelpEnabled) {
+            if (!audioEnabled) return null
+            val q = session.currentQuestion as? Question.PopBalloonsQuestion ?: return null
+            cancelFeedbackVoice()
+            val letter = q.correctAnswer
+            val letterClip = AudioClips.letterNameClip(letter)
+            return scope.launch {
+                if (letterClip != null && voice.hasAsset(letterClip)) {
+                    voice.playBlocking(letterClip)
+                    return@launch
+                }
+                speakLetterPrompt(voice, letter)
+            }
+        }
+        return null
+    }
+
+    fun performHint(
+        isPlayPhase: Boolean,
+        episode4HelpEnabled: Boolean,
+        popBalloonsHelpEnabled: Boolean,
+        stationId: Int,
+        stationUiSpec: StationUiSpec,
+        session: LevelSession,
+        episode4Help: Episode4HelpController,
+        balloonHelp: BalloonHelpController,
+    ) {
+        if (!isPlayPhase) return
+        if (episode4HelpEnabled) {
+            val q = session.currentQuestion ?: return
+            val letter = Episode4Help.targetLetterForHelpHint(q)
+            episode4Help.performHint(
+                isHelpEnabled = true,
+                isPlayPhase = true,
+                letter = letter,
+                stationId = stationId,
+                hintDurationMs = stationUiSpec.hintDurationMs,
+            )
+            return
+        }
+        if (popBalloonsHelpEnabled) {
+            val q = session.currentQuestion as? Question.PopBalloonsQuestion ?: return
+            balloonHelp.performHint(
+                letter = q.correctAnswer,
+                durationMs = Episode4Help.HINT_REVEAL_FALLBACK_MS,
+            )
+        }
     }
 }

@@ -25,7 +25,6 @@ fun Chapter2IntroScreen(
                 "מישהו עבר כאן קודם.\n" +
                 "\n" +
                 "בואו נעקוב אחרי העקבות ונראה לאן הן מובילות.",
-        eggStripCount = 1,
         companion = ChapterLobbyCompanion.DinoOnly,
         narrationPlaying = false,
         voiceAssetPath = AudioClips.StoryMountainApproachIntro,

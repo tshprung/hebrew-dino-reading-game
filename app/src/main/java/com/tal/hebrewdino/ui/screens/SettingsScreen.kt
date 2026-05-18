@@ -170,7 +170,7 @@ fun SettingsScreen(
 
     if (showResetAllDialog) {
         AlertDialog(
-            onDismissRequest = { showResetAllDialog = false },
+            onDismissRequest = { },
             title = { Text(text = "איפוס משחק מלא") },
             text = {
                 Text(
@@ -181,7 +181,6 @@ fun SettingsScreen(
             confirmButton = {
                 TextButton(
                     onClick = {
-                        showResetAllDialog = false
                         selectedChapters = emptySet()
                         onResetAll()
                     },
@@ -190,7 +189,7 @@ fun SettingsScreen(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showResetAllDialog = false }) {
+                TextButton(onClick = { }) {
                     Text("ביטול")
                 }
             },
@@ -201,7 +200,7 @@ fun SettingsScreen(
         val sorted = selectedChapters.sorted()
         val names = sorted.map { id -> chapterResetRows.first { it.id == id }.label }
         AlertDialog(
-            onDismissRequest = { showResetChaptersDialog = false },
+            onDismissRequest = { },
             title = { Text(text = "איפוס פרקים נבחרים") },
             text = {
                 Text(
@@ -215,7 +214,6 @@ fun SettingsScreen(
             confirmButton = {
                 TextButton(
                     onClick = {
-                        showResetChaptersDialog = false
                         onResetChapters(selectedChapters.toSet())
                         selectedChapters = emptySet()
                     },
@@ -224,7 +222,7 @@ fun SettingsScreen(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showResetChaptersDialog = false }) {
+                TextButton(onClick = { }) {
                     Text("ביטול")
                 }
             },

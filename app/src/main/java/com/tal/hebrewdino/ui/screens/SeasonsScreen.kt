@@ -151,7 +151,7 @@ private fun SeasonCard(
                 .alpha(cardAlpha)
                 .then(
                     if (enabled) {
-                        Modifier.clickable(onClick = onClick!!)
+                        Modifier.clickable(onClick = onClick)
                     } else {
                         Modifier
                     },

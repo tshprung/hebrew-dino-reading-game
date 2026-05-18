@@ -32,10 +32,7 @@ fun Chapter3LevelScreen(
         backgroundRes = R.drawable.ch3_journey_bg,
         onBack = onBack,
         onComplete = onComplete,
-        onLettersHelp = onLettersHelp,
-        onDebugStationAdvance = onDebugStationAdvance,
         suppressInGameDinoProgress = suppressInGameDinoProgress,
-        collectedEggStripCount = collectedEggStripCount,
         modifier = modifier,
     )
 }

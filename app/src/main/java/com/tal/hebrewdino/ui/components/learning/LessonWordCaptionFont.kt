@@ -1,15 +1,93 @@
 package com.tal.hebrewdino.ui.components.learning
 
-import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.sp
+import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
 
 /**
  * Station 4/5/6 word cards: caption size is derived from card width; long words need an extra tighten
  * so Hebrew captions stay on one line inside narrow tiles.
  */
+private data class CaptionOverrideKey(
+    val chapterId: Int?,
+    val stationId: Int?,
+    val word: String,
+)
+
+private val CaptionOverridesByChapterStationWord: Map<CaptionOverrideKey, Float> =
+    mapOf(
+        CaptionOverrideKey(chapterId = 3, stationId = 1, word = "הפתעה") to (0.616f * 0.80f),
+        CaptionOverrideKey(chapterId = 3, stationId = 1, word = "דבש") to 0.80f,
+        CaptionOverrideKey(chapterId = 3, stationId = 1, word = "שמש") to (0.80f * 0.90f),
+        CaptionOverrideKey(chapterId = 3, stationId = 1, word = "מיטה") to (0.90f * 0.80f),
+        CaptionOverrideKey(chapterId = 3, stationId = 1, word = "אבטיח") to (0.72f * 0.80f),
+        CaptionOverrideKey(chapterId = 3, stationId = 1, word = "מכונית") to (0.81f * 0.70f),
+        CaptionOverrideKey(chapterId = 6, stationId = 1, word = "חתול") to 0.70f,
+        CaptionOverrideKey(chapterId = 6, stationId = 1, word = "נמלה") to (0.90f * 0.70f),
+        CaptionOverrideKey(chapterId = 6, stationId = 1, word = "צפרדע") to (0.665f * 0.85f),
+        CaptionOverrideKey(chapterId = 6, stationId = 1, word = "פרח") to 0.85f,
+        CaptionOverrideKey(chapterId = 6, stationId = 1, word = "כדור") to 0.85f,
+        CaptionOverrideKey(chapterId = 6, stationId = 1, word = "טלפון") to (0.86f * 0.80f),
+        CaptionOverrideKey(chapterId = 6, stationId = 1, word = "דחליל") to (0.76f * 0.80f),
+        CaptionOverrideKey(chapterId = 6, stationId = 1, word = "קוביה") to 0.80f,
+        CaptionOverrideKey(chapterId = 6, stationId = 1, word = "חולצה") to (0.72f * 0.80f),
+        CaptionOverrideKey(chapterId = 6, stationId = 1, word = "ברווז") to (0.90f * 0.80f),
+        CaptionOverrideKey(chapterId = 6, stationId = 1, word = "פרפר") to (0.90f * 0.70f),
+        CaptionOverrideKey(chapterId = 6, stationId = 1, word = "תפוח") to (0.90f * 0.70f),
+        CaptionOverrideKey(chapterId = 6, stationId = 1, word = "דבש") to 0.70f,
+        CaptionOverrideKey(chapterId = 6, stationId = 1, word = "טיגריס") to (0.72f * 0.70f),
+        CaptionOverrideKey(chapterId = 2, stationId = Chapter1StationOrder.PICTURE_PICK_ALL, word = "שעון") to 0.85f,
+        CaptionOverrideKey(chapterId = 4, stationId = null, word = "פילפל") to (0.855f * 0.90f),
+        CaptionOverrideKey(chapterId = 1, stationId = null, word = "מכונית") to (0.81f * 0.90f),
+    )
+
+private val CaptionOverridesByWord: Map<String, Float> =
+    mapOf(
+        "חלון" to 0.80f,
+        "תיק" to 0.80f,
+        "קוף" to 0.80f,
+        "תוף" to 0.85f,
+        "קטר" to 0.85f,
+        "היפופוטם" to 0.528f,
+        "הפתעה" to 0.616f,
+        "גלידה" to 0.86f,
+        "שולחן" to 0.82f,
+        "חולצה" to 0.72f,
+        "פרפר" to 0.90f,
+        "טיגריס" to 0.72f,
+        "צלחת" to 0.81f,
+        "נמלה" to 0.90f,
+        "טוסט" to 0.95f,
+        "דחליל" to 0.76f,
+        "צפרדע" to 0.665f,
+        "פילפל" to 0.855f,
+        "תפוח" to 0.90f,
+        "בלון" to 0.90f,
+        "מיטה" to 0.90f,
+        "מחבת" to 0.81f,
+        "למידה" to 0.81f,
+        "מכונית" to 0.81f,
+        "אבטיח" to 0.72f,
+        "ארנב" to 0.80f,
+        "מוצץ" to 0.80f,
+        "ברווז" to 0.90f,
+    )
+
+private fun captionTightOverride(
+    chapterId: Int?,
+    stationId: Int?,
+    word: String,
+): Float? {
+    val exact = CaptionOverridesByChapterStationWord[CaptionOverrideKey(chapterId, stationId, word)]
+    if (exact != null) return exact
+    val chapterWildcardStation =
+        CaptionOverridesByChapterStationWord[CaptionOverrideKey(chapterId, stationId = null, word = word)]
+    if (chapterWildcardStation != null) return chapterWildcardStation
+    return CaptionOverridesByWord[word]
+}
+
 fun captionFontSizeForWordCard(
     density: Density,
     cardWidth: Dp,
@@ -21,114 +99,8 @@ fun captionFontSizeForWordCard(
 ): TextUnit =
     with(density) {
         val codePoints = word.codePointCount(0, word.length)
-        val wordTight =
-            when {
-                chapterId == 3 &&
-                    stationId == 1 &&
-                    word == "הפתעה" -> 0.616f * 0.80f
-                chapterId == 3 &&
-                    stationId == 1 &&
-                    word == "דבש" -> 0.80f
-                chapterId == 3 &&
-                    stationId == 1 &&
-                    word == "שמש" -> 0.80f * 0.90f
-                chapterId == 3 &&
-                    stationId == 1 &&
-                    word == "מיטה" -> 0.90f * 0.80f
-                chapterId == 3 &&
-                    stationId == 1 &&
-                    word == "אבטיח" -> 0.72f * 0.80f
-                chapterId == 3 &&
-                    stationId == 1 &&
-                    word == "מכונית" -> 0.81f * 0.70f
-                chapterId == 6 &&
-                    stationId == 1 &&
-                    word == "חתול" -> 0.70f
-                chapterId == 6 &&
-                    stationId == 1 &&
-                    word == "נמלה" -> 0.90f * 0.70f
-                chapterId == 6 &&
-                    stationId == 1 &&
-                    word == "צפרדע" -> 0.665f * 0.85f
-                chapterId == 6 &&
-                    stationId == 1 &&
-                    word == "פרח" -> 0.85f
-                chapterId == 6 &&
-                    stationId == 1 &&
-                    word == "כדור" -> 0.85f
-                chapterId == 6 &&
-                    stationId == 1 &&
-                    word == "טלפון" -> 0.86f * 0.80f
-                chapterId == 6 &&
-                    stationId == 1 &&
-                    word == "דחליל" -> 0.76f * 0.80f
-                chapterId == 6 &&
-                    stationId == 1 &&
-                    word == "קוביה" -> 0.80f
-                chapterId == 6 &&
-                    stationId == 1 &&
-                    word == "חולצה" -> 0.72f * 0.80f
-                chapterId == 6 &&
-                    stationId == 1 &&
-                    word == "ברווז" -> 0.90f * 0.80f
-                chapterId == 6 &&
-                    stationId == 1 &&
-                    word == "פרפר" -> 0.90f * 0.70f
-                chapterId == 6 &&
-                    stationId == 1 &&
-                    word == "תפוח" -> 0.90f * 0.70f
-                chapterId == 6 &&
-                    stationId == 1 &&
-                    word == "דבש" -> 0.70f
-                chapterId == 6 &&
-                    stationId == 1 &&
-                    word == "טיגריס" -> 0.72f * 0.70f
-                // Episode 4 feedback: window caption ~20% smaller.
-                word == "חלון" -> 0.80f
-                // Episode 4 feedback: bag caption ~20% smaller.
-                word == "תיק" -> 0.80f
-                // Episode 5 feedback: monkey caption ~20% smaller (illustration enlarged).
-                word == "קוף" -> 0.80f
-                // Feedback: drum caption −15%.
-                word == "תוף" -> 0.85f
-                // Feedback: train caption −15%.
-                word == "קטר" -> 0.85f
-                // Chapter 2 station 5: "שעון" caption −15%.
-                chapterId == 2 &&
-                    stationId == Chapter1StationOrder.PICTURE_PICK_ALL &&
-                    word == "שעון" -> 0.85f
-                // Feedback: shrink hippo by ~15%, surprise by ~10%.
-                word == "היפופוטם" -> 0.528f
-                word == "הפתעה" -> 0.616f
-                word == "גלידה" -> 0.86f
-                word == "שולחן" -> 0.82f
-                word == "חולצה" -> 0.72f
-                word == "פרפר" -> 0.90f
-                word == "טיגריס" -> 0.72f
-                word == "צלחת" -> 0.81f
-                word == "נמלה" -> 0.90f
-                word == "טוסט" -> 0.95f
-                word == "דחליל" -> 0.76f
-                word == "צפרדע" -> 0.665f
-                chapterId == 4 && word == "פילפל" -> 0.855f * 0.90f
-                word == "פילפל" -> 0.855f
-                word == "תפוח" -> 0.90f
-                // Feedback: balloon should be ~10% smaller everywhere.
-                word == "בלון" -> 0.90f
-                // Episode 1 station 5 feedback: bed caption −10% (keep readable, avoid any clipping).
-                word == "מיטה" -> 0.90f
-                // Episode 1 station 5 feedback: pan caption.
-                word == "מחבת" -> 0.81f
-                // Feedback: "למידה" caption.
-                word == "למידה" -> 0.81f
-                // Feedback: "מכונית" caption −10%.
-                chapterId == 1 && word == "מכונית" -> 0.81f * 0.90f
-                word == "מכונית" -> 0.81f
-                // Feedback: "אבטיח" caption.
-                word == "אבטיח" -> 0.72f
-                word == "ארנב" -> 0.80f
-                word == "מוצץ" -> 0.80f
-                word == "ברווז" -> 0.90f
+        val wordTight = captionTightOverride(chapterId, stationId, word)
+            ?: when {
                 codePoints >= 9 -> 0.82f
                 codePoints >= 7 -> 0.88f
                 codePoints >= 6 -> 0.80f

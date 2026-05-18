@@ -27,7 +27,6 @@ fun ForestIntroScreen(
                 "\n" +
                 "נצא לדרך ונפתור משימות.",
         voiceAssetPath = AudioClips.StoryForestIntro,
-        eggStripCount = 0,
         companion = ChapterLobbyCompanion.DinoAndMom,
         onContinue = onContinue,
         modifier = modifier,
@@ -53,7 +52,6 @@ fun ForestOutroScreen(
                 "\n" +
                 "בואו נמשיך!",
         voiceAssetPath = AudioClips.StoryEggOutro,
-        eggStripCount = 1,
         companion = ChapterLobbyCompanion.DinoOnly,
         onContinue = onContinue,
         modifier = modifier,

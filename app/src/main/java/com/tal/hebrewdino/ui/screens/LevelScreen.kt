@@ -1,13 +1,11 @@
 package com.tal.hebrewdino.ui.screens
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -17,7 +15,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.border
 import androidx.compose.foundation.shape.CircleShape
@@ -26,16 +23,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.material3.Button
-import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -46,11 +36,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.key
 import androidx.compose.runtime.withFrameNanos
-import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.togetherWith
 import androidx.compose.animation.core.AnimationVector1D
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
@@ -68,7 +54,6 @@ import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.zIndex
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.graphics.Color
@@ -78,32 +63,17 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.TextUnit
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
 import com.tal.hebrewdino.R
-import com.tal.hebrewdino.ui.audio.AudioClips
-import com.tal.hebrewdino.ui.audio.SoundPoolPlayer
-import com.tal.hebrewdino.ui.audio.VoicePlayer
-import com.tal.hebrewdino.ui.components.TargetLetterHeaderChip
-import com.tal.hebrewdino.ui.domain.AnswerResult
 import com.tal.hebrewdino.ui.domain.Chapter1Config
 import com.tal.hebrewdino.ui.domain.Chapter1LetterPoolSpec
-import com.tal.hebrewdino.ui.domain.LetterPoolSpec
-import com.tal.hebrewdino.ui.domain.LevelSession
-import com.tal.hebrewdino.ui.domain.Question
-import com.tal.hebrewdino.ui.domain.StationQuizMode
 import com.tal.hebrewdino.ui.domain.StationQuizPlans
 import com.tal.hebrewdino.ui.layout.ScreenFit
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.PI
 import kotlin.math.ceil
@@ -112,7 +82,6 @@ import kotlin.math.hypot
 import kotlin.math.sin
 import kotlin.math.sqrt
 import kotlin.math.roundToInt
-import kotlin.math.abs
 import kotlin.random.Random
 
 @Composable
@@ -120,11 +89,8 @@ fun LevelScreen(
     levelId: Int,
     onBack: () -> Unit,
     onComplete: (levelId: Int, correctCount: Int, mistakeCount: Int) -> Unit,
-    onLettersHelp: (() -> Unit)? = null,
-    onDebugStationAdvance: (() -> Unit)? = null,
     /** When replaying a station already marked complete, skip the in-game dino “step forward” after each round. */
     suppressInGameDinoProgress: Boolean = false,
-    collectedEggStripCount: Int = 0,
     modifier: Modifier = Modifier,
 ) {
     val chapterLevel = levelId.coerceIn(1, Chapter1Config.STATION_COUNT)
@@ -138,10 +104,7 @@ fun LevelScreen(
         backgroundRes = R.drawable.forest_bg_level_overlay,
         onBack = onBack,
         onComplete = onComplete,
-        onLettersHelp = onLettersHelp,
-        onDebugStationAdvance = onDebugStationAdvance,
         suppressInGameDinoProgress = suppressInGameDinoProgress,
-        collectedEggStripCount = collectedEggStripCount,
         modifier = modifier,
     )
 }
@@ -194,96 +157,6 @@ internal fun Station2PinnedBalloonMini(
                     .clip(RoundedCornerShape(2.dp))
                     .background(Color(0xFF0B2B3D).copy(alpha = 0.22f)),
         )
-    }
-}
-
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-internal fun RevealLetterTiles(
-    options: List<String>,
-    correctAnswer: String,
-    contentKey: Int,
-    wrongRevealSignal: Int,
-    enabled: Boolean,
-    shakePx: Float,
-    onRevealPick: (String) -> Unit,
-) {
-    var revealed by remember(options, correctAnswer, contentKey) { mutableStateOf<Set<Int>>(emptySet()) }
-    LaunchedEffect(wrongRevealSignal) {
-        if (wrongRevealSignal == 0) return@LaunchedEffect
-        delay(1400)
-        revealed = emptySet()
-    }
-    BoxWithConstraints(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .offset { IntOffset(shakePx.roundToInt(), 0) },
-    ) {
-        val n = options.size.coerceAtLeast(1)
-        val gap = 10.dp
-        val tileW =
-            ScreenFit.rowChildWidthDp(
-                rowInnerWidth = maxWidth,
-                count = n,
-                gap = gap,
-                minEach = 56.dp,
-                maxEach = 88.dp,
-            )
-        val tileH = tileW * (92f / 76f)
-        FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(gap, Alignment.CenterHorizontally),
-            verticalArrangement = Arrangement.spacedBy(gap),
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            options.forEachIndexed { idx, letter ->
-                val faceUp = idx in revealed
-                Box(
-                    modifier =
-                        Modifier
-                            .width(tileW)
-                            .height(tileH)
-                            .border(
-                                width = 2.dp,
-                                color = Color(0xFF0B2B3D).copy(alpha = 0.25f),
-                                shape = RoundedCornerShape(14.dp),
-                            )
-                            .background(
-                                color = if (faceUp) Color.White.copy(alpha = 0.92f) else Color(0xFFE8F4F8),
-                                shape = RoundedCornerShape(14.dp),
-                            )
-                            .clickable(
-                                enabled = enabled && !faceUp,
-                                interactionSource = remember(idx) { MutableInteractionSource() },
-                                indication = null,
-                            ) {
-                                revealed = revealed + idx
-                                onRevealPick(letter)
-                            },
-                    contentAlignment = Alignment.Center,
-                ) {
-                AnimatedContent(
-                    targetState = faceUp,
-                    transitionSpec = {
-                        fadeIn(animationSpec = tween(160)) togetherWith fadeOut(animationSpec = tween(110))
-                    },
-                    label = "revealFace",
-                ) { up ->
-                    Text(
-                        text = if (up) letter else "?",
-                        fontSize =
-                            if (tileW < 64.dp) {
-                                if (up) 30.sp else 26.sp
-                            } else {
-                                if (up) 40.sp else 34.sp
-                            },
-                        fontWeight = FontWeight.Black,
-                        color = Color(0xFF0B2B3D),
-                    )
-                }
-            }
-        }
-    }
     }
 }
 
@@ -1126,65 +999,6 @@ internal fun PopBalloon(
                 start = Offset(size.width / 2f, 0f),
                 end = Offset(size.width / 2f, size.height),
                 strokeWidth = 2f,
-            )
-        }
-    }
-}
-
-private fun playSuccessAnimation(
-    scope: CoroutineScope,
-    dinoScale: Animatable<Float, AnimationVector1D>,
-    showConfetti: MutableState<Boolean>,
-): Job = scope.launch {
-    showConfetti.value = true
-    dinoScale.snapTo(1f)
-    dinoScale.animateTo(
-        targetValue = 1.18f,
-        animationSpec = tween(durationMillis = 140),
-    )
-    dinoScale.animateTo(
-        targetValue = 1f,
-        animationSpec = spring(dampingRatio = 0.45f, stiffness = 600f),
-    )
-    delay(450)
-    showConfetti.value = false
-}
-
-private fun playMistakeAnimation(
-    scope: CoroutineScope,
-    optionsShake: Animatable<Float, AnimationVector1D>,
-): Job = scope.launch {
-    optionsShake.snapTo(0f)
-    val amp = 18f
-    repeat(5) { i ->
-        optionsShake.animateTo(
-            targetValue = if (i % 2 == 0) amp else -amp,
-            animationSpec = tween(durationMillis = 45),
-        )
-    }
-    optionsShake.animateTo(0f, animationSpec = tween(durationMillis = 60))
-}
-
-@Composable
-internal fun ConfettiOverlay(modifier: Modifier = Modifier) {
-    // Very lightweight "confetti": a few translucent circles; enough for MVP.
-    Box(modifier = modifier) {
-        repeat(14) { idx ->
-            val x = (idx * 23) % 100
-            val y = (idx * 37) % 100
-            val color = when (idx % 5) {
-                0 -> Color(0x66FF6B6B)
-                1 -> Color(0x66FFD93D)
-                2 -> Color(0x666BCB77)
-                3 -> Color(0x664D96FF)
-                else -> Color(0x66B983FF)
-            }
-            Spacer(
-                modifier = Modifier
-                    .align(Alignment.TopStart)
-                    .offset(x.dp * 3, y.dp * 5)
-                    .size(18.dp)
-                    .background(color, shape = CircleShape),
             )
         }
     }

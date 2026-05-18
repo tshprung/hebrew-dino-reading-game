@@ -473,4 +473,70 @@ class StationBehaviorRegistryTest {
         val spec = StationBehaviorRegistry.getStationUiSpec(5, REVEAL_THEN_CHOOSE)
         assertEquals(InstructionPanelStyle.WhiteRounded, spec.findGridInlineInstructionPanelStyle)
     }
+
+    @Test
+    fun sagaAudioStagingFlags_areTrue_onlyFor_sixStationArc_chapters() {
+        val c1s1 = StationBehaviorRegistry.getStationUiSpec(1, TAP_LETTER)
+        assertTrue(c1s1.audioStagingPickLetter)
+        assertFalse(c1s1.audioStagingPopBalloons)
+        assertFalse(c1s1.audioStagingFindGrid)
+
+        val c1s2 = StationBehaviorRegistry.getStationUiSpec(1, BALLOON_POP)
+        assertFalse(c1s2.audioStagingPickLetter)
+        assertTrue(c1s2.audioStagingPopBalloons)
+        assertFalse(c1s2.audioStagingFindGrid)
+
+        val c1s3 = StationBehaviorRegistry.getStationUiSpec(1, REVEAL_THEN_CHOOSE)
+        assertFalse(c1s3.audioStagingPickLetter)
+        assertFalse(c1s3.audioStagingPopBalloons)
+        assertTrue(c1s3.audioStagingFindGrid)
+
+        val c3s4 = StationBehaviorRegistry.getStationUiSpec(3, 4)
+        assertTrue(c3s4.audioStagingPickLetter)
+        assertFalse(c3s4.audioStagingPopBalloons)
+        assertFalse(c3s4.audioStagingFindGrid)
+    }
+
+    @Test
+    fun popBalloonsUseSoundPoolPrompt_is_enabled_for_sagaStation2_and_ch6st3_and_trainingWordBalloons() {
+        assertTrue(StationBehaviorRegistry.getStationUiSpec(1, BALLOON_POP).popBalloonsUseSoundPoolPrompt)
+        assertTrue(StationBehaviorRegistry.getStationUiSpec(6, 3).popBalloonsUseSoundPoolPrompt)
+        assertTrue(
+            StationBehaviorRegistry.getStationUiSpec(
+                TrainingV1Config.CHAPTER_ID,
+                TrainingV1Config.STATION_WORD_BALLOONS,
+            ).popBalloonsUseSoundPoolPrompt,
+        )
+
+        assertTrue(StationBehaviorRegistry.getStationUiSpec(3, 3).popBalloonsUseSoundPoolPrompt)
+    }
+
+    @Test
+    fun popBalloonsHelpControlsEnabled_is_enabled_for_ch3ch6_station3_and_trainingWordBalloons() {
+        assertTrue(StationBehaviorRegistry.getStationUiSpec(3, 3).popBalloonsHelpControlsEnabled)
+        assertTrue(StationBehaviorRegistry.getStationUiSpec(6, 3).popBalloonsHelpControlsEnabled)
+        assertTrue(
+            StationBehaviorRegistry.getStationUiSpec(
+                TrainingV1Config.CHAPTER_ID,
+                TrainingV1Config.STATION_WORD_BALLOONS,
+            ).popBalloonsHelpControlsEnabled,
+        )
+
+        assertFalse(StationBehaviorRegistry.getStationUiSpec(1, BALLOON_POP).popBalloonsHelpControlsEnabled)
+    }
+
+    @Test
+    fun showBetweenRoundIntroPulse_is_false_for_known_excluded_stations() {
+        assertFalse(StationBehaviorRegistry.getStationUiSpec(1, TAP_LETTER).showBetweenRoundIntroPulse)
+        assertFalse(StationBehaviorRegistry.getStationUiSpec(1, BALLOON_POP).showBetweenRoundIntroPulse)
+        assertFalse(StationBehaviorRegistry.getStationUiSpec(1, REVEAL_THEN_CHOOSE).showBetweenRoundIntroPulse)
+        assertFalse(StationBehaviorRegistry.getStationUiSpec(1, PICTURE_PICK_ONE).showBetweenRoundIntroPulse)
+        assertFalse(StationBehaviorRegistry.getStationUiSpec(1, PICTURE_PICK_ALL).showBetweenRoundIntroPulse)
+        assertFalse(StationBehaviorRegistry.getStationUiSpec(1, FINALE_PICTURE_LETTER_MATCH).showBetweenRoundIntroPulse)
+        assertFalse(StationBehaviorRegistry.getStationUiSpec(3, 1).showBetweenRoundIntroPulse)
+        assertFalse(StationBehaviorRegistry.getStationUiSpec(3, 2).showBetweenRoundIntroPulse)
+        assertFalse(StationBehaviorRegistry.getStationUiSpec(3, 3).showBetweenRoundIntroPulse)
+        assertFalse(StationBehaviorRegistry.getStationUiSpec(3, 6).showBetweenRoundIntroPulse)
+        assertFalse(StationBehaviorRegistry.getStationUiSpec(TrainingV1Config.CHAPTER_ID, 1).showBetweenRoundIntroPulse)
+    }
 }

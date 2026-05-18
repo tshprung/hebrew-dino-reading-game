@@ -107,10 +107,6 @@ object LessonWordCatalog {
         validateCatalog(entries)
     }
 
-    fun entriesForLetter(letter: String): List<LessonWordEntry> = entries.filter { it.letter == letter }
-
-    fun entryById(id: String): LessonWordEntry? = entries.firstOrNull { it.id == id }
-
     fun pickRandom(rnd: Random, letter: String, excludeIds: Set<String> = emptySet()): LessonWordEntry {
         val pool = entries.filter { it.letter == letter && it.id !in excludeIds }
         require(pool.isNotEmpty()) { "No catalog entry for letter=$letter" }
@@ -122,12 +118,6 @@ object LessonWordCatalog {
         val pool = entries.filter { it.letter == letter && it.id !in excludeIds }
         if (pool.isNotEmpty()) return pool.random(rnd)
         return pickRandom(rnd, letter)
-    }
-
-    fun pickOtherLetterWord(rnd: Random, forbiddenLetter: String, excludeIds: Set<String> = emptySet()): LessonWordEntry {
-        val pool = entries.filter { it.letter != forbiddenLetter && it.id !in excludeIds }
-        require(pool.isNotEmpty()) { "No distractor entries" }
-        return pool.random(rnd)
     }
 
     fun pickTwoDistinctForLetters(rnd: Random, letter1: String, letter2: String): Pair<LessonWordEntry, LessonWordEntry> {
