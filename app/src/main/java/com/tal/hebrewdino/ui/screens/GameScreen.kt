@@ -74,9 +74,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.random.Random
 
-private enum class GamePhase { Intro, Play }
+internal enum class GamePhase { Intro, Play }
 
-private enum class DinoVisual { Idle, TryAgain, Jump }
+internal enum class DinoVisual { Idle, TryAgain, Jump }
 
 private const val IntroDurationMs = 450L
 
@@ -85,7 +85,7 @@ private const val BetweenQuestionFadeMs = 80
 /** Chapters that use the shared six-station journey ([Chapter1StationOrder]); intros, art, and letter pools differ. */
 private val SixStationArcChapterRange = 1..5
 
-private fun isSagaEpisode(chapterId: Int): Boolean = chapterId in SixStationArcChapterRange
+internal fun isSagaEpisode(chapterId: Int): Boolean = chapterId in SixStationArcChapterRange
 
 private data class SideHelpControls(
     val replayEnabled: Boolean,
@@ -1710,472 +1710,80 @@ fun GameScreen(
                             .weight(1f, fill = true),
                     contentAlignment = Alignment.Center,
                 ) {
-                    if (phase == GamePhase.Intro) {
-                        if (stationUiSpec.showBetweenRoundIntroPulse) {
-                            IntroPulse(stationId = stationId, question = current, modifier = Modifier.fillMaxWidth())
-                        }
-                    } else {
-                        when (current) {
-                            is Question.FindLetterGridQuestion -> {
-                                FindLetterGridQuestionRenderer(
-                                    current = current,
-                                    listenOnly = listenOnly,
-                                    isSagaRevealStation = stationUiSpec.findGridSagaRevealStation,
-                                    sagaUsesFindGridAudioStaging = sagaUsesFindGridAudioStaging,
-                                    stationUiSpec = stationUiSpec,
-                                    chapter3ContextWordHint =
-                                        StationBehaviorRegistry.findGridContextWordHint(
-                                            stationUiSpec = stationUiSpec,
-                                            questionIndex = session.currentIndex,
-                                            sagaUsesFindGridAudioStaging = sagaUsesFindGridAudioStaging,
-                                        ),
-                                    floatingTargetLetterHint =
-                                        if (episode4HelpSt15 && stationUiSpec.findGridUseEpisode4HelpHints) {
-                                            episode4Help.activeHintLetter
-                                        } else {
-                                            null
-                                        },
-                                    episode4TargetCellsHintEpoch =
-                                        if (episode4HelpSt15 && stationUiSpec.findGridUseEpisode4HelpHints) {
-                                            episode4Help.station3GridHintEpoch
-                                        } else {
-                                            0
-                                        },
-                                    hintPulseEpoch = hintPulseEpoch,
-                                    enabled = gameChoicesEnabled,
-                                    contentKey = session.currentIndex,
-                                    entryPulseScale = entryPulseScale.value,
-                                    optionsShakePx = optionsShake.value,
-                                    onSagaGridLetterTapped =
-                                        if (sagaUsesFindGridAudioStaging) {
-                                            { tapped -> handleFindGridSagaGridLetterTapped(tapped, current) }
-                                        } else {
-                                            null
-                                        },
-                                    onCorrectTap =
-                                        if (audioEnabled && !sagaUsesFindGridAudioStaging) {
-                                            {
-                                                scope.launch {
-                                                    sfx.playFirstAvailable(AudioClips.SfxCorrect, volume = 0.58f)
-                                                }
-                                            }
-                                        } else {
-                                            null
-                                        },
-                                    onCellTapped = { index -> handleFindGridCellTapped(index, current) },
-                                    onCompleted = { handleFindGridCompleted() },
-                                    modifier = Modifier.fillMaxSize(),
-                                )
-                            }
-                            is Question.PopBalloonsQuestion -> {
-                                if (plan.mode == StationQuizMode.PickLetter) {
-                                    PickLetterQuestionRenderer(
-                                        current = current,
-                                        stationUiSpec = stationUiSpec,
-                                        listenOnly = listenOnly,
-                                        isSagaEpisode = isSagaEpisode(chapterId),
-                                        sagaUsesPickLetterAudioStaging = sagaUsesPickLetterAudioStaging,
-                                        chapterId = chapterId,
-                                        stationId = stationId,
-                                        highlightedInWordWord = highlightedInWordRound?.word,
-                                        highlightedInWordSlotIndex = highlightedInWordRound?.slotIndex,
-                                        isChapter3HighlightedLetterInWordStation = isChapter3HighlightedLetterInWordStation,
-                                        isChapter3AudioLetterRecognitionStation = isChapter3AudioLetterRecognitionStation,
-                                        station1PinnedCorrectLetter = station1PinnedCorrectLetter,
-                                        entryPulseScale = entryPulseScale.value,
-                                        enabled = gameChoicesEnabled,
-                                        shakePx = optionsShake.value,
-                                        wrongTapsThisQuestion = wrongTapsThisQuestion,
-                                        hintPulseEpoch = hintPulseEpoch,
-                                        correctTapPulseLetter = correctTapPulseLetter,
-                                        correctTapPulseEpoch = correctTapPulseEpoch,
-                                        temporaryHintLetter = episode4Help.activeHintLetter,
-                                        onRepeatLetterClick = repeatLetter@{
-                                            if (!audioEnabled) return@repeatLetter
-                                            cancelFeedbackVoice()
-                                            val letter = current.correctAnswer
-                                            val clip = AudioClips.letterNameClip(letter) ?: return@repeatLetter
-                                            feedbackVoiceJob =
-                                                scope.launch {
-                                                    voice.playBlocking(clip)
-                                                }
-                                        },
-                                        onPick = { picked -> handlePickLetterPick(picked) },
-                                    )
-                                } else {
-                                        val correctLetterSet =
-                                            if (isChapter3PopAllLettersStation) {
-                                                val w = session.chapter3PopAllLettersCurrentWord()?.first.orEmpty()
-                                                w.toCharArray().map { it.toString() }.toSet()
-                                            } else {
-                                                null
-                                            }
-                                        val visualRoundSeed =
-                                            if (sagaUsesPopBalloonsAudioStaging) {
-                                                session.currentIndex
-                                            } else {
-                                                0
-                                            }
-                                        val maxVisibleBalloonCount =
-                                            if (isCompactLandscapePhone && stationUiSpec.popBalloonsCompactLandscapePhoneTuning) 8 else null
-                                        val onPopSfx: suspend (String, Boolean, Boolean, Int) -> Unit =
-                                            { letter, isCorrect, finalCorrectBalloon, balloonIndex ->
-                                                handlePopBalloonsPopSfx(letter, isCorrect, finalCorrectBalloon, balloonIndex)
-                                            }
-                                        val onWrongPick = { handlePopBalloonsWrongPick() }
-                                        val onAllCorrectPopped: (String, Color) -> Unit =
-                                            { lastLetter, poppedBalloonColor ->
-                                                handlePopBalloonsAllCorrectPopped(
-                                                    lastLetter = lastLetter,
-                                                    poppedBalloonColor = poppedBalloonColor,
-                                                    isChapter3PopAllLettersStation = isChapter3PopAllLettersStation,
-                                                )
-                                            }
-                                        val episode4CorrectBalloonHintEpoch =
-                                            if (episode4HelpSt15 && stationId == Chapter1StationOrder.BALLOON_POP) {
-                                                episode4Help.station2BalloonHintEpoch
-                                            } else {
-                                                0
-                                            }
-                                        val helpSideInsetDp = stationUiSpec.balloonPlayAreaStartInsetDp.dp
-                                        val popAllWordForBanner = session.chapter3PopAllLettersCurrentWord()?.first.orEmpty()
-                                        PopBalloonsQuestionRenderer(
-                                            current = current,
-                                            planMode = plan.mode,
-                                            planPopAllLettersInWord = plan.popAllLettersInWord,
-                                            popAllLettersWordForBanner = popAllWordForBanner,
-                                            popAllLettersBannerInstruction =
-                                                stationUiSpec.popBalloonsPopAllLettersBannerInstruction
-                                                    ?: StationInstructionCopy.PopBalloonsPopAllLettersInWord,
-                                            stationUiSpec = stationUiSpec,
-                                            isCompactLandscapePhone = isCompactLandscapePhone,
-                                            listenOnly = listenOnly,
-                                            sagaUsesPopBalloonsAudioStaging = sagaUsesPopBalloonsAudioStaging,
-                                            showPopBalloonsTargetLetterChip = showPopBalloonsTargetLetterChip,
-                                            episode4HelpSt15 = episode4HelpSt15,
-                                            episode4HelpActiveHintLetter = episode4Help.activeHintLetter,
-                                            hintHeaderScale = hintHeaderScale.value,
-                                            station2PinnedBalloonLetter = station2PinnedBalloonLetter,
-                                            station2PinnedBalloonColor = station2PinnedBalloonColor,
-                                            correctLetterSet = correctLetterSet,
-                                            enabled = gameChoicesEnabled,
-                                            shakePx = optionsShake.value,
-                                            entryPulseScale = entryPulseScale.value,
-                                            visualRoundSeed = visualRoundSeed,
-                                            maxVisibleBalloonCount = maxVisibleBalloonCount,
-                                            episode4CorrectBalloonHintEpoch = episode4CorrectBalloonHintEpoch,
-                                            helpSideInsetDp = helpSideInsetDp,
-                                            contentTopPaddingDp =
-                                                if (sagaUsesPopBalloonsAudioStaging) SixStationArcHalfCmNudge else 0.dp,
-                                            onBalloonPressed = { _ -> },
-                                            onPopSfx = onPopSfx,
-                                            onWrongPick = onWrongPick,
-                                            onAllCorrectPopped = onAllCorrectPopped,
-                                        )
-                                    }
-                            }
-                            is Question.PictureStartsWithQuestion -> {
-                                val pictureInstructionText =
-                                    when {
-                                        stationUiSpec.pictureStartsWithInstructionOverride != null ->
-                                            stationUiSpec.pictureStartsWithInstructionOverride
-                                        listenOnly && isSagaEpisode(chapterId) && stationId == Chapter1StationOrder.PICTURE_PICK_ONE ->
-                                            stationUiSpec.pictureStartsWithListenOnlySagaInstruction
-                                                ?: StationInstructionCopy.PictureStartsWithListenFirstSaga
-                                        else ->
-                                            StationInstructionCopy.PictureStartsWithDefault
-                                    }
-                                val pictureInstructionReadablePanel =
-                                    stationUiSpec.pictureStartsWithReadablePanel ||
-                                        stationUiSpec.pictureStartsWithInstructionPanelStyle == InstructionPanelStyle.WhiteRounded
-                                val pictureShowWordCaption =
-                                    !(listenOnly && stationUiSpec.hidePictureWordCaptionWhenListenOnlySaga)
-                                PictureStartsWithQuestionRenderer(
-                                    current = current,
-                                    stationUiSpec = stationUiSpec,
-                                    isCompactLandscapePhone = isCompactLandscapePhone,
-                                    instructionText = pictureInstructionText,
-                                    instructionReadablePanel = pictureInstructionReadablePanel,
-                                    showWordCaption = pictureShowWordCaption,
-                                    onPictureTapReplayWord =
-                                        if (episode4HelpSt15 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
-                                            { performSideHelpReplay() }
-                                        } else if (audioEnabled) {
-                                            {
-                                                cancelFeedbackVoice()
-                                                val wordPath = AudioClips.wordClipByCatalogId(current.catalogEntryId)
-                                                if (voice.hasAsset(wordPath)) {
-                                                    feedbackVoiceJob = scope.launch { voice.playBlocking(wordPath) }
-                                                }
-                                            }
-                                        } else {
-                                            null
-                                        },
-                                    temporaryStartingLetterHint =
-                                        if (episode4HelpSt15 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
-                                            episode4Help.activeHintLetter
-                                        } else {
-                                            null
-                                        },
-                                    pinnedCorrectLetter =
-                                        if (chapterId == 4 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
-                                            station4PinnedCorrectLetter
-                                        } else {
-                                            null
-                                        },
-                                    enabled = gameChoicesEnabled,
-                                    shakePx = optionsShake.value,
-                                    entryPulseEpoch =
-                                        if (chapterId == 6 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
-                                            0
-                                        } else {
-                                            entryPulseEpoch
-                                        },
-                                    promptWordSizeMultiplier = plan.imageMatchCaptionSizeMultiplier * 1.2f,
-                                    innerPictureScale =
-                                        Chapter1Station5And6ImageMatchInnerScale.innerScalePictureStartsWith(
-                                            catalogEntryId = current.catalogEntryId,
-                                            letter = current.correctLetter,
-                                            word = current.word,
-                                            tintArgb = current.tintArgb,
-                                            tileDrawable = current.tileDrawable,
-                                        ),
-                                    pictureSizeMultiplier = plan.imageMatchPictureSizeMultiplier,
-                                    sortOptionLetters = plan.sortOptionLetters,
-                                    chapterId = chapterId,
-                                    stationId = stationId,
-                                    hintCorrectLetter = current.correctLetter.takeIf { wrongTapsThisQuestion >= 2 },
-                                    hintPulseEpoch = hintPulseEpoch,
-                                    correctPulseLetter = correctTapPulseLetter,
-                                    correctPulseEpoch = correctTapPulseEpoch,
-                                    wrongFlashLetter = station4WrongFlashLetter,
-                                    wrongFlashEpoch = station4WrongFlashEpoch,
-                                    entryPulseScale = 1f,
-                                    onPickLetter = { picked -> handlePictureStartsWithPick(picked) },
-                                )
-                            }
-                            is Question.ImageMatchQuestion ->
-                                if (stationUiSpec.templateId == StationTemplateId.ImageToWord) {
-                                    ImageToWordQuestionRenderer(
-                                        current = current,
-                                        contentKey = session.currentIndex,
-                                        enabled = gameChoicesEnabled,
-                                        entryPulseScale = entryPulseScale.value,
-                                        optionsShakePx = optionsShake.value,
-                                        instructionText =
-                                            stationUiSpec.imageToWordInstructionText
-                                                ?: StationInstructionCopy.Chapter3ImageToWord,
-                                        onPictureTapReplayWord =
-                                            if (audioEnabled) {
-                                                {
-                                                    handleImageToWordReplayCorrectChoice()
-                                                }
-                                            } else {
-                                                null
-                                            },
-                                        onWordPressed = ch3ImgWord@{ choiceId ->
-                                            handleImageToWordWordPressed(choiceId)
-                                        },
-                                        onAttempt = ch3ImgAttempt@{ choiceId ->
-                                            handleImageToWordAttempt(choiceId)
-                                        },
-                                    )
-                                } else if (
-                                    stationUiSpec.templateId == StationTemplateId.MatchLetterToWord
-                                ) {
-                                    // Same three picture cards as this round's ImageMatch question (station 5 generator/shape).
-                                    val matchChoices = current.choices
-                                    fun speakNow(play: suspend () -> Unit) {
-                                        if (!audioEnabled) return
-                                        // Station 6 request: stop the current voice immediately, then speak the newly pressed item.
-                                        cancelFeedbackVoice()
-                                        feedbackVoiceJob = scope.launch { play() }
-                                    }
-                                    var lastPraiseClip by remember(chapterId, stationId) { mutableStateOf<String?>(null) }
-                                    val matchPraiseClips =
-                                        listOf(
-                                            AudioClips.VoPraiseMetzuyan,
-                                            AudioClips.VoPraiseYofi,
-                                            AudioClips.VoPraiseHitzlacht,
-                                            AudioClips.VoNice1,
-                                            AudioClips.VoGoodJob2,
-                                            AudioClips.VoGoodJob1,
-                                        )
-
-                                    fun handleMatchWordPressed(choiceId: String) {
-                                        speakNow {
-                                            val clip =
-                                                AudioClips.imageToWordClipByCatalogId(
-                                                    catalogEntryId = choiceId,
-                                                    chapterId = chapterId,
-                                                    voiceHasAsset = { path -> voice.hasAsset(path) },
-                                                )
-                                            voice.playBlocking(clip)
-                                        }
-                                    }
-
-                                    fun handleMatchLetterPressed(letter: String) {
-                                        val clip = AudioClips.letterNameClip(letter) ?: return
-                                        speakNow { voice.playBlocking(clip) }
-                                    }
-
-                                    fun handleMatchSolved() {
-                                        if (!consumeTapCooldown()) return
-                                        scope.launch {
-                                            withTimeoutOrNull(4500L) { feedbackVoiceJob?.join() }
-                                            if (audioEnabled) {
-                                                cancelFeedbackVoice()
-                                                val job =
-                                                    scope.launch {
-                                                        val candidates = matchPraiseClips.filter { it != lastPraiseClip }
-                                                        val pickFrom =
-                                                            if (candidates.isNotEmpty()) candidates else listOfNotNull(lastPraiseClip)
-                                                        val picked = pickFrom.shuffled().firstOrNull()
-                                                        if (picked != null) {
-                                                            lastPraiseClip = picked
-                                                            voice.playBlocking(picked)
-                                                        }
-                                                    }
-                                                feedbackVoiceJob = job
-                                                withTimeoutOrNull(3000L) { job.join() }
-                                            }
-                                            when (session.completeCurrentRound()) {
-                                                AnswerResult.Correct -> {
-                                                    if (audioEnabled) ChildGameAudioHooks.onCorrect()
-                                                    val isLast = session.currentIndex >= session.totalQuestions - 1
-                                                    advanceAfterRound(isLast)
-                                                }
-                                                else -> {}
-                                            }
-                                        }
-                                    }
-                                    MatchLetterToWordQuestionRenderer(
-                                        choices = matchChoices,
-                                        stationUiSpec = stationUiSpec,
-                                        isCompactLandscapePhone = isCompactLandscapePhone,
-                                        choicePairLimit = 3,
-                                        contentKey = session.currentIndex,
-                                        enabled = gameChoicesEnabled,
-                                        entryPulseScale = entryPulseScale.value,
-                                        letterTileSizeMultiplier = if (chapterId == TrainingV1Config.CHAPTER_ID) 1.10f else 1f,
-                                        onWordPressed = { choiceId ->
-                                            handleMatchWordPressed(choiceId)
-                                        },
-                                        onLetterPressed = matchLetterTap@{ letter ->
-                                            handleMatchLetterPressed(letter)
-                                        },
-                                        onCorrectMatch = matchCorrect@{ _ ->
-                                            if (!audioEnabled) return@matchCorrect
-                                            // Short reward, no waiting.
-                                            scope.launch { sfx.playFirstAvailable(AudioClips.SfxCorrect, volume = 0.58f) }
-                                        },
-                                        onWrongMatch = { _, _ ->
-                                            // Letter/word are spoken on press; keep wrong feedback minimal (no extra voice stacking here).
-                                        },
-                                        onMatchAttempt = matchAttempt@{ correct ->
-                                            if (!audioEnabled) return@matchAttempt
-                                            // Wrong speech handled in onWrongMatch (letter name + try again).
-                                        },
-                                        innerPictureScaleForChoice = { choice ->
-                                            Chapter1Station5And6ImageMatchInnerScale.innerScale(choice)
-                                        },
-                                        captionSizeMultiplier = plan.imageMatchCaptionSizeMultiplier,
-                                        chapterId = chapterId,
-                                        stationId = stationId,
-                                        instructionReadablePanel = stationUiSpec.matchLetterInstructionReadablePanel,
-                                        instructions =
-                                            stationUiSpec.matchLetterInstructionText
-                                                ?: StationInstructionCopy.MatchLetterFinale,
-                                        onSolved = matchSolved@{
-                                            handleMatchSolved()
-                                        },
-                                    )
-                                } else {
-                                    val listenOnlyTemporaryHintLetter =
-                                        if (episode4HelpSt15 &&
-                                            stationUiSpec.templateId == StationTemplateId.ImageMatch &&
-                                            stationUiSpec.hintMode == com.tal.hebrewdino.ui.domain.StationHintMode.TemporaryTargetLetter
-                                        ) {
-                                            episode4Help.activeHintLetter
-                                        } else {
-                                            null
-                                        }
-                                    ImageMatchQuestionRenderer(
-                                        current = current,
-                                        stationUiSpec = stationUiSpec,
-                                        isCompactLandscapePhone = isCompactLandscapePhone,
-                                        headerInstructionFontScale =
-                                            (if (chapterId == TrainingV1Config.CHAPTER_ID) 1.35f else 1.35f * 2f),
-                                        listenOnlyTemporaryHintLetter = listenOnlyTemporaryHintLetter,
-                                        contentKey = session.currentIndex,
-                                        enabled = gameChoicesEnabled,
-                                        shakePx = optionsShake.value,
-                                        entryPulseEpoch = entryPulseEpoch,
-                                        hintCorrectChoiceId = current.correctChoiceId.takeIf { wrongTapsThisQuestion >= 2 },
-                                        hintPulseEpoch = hintPulseEpoch,
-                                        captionSizeMultiplier = plan.imageMatchCaptionSizeMultiplier,
-                                        pictureSizeMultiplier = plan.imageMatchPictureSizeMultiplier,
-                                        innerPictureScaleForChoice = { choice ->
-                                            Chapter1Station5And6ImageMatchInnerScale.innerScale(choice)
-                                        },
-                                        chapterId = chapterId,
-                                        stationId = stationId,
-                                        onAttempt = imageMatchAttempt@{ choiceId ->
-                                            handleImageMatchAttempt(choiceId)
-                                        },
-                                        entryPulseScale = entryPulseScale.value,
-                                        modifier = Modifier.fillMaxSize(),
-                                    )
-                                }
-                            is Question.FinaleSlotQuestion ->
-                                FinaleSlotQuestionRenderer(
-                                    current = current,
-                                    contentKey = session.currentIndex,
-                                    enabled = gameChoicesEnabled,
-                                    shakeEpoch = shakeEpoch,
-                                    onWrongPlacement = {
-                                        session.wrongTap()
-                                        shakeEpoch += 1
-                                        onWrongFeedback()
-                                    },
-                                    onSolved = { words ->
-                                        scope.launch {
-                                            when (session.submitFinaleWords(words)) {
-                                                AnswerResult.Correct -> {
-                                                    if (audioEnabled) ChildGameAudioHooks.onCorrect()
-                                                    val isLast = session.currentIndex >= session.totalQuestions - 1
-                                                    advanceAfterRound(isLast)
-                                                }
-                                                else -> {}
-                                            }
-                                        }
-                                    },
-                                    modifier =
-                                        Modifier
-                                            .fillMaxWidth()
-                                            .offset { IntOffset(optionsShake.value.toInt(), 0) },
-                                )
-                        }
-                    val fullScreenBalloonHintLetter =
-                        when {
-                            episode4HelpSt15 -> episode4Help.activeHintLetter
-                            popBalloonsHelpControlsEnabled -> balloonHelp.hintLetter
-                            else -> null
-                        }
-                    if (phase == GamePhase.Play &&
-                        fullScreenBalloonHintLetter != null &&
-                        current is Question.PopBalloonsQuestion &&
-                        stationUiSpec.templateId == StationTemplateId.PopBalloons &&
-                        !stationUiSpec.excludeFullScreenBalloonHintOverlay
-                    ) {
-                        Box(
-                            modifier = Modifier.fillMaxSize().zIndex(3f),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            TargetLetterHeaderChip(letter = fullScreenBalloonHintLetter)
-                        }
-                    }
-                    }
+                    GameQuestionHost(
+                        phase = phase,
+                        stationUiSpec = stationUiSpec,
+                        stationId = stationId,
+                        chapterId = chapterId,
+                        plan = plan,
+                        listenOnly = listenOnly,
+                        sagaUsesPickLetterAudioStaging = sagaUsesPickLetterAudioStaging,
+                        sagaUsesPopBalloonsAudioStaging = sagaUsesPopBalloonsAudioStaging,
+                        sagaUsesFindGridAudioStaging = sagaUsesFindGridAudioStaging,
+                        isChapter3HighlightedLetterInWordStation = isChapter3HighlightedLetterInWordStation,
+                        isChapter3AudioLetterRecognitionStation = isChapter3AudioLetterRecognitionStation,
+                        isChapter3PopAllLettersStation = isChapter3PopAllLettersStation,
+                        highlightedInWordWord = highlightedInWordRound?.word,
+                        highlightedInWordSlotIndex = highlightedInWordRound?.slotIndex,
+                        audioEnabled = audioEnabled,
+                        isCompactLandscapePhone = isCompactLandscapePhone,
+                        episode4HelpSt15 = episode4HelpSt15,
+                        episode4HelpActiveHintLetter = episode4Help.activeHintLetter,
+                        episode4HelpStation2BalloonHintEpoch = episode4Help.station2BalloonHintEpoch,
+                        episode4HelpStation3GridHintEpoch = episode4Help.station3GridHintEpoch,
+                        popBalloonsHelpControlsEnabled = popBalloonsHelpControlsEnabled,
+                        balloonHelpHintLetter = balloonHelp.hintLetter,
+                        showPopBalloonsTargetLetterChip = showPopBalloonsTargetLetterChip,
+                        station1PinnedCorrectLetter = station1PinnedCorrectLetter,
+                        station2PinnedBalloonLetter = station2PinnedBalloonLetter,
+                        station2PinnedBalloonColor = station2PinnedBalloonColor,
+                        hintHeaderScale = hintHeaderScale.value,
+                        enabled = gameChoicesEnabled,
+                        shakeEpoch = shakeEpoch,
+                        wrongTapsThisQuestion = wrongTapsThisQuestion,
+                        hintPulseEpoch = hintPulseEpoch,
+                        correctTapPulseLetter = correctTapPulseLetter,
+                        correctTapPulseEpoch = correctTapPulseEpoch,
+                        station4WrongFlashLetter = station4WrongFlashLetter,
+                        station4WrongFlashEpoch = station4WrongFlashEpoch,
+                        station4PinnedCorrectLetter = station4PinnedCorrectLetter,
+                        entryPulseEpoch = entryPulseEpoch,
+                        entryPulseScale = entryPulseScale.value,
+                        optionsShakePx = optionsShake.value,
+                        session = session,
+                        scope = scope,
+                        voice = voice,
+                        sfx = sfx,
+                        cancelFeedbackVoice = { cancelFeedbackVoice() },
+                        getFeedbackVoiceJob = { feedbackVoiceJob },
+                        setFeedbackVoiceJob = { job -> feedbackVoiceJob = job },
+                        consumeTapCooldown = { consumeTapCooldown() },
+                        performSideHelpReplay = { performSideHelpReplay() },
+                        handleFindGridSagaGridLetterTapped = { tapped, question ->
+                            handleFindGridSagaGridLetterTapped(tapped, question)
+                        },
+                        handleFindGridCellTapped = { index, question -> handleFindGridCellTapped(index, question) },
+                        handleFindGridCompleted = { handleFindGridCompleted() },
+                        handlePickLetterPick = { picked -> handlePickLetterPick(picked) },
+                        handlePopBalloonsPopSfx = { letter, isCorrect, finalCorrectBalloon, balloonIndex ->
+                            handlePopBalloonsPopSfx(letter, isCorrect, finalCorrectBalloon, balloonIndex)
+                        },
+                        handlePopBalloonsWrongPick = { handlePopBalloonsWrongPick() },
+                        handlePopBalloonsAllCorrectPopped = { lastLetter, poppedBalloonColor, popAll ->
+                            handlePopBalloonsAllCorrectPopped(lastLetter, poppedBalloonColor, popAll)
+                        },
+                        handlePictureStartsWithPick = { picked -> handlePictureStartsWithPick(picked) },
+                        handleImageToWordReplayCorrectChoice = { handleImageToWordReplayCorrectChoice() },
+                        handleImageToWordWordPressed = { choiceId -> handleImageToWordWordPressed(choiceId) },
+                        handleImageToWordAttempt = { choiceId -> handleImageToWordAttempt(choiceId) },
+                        handleImageMatchAttempt = { choiceId -> handleImageMatchAttempt(choiceId) },
+                        handleFinaleWrongPlacement = {
+                            session.wrongTap()
+                            shakeEpoch += 1
+                        },
+                        onWrongFeedback = { onWrongFeedback() },
+                        advanceAfterRound = { isLast -> advanceAfterRound(isLast) },
+                    )
                 }
             }
             val dinoDrawable =
