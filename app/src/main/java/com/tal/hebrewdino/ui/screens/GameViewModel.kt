@@ -1,6 +1,7 @@
 package com.tal.hebrewdino.ui.screens
 
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
@@ -17,6 +18,10 @@ internal class GameViewModel(
 
     var phase: GamePhase by mutableStateOf(GamePhase.Intro)
     var inputLocked: Boolean by mutableStateOf(true)
+    var wrongTapsThisQuestion: Int by mutableIntStateOf(0)
+    var hintPulseEpoch: Int by mutableIntStateOf(0)
+    var correctTapPulseEpoch: Int by mutableIntStateOf(0)
+    var correctTapPulseLetter: String? by mutableStateOf(null)
 
     class Factory(
         private val plan: StationQuizPlan,

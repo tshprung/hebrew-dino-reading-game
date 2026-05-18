@@ -695,13 +695,9 @@ fun GameScreen(
     val dinoForward = remember(stationId) { Animatable(0f) }
     val dinoSlip = remember(stationId) { Animatable(0f) }
     val dinoTilt = remember(stationId) { Animatable(0f) }
-    var wrongTapsThisQuestion by remember(stationId) { mutableIntStateOf(0) }
-    var hintPulseEpoch by remember(stationId) { mutableIntStateOf(0) }
     val hintHeaderScale = remember(stationId) { Animatable(1f) }
     var entryPulseEpoch by remember(stationId) { mutableIntStateOf(0) }
     val entryPulseScale = remember(stationId) { Animatable(1f) }
-    var correctTapPulseEpoch by remember(stationId) { mutableIntStateOf(0) }
-    var correctTapPulseLetter by remember(stationId) { mutableStateOf<String?>(null) }
     var station4WrongFlashEpoch by remember(stationId, session.currentIndex) { mutableIntStateOf(0) }
     var station4WrongFlashLetter by remember(stationId, session.currentIndex) { mutableStateOf<String?>(null) }
     var station4PinnedCorrectLetter by remember(stationId, session.currentIndex) { mutableStateOf<String?>(null) }
@@ -777,11 +773,11 @@ fun GameScreen(
     fun registerWrongTapForHintPulse() {
         val (updatedWrongTaps, updatedHintEpoch) =
             HintPulseActions.registerWrongTapForHintPulse(
-                wrongTapsThisQuestion = wrongTapsThisQuestion,
-                hintPulseEpoch = hintPulseEpoch,
+                wrongTapsThisQuestion = gameViewModel.wrongTapsThisQuestion,
+                hintPulseEpoch = gameViewModel.hintPulseEpoch,
             )
-        wrongTapsThisQuestion = updatedWrongTaps
-        hintPulseEpoch = updatedHintEpoch
+        gameViewModel.wrongTapsThisQuestion = updatedWrongTaps
+        gameViewModel.hintPulseEpoch = updatedHintEpoch
     }
 
     fun performSideHelpReplay() {
@@ -913,8 +909,8 @@ fun GameScreen(
             station4IntroToWordExtraPauseMs = Station4IntroToWordExtraPauseMs,
             setPhase = { p -> gameViewModel.phase = p },
             setInputLocked = { locked -> gameViewModel.inputLocked = locked },
-            setWrongTapsThisQuestion = { wrongTapsThisQuestion = it },
-            setCorrectTapPulseLetter = { correctTapPulseLetter = it },
+            setWrongTapsThisQuestion = { gameViewModel.wrongTapsThisQuestion = it },
+            setCorrectTapPulseLetter = { gameViewModel.correctTapPulseLetter = it },
             clearStation4WrongFlashLetter = { station4WrongFlashLetter = null },
             clearStation4PinnedCorrectLetter = { station4PinnedCorrectLetter = null },
             resetEpisode4HelpForNewQuestion = { episode4Help.resetForNewQuestion() },
@@ -928,7 +924,7 @@ fun GameScreen(
             setPromptVoiceJob = { job -> promptVoiceJob = job },
             setDinoTalking = { talking -> dinoTalking = talking },
             bumpEntryPulseEpoch = { entryPulseEpoch += 1 },
-            bumpHintPulseEpoch = { hintPulseEpoch += 1 },
+            bumpHintPulseEpoch = { gameViewModel.hintPulseEpoch += 1 },
         )
     }
 
@@ -939,8 +935,8 @@ fun GameScreen(
         setDinoVisual = { v -> dinoVisual = v },
     )
 
-    LaunchedEffect(hintPulseEpoch, stationId) {
-        if (hintPulseEpoch <= 0) return@LaunchedEffect
+    LaunchedEffect(gameViewModel.hintPulseEpoch, stationId) {
+        if (gameViewModel.hintPulseEpoch <= 0) return@LaunchedEffect
         hintHeaderScale.snapTo(1f)
         hintHeaderScale.animateTo(1.10f, tween(120))
         hintHeaderScale.animateTo(1f, spring(dampingRatio = 0.56f, stiffness = 420f))
@@ -1154,10 +1150,10 @@ fun GameScreen(
                         hintHeaderScale = hintHeaderScale.value,
                         enabled = gameChoicesEnabled,
                         shakeEpoch = shakeEpoch,
-                        wrongTapsThisQuestion = wrongTapsThisQuestion,
-                        hintPulseEpoch = hintPulseEpoch,
-                        correctTapPulseLetter = correctTapPulseLetter,
-                        correctTapPulseEpoch = correctTapPulseEpoch,
+                        wrongTapsThisQuestion = gameViewModel.wrongTapsThisQuestion,
+                        hintPulseEpoch = gameViewModel.hintPulseEpoch,
+                        correctTapPulseLetter = gameViewModel.correctTapPulseLetter,
+                        correctTapPulseEpoch = gameViewModel.correctTapPulseEpoch,
                         station4WrongFlashLetter = station4WrongFlashLetter,
                         station4WrongFlashEpoch = station4WrongFlashEpoch,
                         station4PinnedCorrectLetter = station4PinnedCorrectLetter,
@@ -1224,8 +1220,8 @@ fun GameScreen(
                                 voice = voice,
                                 sfx = sfx,
                                 setCorrectTapPulse = { letter ->
-                                    correctTapPulseLetter = letter
-                                    correctTapPulseEpoch += 1
+                                    gameViewModel.correctTapPulseLetter = letter
+                                    gameViewModel.correctTapPulseEpoch += 1
                                 },
                                 setStation1PinnedCorrectLetter = { letter -> station1PinnedCorrectLetter = letter },
                                 getFeedbackVoiceJob = { feedbackVoiceJob },
@@ -1316,8 +1312,8 @@ fun GameScreen(
                                 setFeedbackVoiceJob = { job -> feedbackVoiceJob = job },
                                 setStation4PinnedCorrectLetter = { letter -> station4PinnedCorrectLetter = letter },
                                 setCorrectTapPulse = { letter ->
-                                    correctTapPulseLetter = letter
-                                    correctTapPulseEpoch += 1
+                                    gameViewModel.correctTapPulseLetter = letter
+                                    gameViewModel.correctTapPulseEpoch += 1
                                 },
                                 advanceAfterRound = { isLast -> advanceAfterRound(isLast) },
                                 registerWrongTapForHintPulse = { registerWrongTapForHintPulse() },
