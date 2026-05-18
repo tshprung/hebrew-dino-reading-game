@@ -1260,6 +1260,7 @@ fun GameScreen(
                         handlePictureStartsWithPick = { picked ->
                             PictureStartsWithActions.handlePick(
                                 picked = picked,
+                                gameViewModel = gameViewModel,
                                 consumeTapCooldown = { consumeTapCooldown() },
                                 cancelFeedbackVoice = { cancelFeedbackVoice() },
                                 audioEnabled = audioEnabled,
@@ -1271,11 +1272,6 @@ fun GameScreen(
                                 voice = voice,
                                 getFeedbackVoiceJob = { feedbackVoiceJob },
                                 setFeedbackVoiceJob = { job -> feedbackVoiceJob = job },
-                                setStation4PinnedCorrectLetter = { letter -> gameViewModel.station4PinnedCorrectLetter = letter },
-                                setCorrectTapPulse = { letter ->
-                                    gameViewModel.correctTapPulseLetter = letter
-                                    gameViewModel.correctTapPulseEpoch += 1
-                                },
                                 advanceAfterRound = { isLast -> advanceAfterRound(isLast) },
                                 registerWrongTapForHintPulse = { HintPulseActions.registerWrongTapForHintPulse(gameViewModel) },
                                 flashStation4WrongLetter = { letter ->

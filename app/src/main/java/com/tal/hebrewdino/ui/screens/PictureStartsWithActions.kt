@@ -14,6 +14,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 internal object PictureStartsWithActions {
     fun handlePick(
         picked: String,
+        gameViewModel: GameViewModel,
         consumeTapCooldown: () -> Boolean,
         cancelFeedbackVoice: () -> Unit,
         audioEnabled: Boolean,
@@ -25,8 +26,6 @@ internal object PictureStartsWithActions {
         voice: VoicePlayer,
         getFeedbackVoiceJob: () -> Job?,
         setFeedbackVoiceJob: (Job?) -> Unit,
-        setStation4PinnedCorrectLetter: (String) -> Unit,
-        setCorrectTapPulse: (String) -> Unit,
         advanceAfterRound: suspend (Boolean) -> Unit,
         registerWrongTapForHintPulse: () -> Unit,
         flashStation4WrongLetter: (String) -> Unit,
@@ -49,11 +48,12 @@ internal object PictureStartsWithActions {
             AnswerResult.Correct -> {
                 if (audioEnabled) ChildGameAudioHooks.onCorrect()
                 if (chapterId == 4 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
-                    setStation4PinnedCorrectLetter(picked)
+                    gameViewModel.station4PinnedCorrectLetter = picked
                 }
                 if (sagaEpisode && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
                     scope.launch {
-                        setCorrectTapPulse(picked)
+                        gameViewModel.correctTapPulseLetter = picked
+                        gameViewModel.correctTapPulseEpoch += 1
                         cancelFeedbackVoice()
                         val letterName = AudioClips.letterNameClip(picked)
                         val praise =
@@ -81,7 +81,8 @@ internal object PictureStartsWithActions {
                     }
                 } else {
                     scope.launch {
-                        setCorrectTapPulse(picked)
+                        gameViewModel.correctTapPulseLetter = picked
+                        gameViewModel.correctTapPulseEpoch += 1
                         if (audioEnabled && (chapterId == 3 || chapterId == 6) && stationId == 1) {
                             withTimeoutOrNull(1200L) { getFeedbackVoiceJob()?.join() }
                         }
