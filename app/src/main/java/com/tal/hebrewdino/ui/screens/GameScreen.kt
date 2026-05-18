@@ -1053,108 +1053,6 @@ fun GameScreen(
         )
     }
 
-    fun handleImageToWordAttempt(choiceId: String): Boolean {
-        if (!consumeTapCooldown()) return false
-        cancelFeedbackVoice()
-        return when (session.submitImageMatch(choiceId)) {
-            AnswerResult.Correct -> {
-                if (audioEnabled) ChildGameAudioHooks.onCorrect()
-                scope.launch {
-                    if (audioEnabled) {
-                        val clip =
-                            AudioClips.imageToWordClipByCatalogId(
-                                catalogEntryId = choiceId,
-                                chapterId = chapterId,
-                                voiceHasAsset = { path -> voice.hasAsset(path) },
-                            )
-                        voice.playBlocking(clip)
-                        val praise =
-                            mutableListOf(
-                                AudioClips.VoPraiseMetzuyan,
-                                AudioClips.VoPraiseYofi,
-                                AudioClips.VoPraiseHitzlacht,
-                                AudioClips.VoNice1,
-                                AudioClips.VoGoodJob2,
-                                AudioClips.VoGoodJob1,
-                            )
-                        praise.shuffle()
-                        voice.playFirstAvailableBlocking(*praise.toTypedArray())
-                    }
-                    val isLast = session.currentIndex >= session.totalQuestions - 1
-                    advanceAfterRound(isLast)
-                }
-                true
-            }
-            AnswerResult.Wrong -> {
-                if (audioEnabled) ChildGameAudioHooks.onWrong()
-                registerWrongTapForHintPulse()
-                onWrongFeedback(wrongWordCatalogId = choiceId)
-                false
-            }
-            AnswerResult.Finished -> false
-        }
-    }
-
-    fun handleImageToWordReplayCorrectChoice() {
-        if (!audioEnabled) return
-        cancelFeedbackVoice()
-        val q = session.currentQuestion as? Question.ImageMatchQuestion ?: return
-        val clip =
-            AudioClips.imageToWordClipByCatalogId(
-                catalogEntryId = q.correctChoiceId,
-                chapterId = chapterId,
-                voiceHasAsset = { path -> voice.hasAsset(path) },
-            )
-        if (voice.hasAsset(clip)) {
-            feedbackVoiceJob = scope.launch { voice.playBlocking(clip) }
-        }
-    }
-
-    fun handleImageToWordWordPressed(choiceId: String) {
-        if (!audioEnabled) return
-        cancelFeedbackVoice()
-        feedbackVoiceJob =
-            scope.launch {
-                val clip =
-                    AudioClips.imageToWordClipByCatalogId(
-                        catalogEntryId = choiceId,
-                        chapterId = chapterId,
-                        voiceHasAsset = { path -> voice.hasAsset(path) },
-                    )
-                voice.playBlocking(clip)
-            }
-    }
-
-    fun handleImageMatchAttempt(choiceId: String): Boolean {
-        if (!consumeTapCooldown()) return false
-        cancelFeedbackVoice()
-        return when (session.submitImageMatch(choiceId)) {
-            AnswerResult.Correct -> {
-                if (audioEnabled) ChildGameAudioHooks.onCorrect()
-                scope.launch {
-                    if (isSagaEpisode(chapterId) && stationId == Chapter1StationOrder.PICTURE_PICK_ALL) {
-                        if (chapterId != 3 && chapterId != 6) {
-                            voice.playBlocking(AudioClips.wordClipByCatalogId(choiceId))
-                        }
-                    }
-                    val isLast = session.currentIndex >= session.totalQuestions - 1
-                    advanceAfterRound(isLast)
-                }
-                true
-            }
-            AnswerResult.Wrong -> {
-                if (audioEnabled) ChildGameAudioHooks.onWrong()
-                registerWrongTapForHintPulse()
-                if (isSagaEpisode(chapterId) && stationId == Chapter1StationOrder.PICTURE_PICK_ALL) {
-                    onWrongFeedback(wrongWordCatalogId = choiceId)
-                } else {
-                    onWrongFeedback()
-                }
-                false
-            }
-            AnswerResult.Finished -> false
-        }
-    }
 
     @Composable
     fun Chapter3Station5ReplayOverlay(modifier: Modifier) {
@@ -1496,10 +1394,68 @@ fun GameScreen(
                                 },
                             )
                         },
-                        handleImageToWordReplayCorrectChoice = { handleImageToWordReplayCorrectChoice() },
-                        handleImageToWordWordPressed = { choiceId -> handleImageToWordWordPressed(choiceId) },
-                        handleImageToWordAttempt = { choiceId -> handleImageToWordAttempt(choiceId) },
-                        handleImageMatchAttempt = { choiceId -> handleImageMatchAttempt(choiceId) },
+                        handleImageToWordReplayCorrectChoice = {
+                            ImageMatchActions.handleImageToWordReplayCorrectChoice(
+                                audioEnabled = audioEnabled,
+                                cancelFeedbackVoice = { cancelFeedbackVoice() },
+                                chapterId = chapterId,
+                                session = session,
+                                scope = scope,
+                                voice = voice,
+                                setFeedbackVoiceJob = { job -> feedbackVoiceJob = job },
+                            )
+                        },
+                        handleImageToWordWordPressed = { choiceId ->
+                            ImageMatchActions.handleImageToWordWordPressed(
+                                choiceId = choiceId,
+                                audioEnabled = audioEnabled,
+                                cancelFeedbackVoice = { cancelFeedbackVoice() },
+                                chapterId = chapterId,
+                                scope = scope,
+                                voice = voice,
+                                setFeedbackVoiceJob = { job -> feedbackVoiceJob = job },
+                            )
+                        },
+                        handleImageToWordAttempt = { choiceId ->
+                            ImageMatchActions.handleImageToWordAttempt(
+                                choiceId = choiceId,
+                                consumeTapCooldown = { consumeTapCooldown() },
+                                cancelFeedbackVoice = { cancelFeedbackVoice() },
+                                audioEnabled = audioEnabled,
+                                chapterId = chapterId,
+                                session = session,
+                                scope = scope,
+                                voice = voice,
+                                advanceAfterRound = { isLast -> advanceAfterRound(isLast) },
+                                registerWrongTapForHintPulse = { registerWrongTapForHintPulse() },
+                                onWrongFeedback = { wrongWordCatalogId ->
+                                    onWrongFeedback(wrongWordCatalogId = wrongWordCatalogId)
+                                },
+                            )
+                        },
+                        handleImageMatchAttempt = { choiceId ->
+                            ImageMatchActions.handleImageMatchAttempt(
+                                choiceId = choiceId,
+                                consumeTapCooldown = { consumeTapCooldown() },
+                                cancelFeedbackVoice = { cancelFeedbackVoice() },
+                                audioEnabled = audioEnabled,
+                                chapterId = chapterId,
+                                stationId = stationId,
+                                sagaEpisode = isSagaEpisode(chapterId),
+                                session = session,
+                                scope = scope,
+                                voice = voice,
+                                advanceAfterRound = { isLast -> advanceAfterRound(isLast) },
+                                registerWrongTapForHintPulse = { registerWrongTapForHintPulse() },
+                                onWrongFeedback = { wrongWordCatalogId, generic ->
+                                    if (generic) {
+                                        onWrongFeedback()
+                                    } else {
+                                        onWrongFeedback(wrongWordCatalogId = wrongWordCatalogId)
+                                    }
+                                },
+                            )
+                        },
                         handleFinaleWrongPlacement = {
                             session.wrongTap()
                             shakeEpoch += 1
