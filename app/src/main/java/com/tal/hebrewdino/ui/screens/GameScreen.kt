@@ -273,6 +273,7 @@ private const val Episode1PraiseChance = 0.62f
 private object WrongFeedbackActions {
     fun trigger(
         scope: CoroutineScope,
+        gameViewModel: GameViewModel,
         audioEnabled: Boolean,
         sagaEpisode: Boolean,
         chapterId: Int,
@@ -289,7 +290,6 @@ private object WrongFeedbackActions {
         dinoSlip: Animatable<Float, AnimationVector1D>,
         dinoTilt: Animatable<Float, AnimationVector1D>,
         setDinoVisual: (DinoVisual) -> Unit,
-        setInputLocked: (Boolean) -> Unit,
         onWrongHook: () -> Unit,
         wrongPickedLetter: String? = null,
         wrongWordCatalogId: String? = null,
@@ -297,7 +297,7 @@ private object WrongFeedbackActions {
         wrongWordAlreadySpoken: Boolean = false,
     ) {
         scope.launch {
-            setInputLocked(true)
+            gameViewModel.inputLocked = true
             setDinoVisual(DinoVisual.TryAgain)
             if (sagaEpisode) {
                 dinoSlip.snapTo(0f)
@@ -371,7 +371,7 @@ private object WrongFeedbackActions {
                         },
                     )
                     setDinoVisual(DinoVisual.Idle)
-                    setInputLocked(false)
+                    gameViewModel.inputLocked = false
                     return@launch
                 }
                 if (sagaEpisode &&
@@ -411,7 +411,7 @@ private object WrongFeedbackActions {
                         },
                     )
                     setDinoVisual(DinoVisual.Idle)
-                    setInputLocked(false)
+                    gameViewModel.inputLocked = false
                     return@launch
                 }
                 cancelFeedbackVoice()
@@ -458,7 +458,7 @@ private object WrongFeedbackActions {
                 )
             }
             setDinoVisual(DinoVisual.Idle)
-            setInputLocked(false)
+            gameViewModel.inputLocked = false
         }
     }
 }
@@ -957,6 +957,7 @@ fun GameScreen(
     ) {
         WrongFeedbackActions.trigger(
             scope = scope,
+            gameViewModel = gameViewModel,
             audioEnabled = audioEnabled,
             sagaEpisode = isSagaEpisode(chapterId),
             chapterId = chapterId,
@@ -973,7 +974,6 @@ fun GameScreen(
             dinoSlip = dinoSlip,
             dinoTilt = dinoTilt,
             setDinoVisual = { v -> dinoVisual = v },
-            setInputLocked = { locked -> gameViewModel.inputLocked = locked },
             onWrongHook = { ChildGameAudioHooks.onWrong() },
             wrongPickedLetter = wrongPickedLetter,
             wrongWordCatalogId = wrongWordCatalogId,
