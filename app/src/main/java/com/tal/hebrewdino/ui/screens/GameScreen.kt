@@ -762,7 +762,7 @@ fun GameScreen(
     val tapCooldown = remember(stationId) { TapCooldown() }
     fun consumeTapCooldown(): Boolean = tapCooldown.consume()
 
-    fun performSideHelpReplay() {
+    val performSideHelpReplay: () -> Unit = {
         feedbackVoiceJob =
             SideHelpActions.startReplay(
                 audioEnabled = audioEnabled,
@@ -782,7 +782,7 @@ fun GameScreen(
             )
     }
 
-    fun performSideHelpHint() {
+    val performSideHelpHint: () -> Unit = {
         SideHelpActions.performHint(
             isPlayPhase = gameViewModel.phase == GamePhase.Play,
             episode4HelpEnabled = episode4HelpSt15,
@@ -1138,7 +1138,7 @@ fun GameScreen(
                         getFeedbackVoiceJob = { feedbackVoiceJob },
                         setFeedbackVoiceJob = { job -> feedbackVoiceJob = job },
                         consumeTapCooldown = { consumeTapCooldown() },
-                        performSideHelpReplay = { performSideHelpReplay() },
+                        performSideHelpReplay = performSideHelpReplay,
                         handleFindGridSagaGridLetterTapped = { tapped, question ->
                             FindGridActions.handleSagaGridLetterTapped(
                                 audioEnabled = audioEnabled,
@@ -1402,15 +1402,15 @@ fun GameScreen(
                             gameViewModel.phase == GamePhase.Play &&
                                 !episode4Help.hintLocksChoices &&
                                 stationUiSpec.hintMode != com.tal.hebrewdino.ui.domain.StationHintMode.None,
-                        onReplay = { performSideHelpReplay() },
-                        onHint = { performSideHelpHint() },
+                        onReplay = performSideHelpReplay,
+                        onHint = performSideHelpHint,
                     )
                 popBalloonsHelpControlsEnabled ->
                     SideHelpControls(
                         replayEnabled = gameViewModel.phase == GamePhase.Play,
                         hintEnabled = gameViewModel.phase == GamePhase.Play && !balloonHelp.hintLocksChoices,
-                        onReplay = { performSideHelpReplay() },
-                        onHint = { performSideHelpHint() },
+                        onReplay = performSideHelpReplay,
+                        onHint = performSideHelpHint,
                     )
                 else -> null
             }
