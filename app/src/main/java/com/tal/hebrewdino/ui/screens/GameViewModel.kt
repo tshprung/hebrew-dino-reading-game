@@ -31,6 +31,7 @@ internal class GameViewModel(
     var station2PinnedBalloonColor: Color? by mutableStateOf(null)
     var shakeEpoch: Int by mutableIntStateOf(0)
     var entryPulseEpoch: Int by mutableIntStateOf(0)
+    var completionCallbackFired: Boolean by mutableStateOf(false)
 
     class Factory(
         private val plan: StationQuizPlan,

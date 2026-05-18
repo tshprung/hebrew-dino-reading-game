@@ -684,7 +684,6 @@ fun GameScreen(
     val voice = audio.voice
     val sfx = audio.sfx
     val gameFeedback = remember(stationId, sfx, view) { GameFeedback(scope, sfx, view) }
-    var completionCallbackFired by remember(stationId) { mutableStateOf(false) }
 
     val contentAlpha = remember(stationId) { Animatable(1f) }
     val optionsShake = remember(stationId) { Animatable(0f) }
@@ -848,8 +847,8 @@ fun GameScreen(
     LaunchedEffect(stationId) {
         snapshotFlow { session.currentIndex >= session.totalQuestions }.collect { exhausted ->
             if (exhausted && session.totalQuestions > 0) {
-                if (!completionCallbackFired) {
-                    completionCallbackFired = true
+                if (!gameViewModel.completionCallbackFired) {
+                    gameViewModel.completionCallbackFired = true
                     onComplete(stationId, session.correctCount, session.mistakeCount)
                 }
             }
@@ -861,8 +860,8 @@ fun GameScreen(
         GameCompletionSafety(
             stationId = stationId,
             sessionCurrentIndex = session.currentIndex,
-            completionCallbackFired = completionCallbackFired,
-            markCompletionCallbackFired = { completionCallbackFired = true },
+            completionCallbackFired = gameViewModel.completionCallbackFired,
+            markCompletionCallbackFired = { gameViewModel.completionCallbackFired = true },
             sessionCorrectCount = session.correctCount,
             sessionMistakeCount = session.mistakeCount,
             onComplete = onComplete,
@@ -975,8 +974,8 @@ fun GameScreen(
                 gameViewModel.station2PinnedBalloonColor = null
             },
             session = session,
-            getCompletionCallbackFired = { completionCallbackFired },
-            markCompletionCallbackFired = { completionCallbackFired = true },
+            getCompletionCallbackFired = { gameViewModel.completionCallbackFired },
+            markCompletionCallbackFired = { gameViewModel.completionCallbackFired = true },
             onComplete = onComplete,
             onLevelCompleteHook = { ChildGameAudioHooks.onLevelComplete() },
         )
