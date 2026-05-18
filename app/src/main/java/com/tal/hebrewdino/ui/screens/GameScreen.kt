@@ -690,13 +690,11 @@ fun GameScreen(
     val optionsShake = remember(stationId) { Animatable(0f) }
     var dinoVisual by remember(stationId) { mutableStateOf(DinoVisual.Idle) }
     val dinoScale = remember(stationId) { Animatable(1f) }
-    var shakeEpoch by remember(stationId) { mutableIntStateOf(0) }
     var dinoTalking by remember(stationId, session.currentIndex) { mutableStateOf(false) }
     val dinoForward = remember(stationId) { Animatable(0f) }
     val dinoSlip = remember(stationId) { Animatable(0f) }
     val dinoTilt = remember(stationId) { Animatable(0f) }
     val hintHeaderScale = remember(stationId) { Animatable(1f) }
-    var entryPulseEpoch by remember(stationId) { mutableIntStateOf(0) }
     val entryPulseScale = remember(stationId) { Animatable(1f) }
     var feedbackVoiceJob by remember(stationId) { mutableStateOf<Job?>(null) }
     var promptVoiceJob by remember(stationId) { mutableStateOf<Job?>(null) }
@@ -920,7 +918,7 @@ fun GameScreen(
             cancelFeedbackVoice = { cancelFeedbackVoice() },
             setPromptVoiceJob = { job -> promptVoiceJob = job },
             setDinoTalking = { talking -> dinoTalking = talking },
-            bumpEntryPulseEpoch = { entryPulseEpoch += 1 },
+            bumpEntryPulseEpoch = { gameViewModel.entryPulseEpoch += 1 },
             bumpHintPulseEpoch = { gameViewModel.hintPulseEpoch += 1 },
         )
     }
@@ -939,8 +937,8 @@ fun GameScreen(
         hintHeaderScale.animateTo(1f, spring(dampingRatio = 0.56f, stiffness = 420f))
     }
 
-    LaunchedEffect(entryPulseEpoch, stationId) {
-        if (entryPulseEpoch <= 0) return@LaunchedEffect
+    LaunchedEffect(gameViewModel.entryPulseEpoch, stationId) {
+        if (gameViewModel.entryPulseEpoch <= 0) return@LaunchedEffect
         entryPulseScale.snapTo(1f)
         entryPulseScale.animateTo(1.04f, tween(130))
         entryPulseScale.animateTo(1f, spring(dampingRatio = 0.62f, stiffness = 420f))
@@ -1146,7 +1144,7 @@ fun GameScreen(
                         station2PinnedBalloonColor = gameViewModel.station2PinnedBalloonColor,
                         hintHeaderScale = hintHeaderScale.value,
                         enabled = gameChoicesEnabled,
-                        shakeEpoch = shakeEpoch,
+                        shakeEpoch = gameViewModel.shakeEpoch,
                         wrongTapsThisQuestion = gameViewModel.wrongTapsThisQuestion,
                         hintPulseEpoch = gameViewModel.hintPulseEpoch,
                         correctTapPulseLetter = gameViewModel.correctTapPulseLetter,
@@ -1154,7 +1152,7 @@ fun GameScreen(
                         station4WrongFlashLetter = gameViewModel.station4WrongFlashLetter,
                         station4WrongFlashEpoch = gameViewModel.station4WrongFlashEpoch,
                         station4PinnedCorrectLetter = gameViewModel.station4PinnedCorrectLetter,
-                        entryPulseEpoch = entryPulseEpoch,
+                        entryPulseEpoch = gameViewModel.entryPulseEpoch,
                         entryPulseScale = entryPulseScale.value,
                         optionsShakePx = optionsShake.value,
                         session = session,
@@ -1183,7 +1181,7 @@ fun GameScreen(
                                 sagaUsesFindGridAudioStaging = sagaUsesFindGridAudioStaging,
                                 cancelFeedbackVoice = { cancelFeedbackVoice() },
                                 session = session,
-                                bumpShakeEpoch = { shakeEpoch += 1 },
+                                bumpShakeEpoch = { gameViewModel.shakeEpoch += 1 },
                                 registerWrongTapForHintPulse = { registerWrongTapForHintPulse() },
                                 onWrongFeedback = { wrongPickedLetter, wrongPickedLetterAlreadySpoken ->
                                     onWrongFeedback(
@@ -1223,7 +1221,7 @@ fun GameScreen(
                                 setStation1PinnedCorrectLetter = { letter -> gameViewModel.station1PinnedCorrectLetter = letter },
                                 getFeedbackVoiceJob = { feedbackVoiceJob },
                                 setFeedbackVoiceJob = { job -> feedbackVoiceJob = job },
-                                bumpShakeEpoch = { shakeEpoch += 1 },
+                                bumpShakeEpoch = { gameViewModel.shakeEpoch += 1 },
                                 registerWrongTapForHintPulse = { registerWrongTapForHintPulse() },
                                 onWrongFeedback = { wrongPickedLetter ->
                                     onWrongFeedback(wrongPickedLetter = wrongPickedLetter)
@@ -1264,7 +1262,7 @@ fun GameScreen(
                                 cancelFeedbackVoice = { cancelFeedbackVoice() },
                                 onWrongFeedback = { onWrongFeedback() },
                                 session = session,
-                                bumpShakeEpoch = { shakeEpoch += 1 },
+                                bumpShakeEpoch = { gameViewModel.shakeEpoch += 1 },
                                 registerWrongTapForHintPulse = { registerWrongTapForHintPulse() },
                                 chapterId = chapterId,
                                 stationId = stationId,
@@ -1390,7 +1388,7 @@ fun GameScreen(
                         },
                         handleFinaleWrongPlacement = {
                             session.wrongTap()
-                            shakeEpoch += 1
+                            gameViewModel.shakeEpoch += 1
                         },
                         onWrongFeedback = { onWrongFeedback() },
                         advanceAfterRound = { isLast -> advanceAfterRound(isLast) },
