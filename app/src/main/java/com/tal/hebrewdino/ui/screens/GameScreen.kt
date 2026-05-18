@@ -1239,14 +1239,11 @@ fun GameScreen(
                                 lastLetter = lastLetter,
                                 poppedBalloonColor = poppedBalloonColor,
                                 isChapter3PopAllLettersStation = popAll,
+                                gameViewModel = gameViewModel,
                                 sagaUsesPopBalloonsAudioStaging = sagaUsesPopBalloonsAudioStaging,
                                 chapterId = chapterId,
                                 audioEnabled = audioEnabled,
                                 cancelFeedbackVoice = { cancelFeedbackVoice() },
-                                setStation2PinnedBalloon = { letter, color ->
-                                    gameViewModel.station2PinnedBalloonLetter = letter
-                                    gameViewModel.station2PinnedBalloonColor = color
-                                },
                                 session = session,
                                 scope = scope,
                                 getFeedbackVoiceJob = { feedbackVoiceJob },

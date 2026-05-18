@@ -192,11 +192,11 @@ internal object PopBalloonsActions {
         lastLetter: String,
         poppedBalloonColor: Color,
         isChapter3PopAllLettersStation: Boolean,
+        gameViewModel: GameViewModel,
         sagaUsesPopBalloonsAudioStaging: Boolean,
         chapterId: Int,
         audioEnabled: Boolean,
         cancelFeedbackVoice: () -> Unit,
-        setStation2PinnedBalloon: (String, Color) -> Unit,
         session: LevelSession,
         scope: CoroutineScope,
         getFeedbackVoiceJob: () -> Job?,
@@ -204,7 +204,8 @@ internal object PopBalloonsActions {
     ) {
         val ch1St2 = sagaUsesPopBalloonsAudioStaging
         if (ch1St2 && chapterId != 4 && chapterId != 5) {
-            setStation2PinnedBalloon(lastLetter, poppedBalloonColor)
+            gameViewModel.station2PinnedBalloonLetter = lastLetter
+            gameViewModel.station2PinnedBalloonColor = poppedBalloonColor
         } else if (!ch1St2) {
             cancelFeedbackVoice()
         }
