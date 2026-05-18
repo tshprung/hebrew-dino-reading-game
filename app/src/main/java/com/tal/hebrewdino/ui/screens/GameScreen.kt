@@ -1053,87 +1053,6 @@ fun GameScreen(
         )
     }
 
-    fun handlePictureStartsWithPick(picked: String) {
-        if (!consumeTapCooldown()) return
-        cancelFeedbackVoice()
-        if (audioEnabled && (
-                ((chapterId == 3 || chapterId == 6) && stationId == 1) ||
-                    (chapterId == 2 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE)
-            )
-        ) {
-            val clip = AudioClips.letterNameClip(picked)
-            if (clip != null && voice.hasAsset(clip)) {
-                feedbackVoiceJob = scope.launch { voice.playBlocking(clip) }
-            }
-        }
-        when (session.submitPictureStartsWith(picked)) {
-            AnswerResult.Correct -> {
-                if (audioEnabled) ChildGameAudioHooks.onCorrect()
-                if (chapterId == 4 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
-                    station4PinnedCorrectLetter = picked
-                }
-                if (isSagaEpisode(chapterId) && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
-                    scope.launch {
-                        correctTapPulseLetter = picked
-                        correctTapPulseEpoch += 1
-                        cancelFeedbackVoice()
-                        val letterName = AudioClips.letterNameClip(picked)
-                        val praise =
-                            mutableListOf(
-                                AudioClips.VoKolHakavod,
-                                AudioClips.VoNice1,
-                                AudioClips.VoGoodJob2,
-                                AudioClips.VoGoodJob1,
-                                AudioClips.VoPraiseMetzuyan,
-                                AudioClips.VoPraiseYofi,
-                                AudioClips.VoPraiseHitzlacht,
-                            )
-                        praise.shuffle()
-                        val job =
-                            scope.launch {
-                                if (letterName != null && voice.hasAsset(letterName)) {
-                                    voice.playBlocking(letterName)
-                                }
-                                voice.playFirstAvailableBlocking(*praise.toTypedArray())
-                            }
-                        feedbackVoiceJob = job
-                        job.join()
-                        val isLast =
-                            session.currentIndex >= session.totalQuestions - 1
-                        advanceAfterRound(isLast)
-                    }
-                } else {
-                    scope.launch {
-                        correctTapPulseLetter = picked
-                        correctTapPulseEpoch += 1
-                        if (audioEnabled && (chapterId == 3 || chapterId == 6) && stationId == 1) {
-                            withTimeoutOrNull(1200L) { feedbackVoiceJob?.join() }
-                        }
-                        val isLast =
-                            session.currentIndex >= session.totalQuestions - 1
-                        advanceAfterRound(isLast)
-                    }
-                }
-            }
-            AnswerResult.Wrong -> {
-                if (audioEnabled) ChildGameAudioHooks.onWrong()
-                registerWrongTapForHintPulse()
-                if (isSagaEpisode(chapterId) && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
-                    station4WrongFlashLetter = picked
-                    station4WrongFlashEpoch += 1
-                    onWrongFeedback(wrongPickedLetter = picked)
-                } else {
-                    if (audioEnabled && (chapterId == 3 || chapterId == 6) && stationId == 1) {
-                        onWrongFeedback(wrongPickedLetterAlreadySpoken = true)
-                    } else {
-                        onWrongFeedback()
-                    }
-                }
-            }
-            AnswerResult.Finished -> {}
-        }
-    }
-
     fun handleImageToWordAttempt(choiceId: String): Boolean {
         if (!consumeTapCooldown()) return false
         cancelFeedbackVoice()
@@ -1544,7 +1463,39 @@ fun GameScreen(
                                 advanceAfterRound = { isLast -> advanceAfterRound(isLast) },
                             )
                         },
-                        handlePictureStartsWithPick = { picked -> handlePictureStartsWithPick(picked) },
+                        handlePictureStartsWithPick = { picked ->
+                            PictureStartsWithActions.handlePick(
+                                picked = picked,
+                                consumeTapCooldown = { consumeTapCooldown() },
+                                cancelFeedbackVoice = { cancelFeedbackVoice() },
+                                audioEnabled = audioEnabled,
+                                chapterId = chapterId,
+                                stationId = stationId,
+                                sagaEpisode = isSagaEpisode(chapterId),
+                                session = session,
+                                scope = scope,
+                                voice = voice,
+                                getFeedbackVoiceJob = { feedbackVoiceJob },
+                                setFeedbackVoiceJob = { job -> feedbackVoiceJob = job },
+                                setStation4PinnedCorrectLetter = { letter -> station4PinnedCorrectLetter = letter },
+                                setCorrectTapPulse = { letter ->
+                                    correctTapPulseLetter = letter
+                                    correctTapPulseEpoch += 1
+                                },
+                                advanceAfterRound = { isLast -> advanceAfterRound(isLast) },
+                                registerWrongTapForHintPulse = { registerWrongTapForHintPulse() },
+                                flashStation4WrongLetter = { letter ->
+                                    station4WrongFlashLetter = letter
+                                    station4WrongFlashEpoch += 1
+                                },
+                                onWrongFeedback = { wrongPickedLetter, wrongPickedLetterAlreadySpoken ->
+                                    onWrongFeedback(
+                                        wrongPickedLetter = wrongPickedLetter,
+                                        wrongPickedLetterAlreadySpoken = wrongPickedLetterAlreadySpoken,
+                                    )
+                                },
+                            )
+                        },
                         handleImageToWordReplayCorrectChoice = { handleImageToWordReplayCorrectChoice() },
                         handleImageToWordWordPressed = { choiceId -> handleImageToWordWordPressed(choiceId) },
                         handleImageToWordAttempt = { choiceId -> handleImageToWordAttempt(choiceId) },
