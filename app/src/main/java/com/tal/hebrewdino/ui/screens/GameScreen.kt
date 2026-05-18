@@ -872,6 +872,7 @@ fun GameScreen(
 
     LaunchedEffect(stationId, session.currentIndex) {
         GameRoundStartActions.run(
+            gameViewModel = gameViewModel,
             audioEnabled = audioEnabled,
             chapterId = chapterId,
             stationId = stationId,
@@ -898,27 +899,11 @@ fun GameScreen(
             station4IntroToWordLeadScale = Station4IntroToWordLeadScale,
             station4IntroToWordGapBoost = Station4IntroToWordGapBoost,
             station4IntroToWordExtraPauseMs = Station4IntroToWordExtraPauseMs,
-            setPhase = { p -> gameViewModel.phase = p },
-            setInputLocked = { locked -> gameViewModel.inputLocked = locked },
-            setWrongTapsThisQuestion = { gameViewModel.wrongTapsThisQuestion = it },
-            setCorrectTapPulseLetter = { gameViewModel.correctTapPulseLetter = it },
-            clearStation4WrongFlashLetter = {
-                gameViewModel.station4WrongFlashLetter = null
-                gameViewModel.station4WrongFlashEpoch = 0
-            },
-            clearStation4PinnedCorrectLetter = { gameViewModel.station4PinnedCorrectLetter = null },
             resetEpisode4HelpForNewQuestion = { episode4Help.resetForNewQuestion() },
             resetBalloonHelpForNewQuestion = { balloonHelp.reset() },
-            clearStation1PinnedCorrectLetter = { gameViewModel.station1PinnedCorrectLetter = null },
-            clearPinnedBalloon = {
-                gameViewModel.station2PinnedBalloonLetter = null
-                gameViewModel.station2PinnedBalloonColor = null
-            },
             cancelFeedbackVoice = { cancelFeedbackVoice() },
             setPromptVoiceJob = { job -> promptVoiceJob = job },
             setDinoTalking = { talking -> dinoTalking = talking },
-            bumpEntryPulseEpoch = { gameViewModel.entryPulseEpoch += 1 },
-            bumpHintPulseEpoch = { gameViewModel.hintPulseEpoch += 1 },
         )
     }
 

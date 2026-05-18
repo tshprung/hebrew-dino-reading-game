@@ -13,6 +13,7 @@ import kotlinx.coroutines.launch
 
 internal object GameRoundStartActions {
     suspend fun run(
+        gameViewModel: GameViewModel,
         audioEnabled: Boolean,
         chapterId: Int,
         stationId: Int,
@@ -39,32 +40,24 @@ internal object GameRoundStartActions {
         station4IntroToWordLeadScale: Float,
         station4IntroToWordGapBoost: Float,
         station4IntroToWordExtraPauseMs: Long,
-        setPhase: (GamePhase) -> Unit,
-        setInputLocked: (Boolean) -> Unit,
-        setWrongTapsThisQuestion: (Int) -> Unit,
-        setCorrectTapPulseLetter: (String?) -> Unit,
-        clearStation4WrongFlashLetter: () -> Unit,
-        clearStation4PinnedCorrectLetter: () -> Unit,
         resetEpisode4HelpForNewQuestion: () -> Unit,
         resetBalloonHelpForNewQuestion: () -> Unit,
-        clearStation1PinnedCorrectLetter: () -> Unit,
-        clearPinnedBalloon: () -> Unit,
         cancelFeedbackVoice: () -> Unit,
         setPromptVoiceJob: (Job?) -> Unit,
         setDinoTalking: (Boolean) -> Unit,
-        bumpEntryPulseEpoch: () -> Unit,
-        bumpHintPulseEpoch: () -> Unit,
     ) {
-        setPhase(GamePhase.Intro)
-        setInputLocked(true)
-        setWrongTapsThisQuestion(0)
-        setCorrectTapPulseLetter(null)
-        clearStation4WrongFlashLetter()
-        clearStation4PinnedCorrectLetter()
+        gameViewModel.phase = GamePhase.Intro
+        gameViewModel.inputLocked = true
+        gameViewModel.wrongTapsThisQuestion = 0
+        gameViewModel.correctTapPulseLetter = null
+        gameViewModel.station4WrongFlashLetter = null
+        gameViewModel.station4WrongFlashEpoch = 0
+        gameViewModel.station4PinnedCorrectLetter = null
         resetEpisode4HelpForNewQuestion()
         resetBalloonHelpForNewQuestion()
-        clearStation1PinnedCorrectLetter()
-        clearPinnedBalloon()
+        gameViewModel.station1PinnedCorrectLetter = null
+        gameViewModel.station2PinnedBalloonLetter = null
+        gameViewModel.station2PinnedBalloonColor = null
         cancelFeedbackVoice()
         val q: Question = session.currentQuestion ?: return
 
@@ -121,11 +114,11 @@ internal object GameRoundStartActions {
         }
 
         delay(introDurationMs)
-        setPhase(GamePhase.Play)
-        setInputLocked(false)
-        bumpEntryPulseEpoch()
+        gameViewModel.phase = GamePhase.Play
+        gameViewModel.inputLocked = false
+        gameViewModel.entryPulseEpoch += 1
         if (sagaUsesFindGridAudioStaging && session.currentIndex == 0) {
-            bumpHintPulseEpoch()
+            gameViewModel.hintPulseEpoch += 1
         }
     }
 }
