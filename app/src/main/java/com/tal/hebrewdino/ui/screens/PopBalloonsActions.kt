@@ -145,6 +145,7 @@ internal object PopBalloonsActions {
 
     fun handleWrongPick(
         consumeTapCooldown: () -> Boolean,
+        gameViewModel: GameViewModel,
         sagaUsesPopBalloonsAudioStaging: Boolean,
         cancelFeedbackVoice: () -> Unit,
         onWrongFeedback: () -> Unit,
@@ -155,7 +156,6 @@ internal object PopBalloonsActions {
         stationId: Int,
         scope: CoroutineScope,
         optionsShake: Animatable<Float, AnimationVector1D>,
-        setInputLocked: (Boolean) -> Unit,
         setDinoVisual: (DinoVisual) -> Unit,
     ) {
         if (!consumeTapCooldown()) return
@@ -167,7 +167,7 @@ internal object PopBalloonsActions {
         registerWrongTapForHintPulse()
         if (sagaUsesPopBalloonsAudioStaging) {
             scope.launch {
-                setInputLocked(true)
+                gameViewModel.inputLocked = true
                 setDinoVisual(DinoVisual.TryAgain)
                 val strongerWrongShake =
                     (isSagaEpisode(chapterId) &&
@@ -181,7 +181,7 @@ internal object PopBalloonsActions {
                     strength = if (strongerWrongShake) 1.25f else 1f,
                 )
                 setDinoVisual(DinoVisual.Idle)
-                setInputLocked(false)
+                gameViewModel.inputLocked = false
             }
         } else {
             onWrongFeedback()

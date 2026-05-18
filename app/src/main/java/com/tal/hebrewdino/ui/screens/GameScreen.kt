@@ -1224,6 +1224,7 @@ fun GameScreen(
                         handlePopBalloonsWrongPick = {
                             PopBalloonsActions.handleWrongPick(
                                 consumeTapCooldown = { consumeTapCooldown() },
+                                gameViewModel = gameViewModel,
                                 sagaUsesPopBalloonsAudioStaging = sagaUsesPopBalloonsAudioStaging,
                                 cancelFeedbackVoice = { cancelFeedbackVoice() },
                                 onWrongFeedback = { onWrongFeedback() },
@@ -1234,7 +1235,6 @@ fun GameScreen(
                                 stationId = stationId,
                                 scope = scope,
                                 optionsShake = optionsShake,
-                                setInputLocked = { locked -> gameViewModel.inputLocked = locked },
                                 setDinoVisual = { v -> dinoVisual = v },
                             )
                         },
