@@ -879,84 +879,52 @@ fun GameScreen(
     }
 
     LaunchedEffect(stationId, session.currentIndex) {
-        phase = GamePhase.Intro
-        inputLocked = true
-        wrongTapsThisQuestion = 0
-        correctTapPulseLetter = null
-        station4WrongFlashLetter = null
-        station4PinnedCorrectLetter = null
-        episode4Help.resetForNewQuestion()
-        balloonHelp.reset()
-        station1PinnedCorrectLetter = null
-        station2PinnedBalloonLetter = null
-        station2PinnedBalloonColor = null
-        // Cancel any in-flight feedback/instructions from the previous question.
-        cancelFeedbackVoice()
-        val q = session.currentQuestion ?: return@LaunchedEffect
-
-        // CRITICAL: start instruction voice as early as possible (especially Station 1).
-        // Use application scope — NOT a child of this LaunchedEffect — or the job is cancelled when this effect
-        // finishes after IntroDurationMs, cutting instructions mid-sentence (station 1 sounded "silent").
-        promptVoiceJob =
-            scope.launch {
-            if (audioEnabled) {
-                dinoTalking = true
-                try {
-                    playIntroPrompt(
-                        audioEnabled = audioEnabled,
-                        chapterId = chapterId,
-                        stationId = stationId,
-                        listenOnlyTargetPrompt = listenOnly,
-                        stationTemplateId = stationUiSpec.templateId,
-                        planPopAllLettersInWord = plan.popAllLettersInWord,
-                        isSagaEpisode = isSagaEpisode(chapterId),
-                        sagaUsesPickLetterAudioStaging = sagaUsesPickLetterAudioStaging,
-                        sagaUsesPopBalloonsAudioStaging = sagaUsesPopBalloonsAudioStaging,
-                        sagaUsesFindGridAudioStaging = sagaUsesFindGridAudioStaging,
-                        isChapter3HighlightedLetterInWordStation = isChapter3HighlightedLetterInWordStation,
-                        isChapter3AudioLetterRecognitionStation = isChapter3AudioLetterRecognitionStation,
-                        session = session,
-                        q = q,
-                        voice = voice,
-                        sfx = sfx,
-                        station1IntroLetterLeadFraction = Station1IntroLetterLeadFraction,
-                        station1IntroToLetterLeadScale = Station1IntroToLetterLeadScale,
-                        station2BalloonIntroLetterLeadFraction = Station2BalloonIntroLetterLeadFraction,
-                        station2IntroToLetterLeadScale = Station2IntroToLetterLeadScale,
-                        station2BalloonIntroToLetterGapBoost = Station2BalloonIntroToLetterGapBoost,
-                        station2BalloonIntroToLetterExtraPauseMs = Station2BalloonIntroToLetterExtraPauseMs,
-                        station4IntroWordLeadFraction = Station4IntroWordLeadFraction,
-                        station4IntroToWordLeadScale = Station4IntroToWordLeadScale,
-                        station4IntroToWordGapBoost = Station4IntroToWordGapBoost,
-                        station4IntroToWordExtraPauseMs = Station4IntroToWordExtraPauseMs,
-                    )
-                } finally {
-                    dinoTalking = false
-                }
-            }
-        }
-
-        // Preload SFX after prompt kickoff (never block instruction start).
-        scope.launch {
-            if (audioEnabled) {
-                sfx.preload(
-                    AudioClips.SfxCorrect,
-                    AudioClips.SfxWrong,
-                    AudioClips.SfxBalloonPopSoft,
-                    AudioClips.SfxBalloonPop,
-                    AudioClips.SfxBalloonPopWrongFunny,
-                )
-            }
-        }
-        val introPauseMs = IntroDurationMs
-        delay(introPauseMs)
-        phase = GamePhase.Play
-        inputLocked = false
-        entryPulseEpoch += 1
-        if (sagaUsesFindGridAudioStaging && session.currentIndex == 0) {
-            // Entry guidance: subtle pulse once at the station start (not every round).
-            hintPulseEpoch += 1
-        }
+        GameRoundStartActions.run(
+            audioEnabled = audioEnabled,
+            chapterId = chapterId,
+            stationId = stationId,
+            listenOnlyTargetPrompt = listenOnly,
+            stationTemplateId = stationUiSpec.templateId,
+            planPopAllLettersInWord = plan.popAllLettersInWord,
+            sagaUsesPickLetterAudioStaging = sagaUsesPickLetterAudioStaging,
+            sagaUsesPopBalloonsAudioStaging = sagaUsesPopBalloonsAudioStaging,
+            sagaUsesFindGridAudioStaging = sagaUsesFindGridAudioStaging,
+            isChapter3HighlightedLetterInWordStation = isChapter3HighlightedLetterInWordStation,
+            isChapter3AudioLetterRecognitionStation = isChapter3AudioLetterRecognitionStation,
+            session = session,
+            scope = scope,
+            voice = voice,
+            sfx = sfx,
+            introDurationMs = IntroDurationMs,
+            station1IntroLetterLeadFraction = Station1IntroLetterLeadFraction,
+            station1IntroToLetterLeadScale = Station1IntroToLetterLeadScale,
+            station2BalloonIntroLetterLeadFraction = Station2BalloonIntroLetterLeadFraction,
+            station2IntroToLetterLeadScale = Station2IntroToLetterLeadScale,
+            station2BalloonIntroToLetterGapBoost = Station2BalloonIntroToLetterGapBoost,
+            station2BalloonIntroToLetterExtraPauseMs = Station2BalloonIntroToLetterExtraPauseMs,
+            station4IntroWordLeadFraction = Station4IntroWordLeadFraction,
+            station4IntroToWordLeadScale = Station4IntroToWordLeadScale,
+            station4IntroToWordGapBoost = Station4IntroToWordGapBoost,
+            station4IntroToWordExtraPauseMs = Station4IntroToWordExtraPauseMs,
+            setPhase = { p -> phase = p },
+            setInputLocked = { locked -> inputLocked = locked },
+            setWrongTapsThisQuestion = { wrongTapsThisQuestion = it },
+            setCorrectTapPulseLetter = { correctTapPulseLetter = it },
+            clearStation4WrongFlashLetter = { station4WrongFlashLetter = null },
+            clearStation4PinnedCorrectLetter = { station4PinnedCorrectLetter = null },
+            resetEpisode4HelpForNewQuestion = { episode4Help.resetForNewQuestion() },
+            resetBalloonHelpForNewQuestion = { balloonHelp.reset() },
+            clearStation1PinnedCorrectLetter = { station1PinnedCorrectLetter = null },
+            clearPinnedBalloon = {
+                station2PinnedBalloonLetter = null
+                station2PinnedBalloonColor = null
+            },
+            cancelFeedbackVoice = { cancelFeedbackVoice() },
+            setPromptVoiceJob = { job -> promptVoiceJob = job },
+            setDinoTalking = { talking -> dinoTalking = talking },
+            bumpEntryPulseEpoch = { entryPulseEpoch += 1 },
+            bumpHintPulseEpoch = { hintPulseEpoch += 1 },
+        )
     }
 
     LaunchedEffect(dinoVisual) {
