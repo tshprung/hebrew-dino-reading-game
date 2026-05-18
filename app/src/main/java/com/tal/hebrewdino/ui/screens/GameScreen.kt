@@ -705,7 +705,6 @@ fun GameScreen(
      * main target chip until round-end praise finishes — not a second letter chip.
      */
     /** Episode 1 station 2: counts correct pops within the current question (for pop SFX variety). */
-    var station2CorrectPopCount by remember(stationId, session.currentIndex) { mutableIntStateOf(0) }
     val popBalloonsHelpControlsEnabled = stationUiSpec.popBalloonsHelpControlsEnabled && !episode4HelpSt15
     val showPopBalloonsTargetLetterChip = !listenOnly && !popBalloonsHelpControlsEnabled
     val balloonHelp = rememberBalloonHelpController(stationId = stationId, scope = scope)
@@ -1214,8 +1213,8 @@ fun GameScreen(
                                 getStation2VoiceStreamId = { station2VoiceStreamId },
                                 setStation2VoiceStreamId = { id -> station2VoiceStreamId = id },
                                 nextStation2CorrectPopVariant = {
-                                    val v = station2CorrectPopCount
-                                    station2CorrectPopCount += 1
+                                    val v = gameViewModel.station2CorrectPopCount
+                                    gameViewModel.station2CorrectPopCount += 1
                                     v
                                 },
                                 station2PopTailPaddingMs = Station2PopTailPaddingMs,

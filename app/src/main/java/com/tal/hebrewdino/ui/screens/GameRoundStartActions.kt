@@ -50,6 +50,7 @@ internal object GameRoundStartActions {
         gameViewModel.inputLocked = true
         gameViewModel.wrongTapsThisQuestion = 0
         gameViewModel.correctTapPulseLetter = null
+        gameViewModel.station2CorrectPopCount = 0
         gameViewModel.station4WrongFlashLetter = null
         gameViewModel.station4WrongFlashEpoch = 0
         gameViewModel.station4PinnedCorrectLetter = null
