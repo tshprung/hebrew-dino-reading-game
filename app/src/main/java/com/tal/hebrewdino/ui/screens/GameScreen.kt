@@ -466,6 +466,7 @@ private object WrongFeedbackActions {
 private object AdvanceAfterRoundActions {
     suspend fun run(
         scope: CoroutineScope,
+        gameViewModel: GameViewModel,
         audioEnabled: Boolean,
         sagaEpisode: Boolean,
         chapterId: Int,
@@ -483,20 +484,16 @@ private object AdvanceAfterRoundActions {
         cancelFeedbackVoice: () -> Unit,
         getFeedbackVoiceJob: () -> Job?,
         setFeedbackVoiceJob: (Job?) -> Unit,
-        setInputLocked: (Boolean) -> Unit,
         setDinoVisual: (DinoVisual) -> Unit,
         dinoForward: Animatable<Float, AnimationVector1D>,
         forwardDir: Float,
         dinoScale: Animatable<Float, AnimationVector1D>,
         contentAlpha: Animatable<Float, AnimationVector1D>,
-        clearPinnedBalloon: () -> Unit,
         session: LevelSession,
-        getCompletionCallbackFired: () -> Boolean,
-        markCompletionCallbackFired: () -> Unit,
         onComplete: (stationId: Int, correctCount: Int, mistakeCount: Int) -> Unit,
         onLevelCompleteHook: () -> Unit,
     ) {
-        setInputLocked(true)
+        gameViewModel.inputLocked = true
         if (audioEnabled && !ch3SpellMidWord) onLevelCompleteHook()
         if (audioEnabled) {
             when {
@@ -593,7 +590,8 @@ private object AdvanceAfterRoundActions {
                     stationId == Chapter1StationOrder.PICTURE_PICK_ONE)
         if (sagaUsesPopBalloonsAudioStaging) {
             withTimeoutOrNull(8000) { getFeedbackVoiceJob()?.join() }
-            clearPinnedBalloon()
+            gameViewModel.station2PinnedBalloonLetter = null
+            gameViewModel.station2PinnedBalloonColor = null
         } else if (sagaEpisode && (sagaUsesFindGridAudioStaging || stationId == Chapter1StationOrder.PICTURE_PICK_ONE)) {
             withTimeoutOrNull(8000) { getFeedbackVoiceJob()?.join() }
         }
@@ -603,8 +601,8 @@ private object AdvanceAfterRoundActions {
         }
         delay(5)
         session.nextQuestion()
-        if (session.currentQuestion == null && !getCompletionCallbackFired()) {
-            markCompletionCallbackFired()
+        if (session.currentQuestion == null && !gameViewModel.completionCallbackFired) {
+            gameViewModel.completionCallbackFired = true
             onComplete(stationId, session.correctCount, session.mistakeCount)
         }
         contentAlpha.animateTo(1f, tween(BetweenQuestionFadeMs))
@@ -922,6 +920,7 @@ fun GameScreen(
     suspend fun advanceAfterRound(isLast: Boolean, ch3SpellMidWord: Boolean = false) {
         AdvanceAfterRoundActions.run(
             scope = scope,
+            gameViewModel = gameViewModel,
             audioEnabled = audioEnabled,
             sagaEpisode = isSagaEpisode(chapterId),
             chapterId = chapterId,
@@ -939,19 +938,12 @@ fun GameScreen(
             cancelFeedbackVoice = { cancelFeedbackVoice() },
             getFeedbackVoiceJob = { feedbackVoiceJob },
             setFeedbackVoiceJob = { job -> feedbackVoiceJob = job },
-            setInputLocked = { locked -> gameViewModel.inputLocked = locked },
             setDinoVisual = { v -> dinoVisual = v },
             dinoForward = dinoForward,
             forwardDir = forwardDir,
             dinoScale = dinoScale,
             contentAlpha = contentAlpha,
-            clearPinnedBalloon = {
-                gameViewModel.station2PinnedBalloonLetter = null
-                gameViewModel.station2PinnedBalloonColor = null
-            },
             session = session,
-            getCompletionCallbackFired = { gameViewModel.completionCallbackFired },
-            markCompletionCallbackFired = { gameViewModel.completionCallbackFired = true },
             onComplete = onComplete,
             onLevelCompleteHook = { ChildGameAudioHooks.onLevelComplete() },
         )
