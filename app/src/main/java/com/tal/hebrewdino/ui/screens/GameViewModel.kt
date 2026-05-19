@@ -33,6 +33,9 @@ internal class GameViewModel(
     var shakeEpoch: Int by mutableIntStateOf(0)
     var entryPulseEpoch: Int by mutableIntStateOf(0)
     var completionCallbackFired: Boolean by mutableStateOf(false)
+    var dinoVisual: DinoVisual by mutableStateOf(DinoVisual.Idle)
+    var dinoTalking: Boolean by mutableStateOf(false)
+    var jumpFrameIndex: Int by mutableIntStateOf(0)
 
     class Factory(
         private val plan: StationQuizPlan,

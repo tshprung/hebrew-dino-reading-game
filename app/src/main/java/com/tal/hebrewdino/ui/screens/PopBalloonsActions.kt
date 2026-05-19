@@ -154,7 +154,6 @@ internal object PopBalloonsActions {
         stationId: Int,
         scope: CoroutineScope,
         optionsShake: Animatable<Float, AnimationVector1D>,
-        setDinoVisual: (DinoVisual) -> Unit,
     ) {
         if (!consumeTapCooldown()) return
         if (!sagaUsesPopBalloonsAudioStaging) {
@@ -166,7 +165,7 @@ internal object PopBalloonsActions {
         if (sagaUsesPopBalloonsAudioStaging) {
             scope.launch {
                 gameViewModel.inputLocked = true
-                setDinoVisual(DinoVisual.TryAgain)
+                gameViewModel.dinoVisual = DinoVisual.TryAgain
                 val strongerWrongShake =
                     (isSagaEpisode(chapterId) &&
                         (stationId == Chapter1StationOrder.PICTURE_PICK_ONE ||
@@ -178,7 +177,7 @@ internal object PopBalloonsActions {
                         if (isSagaEpisode(chapterId)) 20f else 18f,
                     strength = if (strongerWrongShake) 1.25f else 1f,
                 )
-                setDinoVisual(DinoVisual.Idle)
+                gameViewModel.dinoVisual = DinoVisual.Idle
                 gameViewModel.inputLocked = false
             }
         } else {

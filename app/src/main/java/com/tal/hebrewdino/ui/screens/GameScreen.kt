@@ -81,18 +81,10 @@ private val SixStationArcChapterRange = 1..5
 
 internal fun isSagaEpisode(chapterId: Int): Boolean = chapterId in SixStationArcChapterRange
 
-private data class SideHelpControls(
-    val replayEnabled: Boolean,
-    val hintEnabled: Boolean,
-    val onReplay: () -> Unit,
-    val onHint: () -> Unit,
-)
-
 private data class GameUiCallbacks(
     val cancelFeedbackVoice: () -> Unit,
     val getFeedbackVoiceJob: () -> Job?,
     val setFeedbackVoiceJob: (Job?) -> Unit,
-    val setDinoVisual: (DinoVisual) -> Unit,
 )
 
 private class TapCooldown(private val minIntervalMs: Long = 130L) {
@@ -104,6 +96,14 @@ private class TapCooldown(private val minIntervalMs: Long = 130L) {
         lastTapMs = now
         return true
     }
+}
+
+private class GameAudioRuntimeState {
+    var feedbackVoiceJob: Job? = null
+    var promptVoiceJob: Job? = null
+    var station1VoiceStreamId: Int = 0
+    var station2VoiceStreamId: Int = 0
+    var station3VoiceStreamId: Int = 0
 }
 
 private object GameAudioPreloader {
@@ -344,23 +344,15 @@ fun GameScreen(
     val sfx = audio.sfx
     val gameFeedback = remember(stationId, sfx, view) { GameFeedback(scope, sfx, view) }
 
+    val audioRuntime = remember(stationId) { GameAudioRuntimeState() }
     val contentAlpha = remember(stationId) { Animatable(1f) }
     val optionsShake = remember(stationId) { Animatable(0f) }
-    var dinoVisual by remember(stationId) { mutableStateOf(DinoVisual.Idle) }
     val dinoScale = remember(stationId) { Animatable(1f) }
-    var dinoTalking by remember(stationId, session.currentIndex) { mutableStateOf(false) }
     val dinoForward = remember(stationId) { Animatable(0f) }
     val dinoSlip = remember(stationId) { Animatable(0f) }
     val dinoTilt = remember(stationId) { Animatable(0f) }
     val hintHeaderScale = remember(stationId) { Animatable(1f) }
     val entryPulseScale = remember(stationId) { Animatable(1f) }
-    var feedbackVoiceJob by remember(stationId) { mutableStateOf<Job?>(null) }
-    var promptVoiceJob by remember(stationId) { mutableStateOf<Job?>(null) }
-    var station1VoiceStreamId by remember(stationId) { mutableIntStateOf(0) }
-    /** Episode 1 station 2: Hebrew feedback played via SoundPool (same pattern as station 1). */
-    var station2VoiceStreamId by remember(stationId) { mutableIntStateOf(0) }
-    /** Episode 1 station 3: SoundPool voice for ultra-low-latency letter feedback. */
-    var station3VoiceStreamId by remember(stationId) { mutableIntStateOf(0) }
     /**
      * Episode 1 station 2: after the last correct balloon, show a small balloon (last pop) beside the
      * main target chip until round-end praise finishes — not a second letter chip.
@@ -381,22 +373,22 @@ fun GameScreen(
             sagaUsesFindGridAudioStaging = sagaUsesFindGridAudioStaging,
             sfx = sfx,
             stopAllStreams = stopAllStreams,
-            getStation1VoiceStreamId = { station1VoiceStreamId },
-            setStation1VoiceStreamId = { id -> station1VoiceStreamId = id },
-            getStation2VoiceStreamId = { station2VoiceStreamId },
-            setStation2VoiceStreamId = { id -> station2VoiceStreamId = id },
-            getStation3VoiceStreamId = { station3VoiceStreamId },
-            setStation3VoiceStreamId = { id -> station3VoiceStreamId = id },
+            getStation1VoiceStreamId = { audioRuntime.station1VoiceStreamId },
+            setStation1VoiceStreamId = { id -> audioRuntime.station1VoiceStreamId = id },
+            getStation2VoiceStreamId = { audioRuntime.station2VoiceStreamId },
+            setStation2VoiceStreamId = { id -> audioRuntime.station2VoiceStreamId = id },
+            getStation3VoiceStreamId = { audioRuntime.station3VoiceStreamId },
+            setStation3VoiceStreamId = { id -> audioRuntime.station3VoiceStreamId = id },
         )
     }
 
     fun cancelFeedbackVoice() {
         GameAudioActions.cancelFeedbackVoice(
             voice = voice,
-            getFeedbackVoiceJob = { feedbackVoiceJob },
-            setFeedbackVoiceJob = { job -> feedbackVoiceJob = job },
-            getPromptVoiceJob = { promptVoiceJob },
-            setPromptVoiceJob = { job -> promptVoiceJob = job },
+            getFeedbackVoiceJob = { audioRuntime.feedbackVoiceJob },
+            setFeedbackVoiceJob = { job -> audioRuntime.feedbackVoiceJob = job },
+            getPromptVoiceJob = { audioRuntime.promptVoiceJob },
+            setPromptVoiceJob = { job -> audioRuntime.promptVoiceJob = job },
             stopStagingSfx = { stopAll -> stopStagingSfx(stopAllStreams = stopAll) },
         )
     }
@@ -421,7 +413,7 @@ fun GameScreen(
     fun consumeTapCooldown(): Boolean = tapCooldown.consume()
 
     val performSideHelpReplay: () -> Unit = {
-        feedbackVoiceJob =
+        audioRuntime.feedbackVoiceJob =
             SideHelpActions.startReplay(
                 audioEnabled = audioEnabled,
                 isPlayPhase = gameViewModel.phase == GamePhase.Play,
@@ -456,7 +448,6 @@ fun GameScreen(
         remember(stationId) {
             listOf(R.drawable.dino_jump_0, R.drawable.dino_jump_1, R.drawable.dino_jump_2)
         }
-    var jumpFrameIndex by remember(stationId) { mutableIntStateOf(0) }
     val forwardDir = if (LocalLayoutDirection.current == LayoutDirection.Rtl) -1f else 1f
 
     // Station 1: preload ALL voice clips as early as possible (screen entry),
@@ -551,16 +542,13 @@ fun GameScreen(
             resetEpisode4HelpForNewQuestion = { episode4Help.resetForNewQuestion() },
             resetBalloonHelpForNewQuestion = { balloonHelp.reset() },
             cancelFeedbackVoice = { cancelFeedbackVoice() },
-            setPromptVoiceJob = { job -> promptVoiceJob = job },
-            setDinoTalking = { talking -> dinoTalking = talking },
+            setPromptVoiceJob = { job -> audioRuntime.promptVoiceJob = job },
         )
     }
 
     DinoJumpAnimation(
-        dinoVisual = dinoVisual,
+        gameViewModel = gameViewModel,
         jumpFramesCount = jumpFrames.size,
-        setJumpFrameIndex = { idx -> jumpFrameIndex = idx },
-        setDinoVisual = { v -> dinoVisual = v },
     )
 
     LaunchedEffect(gameViewModel.hintPulseEpoch, stationId) {
@@ -596,9 +584,8 @@ fun GameScreen(
             gameFeedback = gameFeedback,
             voice = voice,
             cancelFeedbackVoice = { cancelFeedbackVoice() },
-            getFeedbackVoiceJob = { feedbackVoiceJob },
-            setFeedbackVoiceJob = { job -> feedbackVoiceJob = job },
-            setDinoVisual = { v -> dinoVisual = v },
+            getFeedbackVoiceJob = { audioRuntime.feedbackVoiceJob },
+            setFeedbackVoiceJob = { job -> audioRuntime.feedbackVoiceJob = job },
             dinoForward = dinoForward,
             forwardDir = forwardDir,
             dinoScale = dinoScale,
@@ -629,11 +616,10 @@ fun GameScreen(
             voice = voice,
             sfx = sfx,
             cancelFeedbackVoice = { cancelFeedbackVoice() },
-            setFeedbackVoiceJob = { job -> feedbackVoiceJob = job },
+            setFeedbackVoiceJob = { job -> audioRuntime.feedbackVoiceJob = job },
             optionsShake = optionsShake,
             dinoSlip = dinoSlip,
             dinoTilt = dinoTilt,
-            setDinoVisual = { v -> dinoVisual = v },
             onWrongHook = { ChildGameAudioHooks.onWrong() },
             wrongPickedLetter = wrongPickedLetter,
             wrongWordCatalogId = wrongWordCatalogId,
@@ -687,10 +673,10 @@ fun GameScreen(
 
         if (isCompactLandscapePhone) {
             val dinoDrawable =
-                when (dinoVisual) {
+                when (gameViewModel.dinoVisual) {
                     DinoVisual.Idle -> R.drawable.dino_idle
                     DinoVisual.TryAgain -> R.drawable.dino_try_again
-                    DinoVisual.Jump -> jumpFrames[jumpFrameIndex.coerceIn(0, jumpFrames.lastIndex)]
+                    DinoVisual.Jump -> jumpFrames[gameViewModel.jumpFrameIndex.coerceIn(0, jumpFrames.lastIndex)]
                 }
             val talkFrames =
                 listOf(R.drawable.dino_talk_0, R.drawable.dino_talk_1, R.drawable.dino_talk_2, R.drawable.dino_talk_3)
@@ -700,8 +686,8 @@ fun GameScreen(
                         idleRes = dinoDrawable,
                         talkFrameResIds = talkFrames,
                         isTalking =
-                            dinoTalking ||
-                                (isSagaEpisode(chapterId) && gameViewModel.inputLocked && dinoVisual == DinoVisual.Jump),
+                            gameViewModel.dinoTalking ||
+                                (isSagaEpisode(chapterId) && gameViewModel.inputLocked && gameViewModel.dinoVisual == DinoVisual.Jump),
                         dinoForward = dinoForward,
                         dinoSlip = dinoSlip,
                         dinoTilt = dinoTilt,
@@ -745,9 +731,8 @@ fun GameScreen(
                     val ui =
                         GameUiCallbacks(
                             cancelFeedbackVoice = { cancelFeedbackVoice() },
-                            getFeedbackVoiceJob = { feedbackVoiceJob },
-                            setFeedbackVoiceJob = { job -> feedbackVoiceJob = job },
-                            setDinoVisual = { v -> dinoVisual = v },
+                            getFeedbackVoiceJob = { audioRuntime.feedbackVoiceJob },
+                            setFeedbackVoiceJob = { job -> audioRuntime.feedbackVoiceJob = job },
                         )
 
                     fun handleFindGridSagaGridLetterTapped(
@@ -761,7 +746,7 @@ fun GameScreen(
                             scope = scope,
                             sfx = sfx,
                             setFeedbackVoiceJob = ui.setFeedbackVoiceJob,
-                            setStation3VoiceStreamId = { id -> station3VoiceStreamId = id },
+                            setStation3VoiceStreamId = { id -> audioRuntime.station3VoiceStreamId = id },
                         )
                     }
 
@@ -837,8 +822,8 @@ fun GameScreen(
                             sfx = sfx,
                             cancelFeedbackVoice = ui.cancelFeedbackVoice,
                             setFeedbackVoiceJob = ui.setFeedbackVoiceJob,
-                            getStation2VoiceStreamId = { station2VoiceStreamId },
-                            setStation2VoiceStreamId = { id -> station2VoiceStreamId = id },
+                            getStation2VoiceStreamId = { audioRuntime.station2VoiceStreamId },
+                            setStation2VoiceStreamId = { id -> audioRuntime.station2VoiceStreamId = id },
                             nextStation2CorrectPopVariant = {
                                 val v = gameViewModel.station2CorrectPopCount
                                 gameViewModel.station2CorrectPopCount += 1
@@ -861,7 +846,6 @@ fun GameScreen(
                             stationId = stationId,
                             scope = scope,
                             optionsShake = optionsShake,
-                            setDinoVisual = ui.setDinoVisual,
                         )
                     }
 
@@ -1050,10 +1034,10 @@ fun GameScreen(
                 }
             }
             val dinoDrawable =
-                when (dinoVisual) {
+                when (gameViewModel.dinoVisual) {
                     DinoVisual.Idle -> R.drawable.dino_idle
                     DinoVisual.TryAgain -> R.drawable.dino_try_again
-                    DinoVisual.Jump -> jumpFrames[jumpFrameIndex.coerceIn(0, jumpFrames.lastIndex)]
+                    DinoVisual.Jump -> jumpFrames[gameViewModel.jumpFrameIndex.coerceIn(0, jumpFrames.lastIndex)]
                 }
             // Same in-round dino mouth animation for all chapters that use this screen (road-specific walks live in Journey).
             val talkFrames =
@@ -1063,8 +1047,8 @@ fun GameScreen(
                     idleRes = dinoDrawable,
                     talkFrameResIds = talkFrames,
                     isTalking =
-                        dinoTalking ||
-                            (isSagaEpisode(chapterId) && gameViewModel.inputLocked && dinoVisual == DinoVisual.Jump),
+                        gameViewModel.dinoTalking ||
+                            (isSagaEpisode(chapterId) && gameViewModel.inputLocked && gameViewModel.dinoVisual == DinoVisual.Jump),
                     dinoForward = dinoForward,
                     dinoSlip = dinoSlip,
                     dinoTilt = dinoTilt,
@@ -1072,33 +1056,23 @@ fun GameScreen(
                 )
             }
         }
-        val sideHelpControls: SideHelpControls? =
-            when {
-                episode4HelpSt15 ->
-                    SideHelpControls(
-                        replayEnabled = gameViewModel.phase == GamePhase.Play,
-                        hintEnabled =
-                            gameViewModel.phase == GamePhase.Play &&
-                                !episode4Help.hintLocksChoices &&
-                                stationUiSpec.hintMode != com.tal.hebrewdino.ui.domain.StationHintMode.None,
-                        onReplay = performSideHelpReplay,
-                        onHint = performSideHelpHint,
-                    )
-                popBalloonsHelpControlsEnabled ->
-                    SideHelpControls(
-                        replayEnabled = gameViewModel.phase == GamePhase.Play,
-                        hintEnabled = gameViewModel.phase == GamePhase.Play && !balloonHelp.hintLocksChoices,
-                        onReplay = performSideHelpReplay,
-                        onHint = performSideHelpHint,
-                    )
-                else -> null
-            }
-        if (sideHelpControls != null) {
+        val showSideHelpColumn = episode4HelpSt15 || popBalloonsHelpControlsEnabled
+        if (showSideHelpColumn) {
+            val replayEnabled = gameViewModel.phase == GamePhase.Play
+            val hintEnabled =
+                when {
+                    episode4HelpSt15 ->
+                        replayEnabled &&
+                            !episode4Help.hintLocksChoices &&
+                            stationUiSpec.hintMode != com.tal.hebrewdino.ui.domain.StationHintMode.None
+                    popBalloonsHelpControlsEnabled -> replayEnabled && !balloonHelp.hintLocksChoices
+                    else -> false
+                }
             Episode4Stations15HelpColumn(
-                replayEnabled = sideHelpControls.replayEnabled,
-                hintEnabled = sideHelpControls.hintEnabled,
-                onReplay = sideHelpControls.onReplay,
-                onHint = sideHelpControls.onHint,
+                replayEnabled = replayEnabled,
+                hintEnabled = hintEnabled,
+                onReplay = performSideHelpReplay,
+                onHint = performSideHelpHint,
                 modifier =
                     Modifier
                         .align(Alignment.CenterStart)
@@ -1116,7 +1090,7 @@ fun GameScreen(
             scope = scope,
             voice = voice,
             cancelFeedbackVoice = { cancelFeedbackVoice() },
-            setFeedbackVoiceJob = { job -> feedbackVoiceJob = job },
+            setFeedbackVoiceJob = { job -> audioRuntime.feedbackVoiceJob = job },
             modifier =
                 Modifier
                     .align(Alignment.CenterStart)

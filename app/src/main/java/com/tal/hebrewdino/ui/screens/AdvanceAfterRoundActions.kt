@@ -37,7 +37,6 @@ internal object AdvanceAfterRoundActions {
         cancelFeedbackVoice: () -> Unit,
         getFeedbackVoiceJob: () -> Job?,
         setFeedbackVoiceJob: (Job?) -> Unit,
-        setDinoVisual: (DinoVisual) -> Unit,
         dinoForward: Animatable<Float, AnimationVector1D>,
         forwardDir: Float,
         dinoScale: Animatable<Float, AnimationVector1D>,
@@ -59,7 +58,7 @@ internal object AdvanceAfterRoundActions {
             }
         }
         if (!suppressInGameDinoProgress && !(isChapter3HighlightedLetterInWordStation && ch3SpellMidWord)) {
-            setDinoVisual(DinoVisual.Jump)
+            gameViewModel.dinoVisual = DinoVisual.Jump
         }
         val episode1PraiseEligible =
             audioEnabled &&

@@ -44,7 +44,6 @@ internal object GameRoundStartActions {
         resetBalloonHelpForNewQuestion: () -> Unit,
         cancelFeedbackVoice: () -> Unit,
         setPromptVoiceJob: (Job?) -> Unit,
-        setDinoTalking: (Boolean) -> Unit,
     ) {
         gameViewModel.phase = GamePhase.Intro
         gameViewModel.inputLocked = true
@@ -59,13 +58,14 @@ internal object GameRoundStartActions {
         gameViewModel.station1PinnedCorrectLetter = null
         gameViewModel.station2PinnedBalloonLetter = null
         gameViewModel.station2PinnedBalloonColor = null
+        gameViewModel.dinoTalking = false
         cancelFeedbackVoice()
         val q: Question = session.currentQuestion ?: return
 
         setPromptVoiceJob(
             scope.launch {
                 if (audioEnabled) {
-                    setDinoTalking(true)
+                    gameViewModel.dinoTalking = true
                     try {
                         playIntroPrompt(
                             audioEnabled = audioEnabled,
@@ -96,7 +96,7 @@ internal object GameRoundStartActions {
                             station4IntroToWordExtraPauseMs = station4IntroToWordExtraPauseMs,
                         )
                     } finally {
-                        setDinoTalking(false)
+                        gameViewModel.dinoTalking = false
                     }
                 }
             },

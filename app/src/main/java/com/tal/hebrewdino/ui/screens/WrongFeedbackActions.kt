@@ -33,7 +33,6 @@ internal object WrongFeedbackActions {
         optionsShake: Animatable<Float, AnimationVector1D>,
         dinoSlip: Animatable<Float, AnimationVector1D>,
         dinoTilt: Animatable<Float, AnimationVector1D>,
-        setDinoVisual: (DinoVisual) -> Unit,
         onWrongHook: () -> Unit,
         wrongPickedLetter: String? = null,
         wrongWordCatalogId: String? = null,
@@ -42,7 +41,7 @@ internal object WrongFeedbackActions {
     ) {
         scope.launch {
             gameViewModel.inputLocked = true
-            setDinoVisual(DinoVisual.TryAgain)
+            gameViewModel.dinoVisual = DinoVisual.TryAgain
             if (sagaEpisode) {
                 dinoSlip.snapTo(0f)
                 dinoTilt.snapTo(0f)
@@ -114,7 +113,7 @@ internal object WrongFeedbackActions {
                             }
                         },
                     )
-                    setDinoVisual(DinoVisual.Idle)
+                    gameViewModel.dinoVisual = DinoVisual.Idle
                     gameViewModel.inputLocked = false
                     return@launch
                 }
@@ -154,7 +153,7 @@ internal object WrongFeedbackActions {
                             }
                         },
                     )
-                    setDinoVisual(DinoVisual.Idle)
+                    gameViewModel.dinoVisual = DinoVisual.Idle
                     gameViewModel.inputLocked = false
                     return@launch
                 }
@@ -201,7 +200,7 @@ internal object WrongFeedbackActions {
                     },
                 )
             }
-            setDinoVisual(DinoVisual.Idle)
+            gameViewModel.dinoVisual = DinoVisual.Idle
             gameViewModel.inputLocked = false
         }
     }
