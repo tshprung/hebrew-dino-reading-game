@@ -12,6 +12,7 @@ import androidx.compose.ui.graphics.Color
 import com.tal.hebrewdino.ui.domain.LetterPoolSpec
 import com.tal.hebrewdino.ui.domain.LevelSession
 import com.tal.hebrewdino.ui.domain.StationQuizPlan
+import kotlinx.coroutines.Job
 
 internal class GameViewModel(
     plan: StationQuizPlan,
@@ -40,6 +41,29 @@ internal class GameViewModel(
     var dinoVisual: DinoVisual by mutableStateOf(DinoVisual.Idle)
     var dinoTalking: Boolean by mutableStateOf(false)
     var jumpFrameIndex: Int by mutableIntStateOf(0)
+    var episode4HelpLocksChoices: Boolean by mutableStateOf(false)
+    var episode4HelpActiveHintLetter: String? by mutableStateOf(null)
+    var episode4Station2BalloonHintEpoch: Int by mutableIntStateOf(0)
+    var episode4Station3GridHintEpoch: Int by mutableIntStateOf(0)
+    var balloonHelpLocksChoices: Boolean by mutableStateOf(false)
+    var balloonHelpHintLetter: String? by mutableStateOf(null)
+
+    var episode4HelpClearJob: Job? = null
+    var balloonHelpClearJob: Job? = null
+
+    fun resetEpisode4HelpForNewQuestion() {
+        episode4HelpClearJob?.cancel()
+        episode4HelpClearJob = null
+        episode4HelpLocksChoices = false
+        episode4HelpActiveHintLetter = null
+    }
+
+    fun resetBalloonHelpForNewQuestion() {
+        balloonHelpClearJob?.cancel()
+        balloonHelpClearJob = null
+        balloonHelpLocksChoices = false
+        balloonHelpHintLetter = null
+    }
 
     fun consumeTapCooldown(minIntervalMs: Long = 130L): Boolean {
         val now = SystemClock.elapsedRealtime()

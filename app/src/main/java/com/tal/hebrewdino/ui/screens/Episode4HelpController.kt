@@ -191,28 +191,46 @@ internal object SideHelpActions {
         stationId: Int,
         stationUiSpec: StationUiSpec,
         session: LevelSession,
-        episode4Help: Episode4HelpController,
-        balloonHelp: BalloonHelpController,
+        gameViewModel: GameViewModel,
+        scope: CoroutineScope,
     ) {
         if (!isPlayPhase) return
         if (episode4HelpEnabled) {
             val q = session.currentQuestion ?: return
             val letter = Episode4Help.targetLetterForHelpHint(q)
-            episode4Help.performHint(
-                isHelpEnabled = true,
-                isPlayPhase = true,
-                letter = letter,
-                stationId = stationId,
-                hintDurationMs = stationUiSpec.hintDurationMs,
-            )
+            if (gameViewModel.episode4HelpLocksChoices) return
+            gameViewModel.episode4HelpLocksChoices = true
+            gameViewModel.episode4HelpActiveHintLetter = letter
+            if (stationId == Chapter1StationOrder.BALLOON_POP) {
+                gameViewModel.episode4Station2BalloonHintEpoch += 1
+            }
+            if (stationId == Chapter1StationOrder.REVEAL_THEN_CHOOSE) {
+                gameViewModel.episode4Station3GridHintEpoch += 1
+            }
+            val duration = stationUiSpec.hintDurationMs ?: Episode4Help.HINT_REVEAL_FALLBACK_MS
+            gameViewModel.episode4HelpClearJob?.cancel()
+            gameViewModel.episode4HelpClearJob =
+                scope.launch {
+                    delay(duration)
+                    gameViewModel.episode4HelpActiveHintLetter = null
+                    gameViewModel.episode4HelpLocksChoices = false
+                    gameViewModel.episode4HelpClearJob = null
+                }
             return
         }
         if (popBalloonsHelpEnabled) {
             val q = session.currentQuestion as? Question.PopBalloonsQuestion ?: return
-            balloonHelp.performHint(
-                letter = q.correctAnswer,
-                durationMs = Episode4Help.HINT_REVEAL_FALLBACK_MS,
-            )
+            if (gameViewModel.balloonHelpLocksChoices) return
+            gameViewModel.balloonHelpLocksChoices = true
+            gameViewModel.balloonHelpHintLetter = q.correctAnswer
+            gameViewModel.balloonHelpClearJob?.cancel()
+            gameViewModel.balloonHelpClearJob =
+                scope.launch {
+                    delay(Episode4Help.HINT_REVEAL_FALLBACK_MS)
+                    gameViewModel.balloonHelpHintLetter = null
+                    gameViewModel.balloonHelpLocksChoices = false
+                    gameViewModel.balloonHelpClearJob = null
+                }
         }
     }
 }

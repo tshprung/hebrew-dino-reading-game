@@ -322,7 +322,6 @@ fun GameScreen(
         null
     }
     val scope = rememberCoroutineScope()
-    val episode4Help = rememberEpisode4HelpController(stationId = stationId, scope = scope)
     val context = LocalContext.current
     val view = LocalView.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -347,11 +346,10 @@ fun GameScreen(
     /** Episode 1 station 2: counts correct pops within the current question (for pop SFX variety). */
     val popBalloonsHelpControlsEnabled = stationUiSpec.popBalloonsHelpControlsEnabled && !episode4HelpSt15
     val showPopBalloonsTargetLetterChip = !listenOnly && !popBalloonsHelpControlsEnabled
-    val balloonHelp = rememberBalloonHelpController(stationId = stationId, scope = scope)
     val gameChoicesEnabled =
         !gameViewModel.inputLocked &&
-            !episode4Help.hintLocksChoices &&
-            !(popBalloonsHelpControlsEnabled && balloonHelp.hintLocksChoices)
+            !gameViewModel.episode4HelpLocksChoices &&
+            !(popBalloonsHelpControlsEnabled && gameViewModel.balloonHelpLocksChoices)
 
     fun stopStagingSfx(stopAllStreams: Boolean) {
         GameAudioActions.stopStagingSfx(
@@ -426,8 +424,8 @@ fun GameScreen(
             stationId = stationId,
             stationUiSpec = stationUiSpec,
             session = session,
-            episode4Help = episode4Help,
-            balloonHelp = balloonHelp,
+            gameViewModel = gameViewModel,
+            scope = scope,
         )
     }
     val jumpFrames =
@@ -525,8 +523,6 @@ fun GameScreen(
             station4IntroToWordLeadScale = Station4IntroToWordLeadScale,
             station4IntroToWordGapBoost = Station4IntroToWordGapBoost,
             station4IntroToWordExtraPauseMs = Station4IntroToWordExtraPauseMs,
-            resetEpisode4HelpForNewQuestion = { episode4Help.resetForNewQuestion() },
-            resetBalloonHelpForNewQuestion = { balloonHelp.reset() },
             cancelFeedbackVoice = { cancelFeedbackVoice() },
             setPromptVoiceJob = { job -> audioRuntime.promptVoiceJob = job },
         )
@@ -972,11 +968,11 @@ fun GameScreen(
                                 audioEnabled = audioEnabled,
                                 isCompactLandscapePhone = isCompactLandscapePhone,
                                 episode4HelpSt15 = episode4HelpSt15,
-                                episode4HelpActiveHintLetter = episode4Help.activeHintLetter,
-                                episode4HelpStation2BalloonHintEpoch = episode4Help.station2BalloonHintEpoch,
-                                episode4HelpStation3GridHintEpoch = episode4Help.station3GridHintEpoch,
+                                episode4HelpActiveHintLetter = gameViewModel.episode4HelpActiveHintLetter,
+                                episode4HelpStation2BalloonHintEpoch = gameViewModel.episode4Station2BalloonHintEpoch,
+                                episode4HelpStation3GridHintEpoch = gameViewModel.episode4Station3GridHintEpoch,
                                 popBalloonsHelpControlsEnabled = popBalloonsHelpControlsEnabled,
-                                balloonHelpHintLetter = balloonHelp.hintLetter,
+                                balloonHelpHintLetter = gameViewModel.balloonHelpHintLetter,
                                 showPopBalloonsTargetLetterChip = showPopBalloonsTargetLetterChip,
                             ),
                         state =
@@ -1062,8 +1058,8 @@ fun GameScreen(
             phase = gameViewModel.phase,
             audioEnabled = audioEnabled,
             stationUiSpec = stationUiSpec,
-            episode4HelpLocksChoices = episode4Help.hintLocksChoices,
-            balloonHelpLocksChoices = balloonHelp.hintLocksChoices,
+            episode4HelpLocksChoices = gameViewModel.episode4HelpLocksChoices,
+            balloonHelpLocksChoices = gameViewModel.balloonHelpLocksChoices,
             performSideHelpReplay = performSideHelpReplay,
             performSideHelpHint = performSideHelpHint,
             session = session,

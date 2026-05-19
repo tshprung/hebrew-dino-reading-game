@@ -40,8 +40,6 @@ internal object GameRoundStartActions {
         station4IntroToWordLeadScale: Float,
         station4IntroToWordGapBoost: Float,
         station4IntroToWordExtraPauseMs: Long,
-        resetEpisode4HelpForNewQuestion: () -> Unit,
-        resetBalloonHelpForNewQuestion: () -> Unit,
         cancelFeedbackVoice: () -> Unit,
         setPromptVoiceJob: (Job?) -> Unit,
     ) {
@@ -53,8 +51,8 @@ internal object GameRoundStartActions {
         gameViewModel.station4WrongFlashLetter = null
         gameViewModel.station4WrongFlashEpoch = 0
         gameViewModel.station4PinnedCorrectLetter = null
-        resetEpisode4HelpForNewQuestion()
-        resetBalloonHelpForNewQuestion()
+        gameViewModel.resetEpisode4HelpForNewQuestion()
+        gameViewModel.resetBalloonHelpForNewQuestion()
         gameViewModel.station1PinnedCorrectLetter = null
         gameViewModel.station2PinnedBalloonLetter = null
         gameViewModel.station2PinnedBalloonColor = null
