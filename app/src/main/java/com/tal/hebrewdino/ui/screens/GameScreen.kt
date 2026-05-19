@@ -44,7 +44,6 @@ import com.tal.hebrewdino.ui.audio.AudioClips
 import com.tal.hebrewdino.ui.audio.GameAudioEngine
 import com.tal.hebrewdino.ui.audio.SoundPoolPlayer
 import com.tal.hebrewdino.ui.audio.VoicePlayer
-import com.tal.hebrewdino.ui.components.Episode4Stations15HelpColumn
 import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
 import com.tal.hebrewdino.ui.domain.Episode4Help
 import com.tal.hebrewdino.ui.domain.LetterPoolSpec
@@ -1055,46 +1054,23 @@ fun GameScreen(
                 )
             }
         }
-        val showSideHelpColumn = episode4HelpSt15 || popBalloonsHelpControlsEnabled
-        if (showSideHelpColumn) {
-            val replayEnabled = gameViewModel.phase == GamePhase.Play
-            val hintEnabled =
-                when {
-                    episode4HelpSt15 ->
-                        replayEnabled &&
-                            !episode4Help.hintLocksChoices &&
-                            stationUiSpec.hintMode != com.tal.hebrewdino.ui.domain.StationHintMode.None
-                    popBalloonsHelpControlsEnabled -> replayEnabled && !balloonHelp.hintLocksChoices
-                    else -> false
-                }
-            Episode4Stations15HelpColumn(
-                replayEnabled = replayEnabled,
-                hintEnabled = hintEnabled,
-                onReplay = performSideHelpReplay,
-                onHint = performSideHelpHint,
-                modifier =
-                    Modifier
-                        .align(Alignment.CenterStart)
-                        .padding(start = 2.dp, top = 100.dp, bottom = 96.dp)
-                        .zIndex(6f),
-            )
-        }
-        Chapter3Station5ReplayOverlay(
+        GameOverlayLayer(
             chapterId = chapterId,
             stationId = stationId,
             episode4HelpSt15 = episode4HelpSt15,
+            popBalloonsHelpControlsEnabled = popBalloonsHelpControlsEnabled,
             phase = gameViewModel.phase,
             audioEnabled = audioEnabled,
+            stationUiSpec = stationUiSpec,
+            episode4HelpLocksChoices = episode4Help.hintLocksChoices,
+            balloonHelpLocksChoices = balloonHelp.hintLocksChoices,
+            performSideHelpReplay = performSideHelpReplay,
+            performSideHelpHint = performSideHelpHint,
             session = session,
             scope = scope,
             voice = voice,
             cancelFeedbackVoice = { cancelFeedbackVoice() },
             setFeedbackVoiceJob = { job -> audioRuntime.feedbackVoiceJob = job },
-            modifier =
-                Modifier
-                    .align(Alignment.CenterStart)
-                    .padding(start = 2.dp, top = 100.dp, bottom = 96.dp)
-                    .zIndex(6f),
         )
     }
 }
