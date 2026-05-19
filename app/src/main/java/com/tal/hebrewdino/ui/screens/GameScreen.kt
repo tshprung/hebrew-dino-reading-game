@@ -520,19 +520,16 @@ fun GameScreen(
         jumpFramesCount = jumpFrames.size,
     )
 
-    LaunchedEffect(gameViewModel.hintPulseEpoch, stationId) {
-        if (gameViewModel.hintPulseEpoch <= 0) return@LaunchedEffect
-        hintHeaderScale.snapTo(1f)
-        hintHeaderScale.animateTo(1.10f, tween(120))
-        hintHeaderScale.animateTo(1f, spring(dampingRatio = 0.56f, stiffness = 420f))
-    }
-
-    LaunchedEffect(gameViewModel.entryPulseEpoch, stationId) {
-        if (gameViewModel.entryPulseEpoch <= 0) return@LaunchedEffect
-        entryPulseScale.snapTo(1f)
-        entryPulseScale.animateTo(1.04f, tween(130))
-        entryPulseScale.animateTo(1f, spring(dampingRatio = 0.62f, stiffness = 420f))
-    }
+    HintHeaderPulseAnimation(
+        hintPulseEpoch = gameViewModel.hintPulseEpoch,
+        stationId = stationId,
+        hintHeaderScale = hintHeaderScale,
+    )
+    EntryPulseAnimation(
+        entryPulseEpoch = gameViewModel.entryPulseEpoch,
+        stationId = stationId,
+        entryPulseScale = entryPulseScale,
+    )
 
     suspend fun advanceAfterRound(isLast: Boolean, ch3SpellMidWord: Boolean = false) {
         AdvanceAfterRoundActions.run(

@@ -33,6 +33,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
@@ -384,6 +385,34 @@ internal fun playShake(
         }
         optionsShake.animateTo(0f, tween(60))
     }
+
+@Composable
+internal fun HintHeaderPulseAnimation(
+    hintPulseEpoch: Int,
+    stationId: Int,
+    hintHeaderScale: Animatable<Float, AnimationVector1D>,
+) {
+    LaunchedEffect(hintPulseEpoch, stationId) {
+        if (hintPulseEpoch <= 0) return@LaunchedEffect
+        hintHeaderScale.snapTo(1f)
+        hintHeaderScale.animateTo(1.10f, tween(120))
+        hintHeaderScale.animateTo(1f, spring(dampingRatio = 0.56f, stiffness = 420f))
+    }
+}
+
+@Composable
+internal fun EntryPulseAnimation(
+    entryPulseEpoch: Int,
+    stationId: Int,
+    entryPulseScale: Animatable<Float, AnimationVector1D>,
+) {
+    LaunchedEffect(entryPulseEpoch, stationId) {
+        if (entryPulseEpoch <= 0) return@LaunchedEffect
+        entryPulseScale.snapTo(1f)
+        entryPulseScale.animateTo(1.04f, tween(130))
+        entryPulseScale.animateTo(1f, spring(dampingRatio = 0.62f, stiffness = 420f))
+    }
+}
 
 @Composable
 internal fun BoxScope.GameOverlayLayer(
