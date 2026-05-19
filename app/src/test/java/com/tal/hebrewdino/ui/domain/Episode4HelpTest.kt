@@ -15,7 +15,7 @@ class Episode4HelpTest {
                 chapterId = 4,
                 stationId = 1,
                 templateId = StationTemplateId.PickLetter,
-                variants = setOf(StationVariant.Standard, StationVariant.Episode4Help, StationVariant.ListenFirst),
+                variants = setOf(StationVariant.Standard, StationVariant.HelpColumn, StationVariant.ListenFirst),
                 quizMode = StationQuizMode.PickLetter,
                 helpControlsEnabled = true,
             )
