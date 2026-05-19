@@ -58,7 +58,6 @@ internal object FindGridActions {
     }
 
     fun handleCellTapped(
-        consumeTapCooldown: () -> Boolean,
         gameViewModel: GameViewModel,
         sagaUsesFindGridAudioStaging: Boolean,
         cancelFeedbackVoice: () -> Unit,
@@ -67,7 +66,7 @@ internal object FindGridActions {
         index: Int,
         question: Question.FindLetterGridQuestion,
     ) {
-        if (!consumeTapCooldown()) return
+        if (!gameViewModel.consumeTapCooldown()) return
         if (!sagaUsesFindGridAudioStaging) {
             cancelFeedbackVoice()
         }
@@ -81,12 +80,12 @@ internal object FindGridActions {
     }
 
     fun handleCompleted(
-        consumeTapCooldown: () -> Boolean,
+        gameViewModel: GameViewModel,
         scope: CoroutineScope,
         session: LevelSession,
         advanceAfterRound: suspend (isLast: Boolean) -> Unit,
     ) {
-        if (!consumeTapCooldown()) return
+        if (!gameViewModel.consumeTapCooldown()) return
         scope.launch {
             when (session.completeCurrentRound()) {
                 AnswerResult.Correct -> {

@@ -144,7 +144,6 @@ internal object PopBalloonsActions {
     }
 
     fun handleWrongPick(
-        consumeTapCooldown: () -> Boolean,
         gameViewModel: GameViewModel,
         sagaUsesPopBalloonsAudioStaging: Boolean,
         cancelFeedbackVoice: () -> Unit,
@@ -155,7 +154,7 @@ internal object PopBalloonsActions {
         scope: CoroutineScope,
         optionsShake: Animatable<Float, AnimationVector1D>,
     ) {
-        if (!consumeTapCooldown()) return
+        if (!gameViewModel.consumeTapCooldown()) return
         if (!sagaUsesPopBalloonsAudioStaging) {
             cancelFeedbackVoice()
         }

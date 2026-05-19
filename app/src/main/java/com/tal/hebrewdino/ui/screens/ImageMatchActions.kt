@@ -15,7 +15,6 @@ internal object ImageMatchActions {
     fun handleImageToWordAttempt(
         choiceId: String,
         gameViewModel: GameViewModel,
-        consumeTapCooldown: () -> Boolean,
         cancelFeedbackVoice: () -> Unit,
         audioEnabled: Boolean,
         chapterId: Int,
@@ -25,7 +24,7 @@ internal object ImageMatchActions {
         advanceAfterRound: suspend (Boolean) -> Unit,
         onWrongFeedback: (wrongWordCatalogId: String?) -> Unit,
     ): Boolean {
-        if (!consumeTapCooldown()) return false
+        if (!gameViewModel.consumeTapCooldown()) return false
         cancelFeedbackVoice()
         return when (session.submitImageMatch(choiceId)) {
             AnswerResult.Correct -> {
@@ -116,7 +115,6 @@ internal object ImageMatchActions {
     fun handleImageMatchAttempt(
         choiceId: String,
         gameViewModel: GameViewModel,
-        consumeTapCooldown: () -> Boolean,
         cancelFeedbackVoice: () -> Unit,
         audioEnabled: Boolean,
         chapterId: Int,
@@ -128,7 +126,7 @@ internal object ImageMatchActions {
         advanceAfterRound: suspend (Boolean) -> Unit,
         onWrongFeedback: (wrongWordCatalogId: String?, generic: Boolean) -> Unit,
     ): Boolean {
-        if (!consumeTapCooldown()) return false
+        if (!gameViewModel.consumeTapCooldown()) return false
         cancelFeedbackVoice()
         return when (session.submitImageMatch(choiceId)) {
             AnswerResult.Correct -> {

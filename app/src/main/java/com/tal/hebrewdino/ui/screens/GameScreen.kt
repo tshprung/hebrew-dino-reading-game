@@ -393,9 +393,6 @@ fun GameScreen(
         }
     }
 
-    // UX: global tap cooldown to prevent fast-tap flow breaks.
-    fun consumeTapCooldown(): Boolean = gameViewModel.consumeTapCooldown()
-
     val performSideHelpReplay: () -> Unit = {
         audioRuntime.feedbackVoiceJob =
             SideHelpActions.startReplay(
@@ -721,7 +718,6 @@ fun GameScreen(
                         question: Question.FindLetterGridQuestion,
                     ) {
                         FindGridActions.handleCellTapped(
-                            consumeTapCooldown = { consumeTapCooldown() },
                             gameViewModel = gameViewModel,
                             sagaUsesFindGridAudioStaging = sagaUsesFindGridAudioStaging,
                             cancelFeedbackVoice = ui.cancelFeedbackVoice,
@@ -739,7 +735,7 @@ fun GameScreen(
 
                     fun handleFindGridCompleted() {
                         FindGridActions.handleCompleted(
-                            consumeTapCooldown = { consumeTapCooldown() },
+                            gameViewModel = gameViewModel,
                             scope = scope,
                             session = session,
                             advanceAfterRound = { isLast -> advanceAfterRound(isLast) },
@@ -750,7 +746,6 @@ fun GameScreen(
                         PickLetterActions.handlePick(
                             picked = picked,
                             gameViewModel = gameViewModel,
-                            consumeTapCooldown = { consumeTapCooldown() },
                             cancelFeedbackVoice = ui.cancelFeedbackVoice,
                             audioEnabled = audioEnabled,
                             sagaUsesPickLetterAudioStaging = sagaUsesPickLetterAudioStaging,
@@ -802,7 +797,6 @@ fun GameScreen(
 
                     fun handlePopBalloonsWrongPick() {
                         PopBalloonsActions.handleWrongPick(
-                            consumeTapCooldown = { consumeTapCooldown() },
                             gameViewModel = gameViewModel,
                             sagaUsesPopBalloonsAudioStaging = sagaUsesPopBalloonsAudioStaging,
                             cancelFeedbackVoice = ui.cancelFeedbackVoice,
@@ -840,7 +834,6 @@ fun GameScreen(
                         PictureStartsWithActions.handlePick(
                             picked = picked,
                             gameViewModel = gameViewModel,
-                            consumeTapCooldown = { consumeTapCooldown() },
                             cancelFeedbackVoice = ui.cancelFeedbackVoice,
                             audioEnabled = audioEnabled,
                             chapterId = chapterId,
@@ -889,7 +882,6 @@ fun GameScreen(
                         return ImageMatchActions.handleImageToWordAttempt(
                             choiceId = choiceId,
                             gameViewModel = gameViewModel,
-                            consumeTapCooldown = { consumeTapCooldown() },
                             cancelFeedbackVoice = ui.cancelFeedbackVoice,
                             audioEnabled = audioEnabled,
                             chapterId = chapterId,
@@ -907,7 +899,6 @@ fun GameScreen(
                         return ImageMatchActions.handleImageMatchAttempt(
                             choiceId = choiceId,
                             gameViewModel = gameViewModel,
-                            consumeTapCooldown = { consumeTapCooldown() },
                             cancelFeedbackVoice = ui.cancelFeedbackVoice,
                             audioEnabled = audioEnabled,
                             chapterId = chapterId,
@@ -981,13 +972,13 @@ fun GameScreen(
                         deps =
                             GameQuestionHostDeps(
                                 session = session,
+                                gameViewModel = gameViewModel,
                                 scope = scope,
                                 voice = voice,
                                 sfx = sfx,
                                 cancelFeedbackVoice = ui.cancelFeedbackVoice,
                                 getFeedbackVoiceJob = ui.getFeedbackVoiceJob,
                                 setFeedbackVoiceJob = ui.setFeedbackVoiceJob,
-                                consumeTapCooldown = { consumeTapCooldown() },
                             ),
                         handlers =
                             GameQuestionHostHandlers(

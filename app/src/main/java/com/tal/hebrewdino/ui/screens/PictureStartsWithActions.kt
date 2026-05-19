@@ -15,7 +15,6 @@ internal object PictureStartsWithActions {
     fun handlePick(
         picked: String,
         gameViewModel: GameViewModel,
-        consumeTapCooldown: () -> Boolean,
         cancelFeedbackVoice: () -> Unit,
         audioEnabled: Boolean,
         chapterId: Int,
@@ -29,7 +28,7 @@ internal object PictureStartsWithActions {
         advanceAfterRound: suspend (Boolean) -> Unit,
         onWrongFeedback: (wrongPickedLetter: String?, wrongPickedLetterAlreadySpoken: Boolean) -> Unit,
     ) {
-        if (!consumeTapCooldown()) return
+        if (!gameViewModel.consumeTapCooldown()) return
         cancelFeedbackVoice()
         if (audioEnabled &&
             (

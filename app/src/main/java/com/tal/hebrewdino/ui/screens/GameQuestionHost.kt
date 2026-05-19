@@ -84,13 +84,13 @@ internal data class GameQuestionHostState(
 
 internal data class GameQuestionHostDeps(
     val session: LevelSession,
+    val gameViewModel: GameViewModel,
     val scope: CoroutineScope,
     val voice: VoicePlayer,
     val sfx: SoundPoolPlayer,
     val cancelFeedbackVoice: () -> Unit,
     val getFeedbackVoiceJob: () -> Job?,
     val setFeedbackVoiceJob: (Job?) -> Unit,
-    val consumeTapCooldown: () -> Boolean,
 )
 
 internal data class GameQuestionHostHandlers(
@@ -417,7 +417,7 @@ internal fun GameQuestionHost(
                 }
 
                 fun handleMatchSolved() {
-                    if (!deps.consumeTapCooldown()) return
+                    if (!deps.gameViewModel.consumeTapCooldown()) return
                     deps.scope.launch {
                         withTimeoutOrNull(4500L) { deps.getFeedbackVoiceJob()?.join() }
                         if (ui.audioEnabled) {

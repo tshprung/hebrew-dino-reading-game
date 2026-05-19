@@ -15,7 +15,6 @@ internal object PickLetterActions {
     fun handlePick(
         picked: String,
         gameViewModel: GameViewModel,
-        consumeTapCooldown: () -> Boolean,
         cancelFeedbackVoice: () -> Unit,
         audioEnabled: Boolean,
         sagaUsesPickLetterAudioStaging: Boolean,
@@ -30,7 +29,7 @@ internal object PickLetterActions {
         advanceAfterRound: suspend (isLast: Boolean, ch3SpellMidWord: Boolean) -> Unit,
     ) {
         cancelFeedbackVoice()
-        if (!consumeTapCooldown()) return
+        if (!gameViewModel.consumeTapCooldown()) return
         when (session.submitAnswer(picked)) {
             AnswerResult.Correct -> {
                 if (audioEnabled && !sagaUsesPickLetterAudioStaging) {
