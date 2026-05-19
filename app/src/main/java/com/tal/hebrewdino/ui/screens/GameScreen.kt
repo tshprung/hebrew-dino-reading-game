@@ -29,6 +29,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalView
@@ -49,6 +50,7 @@ import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
 import com.tal.hebrewdino.ui.domain.Episode4Help
 import com.tal.hebrewdino.ui.domain.LetterPoolSpec
 import com.tal.hebrewdino.ui.domain.LevelSession
+import com.tal.hebrewdino.ui.domain.Question
 import com.tal.hebrewdino.ui.domain.StationBehaviorRegistry
 import com.tal.hebrewdino.ui.domain.StationQuizMode
 import com.tal.hebrewdino.ui.domain.StationQuizPlan
@@ -72,7 +74,7 @@ internal enum class DinoVisual { Idle, TryAgain, Jump }
 
 private const val IntroDurationMs = 450L
 
-private const val BetweenQuestionFadeMs = 80
+internal const val BetweenQuestionFadeMs = 80
 
 /** Chapters that use the shared six-station journey ([Chapter1StationOrder]); intros, art, and letter pools differ. */
 private val SixStationArcChapterRange = 1..5
@@ -84,6 +86,13 @@ private data class SideHelpControls(
     val hintEnabled: Boolean,
     val onReplay: () -> Unit,
     val onHint: () -> Unit,
+)
+
+private data class GameUiCallbacks(
+    val cancelFeedbackVoice: () -> Unit,
+    val getFeedbackVoiceJob: () -> Job?,
+    val setFeedbackVoiceJob: (Job?) -> Unit,
+    val setDinoVisual: (DinoVisual) -> Unit,
 )
 
 private class TapCooldown(private val minIntervalMs: Long = 130L) {
@@ -230,16 +239,16 @@ private const val Station1IntroToLetterLeadScale = 1.1f
  * Station 1 wrong pick: start the follow-up line (e.g. try-again / "כמעט") this far into the letter-name clip.
  * 0.7 ⇒ ~30% less wait than playing the full letter clip before the next line (overlap into the tail).
  */
-private const val Station1WrongLetterToFollowLeadFraction = 0.7f
+internal const val Station1WrongLetterToFollowLeadFraction = 0.7f
 /** Adds this fraction of the remaining tail `(1 - baseWrongLead)` to the lead before try-again (station 1 wrong; also station 4 wrong SoundPool path). */
-private const val Station1WrongLetterToTryAgainGapBoost = 0.1f
+internal const val Station1WrongLetterToTryAgainGapBoost = 0.1f
 /** Station 4 wrong: add extra space before try-again (fraction of remaining tail). */
-private const val Station4WrongLetterToTryAgainGapBoost = 0.25f
+internal const val Station4WrongLetterToTryAgainGapBoost = 0.25f
 /**
  * Station 4 wrong: multiplier on the delay before try-again after the wrong letter name (SoundPool overlap).
  * Halves the wait vs [Station1WrongLetterToFollowLeadFraction] alone — tighter gap before "נסה שוב" / similar.
  */
-private const val Station4WrongLetterToFollowLeadScale = 0.5f
+internal const val Station4WrongLetterToFollowLeadScale = 0.5f
 /** If pop WAV duration can't be parsed, wait this long so [stopAllStreams] doesn't cut the pop instantly. */
 private const val Station2PopFallbackDurationMs = 160L
 /** Extra wait after pop SFX before [stopAllStreams] so the tail is not clipped slightly short. */
@@ -259,346 +268,7 @@ private const val Station4IntroToWordGapBoost = 0.2f
 private const val Station4IntroToWordExtraPauseMs = 950L
 
 /** Episode 1: chance to play a short praise voice after a correct round. */
-private const val Episode1PraiseChance = 0.62f
-
-private object WrongFeedbackActions {
-    fun trigger(
-        scope: CoroutineScope,
-        gameViewModel: GameViewModel,
-        audioEnabled: Boolean,
-        sagaEpisode: Boolean,
-        chapterId: Int,
-        stationId: Int,
-        sagaUsesPickLetterAudioStaging: Boolean,
-        isChapter3HighlightedLetterInWordStation: Boolean,
-        isChapter3AudioLetterRecognitionStation: Boolean,
-        gameFeedback: GameFeedback,
-        voice: VoicePlayer,
-        sfx: SoundPoolPlayer,
-        cancelFeedbackVoice: () -> Unit,
-        setFeedbackVoiceJob: (Job?) -> Unit,
-        optionsShake: Animatable<Float, AnimationVector1D>,
-        dinoSlip: Animatable<Float, AnimationVector1D>,
-        dinoTilt: Animatable<Float, AnimationVector1D>,
-        setDinoVisual: (DinoVisual) -> Unit,
-        onWrongHook: () -> Unit,
-        wrongPickedLetter: String? = null,
-        wrongWordCatalogId: String? = null,
-        wrongPickedLetterAlreadySpoken: Boolean = false,
-        wrongWordAlreadySpoken: Boolean = false,
-    ) {
-        scope.launch {
-            gameViewModel.inputLocked = true
-            setDinoVisual(DinoVisual.TryAgain)
-            if (sagaEpisode) {
-                dinoSlip.snapTo(0f)
-                dinoTilt.snapTo(0f)
-                dinoTilt.animateTo(-7f, tween(90))
-                dinoSlip.animateTo(10f, tween(90))
-                dinoTilt.animateTo(6f, tween(110))
-                dinoSlip.animateTo(-6f, tween(110))
-                dinoTilt.animateTo(0f, tween(140))
-                dinoSlip.animateTo(0f, tween(140))
-            }
-            val strongerWrongShake =
-                (sagaEpisode && (stationId == Chapter1StationOrder.PICTURE_PICK_ONE || stationId == Chapter1StationOrder.PICTURE_PICK_ALL))
-            playShake(
-                scope,
-                optionsShake,
-                baseShakeAmplitudePx = if (sagaEpisode) 20f else 18f,
-                strength = if (strongerWrongShake) 1.25f else 1f,
-            )
-            if (audioEnabled) {
-                val allowWrongSfx =
-                    (!(sagaUsesPickLetterAudioStaging) || isChapter3HighlightedLetterInWordStation || isChapter3AudioLetterRecognitionStation) &&
-                        !(sagaEpisode && stationId == Chapter1StationOrder.PICTURE_PICK_ALL)
-                if (allowWrongSfx) {
-                    gameFeedback.playWrong()
-                    onWrongHook()
-                }
-                if (sagaUsesPickLetterAudioStaging && wrongPickedLetter != null && chapterId != 3) {
-                    cancelFeedbackVoice()
-                    setFeedbackVoiceJob(
-                        scope.launch {
-                            val letterClip = AudioClips.letterNameClip(wrongPickedLetter)
-                            val letterMs = letterClip?.let { sfx.durationMs(it) } ?: 0L
-                            val variant = Random.nextInt(100)
-                            if (variant < 20) {
-                                sfx.playFirstAvailable(
-                                    AudioClips.VoTryAgain2,
-                                    AudioClips.VoTryAgain1,
-                                    volume = 1f,
-                                )
-                                return@launch
-                            }
-                            if (variant < 55) {
-                                if (letterClip != null && voice.hasAsset(letterClip)) voice.playBlocking(letterClip)
-                                return@launch
-                            }
-
-                            if (letterClip != null && letterMs > 0L) {
-                                sfx.stopAllStreams()
-                                sfx.playReturningStreamId(letterClip, volume = 1f)
-                                val followLeadFrac =
-                                    Station1WrongLetterToFollowLeadFraction +
-                                        Station1WrongLetterToTryAgainGapBoost *
-                                        (1f - Station1WrongLetterToFollowLeadFraction)
-                                val lead =
-                                    (letterMs * followLeadFrac)
-                                        .toLong()
-                                        .coerceIn(16L, letterMs)
-                                delay(lead)
-                                sfx.playFirstAvailable(
-                                    AudioClips.VoTryAgain2,
-                                    AudioClips.VoTryAgain1,
-                                    volume = 1f,
-                                )
-                            } else {
-                                if (letterClip != null && voice.hasAsset(letterClip)) {
-                                    voice.playBlocking(letterClip)
-                                }
-                                voice.playFirstAvailableBlocking(AudioClips.VoTryAgain2, AudioClips.VoTryAgain1)
-                            }
-                        },
-                    )
-                    setDinoVisual(DinoVisual.Idle)
-                    gameViewModel.inputLocked = false
-                    return@launch
-                }
-                if (sagaEpisode &&
-                    stationId == Chapter1StationOrder.PICTURE_PICK_ONE &&
-                    wrongPickedLetter != null
-                ) {
-                    cancelFeedbackVoice()
-                    setFeedbackVoiceJob(
-                        scope.launch {
-                            val lc = AudioClips.letterNameClip(wrongPickedLetter)
-                            val letterMs = lc?.let { sfx.durationMs(it) } ?: 0L
-                            if (lc != null && letterMs > 0L) {
-                                sfx.stopAllStreams()
-                                sfx.playReturningStreamId(lc, volume = 1f)
-                                val baseWrongFrac =
-                                    Station1WrongLetterToFollowLeadFraction *
-                                        Station4WrongLetterToFollowLeadScale
-                                val followLeadFrac =
-                                    baseWrongFrac +
-                                        Station4WrongLetterToTryAgainGapBoost * (1f - baseWrongFrac)
-                                val lead =
-                                    (letterMs * followLeadFrac)
-                                        .toLong()
-                                        .coerceIn(16L, letterMs)
-                                delay(lead)
-                                sfx.playFirstAvailable(
-                                    AudioClips.VoTryAgain2,
-                                    AudioClips.VoTryAgain1,
-                                    volume = 1f,
-                                )
-                            } else {
-                                if (lc != null && voice.hasAsset(lc)) {
-                                    voice.playBlocking(lc)
-                                }
-                                voice.playFirstAvailableBlocking(AudioClips.VoTryAgain2, AudioClips.VoTryAgain1)
-                            }
-                        },
-                    )
-                    setDinoVisual(DinoVisual.Idle)
-                    gameViewModel.inputLocked = false
-                    return@launch
-                }
-                cancelFeedbackVoice()
-                setFeedbackVoiceJob(
-                    scope.launch {
-                        val feedbackDelayMs =
-                            when {
-                                chapterId == 4 && stationId == Chapter1StationOrder.TAP_LETTER -> 0L
-                                chapterId == 4 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE -> 0L
-                                chapterId == 4 && stationId == Chapter1StationOrder.PICTURE_PICK_ALL -> 0L
-                                (chapterId == 3 || chapterId == 6) && stationId == 4 -> 0L
-                                chapterId == 5 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE -> 0L
-                                else -> 110L
-                            }
-                        delay(feedbackDelayMs)
-                        if (wrongWordCatalogId != null && !wrongWordAlreadySpoken) {
-                            val wordPath = AudioClips.wordClipByCatalogId(wrongWordCatalogId)
-                            if (voice.hasAsset(wordPath)) voice.playBlocking(wordPath)
-                            voice.playFirstAvailableBlocking(AudioClips.VoTryAgain2, AudioClips.VoTryAgain1)
-                            return@launch
-                        }
-
-                        if (wrongPickedLetter != null) {
-                            if (chapterId == 5 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
-                                val lc = AudioClips.letterNameClip(wrongPickedLetter)
-                                if (lc != null && voice.hasAsset(lc)) {
-                                    voice.playBlocking(lc)
-                                }
-                                voice.playFirstAvailableBlocking(AudioClips.VoTryAgain2, AudioClips.VoTryAgain1)
-                                return@launch
-                            }
-                            if (!wrongPickedLetterAlreadySpoken) {
-                                val letterName = AudioClips.letterNameClip(wrongPickedLetter)
-                                if (letterName != null && voice.hasAsset(letterName)) {
-                                    voice.playBlocking(letterName)
-                                }
-                            }
-                            voice.playFirstAvailableBlocking(AudioClips.VoTryAgain2, AudioClips.VoTryAgain1)
-                            return@launch
-                        }
-
-                        voice.playFirstAvailableBlocking(AudioClips.VoTryAgain2, AudioClips.VoTryAgain1)
-                    },
-                )
-            }
-            setDinoVisual(DinoVisual.Idle)
-            gameViewModel.inputLocked = false
-        }
-    }
-}
-
-private object AdvanceAfterRoundActions {
-    suspend fun run(
-        scope: CoroutineScope,
-        gameViewModel: GameViewModel,
-        audioEnabled: Boolean,
-        sagaEpisode: Boolean,
-        chapterId: Int,
-        stationId: Int,
-        isLast: Boolean,
-        ch3SpellMidWord: Boolean,
-        suppressInGameDinoProgress: Boolean,
-        sagaUsesPickLetterAudioStaging: Boolean,
-        sagaUsesPopBalloonsAudioStaging: Boolean,
-        sagaUsesFindGridAudioStaging: Boolean,
-        isChapter3HighlightedLetterInWordStation: Boolean,
-        isChapter3AudioLetterRecognitionStation: Boolean,
-        gameFeedback: GameFeedback,
-        voice: VoicePlayer,
-        cancelFeedbackVoice: () -> Unit,
-        getFeedbackVoiceJob: () -> Job?,
-        setFeedbackVoiceJob: (Job?) -> Unit,
-        setDinoVisual: (DinoVisual) -> Unit,
-        dinoForward: Animatable<Float, AnimationVector1D>,
-        forwardDir: Float,
-        dinoScale: Animatable<Float, AnimationVector1D>,
-        contentAlpha: Animatable<Float, AnimationVector1D>,
-        session: LevelSession,
-        onComplete: (stationId: Int, correctCount: Int, mistakeCount: Int) -> Unit,
-        onLevelCompleteHook: () -> Unit,
-    ) {
-        gameViewModel.inputLocked = true
-        if (audioEnabled && !ch3SpellMidWord) onLevelCompleteHook()
-        if (audioEnabled) {
-            when {
-                sagaUsesPickLetterAudioStaging && isLast && chapterId != 3 -> gameFeedback.playCorrect()
-                sagaUsesPopBalloonsAudioStaging -> Unit
-                sagaUsesFindGridAudioStaging -> Unit
-                sagaEpisode && stationId == 6 -> Unit
-                isLast -> gameFeedback.playSuccessBig()
-                else -> gameFeedback.playCorrect()
-            }
-        }
-        if (!suppressInGameDinoProgress && !(isChapter3HighlightedLetterInWordStation && ch3SpellMidWord)) {
-            setDinoVisual(DinoVisual.Jump)
-        }
-        val episode1PraiseEligible =
-            audioEnabled &&
-                sagaEpisode &&
-                stationId in 2..5 &&
-                stationId != Chapter1StationOrder.PICTURE_PICK_ONE &&
-                !isChapter3AudioLetterRecognitionStation &&
-                Random.nextFloat() < Episode1PraiseChance
-        val otherPraiseEligible =
-            audioEnabled &&
-                !(sagaEpisode && stationId == 6) &&
-                !(sagaUsesPickLetterAudioStaging) &&
-                !(sagaEpisode && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) &&
-                !episode1PraiseEligible
-
-        if (episode1PraiseEligible) {
-            if (sagaUsesFindGridAudioStaging) {
-                withTimeoutOrNull(5000L) { getFeedbackVoiceJob()?.join() }
-            }
-            cancelFeedbackVoice()
-            val candidates =
-                mutableListOf(
-                    AudioClips.VoKolHakavod,
-                    AudioClips.VoNice1,
-                    AudioClips.VoGoodJob2,
-                    AudioClips.VoGoodJob1,
-                    AudioClips.VoPraiseMetzuyan,
-                    AudioClips.VoPraiseYofi,
-                    AudioClips.VoPraiseHitzlacht,
-                )
-            candidates.shuffle()
-            val arr = candidates.toTypedArray()
-            setFeedbackVoiceJob(scope.launch { voice.playFirstAvailableBlocking(*arr) })
-        } else if (otherPraiseEligible) {
-            if (sagaUsesFindGridAudioStaging) {
-                withTimeoutOrNull(5000L) { getFeedbackVoiceJob()?.join() }
-            }
-            cancelFeedbackVoice()
-            setFeedbackVoiceJob(
-                scope.launch {
-                    val pool = mutableListOf(AudioClips.VoKolHakavod, AudioClips.VoGoodJob1)
-                    pool.shuffle()
-                    voice.playFirstAvailableBlocking(*pool.toTypedArray())
-                },
-            )
-        }
-        if (!suppressInGameDinoProgress && !(isChapter3HighlightedLetterInWordStation && ch3SpellMidWord)) {
-            dinoForward.animateTo(dinoForward.value + forwardDir * 12f, spring(dampingRatio = 0.75f, stiffness = 520f))
-        }
-        val strongerSuccessPulse =
-            (sagaUsesPickLetterAudioStaging || sagaUsesFindGridAudioStaging) &&
-                !(isChapter3HighlightedLetterInWordStation && ch3SpellMidWord)
-        val station456SuccessPulse =
-            (sagaEpisode &&
-                (stationId == Chapter1StationOrder.PICTURE_PICK_ONE ||
-                    stationId == Chapter1StationOrder.PICTURE_PICK_ALL ||
-                    stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH))
-        if (!(isChapter3HighlightedLetterInWordStation && ch3SpellMidWord)) {
-            playSuccessPulse(
-                scope,
-                dinoScale,
-                peakScale =
-                    when {
-                        strongerSuccessPulse -> 1.28f
-                        station456SuccessPulse -> 1.24f
-                        else -> 1.14f
-                    },
-            )
-        }
-        delay(
-            when {
-                ch3SpellMidWord -> 38
-                sagaUsesFindGridAudioStaging -> 120
-                else -> 170
-            },
-        )
-        val waitPraiseBeforeFade =
-            sagaEpisode &&
-                (sagaUsesPopBalloonsAudioStaging ||
-                    sagaUsesFindGridAudioStaging ||
-                    stationId == Chapter1StationOrder.PICTURE_PICK_ONE)
-        if (sagaUsesPopBalloonsAudioStaging) {
-            withTimeoutOrNull(8000) { getFeedbackVoiceJob()?.join() }
-            gameViewModel.station2PinnedBalloonLetter = null
-            gameViewModel.station2PinnedBalloonColor = null
-        } else if (sagaEpisode && (sagaUsesFindGridAudioStaging || stationId == Chapter1StationOrder.PICTURE_PICK_ONE)) {
-            withTimeoutOrNull(8000) { getFeedbackVoiceJob()?.join() }
-        }
-        contentAlpha.animateTo(0f, tween(BetweenQuestionFadeMs))
-        if (!waitPraiseBeforeFade) {
-            withTimeoutOrNull(2500) { getFeedbackVoiceJob()?.join() }
-        }
-        delay(5)
-        session.nextQuestion()
-        if (session.currentQuestion == null && !gameViewModel.completionCallbackFired) {
-            gameViewModel.completionCallbackFired = true
-            onComplete(stationId, session.correctCount, session.mistakeCount)
-        }
-        contentAlpha.animateTo(1f, tween(BetweenQuestionFadeMs))
-    }
-}
+internal const val Episode1PraiseChance = 0.62f
 
 /** Episode 4 stations 1–5 help "רמז": show target / lock choices for this long, then hide. */
 @Composable
@@ -623,7 +293,7 @@ fun GameScreen(
 
     val gameViewModel: GameViewModel =
         viewModel(
-            key = "game-$chapterId-$stationId",
+            key = "game-$chapterId-$stationId-${plan.hashCode()}-${letterPoolSpec.hashCode()}",
             factory = remember(plan, letterPoolSpec) { GameViewModel.Factory(plan = plan, letterPoolSpec = letterPoolSpec) },
         )
     val session = gameViewModel.session
@@ -1072,6 +742,246 @@ fun GameScreen(
                             .weight(1f, fill = true),
                     contentAlignment = Alignment.Center,
                 ) {
+                    val ui =
+                        GameUiCallbacks(
+                            cancelFeedbackVoice = { cancelFeedbackVoice() },
+                            getFeedbackVoiceJob = { feedbackVoiceJob },
+                            setFeedbackVoiceJob = { job -> feedbackVoiceJob = job },
+                            setDinoVisual = { v -> dinoVisual = v },
+                        )
+
+                    fun handleFindGridSagaGridLetterTapped(
+                        tapped: String,
+                        question: Question.FindLetterGridQuestion,
+                    ) {
+                        FindGridActions.handleSagaGridLetterTapped(
+                            audioEnabled = audioEnabled,
+                            tapped = tapped,
+                            question = question,
+                            scope = scope,
+                            sfx = sfx,
+                            setFeedbackVoiceJob = ui.setFeedbackVoiceJob,
+                            setStation3VoiceStreamId = { id -> station3VoiceStreamId = id },
+                        )
+                    }
+
+                    fun handleFindGridCellTapped(
+                        index: Int,
+                        question: Question.FindLetterGridQuestion,
+                    ) {
+                        FindGridActions.handleCellTapped(
+                            consumeTapCooldown = { consumeTapCooldown() },
+                            gameViewModel = gameViewModel,
+                            sagaUsesFindGridAudioStaging = sagaUsesFindGridAudioStaging,
+                            cancelFeedbackVoice = ui.cancelFeedbackVoice,
+                            session = session,
+                            onWrongFeedback = { wrongPickedLetter, wrongPickedLetterAlreadySpoken ->
+                                onWrongFeedback(
+                                    wrongPickedLetter = wrongPickedLetter,
+                                    wrongPickedLetterAlreadySpoken = wrongPickedLetterAlreadySpoken,
+                                )
+                            },
+                            index = index,
+                            question = question,
+                        )
+                    }
+
+                    fun handleFindGridCompleted() {
+                        FindGridActions.handleCompleted(
+                            consumeTapCooldown = { consumeTapCooldown() },
+                            scope = scope,
+                            session = session,
+                            advanceAfterRound = { isLast -> advanceAfterRound(isLast) },
+                        )
+                    }
+
+                    fun handlePickLetterPick(picked: String) {
+                        PickLetterActions.handlePick(
+                            picked = picked,
+                            gameViewModel = gameViewModel,
+                            consumeTapCooldown = { consumeTapCooldown() },
+                            cancelFeedbackVoice = ui.cancelFeedbackVoice,
+                            audioEnabled = audioEnabled,
+                            sagaUsesPickLetterAudioStaging = sagaUsesPickLetterAudioStaging,
+                            isChapter3HighlightedLetterInWordStation = isChapter3HighlightedLetterInWordStation,
+                            isChapter3AudioLetterRecognitionStation = isChapter3AudioLetterRecognitionStation,
+                            session = session,
+                            scope = scope,
+                            voice = voice,
+                            sfx = sfx,
+                            setFeedbackVoiceJob = ui.setFeedbackVoiceJob,
+                            onWrongFeedback = { wrongPickedLetter ->
+                                onWrongFeedback(wrongPickedLetter = wrongPickedLetter)
+                            },
+                            advanceAfterRound = { isLast, ch3SpellMidWord ->
+                                advanceAfterRound(isLast, ch3SpellMidWord = ch3SpellMidWord)
+                            },
+                        )
+                    }
+
+                    suspend fun handlePopBalloonsPopSfx(
+                        letter: String,
+                        isCorrect: Boolean,
+                        finalCorrectBalloon: Boolean,
+                        balloonIndex: Int,
+                    ) {
+                        PopBalloonsActions.handlePopSfx(
+                            audioEnabled = audioEnabled,
+                            sagaUsesPopBalloonsAudioStaging = sagaUsesPopBalloonsAudioStaging,
+                            letter = letter,
+                            isCorrect = isCorrect,
+                            finalCorrectBalloon = finalCorrectBalloon,
+                            balloonIndex = balloonIndex,
+                            scope = scope,
+                            voice = voice,
+                            sfx = sfx,
+                            cancelFeedbackVoice = ui.cancelFeedbackVoice,
+                            setFeedbackVoiceJob = ui.setFeedbackVoiceJob,
+                            getStation2VoiceStreamId = { station2VoiceStreamId },
+                            setStation2VoiceStreamId = { id -> station2VoiceStreamId = id },
+                            nextStation2CorrectPopVariant = {
+                                val v = gameViewModel.station2CorrectPopCount
+                                gameViewModel.station2CorrectPopCount += 1
+                                v
+                            },
+                            station2PopTailPaddingMs = Station2PopTailPaddingMs,
+                            station2PopFallbackDurationMs = Station2PopFallbackDurationMs,
+                        )
+                    }
+
+                    fun handlePopBalloonsWrongPick() {
+                        PopBalloonsActions.handleWrongPick(
+                            consumeTapCooldown = { consumeTapCooldown() },
+                            gameViewModel = gameViewModel,
+                            sagaUsesPopBalloonsAudioStaging = sagaUsesPopBalloonsAudioStaging,
+                            cancelFeedbackVoice = ui.cancelFeedbackVoice,
+                            onWrongFeedback = { onWrongFeedback() },
+                            session = session,
+                            chapterId = chapterId,
+                            stationId = stationId,
+                            scope = scope,
+                            optionsShake = optionsShake,
+                            setDinoVisual = ui.setDinoVisual,
+                        )
+                    }
+
+                    fun handlePopBalloonsAllCorrectPopped(
+                        lastLetter: String,
+                        poppedBalloonColor: Color,
+                        popAll: Boolean,
+                    ) {
+                        PopBalloonsActions.handleAllCorrectPopped(
+                            lastLetter = lastLetter,
+                            poppedBalloonColor = poppedBalloonColor,
+                            isChapter3PopAllLettersStation = popAll,
+                            gameViewModel = gameViewModel,
+                            sagaUsesPopBalloonsAudioStaging = sagaUsesPopBalloonsAudioStaging,
+                            chapterId = chapterId,
+                            audioEnabled = audioEnabled,
+                            cancelFeedbackVoice = ui.cancelFeedbackVoice,
+                            session = session,
+                            scope = scope,
+                            getFeedbackVoiceJob = ui.getFeedbackVoiceJob,
+                            advanceAfterRound = { isLast -> advanceAfterRound(isLast) },
+                        )
+                    }
+
+                    fun handlePictureStartsWithPick(picked: String) {
+                        PictureStartsWithActions.handlePick(
+                            picked = picked,
+                            gameViewModel = gameViewModel,
+                            consumeTapCooldown = { consumeTapCooldown() },
+                            cancelFeedbackVoice = ui.cancelFeedbackVoice,
+                            audioEnabled = audioEnabled,
+                            chapterId = chapterId,
+                            stationId = stationId,
+                            sagaEpisode = isSagaEpisode(chapterId),
+                            session = session,
+                            scope = scope,
+                            voice = voice,
+                            getFeedbackVoiceJob = ui.getFeedbackVoiceJob,
+                            setFeedbackVoiceJob = ui.setFeedbackVoiceJob,
+                            advanceAfterRound = { isLast -> advanceAfterRound(isLast) },
+                            onWrongFeedback = { wrongPickedLetter, wrongPickedLetterAlreadySpoken ->
+                                onWrongFeedback(
+                                    wrongPickedLetter = wrongPickedLetter,
+                                    wrongPickedLetterAlreadySpoken = wrongPickedLetterAlreadySpoken,
+                                )
+                            },
+                        )
+                    }
+
+                    fun handleImageToWordReplayCorrectChoice() {
+                        ImageMatchActions.handleImageToWordReplayCorrectChoice(
+                            audioEnabled = audioEnabled,
+                            cancelFeedbackVoice = ui.cancelFeedbackVoice,
+                            chapterId = chapterId,
+                            session = session,
+                            scope = scope,
+                            voice = voice,
+                            setFeedbackVoiceJob = ui.setFeedbackVoiceJob,
+                        )
+                    }
+
+                    fun handleImageToWordWordPressed(choiceId: String) {
+                        ImageMatchActions.handleImageToWordWordPressed(
+                            choiceId = choiceId,
+                            audioEnabled = audioEnabled,
+                            cancelFeedbackVoice = ui.cancelFeedbackVoice,
+                            chapterId = chapterId,
+                            scope = scope,
+                            voice = voice,
+                            setFeedbackVoiceJob = ui.setFeedbackVoiceJob,
+                        )
+                    }
+
+                    fun handleImageToWordAttempt(choiceId: String): Boolean {
+                        return ImageMatchActions.handleImageToWordAttempt(
+                            choiceId = choiceId,
+                            gameViewModel = gameViewModel,
+                            consumeTapCooldown = { consumeTapCooldown() },
+                            cancelFeedbackVoice = ui.cancelFeedbackVoice,
+                            audioEnabled = audioEnabled,
+                            chapterId = chapterId,
+                            session = session,
+                            scope = scope,
+                            voice = voice,
+                            advanceAfterRound = { isLast -> advanceAfterRound(isLast) },
+                            onWrongFeedback = { wrongWordCatalogId ->
+                                onWrongFeedback(wrongWordCatalogId = wrongWordCatalogId)
+                            },
+                        )
+                    }
+
+                    fun handleImageMatchAttempt(choiceId: String): Boolean {
+                        return ImageMatchActions.handleImageMatchAttempt(
+                            choiceId = choiceId,
+                            gameViewModel = gameViewModel,
+                            consumeTapCooldown = { consumeTapCooldown() },
+                            cancelFeedbackVoice = ui.cancelFeedbackVoice,
+                            audioEnabled = audioEnabled,
+                            chapterId = chapterId,
+                            stationId = stationId,
+                            sagaEpisode = isSagaEpisode(chapterId),
+                            session = session,
+                            scope = scope,
+                            voice = voice,
+                            advanceAfterRound = { isLast -> advanceAfterRound(isLast) },
+                            onWrongFeedback = { wrongWordCatalogId, generic ->
+                                if (generic) {
+                                    onWrongFeedback()
+                                } else {
+                                    onWrongFeedback(wrongWordCatalogId = wrongWordCatalogId)
+                                }
+                            },
+                        )
+                    }
+
+                    fun handleFinaleWrongPlacement() {
+                        session.wrongTap()
+                        gameViewModel.shakeEpoch += 1
+                    }
+
                     GameQuestionHost(
                         phase = gameViewModel.phase,
                         stationUiSpec = stationUiSpec,
@@ -1116,215 +1026,24 @@ fun GameScreen(
                         scope = scope,
                         voice = voice,
                         sfx = sfx,
-                        cancelFeedbackVoice = { cancelFeedbackVoice() },
-                        getFeedbackVoiceJob = { feedbackVoiceJob },
-                        setFeedbackVoiceJob = { job -> feedbackVoiceJob = job },
+                        cancelFeedbackVoice = ui.cancelFeedbackVoice,
+                        getFeedbackVoiceJob = ui.getFeedbackVoiceJob,
+                        setFeedbackVoiceJob = ui.setFeedbackVoiceJob,
                         consumeTapCooldown = { consumeTapCooldown() },
                         performSideHelpReplay = performSideHelpReplay,
-                        handleFindGridSagaGridLetterTapped = { tapped, question ->
-                            FindGridActions.handleSagaGridLetterTapped(
-                                audioEnabled = audioEnabled,
-                                tapped = tapped,
-                                question = question,
-                                scope = scope,
-                                sfx = sfx,
-                                setFeedbackVoiceJob = { job -> feedbackVoiceJob = job },
-                                setStation3VoiceStreamId = { id -> station3VoiceStreamId = id },
-                            )
-                        },
-                        handleFindGridCellTapped = { index, question ->
-                            FindGridActions.handleCellTapped(
-                                consumeTapCooldown = { consumeTapCooldown() },
-                                gameViewModel = gameViewModel,
-                                sagaUsesFindGridAudioStaging = sagaUsesFindGridAudioStaging,
-                                cancelFeedbackVoice = { cancelFeedbackVoice() },
-                                session = session,
-                                onWrongFeedback = { wrongPickedLetter, wrongPickedLetterAlreadySpoken ->
-                                    onWrongFeedback(
-                                        wrongPickedLetter = wrongPickedLetter,
-                                        wrongPickedLetterAlreadySpoken = wrongPickedLetterAlreadySpoken,
-                                    )
-                                },
-                                index = index,
-                                question = question,
-                            )
-                        },
-                        handleFindGridCompleted = {
-                            FindGridActions.handleCompleted(
-                                consumeTapCooldown = { consumeTapCooldown() },
-                                scope = scope,
-                                session = session,
-                                advanceAfterRound = { isLast -> advanceAfterRound(isLast) },
-                            )
-                        },
-                        handlePickLetterPick = { picked ->
-                            PickLetterActions.handlePick(
-                                picked = picked,
-                                gameViewModel = gameViewModel,
-                                consumeTapCooldown = { consumeTapCooldown() },
-                                cancelFeedbackVoice = { cancelFeedbackVoice() },
-                                audioEnabled = audioEnabled,
-                                sagaUsesPickLetterAudioStaging = sagaUsesPickLetterAudioStaging,
-                                isChapter3HighlightedLetterInWordStation = isChapter3HighlightedLetterInWordStation,
-                                isChapter3AudioLetterRecognitionStation = isChapter3AudioLetterRecognitionStation,
-                                session = session,
-                                scope = scope,
-                                voice = voice,
-                                sfx = sfx,
-                                setFeedbackVoiceJob = { job -> feedbackVoiceJob = job },
-                                onWrongFeedback = { wrongPickedLetter ->
-                                    onWrongFeedback(wrongPickedLetter = wrongPickedLetter)
-                                },
-                                advanceAfterRound = { isLast, ch3SpellMidWord ->
-                                    advanceAfterRound(isLast, ch3SpellMidWord = ch3SpellMidWord)
-                                },
-                            )
-                        },
-                        handlePopBalloonsPopSfx = { letter, isCorrect, finalCorrectBalloon, balloonIndex ->
-                            PopBalloonsActions.handlePopSfx(
-                                audioEnabled = audioEnabled,
-                                sagaUsesPopBalloonsAudioStaging = sagaUsesPopBalloonsAudioStaging,
-                                letter = letter,
-                                isCorrect = isCorrect,
-                                finalCorrectBalloon = finalCorrectBalloon,
-                                balloonIndex = balloonIndex,
-                                scope = scope,
-                                voice = voice,
-                                sfx = sfx,
-                                cancelFeedbackVoice = { cancelFeedbackVoice() },
-                                setFeedbackVoiceJob = { job -> feedbackVoiceJob = job },
-                                getStation2VoiceStreamId = { station2VoiceStreamId },
-                                setStation2VoiceStreamId = { id -> station2VoiceStreamId = id },
-                                nextStation2CorrectPopVariant = {
-                                    val v = gameViewModel.station2CorrectPopCount
-                                    gameViewModel.station2CorrectPopCount += 1
-                                    v
-                                },
-                                station2PopTailPaddingMs = Station2PopTailPaddingMs,
-                                station2PopFallbackDurationMs = Station2PopFallbackDurationMs,
-                            )
-                        },
-                        handlePopBalloonsWrongPick = {
-                            PopBalloonsActions.handleWrongPick(
-                                consumeTapCooldown = { consumeTapCooldown() },
-                                gameViewModel = gameViewModel,
-                                sagaUsesPopBalloonsAudioStaging = sagaUsesPopBalloonsAudioStaging,
-                                cancelFeedbackVoice = { cancelFeedbackVoice() },
-                                onWrongFeedback = { onWrongFeedback() },
-                                session = session,
-                                chapterId = chapterId,
-                                stationId = stationId,
-                                scope = scope,
-                                optionsShake = optionsShake,
-                                setDinoVisual = { v -> dinoVisual = v },
-                            )
-                        },
-                        handlePopBalloonsAllCorrectPopped = { lastLetter, poppedBalloonColor, popAll ->
-                            PopBalloonsActions.handleAllCorrectPopped(
-                                lastLetter = lastLetter,
-                                poppedBalloonColor = poppedBalloonColor,
-                                isChapter3PopAllLettersStation = popAll,
-                                gameViewModel = gameViewModel,
-                                sagaUsesPopBalloonsAudioStaging = sagaUsesPopBalloonsAudioStaging,
-                                chapterId = chapterId,
-                                audioEnabled = audioEnabled,
-                                cancelFeedbackVoice = { cancelFeedbackVoice() },
-                                session = session,
-                                scope = scope,
-                                getFeedbackVoiceJob = { feedbackVoiceJob },
-                                advanceAfterRound = { isLast -> advanceAfterRound(isLast) },
-                            )
-                        },
-                        handlePictureStartsWithPick = { picked ->
-                            PictureStartsWithActions.handlePick(
-                                picked = picked,
-                                gameViewModel = gameViewModel,
-                                consumeTapCooldown = { consumeTapCooldown() },
-                                cancelFeedbackVoice = { cancelFeedbackVoice() },
-                                audioEnabled = audioEnabled,
-                                chapterId = chapterId,
-                                stationId = stationId,
-                                sagaEpisode = isSagaEpisode(chapterId),
-                                session = session,
-                                scope = scope,
-                                voice = voice,
-                                getFeedbackVoiceJob = { feedbackVoiceJob },
-                                setFeedbackVoiceJob = { job -> feedbackVoiceJob = job },
-                                advanceAfterRound = { isLast -> advanceAfterRound(isLast) },
-                                onWrongFeedback = { wrongPickedLetter, wrongPickedLetterAlreadySpoken ->
-                                    onWrongFeedback(
-                                        wrongPickedLetter = wrongPickedLetter,
-                                        wrongPickedLetterAlreadySpoken = wrongPickedLetterAlreadySpoken,
-                                    )
-                                },
-                            )
-                        },
-                        handleImageToWordReplayCorrectChoice = {
-                            ImageMatchActions.handleImageToWordReplayCorrectChoice(
-                                audioEnabled = audioEnabled,
-                                cancelFeedbackVoice = { cancelFeedbackVoice() },
-                                chapterId = chapterId,
-                                session = session,
-                                scope = scope,
-                                voice = voice,
-                                setFeedbackVoiceJob = { job -> feedbackVoiceJob = job },
-                            )
-                        },
-                        handleImageToWordWordPressed = { choiceId ->
-                            ImageMatchActions.handleImageToWordWordPressed(
-                                choiceId = choiceId,
-                                audioEnabled = audioEnabled,
-                                cancelFeedbackVoice = { cancelFeedbackVoice() },
-                                chapterId = chapterId,
-                                scope = scope,
-                                voice = voice,
-                                setFeedbackVoiceJob = { job -> feedbackVoiceJob = job },
-                            )
-                        },
-                        handleImageToWordAttempt = { choiceId ->
-                            ImageMatchActions.handleImageToWordAttempt(
-                                choiceId = choiceId,
-                                gameViewModel = gameViewModel,
-                                consumeTapCooldown = { consumeTapCooldown() },
-                                cancelFeedbackVoice = { cancelFeedbackVoice() },
-                                audioEnabled = audioEnabled,
-                                chapterId = chapterId,
-                                session = session,
-                                scope = scope,
-                                voice = voice,
-                                advanceAfterRound = { isLast -> advanceAfterRound(isLast) },
-                                onWrongFeedback = { wrongWordCatalogId ->
-                                    onWrongFeedback(wrongWordCatalogId = wrongWordCatalogId)
-                                },
-                            )
-                        },
-                        handleImageMatchAttempt = { choiceId ->
-                            ImageMatchActions.handleImageMatchAttempt(
-                                choiceId = choiceId,
-                                gameViewModel = gameViewModel,
-                                consumeTapCooldown = { consumeTapCooldown() },
-                                cancelFeedbackVoice = { cancelFeedbackVoice() },
-                                audioEnabled = audioEnabled,
-                                chapterId = chapterId,
-                                stationId = stationId,
-                                sagaEpisode = isSagaEpisode(chapterId),
-                                session = session,
-                                scope = scope,
-                                voice = voice,
-                                advanceAfterRound = { isLast -> advanceAfterRound(isLast) },
-                                onWrongFeedback = { wrongWordCatalogId, generic ->
-                                    if (generic) {
-                                        onWrongFeedback()
-                                    } else {
-                                        onWrongFeedback(wrongWordCatalogId = wrongWordCatalogId)
-                                    }
-                                },
-                            )
-                        },
-                        handleFinaleWrongPlacement = {
-                            session.wrongTap()
-                            gameViewModel.shakeEpoch += 1
-                        },
+                        handleFindGridSagaGridLetterTapped = ::handleFindGridSagaGridLetterTapped,
+                        handleFindGridCellTapped = ::handleFindGridCellTapped,
+                        handleFindGridCompleted = ::handleFindGridCompleted,
+                        handlePickLetterPick = ::handlePickLetterPick,
+                        handlePopBalloonsPopSfx = ::handlePopBalloonsPopSfx,
+                        handlePopBalloonsWrongPick = ::handlePopBalloonsWrongPick,
+                        handlePopBalloonsAllCorrectPopped = ::handlePopBalloonsAllCorrectPopped,
+                        handlePictureStartsWithPick = ::handlePictureStartsWithPick,
+                        handleImageToWordReplayCorrectChoice = ::handleImageToWordReplayCorrectChoice,
+                        handleImageToWordWordPressed = ::handleImageToWordWordPressed,
+                        handleImageToWordAttempt = ::handleImageToWordAttempt,
+                        handleImageMatchAttempt = ::handleImageMatchAttempt,
+                        handleFinaleWrongPlacement = ::handleFinaleWrongPlacement,
                         onWrongFeedback = { onWrongFeedback() },
                         advanceAfterRound = { isLast -> advanceAfterRound(isLast) },
                     )
