@@ -468,17 +468,6 @@ fun GameScreen(
         )
     }
 
-    LaunchedEffect(stationId) {
-        snapshotFlow { session.currentIndex >= session.totalQuestions }.collect { exhausted ->
-            if (exhausted && session.totalQuestions > 0) {
-                if (!gameViewModel.completionCallbackFired) {
-                    gameViewModel.completionCallbackFired = true
-                    onComplete(stationId, session.correctCount, session.mistakeCount)
-                }
-            }
-        }
-    }
-
     val current = session.currentQuestion
     if (current == null) {
         GameCompletionSafety(
