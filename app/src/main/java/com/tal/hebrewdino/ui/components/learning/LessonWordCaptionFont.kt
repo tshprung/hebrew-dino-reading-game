@@ -24,6 +24,8 @@ private val CaptionOverridesByChapterStationWord: Map<CaptionOverrideKey, Float>
         CaptionOverrideKey(chapterId = 3, stationId = 1, word = "מיטה") to (0.90f * 0.80f),
         CaptionOverrideKey(chapterId = 3, stationId = 1, word = "אבטיח") to (0.72f * 0.80f),
         CaptionOverrideKey(chapterId = 3, stationId = 1, word = "מכונית") to (0.81f * 0.70f),
+        CaptionOverrideKey(chapterId = 3, stationId = 1, word = "אריה") to 0.80f,
+        CaptionOverrideKey(chapterId = 3, stationId = 1, word = "מחבת") to (0.81f * 0.80f),
         CaptionOverrideKey(chapterId = 6, stationId = 1, word = "חתול") to 0.70f,
         CaptionOverrideKey(chapterId = 6, stationId = 1, word = "נמלה") to (0.90f * 0.70f),
         CaptionOverrideKey(chapterId = 6, stationId = 1, word = "צפרדע") to (0.665f * 0.85f),

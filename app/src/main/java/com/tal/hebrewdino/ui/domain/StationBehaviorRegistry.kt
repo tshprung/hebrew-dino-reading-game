@@ -361,7 +361,9 @@ object StationBehaviorRegistry {
                     contentTopInsetDp = 56f,
                     riskNotes = "Ch3 st2 match letter + word; unified MatchLetterToWord template.",
                 )
-            3 -> popBalloonsSpec(chapterId = 3, stationId = stationId, plan = plan, isPopAllLetters = false)
+            3 ->
+                popBalloonsSpec(chapterId = 3, stationId = stationId, plan = plan, isPopAllLetters = false)
+                    .copy(contentTopInsetDp = 8f)
             4 ->
                 pickLetterSpec(
                     chapterId = 3,

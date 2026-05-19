@@ -159,7 +159,7 @@ fun ChapterLettersIntroScreen(
     onContinue: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val stableLetters = remember(letters) { letters.distinct() }
+    val stableLetters = remember(letters) { HebrewLetterOrder.sortForDisplay(letters.distinct()) }
     val isCompactLandscapePhone = ScreenFit.isCompactLandscapePhone()
 
     val context = androidx.compose.ui.platform.LocalContext.current

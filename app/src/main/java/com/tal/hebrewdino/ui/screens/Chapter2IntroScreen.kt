@@ -28,7 +28,7 @@ fun Chapter2IntroScreen(
         companion = ChapterLobbyCompanion.DinoOnly,
         narrationPlaying = false,
         voiceAssetPath = AudioClips.StoryMountainApproachIntro,
-        bodyLineHeightOverride = 24.sp,
+        bodyLineHeightOverride = 20.sp,
         dinoContentDescription = "דינו",
         onContinue = onContinue,
         modifier = modifier,

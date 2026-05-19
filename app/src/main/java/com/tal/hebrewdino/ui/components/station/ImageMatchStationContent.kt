@@ -38,7 +38,14 @@ fun Chapter3Station6ImageToWordStationContent(
         onPictureTapReplayWord = onPictureTapReplayWord,
         onWordPressed = onWordPressed,
         innerPictureScaleForChoice = { choice ->
-            Chapter1Station5And6ImageMatchInnerScale.innerScale(choice) * if (choice.word == "רגל") 0.70f else 1f
+            val base = Chapter1Station5And6ImageMatchInnerScale.innerScale(choice)
+            val scale =
+                when {
+                    choice.word == "רגל" -> 0.70f
+                    choice.word == "דבש" || choice.id == "w_ד_4" -> 0.50f
+                    else -> 1f
+                }
+            base * scale
         },
         onAttempt = onAttempt,
         modifier =

@@ -42,6 +42,46 @@ internal object WrongFeedbackActions {
         scope.launch {
             gameViewModel.inputLocked = true
             gameViewModel.dinoVisual = DinoVisual.TryAgain
+            val immediateCh1Ch2Station4Voice =
+                audioEnabled &&
+                    sagaEpisode &&
+                    (chapterId == 1 || chapterId == 2) &&
+                    stationId == Chapter1StationOrder.PICTURE_PICK_ONE &&
+                    wrongPickedLetter != null
+            if (immediateCh1Ch2Station4Voice) {
+                cancelFeedbackVoice()
+                setFeedbackVoiceJob(
+                    scope.launch {
+                        val lc = AudioClips.letterNameClip(wrongPickedLetter)
+                        val letterMs = lc?.let { sfx.durationMs(it) } ?: 0L
+                        if (lc != null && letterMs > 0L) {
+                            sfx.stopAllStreams()
+                            sfx.playReturningStreamId(lc, volume = 1f)
+                            val baseWrongFrac =
+                                Station1WrongLetterToFollowLeadFraction *
+                                    Station4WrongLetterToFollowLeadScale
+                            val followLeadFrac =
+                                baseWrongFrac +
+                                    Station4WrongLetterToTryAgainGapBoost * (1f - baseWrongFrac)
+                            val lead =
+                                (letterMs * followLeadFrac)
+                                    .toLong()
+                                    .coerceIn(16L, letterMs)
+                            delay(lead)
+                            sfx.playFirstAvailable(
+                                AudioClips.VoTryAgain2,
+                                AudioClips.VoTryAgain1,
+                                volume = 1f,
+                            )
+                        } else {
+                            if (lc != null && voice.hasAsset(lc)) {
+                                voice.playBlocking(lc)
+                            }
+                            voice.playFirstAvailableBlocking(AudioClips.VoTryAgain2, AudioClips.VoTryAgain1)
+                        }
+                    },
+                )
+            }
             if (sagaEpisode) {
                 dinoSlip.snapTo(0f)
                 dinoTilt.snapTo(0f)
@@ -119,7 +159,8 @@ internal object WrongFeedbackActions {
                 }
                 if (sagaEpisode &&
                     stationId == Chapter1StationOrder.PICTURE_PICK_ONE &&
-                    wrongPickedLetter != null
+                    wrongPickedLetter != null &&
+                    !immediateCh1Ch2Station4Voice
                 ) {
                     cancelFeedbackVoice()
                     setFeedbackVoiceJob(
@@ -157,48 +198,50 @@ internal object WrongFeedbackActions {
                     gameViewModel.inputLocked = false
                     return@launch
                 }
-                cancelFeedbackVoice()
-                setFeedbackVoiceJob(
-                    scope.launch {
-                        val feedbackDelayMs =
-                            when {
-                                chapterId == 4 && stationId == Chapter1StationOrder.TAP_LETTER -> 0L
-                                chapterId == 4 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE -> 0L
-                                chapterId == 4 && stationId == Chapter1StationOrder.PICTURE_PICK_ALL -> 0L
-                                (chapterId == 3 || chapterId == 6) && stationId == 4 -> 0L
-                                chapterId == 5 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE -> 0L
-                                else -> 110L
+                if (!immediateCh1Ch2Station4Voice) {
+                    cancelFeedbackVoice()
+                    setFeedbackVoiceJob(
+                        scope.launch {
+                            val feedbackDelayMs =
+                                when {
+                                    chapterId == 4 && stationId == Chapter1StationOrder.TAP_LETTER -> 0L
+                                    chapterId == 4 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE -> 0L
+                                    chapterId == 4 && stationId == Chapter1StationOrder.PICTURE_PICK_ALL -> 0L
+                                    (chapterId == 3 || chapterId == 6) && stationId == 4 -> 0L
+                                    chapterId == 5 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE -> 0L
+                                    else -> 110L
+                                }
+                            delay(feedbackDelayMs)
+                            if (wrongWordCatalogId != null && !wrongWordAlreadySpoken) {
+                                val wordPath = AudioClips.wordClipByCatalogId(wrongWordCatalogId)
+                                if (voice.hasAsset(wordPath)) voice.playBlocking(wordPath)
+                                voice.playFirstAvailableBlocking(AudioClips.VoTryAgain2, AudioClips.VoTryAgain1)
+                                return@launch
                             }
-                        delay(feedbackDelayMs)
-                        if (wrongWordCatalogId != null && !wrongWordAlreadySpoken) {
-                            val wordPath = AudioClips.wordClipByCatalogId(wrongWordCatalogId)
-                            if (voice.hasAsset(wordPath)) voice.playBlocking(wordPath)
-                            voice.playFirstAvailableBlocking(AudioClips.VoTryAgain2, AudioClips.VoTryAgain1)
-                            return@launch
-                        }
 
-                        if (wrongPickedLetter != null) {
-                            if (chapterId == 5 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
-                                val lc = AudioClips.letterNameClip(wrongPickedLetter)
-                                if (lc != null && voice.hasAsset(lc)) {
-                                    voice.playBlocking(lc)
+                            if (wrongPickedLetter != null) {
+                                if (chapterId == 5 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
+                                    val lc = AudioClips.letterNameClip(wrongPickedLetter)
+                                    if (lc != null && voice.hasAsset(lc)) {
+                                        voice.playBlocking(lc)
+                                    }
+                                    voice.playFirstAvailableBlocking(AudioClips.VoTryAgain2, AudioClips.VoTryAgain1)
+                                    return@launch
+                                }
+                                if (!wrongPickedLetterAlreadySpoken) {
+                                    val letterName = AudioClips.letterNameClip(wrongPickedLetter)
+                                    if (letterName != null && voice.hasAsset(letterName)) {
+                                        voice.playBlocking(letterName)
+                                    }
                                 }
                                 voice.playFirstAvailableBlocking(AudioClips.VoTryAgain2, AudioClips.VoTryAgain1)
                                 return@launch
                             }
-                            if (!wrongPickedLetterAlreadySpoken) {
-                                val letterName = AudioClips.letterNameClip(wrongPickedLetter)
-                                if (letterName != null && voice.hasAsset(letterName)) {
-                                    voice.playBlocking(letterName)
-                                }
-                            }
-                            voice.playFirstAvailableBlocking(AudioClips.VoTryAgain2, AudioClips.VoTryAgain1)
-                            return@launch
-                        }
 
-                        voice.playFirstAvailableBlocking(AudioClips.VoTryAgain2, AudioClips.VoTryAgain1)
-                    },
-                )
+                            voice.playFirstAvailableBlocking(AudioClips.VoTryAgain2, AudioClips.VoTryAgain1)
+                        },
+                    )
+                }
             }
             gameViewModel.dinoVisual = DinoVisual.Idle
             gameViewModel.inputLocked = false
