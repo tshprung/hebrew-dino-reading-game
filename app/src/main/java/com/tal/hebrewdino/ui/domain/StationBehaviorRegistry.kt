@@ -369,9 +369,9 @@ object StationBehaviorRegistry {
                     chapterId = 3,
                     stationId = stationId,
                     plan = plan,
-                    extraVariants = arrayOf(StationVariant.HighlightedLetterInWord, StationVariant.Episode4Help),
+                    extraVariants = arrayOf(StationVariant.HighlightedLetterInWord, StationVariant.HelpColumn),
                 ).copy(
-                    variants = variantsFor(listenOnly = false, StationVariant.HighlightedLetterInWord, StationVariant.Episode4Help),
+                    variants = variantsFor(listenOnly = false, StationVariant.HighlightedLetterInWord, StationVariant.HelpColumn),
                     helpControlsEnabled = true,
                     replayMode = StationReplayMode.ExistingStationSpecific,
                     hintMode = StationHintMode.None,
@@ -386,7 +386,7 @@ object StationBehaviorRegistry {
                     chapterId = 3,
                     stationId = stationId,
                     plan = plan,
-                    extraVariants = arrayOf(StationVariant.Chapter3AudioLetterRecognition, StationVariant.Episode4Help)
+                    extraVariants = arrayOf(StationVariant.Chapter3AudioLetterRecognition, StationVariant.HelpColumn)
                 ).copy(
                     contentTopInsetDp = 56f,
                     riskNotes = "Ch3 st5 audio recognition; uses unified pickLetterSpec.",
@@ -418,7 +418,7 @@ object StationBehaviorRegistry {
                     chapterId = TrainingV1Config.CHAPTER_ID,
                     stationId = stationId,
                     plan = plan,
-                    extraVariants = arrayOf(StationVariant.Episode4Help),
+                    extraVariants = arrayOf(StationVariant.HelpColumn),
                 ).copy(
                     helpControlsEnabled = true,
                     replayMode = StationReplayMode.TargetLetterOnly,
@@ -432,7 +432,7 @@ object StationBehaviorRegistry {
                     chapterId = TrainingV1Config.CHAPTER_ID,
                     stationId = stationId,
                     templateId = StationTemplateId.ImageMatch,
-                    variants = variantsFor(listenOnly = false, StationVariant.Episode4Help),
+                    variants = variantsFor(listenOnly = false, StationVariant.HelpColumn),
                     quizMode = plan.mode,
                     showBetweenRoundIntroPulse = false,
                     findGridMaxTargetCount = plan.findLetterGridMaxTargetCount,
@@ -465,7 +465,7 @@ object StationBehaviorRegistry {
                     chapterId = TrainingV1Config.CHAPTER_ID,
                     stationId = stationId,
                     templateId = StationTemplateId.FindLetterGrid,
-                    variants = variantsFor(listenOnly = true, StationVariant.Episode4Help),
+                    variants = variantsFor(listenOnly = true, StationVariant.HelpColumn),
                     quizMode = plan.mode,
                     showBetweenRoundIntroPulse = false,
                     findGridMaxTargetCount = plan.findLetterGridMaxTargetCount,
@@ -590,9 +590,9 @@ object StationBehaviorRegistry {
                     chapterId = 6,
                     stationId = stationId,
                     plan = plan,
-                    extraVariants = arrayOf(StationVariant.HighlightedLetterInWord, StationVariant.Episode4Help),
+                    extraVariants = arrayOf(StationVariant.HighlightedLetterInWord, StationVariant.HelpColumn),
                 ).copy(
-                    variants = variantsFor(listenOnly = false, StationVariant.HighlightedLetterInWord, StationVariant.Episode4Help),
+                    variants = variantsFor(listenOnly = false, StationVariant.HighlightedLetterInWord, StationVariant.HelpColumn),
                     helpControlsEnabled = true,
                     replayMode = StationReplayMode.ExistingStationSpecific,
                     hintMode = StationHintMode.None,
@@ -607,7 +607,7 @@ object StationBehaviorRegistry {
                     chapterId = 6,
                     stationId = stationId,
                     plan = plan,
-                    extraVariants = arrayOf(StationVariant.Chapter3AudioLetterRecognition, StationVariant.Episode4Help),
+                    extraVariants = arrayOf(StationVariant.Chapter3AudioLetterRecognition, StationVariant.HelpColumn),
                 ).copy(
                     contentTopInsetDp = 56f,
                     riskNotes = "Ch6 st5 audio recognition; aligned with Chapter 3 station 5.",

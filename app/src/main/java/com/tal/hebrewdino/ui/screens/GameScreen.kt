@@ -286,7 +286,7 @@ fun GameScreen(
     val session = gameViewModel.session
     val listenOnly = plan.listenOnlyTargetPrompt
     val stationUiSpec = remember(chapterId, stationId) { StationBehaviorRegistry.getStationUiSpec(chapterId, stationId) }
-    val episode4HelpSt15 = Episode4Help.isHelpColumnActive(stationUiSpec)
+    val helpColumnEnabled = Episode4Help.isHelpColumnActive(stationUiSpec)
     val sagaUsesPickLetterAudioStaging = stationUiSpec.audioStagingPickLetter
     val sagaUsesPopBalloonsAudioStaging = stationUiSpec.audioStagingPopBalloons
     val usesPopBalloonsSoundPoolPrompt = stationUiSpec.popBalloonsUseSoundPoolPrompt
@@ -344,7 +344,7 @@ fun GameScreen(
      * main target chip until round-end praise finishes — not a second letter chip.
      */
     /** Episode 1 station 2: counts correct pops within the current question (for pop SFX variety). */
-    val popBalloonsHelpControlsEnabled = stationUiSpec.popBalloonsHelpControlsEnabled && !episode4HelpSt15
+    val popBalloonsHelpControlsEnabled = stationUiSpec.popBalloonsHelpControlsEnabled && !helpColumnEnabled
     val showPopBalloonsTargetLetterChip = !listenOnly && !popBalloonsHelpControlsEnabled
     val gameChoicesEnabled =
         !gameViewModel.inputLocked &&
@@ -401,7 +401,7 @@ fun GameScreen(
             SideHelpActions.startReplay(
                 audioEnabled = audioEnabled,
                 isPlayPhase = gameViewModel.phase == GamePhase.Play,
-                episode4HelpEnabled = episode4HelpSt15,
+            episode4HelpEnabled = helpColumnEnabled,
                 popBalloonsHelpEnabled = popBalloonsHelpControlsEnabled,
                 chapterId = chapterId,
                 stationId = stationId,
@@ -419,7 +419,7 @@ fun GameScreen(
     val performSideHelpHint: () -> Unit = {
         SideHelpActions.performHint(
             isPlayPhase = gameViewModel.phase == GamePhase.Play,
-            episode4HelpEnabled = episode4HelpSt15,
+            episode4HelpEnabled = helpColumnEnabled,
             popBalloonsHelpEnabled = popBalloonsHelpControlsEnabled,
             stationId = stationId,
             stationUiSpec = stationUiSpec,
@@ -954,7 +954,7 @@ fun GameScreen(
                                 highlightedInWordSlotIndex = highlightedInWordRound?.slotIndex,
                                 audioEnabled = audioEnabled,
                                 isCompactLandscapePhone = isCompactLandscapePhone,
-                                episode4HelpSt15 = episode4HelpSt15,
+                                episode4HelpSt15 = helpColumnEnabled,
                                 episode4HelpActiveHintLetter = gameViewModel.episode4HelpActiveHintLetter,
                                 episode4HelpStation2BalloonHintEpoch = gameViewModel.episode4Station2BalloonHintEpoch,
                                 episode4HelpStation3GridHintEpoch = gameViewModel.episode4Station3GridHintEpoch,
@@ -1040,7 +1040,7 @@ fun GameScreen(
         GameOverlayLayer(
             chapterId = chapterId,
             stationId = stationId,
-            episode4HelpSt15 = episode4HelpSt15,
+            episode4HelpSt15 = helpColumnEnabled,
             popBalloonsHelpControlsEnabled = popBalloonsHelpControlsEnabled,
             phase = gameViewModel.phase,
             audioEnabled = audioEnabled,

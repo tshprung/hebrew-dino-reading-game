@@ -14,7 +14,7 @@ object Episode4Help {
      * True when the right-side help column should be shown (spec-driven).
      */
     fun isHelpColumnActive(stationUiSpec: StationUiSpec): Boolean =
-        stationUiSpec.helpControlsEnabled && stationUiSpec.variants.contains(StationVariant.Episode4Help)
+        stationUiSpec.helpControlsEnabled && stationUiSpec.variants.contains(StationVariant.HelpColumn)
 
     /**
      * Temporary hint letter shown during רמז for stations 1–3 and 5 (same `when` as legacy hint dispatch).

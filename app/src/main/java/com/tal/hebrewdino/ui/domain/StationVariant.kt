@@ -11,7 +11,7 @@ enum class StationVariant {
 
     ListenFirst,
 
-    Episode4Help,
+    HelpColumn,
 
     HighlightedLetterInWord,
     Chapter3AudioLetterRecognition,
