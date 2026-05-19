@@ -1,6 +1,8 @@
 package com.tal.hebrewdino.ui.screens
 
+import android.os.SystemClock
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -16,6 +18,8 @@ internal class GameViewModel(
     letterPoolSpec: LetterPoolSpec,
 ) : ViewModel() {
     val session: LevelSession = LevelSession(plan = plan, letterPoolSpec = letterPoolSpec)
+
+    private var lastTapMs: Long by mutableLongStateOf(0L)
 
     var phase: GamePhase by mutableStateOf(GamePhase.Intro)
     var inputLocked: Boolean by mutableStateOf(true)
@@ -36,6 +40,13 @@ internal class GameViewModel(
     var dinoVisual: DinoVisual by mutableStateOf(DinoVisual.Idle)
     var dinoTalking: Boolean by mutableStateOf(false)
     var jumpFrameIndex: Int by mutableIntStateOf(0)
+
+    fun consumeTapCooldown(minIntervalMs: Long = 130L): Boolean {
+        val now = SystemClock.elapsedRealtime()
+        if (now - lastTapMs < minIntervalMs) return false
+        lastTapMs = now
+        return true
+    }
 
     class Factory(
         private val plan: StationQuizPlan,

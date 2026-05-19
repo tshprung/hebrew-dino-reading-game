@@ -1,6 +1,5 @@
 package com.tal.hebrewdino.ui.screens
 
-import android.os.SystemClock
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.AnimationVector1D
 import androidx.compose.animation.core.spring
@@ -86,17 +85,6 @@ private data class GameUiCallbacks(
     val getFeedbackVoiceJob: () -> Job?,
     val setFeedbackVoiceJob: (Job?) -> Unit,
 )
-
-private class TapCooldown(private val minIntervalMs: Long = 130L) {
-    private var lastTapMs: Long = 0L
-
-    fun consume(): Boolean {
-        val now = SystemClock.elapsedRealtime()
-        if (now - lastTapMs < minIntervalMs) return false
-        lastTapMs = now
-        return true
-    }
-}
 
 private class GameAudioRuntimeState {
     var feedbackVoiceJob: Job? = null
@@ -409,8 +397,7 @@ fun GameScreen(
     }
 
     // UX: global tap cooldown to prevent fast-tap flow breaks.
-    val tapCooldown = remember(stationId) { TapCooldown() }
-    fun consumeTapCooldown(): Boolean = tapCooldown.consume()
+    fun consumeTapCooldown(): Boolean = gameViewModel.consumeTapCooldown()
 
     val performSideHelpReplay: () -> Unit = {
         audioRuntime.feedbackVoiceJob =
