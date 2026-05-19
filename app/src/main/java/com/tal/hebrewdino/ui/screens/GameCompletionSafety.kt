@@ -5,22 +5,21 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
+import com.tal.hebrewdino.ui.domain.LevelSession
 
 @Composable
 internal fun GameCompletionSafety(
     stationId: Int,
     sessionCurrentIndex: Int,
-    completionCallbackFired: Boolean,
-    markCompletionCallbackFired: () -> Unit,
-    sessionCorrectCount: Int,
-    sessionMistakeCount: Int,
+    session: LevelSession,
+    gameViewModel: GameViewModel,
     onComplete: (stationId: Int, correctCount: Int, mistakeCount: Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     LaunchedEffect(stationId, sessionCurrentIndex) {
-        if (!completionCallbackFired) {
-            markCompletionCallbackFired()
-            onComplete(stationId, sessionCorrectCount, sessionMistakeCount)
+        if (!gameViewModel.completionCallbackFired) {
+            gameViewModel.completionCallbackFired = true
+            onComplete(stationId, session.correctCount, session.mistakeCount)
         }
     }
     Box(modifier = modifier.fillMaxSize())

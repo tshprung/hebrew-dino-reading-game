@@ -473,10 +473,8 @@ fun GameScreen(
         GameCompletionSafety(
             stationId = stationId,
             sessionCurrentIndex = session.currentIndex,
-            completionCallbackFired = gameViewModel.completionCallbackFired,
-            markCompletionCallbackFired = { gameViewModel.completionCallbackFired = true },
-            sessionCorrectCount = session.correctCount,
-            sessionMistakeCount = session.mistakeCount,
+            session = session,
+            gameViewModel = gameViewModel,
             onComplete = onComplete,
             modifier = modifier,
         )
