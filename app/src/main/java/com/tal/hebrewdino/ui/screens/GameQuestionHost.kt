@@ -37,76 +37,92 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 
+internal data class GameQuestionHostUi(
+    val phase: GamePhase,
+    val stationUiSpec: com.tal.hebrewdino.ui.domain.StationUiSpec,
+    val stationId: Int,
+    val chapterId: Int,
+    val plan: StationQuizPlan,
+    val listenOnly: Boolean,
+    val sagaUsesPickLetterAudioStaging: Boolean,
+    val sagaUsesPopBalloonsAudioStaging: Boolean,
+    val sagaUsesFindGridAudioStaging: Boolean,
+    val isChapter3HighlightedLetterInWordStation: Boolean,
+    val isChapter3AudioLetterRecognitionStation: Boolean,
+    val isChapter3PopAllLettersStation: Boolean,
+    val highlightedInWordWord: String?,
+    val highlightedInWordSlotIndex: Int?,
+    val audioEnabled: Boolean,
+    val isCompactLandscapePhone: Boolean,
+    val episode4HelpSt15: Boolean,
+    val episode4HelpActiveHintLetter: String?,
+    val episode4HelpStation2BalloonHintEpoch: Int,
+    val episode4HelpStation3GridHintEpoch: Int,
+    val popBalloonsHelpControlsEnabled: Boolean,
+    val balloonHelpHintLetter: String?,
+    val showPopBalloonsTargetLetterChip: Boolean,
+)
+
+internal data class GameQuestionHostState(
+    val station1PinnedCorrectLetter: String?,
+    val station2PinnedBalloonLetter: String?,
+    val station2PinnedBalloonColor: Color?,
+    val hintHeaderScale: Float,
+    val enabled: Boolean,
+    val shakeEpoch: Int,
+    val wrongTapsThisQuestion: Int,
+    val hintPulseEpoch: Int,
+    val correctTapPulseLetter: String?,
+    val correctTapPulseEpoch: Int,
+    val station4WrongFlashLetter: String?,
+    val station4WrongFlashEpoch: Int,
+    val station4PinnedCorrectLetter: String?,
+    val entryPulseEpoch: Int,
+    val entryPulseScale: Float,
+    val optionsShakePx: Float,
+)
+
+internal data class GameQuestionHostDeps(
+    val session: LevelSession,
+    val scope: CoroutineScope,
+    val voice: VoicePlayer,
+    val sfx: SoundPoolPlayer,
+    val cancelFeedbackVoice: () -> Unit,
+    val getFeedbackVoiceJob: () -> Job?,
+    val setFeedbackVoiceJob: (Job?) -> Unit,
+    val consumeTapCooldown: () -> Boolean,
+)
+
+internal data class GameQuestionHostHandlers(
+    val performSideHelpReplay: () -> Unit,
+    val handleFindGridSagaGridLetterTapped: (tapped: String, question: Question.FindLetterGridQuestion) -> Unit,
+    val handleFindGridCellTapped: (index: Int, question: Question.FindLetterGridQuestion) -> Unit,
+    val handleFindGridCompleted: () -> Unit,
+    val handlePickLetterPick: (picked: String) -> Unit,
+    val handlePopBalloonsPopSfx: suspend (letter: String, isCorrect: Boolean, finalCorrectBalloon: Boolean, balloonIndex: Int) -> Unit,
+    val handlePopBalloonsWrongPick: () -> Unit,
+    val handlePopBalloonsAllCorrectPopped: (lastLetter: String, poppedBalloonColor: Color, isChapter3PopAllLettersStation: Boolean) -> Unit,
+    val handlePictureStartsWithPick: (picked: String) -> Unit,
+    val handleImageToWordReplayCorrectChoice: () -> Unit,
+    val handleImageToWordWordPressed: (choiceId: String) -> Unit,
+    val handleImageToWordAttempt: (choiceId: String) -> Boolean,
+    val handleImageMatchAttempt: (choiceId: String) -> Boolean,
+    val handleFinaleWrongPlacement: () -> Unit,
+    val onWrongFeedback: () -> Unit,
+    val advanceAfterRound: suspend (isLast: Boolean) -> Unit,
+)
+
 @Composable
 internal fun GameQuestionHost(
-    phase: GamePhase,
-    stationUiSpec: com.tal.hebrewdino.ui.domain.StationUiSpec,
-    stationId: Int,
-    chapterId: Int,
-    plan: StationQuizPlan,
-    listenOnly: Boolean,
-    sagaUsesPickLetterAudioStaging: Boolean,
-    sagaUsesPopBalloonsAudioStaging: Boolean,
-    sagaUsesFindGridAudioStaging: Boolean,
-    isChapter3HighlightedLetterInWordStation: Boolean,
-    isChapter3AudioLetterRecognitionStation: Boolean,
-    isChapter3PopAllLettersStation: Boolean,
-    highlightedInWordWord: String?,
-    highlightedInWordSlotIndex: Int?,
-    audioEnabled: Boolean,
-    isCompactLandscapePhone: Boolean,
-    episode4HelpSt15: Boolean,
-    episode4HelpActiveHintLetter: String?,
-    episode4HelpStation2BalloonHintEpoch: Int,
-    episode4HelpStation3GridHintEpoch: Int,
-    popBalloonsHelpControlsEnabled: Boolean,
-    balloonHelpHintLetter: String?,
-    showPopBalloonsTargetLetterChip: Boolean,
-    station1PinnedCorrectLetter: String?,
-    station2PinnedBalloonLetter: String?,
-    station2PinnedBalloonColor: Color?,
-    hintHeaderScale: Float,
-    enabled: Boolean,
-    shakeEpoch: Int,
-    wrongTapsThisQuestion: Int,
-    hintPulseEpoch: Int,
-    correctTapPulseLetter: String?,
-    correctTapPulseEpoch: Int,
-    station4WrongFlashLetter: String?,
-    station4WrongFlashEpoch: Int,
-    station4PinnedCorrectLetter: String?,
-    entryPulseEpoch: Int,
-    entryPulseScale: Float,
-    optionsShakePx: Float,
-    session: LevelSession,
-    scope: CoroutineScope,
-    voice: VoicePlayer,
-    sfx: SoundPoolPlayer,
-    cancelFeedbackVoice: () -> Unit,
-    getFeedbackVoiceJob: () -> Job?,
-    setFeedbackVoiceJob: (Job?) -> Unit,
-    consumeTapCooldown: () -> Boolean,
-    performSideHelpReplay: () -> Unit,
-    handleFindGridSagaGridLetterTapped: (tapped: String, question: Question.FindLetterGridQuestion) -> Unit,
-    handleFindGridCellTapped: (index: Int, question: Question.FindLetterGridQuestion) -> Unit,
-    handleFindGridCompleted: () -> Unit,
-    handlePickLetterPick: (picked: String) -> Unit,
-    handlePopBalloonsPopSfx: suspend (letter: String, isCorrect: Boolean, finalCorrectBalloon: Boolean, balloonIndex: Int) -> Unit,
-    handlePopBalloonsWrongPick: () -> Unit,
-    handlePopBalloonsAllCorrectPopped: (lastLetter: String, poppedBalloonColor: Color, isChapter3PopAllLettersStation: Boolean) -> Unit,
-    handlePictureStartsWithPick: (picked: String) -> Unit,
-    handleImageToWordReplayCorrectChoice: () -> Unit,
-    handleImageToWordWordPressed: (choiceId: String) -> Unit,
-    handleImageToWordAttempt: (choiceId: String) -> Boolean,
-    handleImageMatchAttempt: (choiceId: String) -> Boolean,
-    handleFinaleWrongPlacement: () -> Unit,
-    onWrongFeedback: () -> Unit,
-    advanceAfterRound: suspend (isLast: Boolean) -> Unit,
+    ui: GameQuestionHostUi,
+    state: GameQuestionHostState,
+    deps: GameQuestionHostDeps,
+    handlers: GameQuestionHostHandlers,
 ) {
-    val current = session.currentQuestion ?: return
-    if (phase == GamePhase.Intro) {
-        if (stationUiSpec.showBetweenRoundIntroPulse) {
-            IntroPulse(stationId = stationId, question = current, modifier = Modifier.fillMaxWidth())
+    val current = deps.session.currentQuestion ?: return
+    if (ui.phase == GamePhase.Intro) {
+        if (ui.stationUiSpec.showBetweenRoundIntroPulse) {
+            IntroPulse(stationId = ui.stationId, question = current, modifier = Modifier.fillMaxWidth())
         }
         return
     }
@@ -115,147 +131,147 @@ internal fun GameQuestionHost(
         is Question.FindLetterGridQuestion -> {
             FindLetterGridQuestionRenderer(
                 current = current,
-                listenOnly = listenOnly,
-                isSagaRevealStation = stationUiSpec.findGridSagaRevealStation,
-                sagaUsesFindGridAudioStaging = sagaUsesFindGridAudioStaging,
-                stationUiSpec = stationUiSpec,
+                listenOnly = ui.listenOnly,
+                isSagaRevealStation = ui.stationUiSpec.findGridSagaRevealStation,
+                sagaUsesFindGridAudioStaging = ui.sagaUsesFindGridAudioStaging,
+                stationUiSpec = ui.stationUiSpec,
                 chapter3ContextWordHint =
                     StationBehaviorRegistry.findGridContextWordHint(
-                        stationUiSpec = stationUiSpec,
-                        questionIndex = session.currentIndex,
-                        sagaUsesFindGridAudioStaging = sagaUsesFindGridAudioStaging,
+                        stationUiSpec = ui.stationUiSpec,
+                        questionIndex = deps.session.currentIndex,
+                        sagaUsesFindGridAudioStaging = ui.sagaUsesFindGridAudioStaging,
                     ),
                 floatingTargetLetterHint =
-                    if (episode4HelpSt15 && stationUiSpec.findGridUseEpisode4HelpHints) {
-                        episode4HelpActiveHintLetter
+                    if (ui.episode4HelpSt15 && ui.stationUiSpec.findGridUseEpisode4HelpHints) {
+                        ui.episode4HelpActiveHintLetter
                     } else {
                         null
                     },
                 episode4TargetCellsHintEpoch =
-                    if (episode4HelpSt15 && stationUiSpec.findGridUseEpisode4HelpHints) {
-                        episode4HelpStation3GridHintEpoch
+                    if (ui.episode4HelpSt15 && ui.stationUiSpec.findGridUseEpisode4HelpHints) {
+                        ui.episode4HelpStation3GridHintEpoch
                     } else {
                         0
                     },
-                hintPulseEpoch = hintPulseEpoch,
-                enabled = enabled,
-                contentKey = session.currentIndex,
-                entryPulseScale = entryPulseScale,
-                optionsShakePx = optionsShakePx,
+                hintPulseEpoch = state.hintPulseEpoch,
+                enabled = state.enabled,
+                contentKey = deps.session.currentIndex,
+                entryPulseScale = state.entryPulseScale,
+                optionsShakePx = state.optionsShakePx,
                 onSagaGridLetterTapped =
-                    if (sagaUsesFindGridAudioStaging) {
-                        { tapped -> handleFindGridSagaGridLetterTapped(tapped, current) }
+                    if (ui.sagaUsesFindGridAudioStaging) {
+                        { tapped -> handlers.handleFindGridSagaGridLetterTapped(tapped, current) }
                     } else {
                         null
                     },
                 onCorrectTap =
-                    if (audioEnabled && !sagaUsesFindGridAudioStaging) {
+                    if (ui.audioEnabled && !ui.sagaUsesFindGridAudioStaging) {
                         {
-                            scope.launch {
-                                sfx.playFirstAvailable(AudioClips.SfxCorrect, volume = 0.58f)
+                            deps.scope.launch {
+                                deps.sfx.playFirstAvailable(AudioClips.SfxCorrect, volume = 0.58f)
                             }
                         }
                     } else {
                         null
                     },
-                onCellTapped = { index -> handleFindGridCellTapped(index, current) },
-                onCompleted = { handleFindGridCompleted() },
+                onCellTapped = { index -> handlers.handleFindGridCellTapped(index, current) },
+                onCompleted = { handlers.handleFindGridCompleted() },
                 modifier = Modifier.fillMaxSize(),
             )
         }
         is Question.PopBalloonsQuestion -> {
-            if (plan.mode == StationQuizMode.PickLetter) {
+            if (ui.plan.mode == StationQuizMode.PickLetter) {
                 PickLetterQuestionRenderer(
                     current = current,
-                    stationUiSpec = stationUiSpec,
-                    listenOnly = listenOnly,
-                    isSagaEpisode = isSagaEpisode(chapterId),
-                    sagaUsesPickLetterAudioStaging = sagaUsesPickLetterAudioStaging,
-                    chapterId = chapterId,
-                    stationId = stationId,
-                    highlightedInWordWord = highlightedInWordWord,
-                    highlightedInWordSlotIndex = highlightedInWordSlotIndex,
-                    isChapter3HighlightedLetterInWordStation = isChapter3HighlightedLetterInWordStation,
-                    isChapter3AudioLetterRecognitionStation = isChapter3AudioLetterRecognitionStation,
-                    station1PinnedCorrectLetter = station1PinnedCorrectLetter,
-                    entryPulseScale = entryPulseScale,
-                    enabled = enabled,
-                    shakePx = optionsShakePx,
-                    wrongTapsThisQuestion = wrongTapsThisQuestion,
-                    hintPulseEpoch = hintPulseEpoch,
-                    correctTapPulseLetter = correctTapPulseLetter,
-                    correctTapPulseEpoch = correctTapPulseEpoch,
-                    temporaryHintLetter = episode4HelpActiveHintLetter,
+                    stationUiSpec = ui.stationUiSpec,
+                    listenOnly = ui.listenOnly,
+                    isSagaEpisode = isSagaEpisode(ui.chapterId),
+                    sagaUsesPickLetterAudioStaging = ui.sagaUsesPickLetterAudioStaging,
+                    chapterId = ui.chapterId,
+                    stationId = ui.stationId,
+                    highlightedInWordWord = ui.highlightedInWordWord,
+                    highlightedInWordSlotIndex = ui.highlightedInWordSlotIndex,
+                    isChapter3HighlightedLetterInWordStation = ui.isChapter3HighlightedLetterInWordStation,
+                    isChapter3AudioLetterRecognitionStation = ui.isChapter3AudioLetterRecognitionStation,
+                    station1PinnedCorrectLetter = state.station1PinnedCorrectLetter,
+                    entryPulseScale = state.entryPulseScale,
+                    enabled = state.enabled,
+                    shakePx = state.optionsShakePx,
+                    wrongTapsThisQuestion = state.wrongTapsThisQuestion,
+                    hintPulseEpoch = state.hintPulseEpoch,
+                    correctTapPulseLetter = state.correctTapPulseLetter,
+                    correctTapPulseEpoch = state.correctTapPulseEpoch,
+                    temporaryHintLetter = ui.episode4HelpActiveHintLetter,
                     onRepeatLetterClick = repeatLetter@{
-                        if (!audioEnabled) return@repeatLetter
-                        cancelFeedbackVoice()
+                        if (!ui.audioEnabled) return@repeatLetter
+                        deps.cancelFeedbackVoice()
                         val letter = current.correctAnswer
                         val clip = AudioClips.letterNameClip(letter) ?: return@repeatLetter
-                        val job = scope.launch { voice.playBlocking(clip) }
-                        setFeedbackVoiceJob(job)
+                        val job = deps.scope.launch { deps.voice.playBlocking(clip) }
+                        deps.setFeedbackVoiceJob(job)
                     },
-                    onPick = { picked -> handlePickLetterPick(picked) },
+                    onPick = { picked -> handlers.handlePickLetterPick(picked) },
                 )
             } else {
                 val correctLetterSet =
-                    if (isChapter3PopAllLettersStation) {
-                        val w = session.chapter3PopAllLettersCurrentWord()?.first.orEmpty()
+                    if (ui.isChapter3PopAllLettersStation) {
+                        val w = deps.session.chapter3PopAllLettersCurrentWord()?.first.orEmpty()
                         w.toCharArray().map { it.toString() }.toSet()
                     } else {
                         null
                     }
                 val visualRoundSeed =
-                    if (sagaUsesPopBalloonsAudioStaging) {
-                        session.currentIndex
+                    if (ui.sagaUsesPopBalloonsAudioStaging) {
+                        deps.session.currentIndex
                     } else {
                         0
                     }
                 val maxVisibleBalloonCount =
-                    if (isCompactLandscapePhone && stationUiSpec.popBalloonsCompactLandscapePhoneTuning) 8 else null
+                    if (ui.isCompactLandscapePhone && ui.stationUiSpec.popBalloonsCompactLandscapePhoneTuning) 8 else null
                 val episode4CorrectBalloonHintEpoch =
-                    if (episode4HelpSt15 && stationId == Chapter1StationOrder.BALLOON_POP) {
-                        episode4HelpStation2BalloonHintEpoch
+                    if (ui.episode4HelpSt15 && ui.stationId == Chapter1StationOrder.BALLOON_POP) {
+                        ui.episode4HelpStation2BalloonHintEpoch
                     } else {
                         0
                     }
-                val helpSideInsetDp = stationUiSpec.balloonPlayAreaStartInsetDp.dp
-                val popAllWordForBanner = session.chapter3PopAllLettersCurrentWord()?.first.orEmpty()
+                val helpSideInsetDp = ui.stationUiSpec.balloonPlayAreaStartInsetDp.dp
+                val popAllWordForBanner = deps.session.chapter3PopAllLettersCurrentWord()?.first.orEmpty()
                 PopBalloonsQuestionRenderer(
                     current = current,
-                    planMode = plan.mode,
-                    planPopAllLettersInWord = plan.popAllLettersInWord,
+                    planMode = ui.plan.mode,
+                    planPopAllLettersInWord = ui.plan.popAllLettersInWord,
                     popAllLettersWordForBanner = popAllWordForBanner,
                     popAllLettersBannerInstruction =
-                        stationUiSpec.popBalloonsPopAllLettersBannerInstruction
+                        ui.stationUiSpec.popBalloonsPopAllLettersBannerInstruction
                             ?: StationInstructionCopy.PopBalloonsPopAllLettersInWord,
-                    stationUiSpec = stationUiSpec,
-                    isCompactLandscapePhone = isCompactLandscapePhone,
-                    listenOnly = listenOnly,
-                    sagaUsesPopBalloonsAudioStaging = sagaUsesPopBalloonsAudioStaging,
-                    showPopBalloonsTargetLetterChip = showPopBalloonsTargetLetterChip,
-                    episode4HelpSt15 = episode4HelpSt15,
-                    episode4HelpActiveHintLetter = episode4HelpActiveHintLetter,
-                    hintHeaderScale = hintHeaderScale,
-                    station2PinnedBalloonLetter = station2PinnedBalloonLetter,
-                    station2PinnedBalloonColor = station2PinnedBalloonColor,
+                    stationUiSpec = ui.stationUiSpec,
+                    isCompactLandscapePhone = ui.isCompactLandscapePhone,
+                    listenOnly = ui.listenOnly,
+                    sagaUsesPopBalloonsAudioStaging = ui.sagaUsesPopBalloonsAudioStaging,
+                    showPopBalloonsTargetLetterChip = ui.showPopBalloonsTargetLetterChip,
+                    episode4HelpSt15 = ui.episode4HelpSt15,
+                    episode4HelpActiveHintLetter = ui.episode4HelpActiveHintLetter,
+                    hintHeaderScale = state.hintHeaderScale,
+                    station2PinnedBalloonLetter = state.station2PinnedBalloonLetter,
+                    station2PinnedBalloonColor = state.station2PinnedBalloonColor,
                     correctLetterSet = correctLetterSet,
-                    enabled = enabled,
-                    shakePx = optionsShakePx,
-                    entryPulseScale = entryPulseScale,
+                    enabled = state.enabled,
+                    shakePx = state.optionsShakePx,
+                    entryPulseScale = state.entryPulseScale,
                     visualRoundSeed = visualRoundSeed,
                     maxVisibleBalloonCount = maxVisibleBalloonCount,
                     episode4CorrectBalloonHintEpoch = episode4CorrectBalloonHintEpoch,
                     helpSideInsetDp = helpSideInsetDp,
                     contentTopPaddingDp =
-                        if (sagaUsesPopBalloonsAudioStaging) SixStationArcHalfCmNudge else 0.dp,
+                        if (ui.sagaUsesPopBalloonsAudioStaging) SixStationArcHalfCmNudge else 0.dp,
                     onBalloonPressed = { _ -> },
-                    onPopSfx = handlePopBalloonsPopSfx,
-                    onWrongPick = { handlePopBalloonsWrongPick() },
+                    onPopSfx = handlers.handlePopBalloonsPopSfx,
+                    onWrongPick = { handlers.handlePopBalloonsWrongPick() },
                     onAllCorrectPopped = { lastLetter, poppedBalloonColor ->
-                        handlePopBalloonsAllCorrectPopped(
+                        handlers.handlePopBalloonsAllCorrectPopped(
                             lastLetter,
                             poppedBalloonColor,
-                            isChapter3PopAllLettersStation,
+                            ui.isChapter3PopAllLettersStation,
                         )
                     },
                 )
@@ -264,62 +280,62 @@ internal fun GameQuestionHost(
         is Question.PictureStartsWithQuestion -> {
             val pictureInstructionText =
                 when {
-                    stationUiSpec.pictureStartsWithInstructionOverride != null ->
-                        stationUiSpec.pictureStartsWithInstructionOverride
-                    listenOnly && isSagaEpisode(chapterId) && stationId == Chapter1StationOrder.PICTURE_PICK_ONE ->
-                        stationUiSpec.pictureStartsWithListenOnlySagaInstruction
+                    ui.stationUiSpec.pictureStartsWithInstructionOverride != null ->
+                        ui.stationUiSpec.pictureStartsWithInstructionOverride
+                    ui.listenOnly && isSagaEpisode(ui.chapterId) && ui.stationId == Chapter1StationOrder.PICTURE_PICK_ONE ->
+                        ui.stationUiSpec.pictureStartsWithListenOnlySagaInstruction
                             ?: StationInstructionCopy.PictureStartsWithListenFirstSaga
                     else ->
                         StationInstructionCopy.PictureStartsWithDefault
                 }
             val pictureInstructionReadablePanel =
-                stationUiSpec.pictureStartsWithReadablePanel ||
-                    stationUiSpec.pictureStartsWithInstructionPanelStyle == InstructionPanelStyle.WhiteRounded
+                ui.stationUiSpec.pictureStartsWithReadablePanel ||
+                    ui.stationUiSpec.pictureStartsWithInstructionPanelStyle == InstructionPanelStyle.WhiteRounded
             val pictureShowWordCaption =
-                !(listenOnly && stationUiSpec.hidePictureWordCaptionWhenListenOnlySaga)
+                !(ui.listenOnly && ui.stationUiSpec.hidePictureWordCaptionWhenListenOnlySaga)
             PictureStartsWithQuestionRenderer(
                 current = current,
-                stationUiSpec = stationUiSpec,
-                isCompactLandscapePhone = isCompactLandscapePhone,
+                stationUiSpec = ui.stationUiSpec,
+                isCompactLandscapePhone = ui.isCompactLandscapePhone,
                 instructionText = pictureInstructionText,
                 instructionReadablePanel = pictureInstructionReadablePanel,
                 showWordCaption = pictureShowWordCaption,
                 onPictureTapReplayWord =
-                    if (episode4HelpSt15 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
-                        { performSideHelpReplay() }
-                    } else if (audioEnabled) {
+                    if (ui.episode4HelpSt15 && ui.stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
+                        { handlers.performSideHelpReplay() }
+                    } else if (ui.audioEnabled) {
                         {
-                            cancelFeedbackVoice()
+                            deps.cancelFeedbackVoice()
                             val wordPath = AudioClips.wordClipByCatalogId(current.catalogEntryId)
-                            if (voice.hasAsset(wordPath)) {
-                                val job = scope.launch { voice.playBlocking(wordPath) }
-                                setFeedbackVoiceJob(job)
+                            if (deps.voice.hasAsset(wordPath)) {
+                                val job = deps.scope.launch { deps.voice.playBlocking(wordPath) }
+                                deps.setFeedbackVoiceJob(job)
                             }
                         }
                     } else {
                         null
                     },
                 temporaryStartingLetterHint =
-                    if (episode4HelpSt15 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
-                        episode4HelpActiveHintLetter
+                    if (ui.episode4HelpSt15 && ui.stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
+                        ui.episode4HelpActiveHintLetter
                     } else {
                         null
                     },
                 pinnedCorrectLetter =
-                    if (chapterId == 4 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
-                        station4PinnedCorrectLetter
+                    if (ui.chapterId == 4 && ui.stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
+                        state.station4PinnedCorrectLetter
                     } else {
                         null
                     },
-                enabled = enabled,
-                shakePx = optionsShakePx,
+                enabled = state.enabled,
+                shakePx = state.optionsShakePx,
                 entryPulseEpoch =
-                    if (chapterId == 6 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
+                    if (ui.chapterId == 6 && ui.stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
                         0
                     } else {
-                        entryPulseEpoch
+                        state.entryPulseEpoch
                     },
-                promptWordSizeMultiplier = plan.imageMatchCaptionSizeMultiplier * 1.2f,
+                promptWordSizeMultiplier = ui.plan.imageMatchCaptionSizeMultiplier * 1.2f,
                 innerPictureScale =
                     Chapter1Station5And6ImageMatchInnerScale.innerScalePictureStartsWith(
                         catalogEntryId = current.catalogEntryId,
@@ -328,51 +344,51 @@ internal fun GameQuestionHost(
                         tintArgb = current.tintArgb,
                         tileDrawable = current.tileDrawable,
                     ),
-                pictureSizeMultiplier = plan.imageMatchPictureSizeMultiplier,
-                sortOptionLetters = plan.sortOptionLetters,
-                chapterId = chapterId,
-                stationId = stationId,
-                hintCorrectLetter = current.correctLetter.takeIf { wrongTapsThisQuestion >= 2 },
-                hintPulseEpoch = hintPulseEpoch,
-                correctPulseLetter = correctTapPulseLetter,
-                correctPulseEpoch = correctTapPulseEpoch,
-                wrongFlashLetter = station4WrongFlashLetter,
-                wrongFlashEpoch = station4WrongFlashEpoch,
+                pictureSizeMultiplier = ui.plan.imageMatchPictureSizeMultiplier,
+                sortOptionLetters = ui.plan.sortOptionLetters,
+                chapterId = ui.chapterId,
+                stationId = ui.stationId,
+                hintCorrectLetter = current.correctLetter.takeIf { state.wrongTapsThisQuestion >= 2 },
+                hintPulseEpoch = state.hintPulseEpoch,
+                correctPulseLetter = state.correctTapPulseLetter,
+                correctPulseEpoch = state.correctTapPulseEpoch,
+                wrongFlashLetter = state.station4WrongFlashLetter,
+                wrongFlashEpoch = state.station4WrongFlashEpoch,
                 entryPulseScale = 1f,
-                onPickLetter = { picked -> handlePictureStartsWithPick(picked) },
+                onPickLetter = { picked -> handlers.handlePictureStartsWithPick(picked) },
             )
         }
         is Question.ImageMatchQuestion ->
-            if (stationUiSpec.templateId == StationTemplateId.ImageToWord) {
+            if (ui.stationUiSpec.templateId == StationTemplateId.ImageToWord) {
                 ImageToWordQuestionRenderer(
                     current = current,
-                    contentKey = session.currentIndex,
-                    enabled = enabled,
-                    entryPulseScale = entryPulseScale,
-                    optionsShakePx = optionsShakePx,
+                    contentKey = deps.session.currentIndex,
+                    enabled = state.enabled,
+                    entryPulseScale = state.entryPulseScale,
+                    optionsShakePx = state.optionsShakePx,
                     instructionText =
-                        stationUiSpec.imageToWordInstructionText
+                        ui.stationUiSpec.imageToWordInstructionText
                             ?: StationInstructionCopy.Chapter3ImageToWord,
                     onPictureTapReplayWord =
-                        if (audioEnabled) {
-                            { handleImageToWordReplayCorrectChoice() }
+                        if (ui.audioEnabled) {
+                            { handlers.handleImageToWordReplayCorrectChoice() }
                         } else {
                             null
                         },
-                    onWordPressed = { choiceId -> handleImageToWordWordPressed(choiceId) },
-                    onAttempt = { choiceId -> handleImageToWordAttempt(choiceId) },
+                    onWordPressed = { choiceId -> handlers.handleImageToWordWordPressed(choiceId) },
+                    onAttempt = { choiceId -> handlers.handleImageToWordAttempt(choiceId) },
                 )
             } else if (
-                stationUiSpec.templateId == StationTemplateId.MatchLetterToWord
+                ui.stationUiSpec.templateId == StationTemplateId.MatchLetterToWord
             ) {
                 val matchChoices = current.choices
                 fun speakNow(play: suspend () -> Unit) {
-                    if (!audioEnabled) return
-                    cancelFeedbackVoice()
-                    val job = scope.launch { play() }
-                    setFeedbackVoiceJob(job)
+                    if (!ui.audioEnabled) return
+                    deps.cancelFeedbackVoice()
+                    val job = deps.scope.launch { play() }
+                    deps.setFeedbackVoiceJob(job)
                 }
-                var lastPraiseClip by remember(chapterId, stationId) { mutableStateOf<String?>(null) }
+                var lastPraiseClip by remember(ui.chapterId, ui.stationId) { mutableStateOf<String?>(null) }
                 val matchPraiseClips =
                     listOf(
                         AudioClips.VoPraiseMetzuyan,
@@ -388,43 +404,43 @@ internal fun GameQuestionHost(
                         val clip =
                             AudioClips.imageToWordClipByCatalogId(
                                 catalogEntryId = choiceId,
-                                chapterId = chapterId,
-                                voiceHasAsset = { path -> voice.hasAsset(path) },
+                                chapterId = ui.chapterId,
+                                voiceHasAsset = { path -> deps.voice.hasAsset(path) },
                             )
-                        voice.playBlocking(clip)
+                        deps.voice.playBlocking(clip)
                     }
                 }
 
                 fun handleMatchLetterPressed(letter: String) {
                     val clip = AudioClips.letterNameClip(letter) ?: return
-                    speakNow { voice.playBlocking(clip) }
+                    speakNow { deps.voice.playBlocking(clip) }
                 }
 
                 fun handleMatchSolved() {
-                    if (!consumeTapCooldown()) return
-                    scope.launch {
-                        withTimeoutOrNull(4500L) { getFeedbackVoiceJob()?.join() }
-                        if (audioEnabled) {
-                            cancelFeedbackVoice()
+                    if (!deps.consumeTapCooldown()) return
+                    deps.scope.launch {
+                        withTimeoutOrNull(4500L) { deps.getFeedbackVoiceJob()?.join() }
+                        if (ui.audioEnabled) {
+                            deps.cancelFeedbackVoice()
                             val job =
-                                scope.launch {
+                                deps.scope.launch {
                                     val candidates = matchPraiseClips.filter { it != lastPraiseClip }
                                     val pickFrom =
                                         if (candidates.isNotEmpty()) candidates else listOfNotNull(lastPraiseClip)
                                     val picked = pickFrom.shuffled().firstOrNull()
                                     if (picked != null) {
                                         lastPraiseClip = picked
-                                        voice.playBlocking(picked)
+                                        deps.voice.playBlocking(picked)
                                     }
                                 }
-                            setFeedbackVoiceJob(job)
+                            deps.setFeedbackVoiceJob(job)
                             withTimeoutOrNull(3000L) { job.join() }
                         }
-                        when (session.completeCurrentRound()) {
+                        when (deps.session.completeCurrentRound()) {
                             AnswerResult.Correct -> {
-                                if (audioEnabled) ChildGameAudioHooks.onCorrect()
-                                val isLast = session.currentIndex >= session.totalQuestions - 1
-                                advanceAfterRound(isLast)
+                                if (ui.audioEnabled) ChildGameAudioHooks.onCorrect()
+                                val isLast = deps.session.currentIndex >= deps.session.totalQuestions - 1
+                                handlers.advanceAfterRound(isLast)
                             }
                             else -> {}
                         }
@@ -432,18 +448,18 @@ internal fun GameQuestionHost(
                 }
                 MatchLetterToWordQuestionRenderer(
                     choices = matchChoices,
-                    stationUiSpec = stationUiSpec,
-                    isCompactLandscapePhone = isCompactLandscapePhone,
+                    stationUiSpec = ui.stationUiSpec,
+                    isCompactLandscapePhone = ui.isCompactLandscapePhone,
                     choicePairLimit = 3,
-                    contentKey = session.currentIndex,
-                    enabled = enabled,
-                    entryPulseScale = entryPulseScale,
-                    letterTileSizeMultiplier = if (chapterId == TrainingV1Config.CHAPTER_ID) 1.10f else 1f,
+                    contentKey = deps.session.currentIndex,
+                    enabled = state.enabled,
+                    entryPulseScale = state.entryPulseScale,
+                    letterTileSizeMultiplier = if (ui.chapterId == TrainingV1Config.CHAPTER_ID) 1.10f else 1f,
                     onWordPressed = { choiceId -> handleMatchWordPressed(choiceId) },
                     onLetterPressed = { letter -> handleMatchLetterPressed(letter) },
                     onCorrectMatch = { _ ->
-                        if (audioEnabled) {
-                            scope.launch { sfx.playFirstAvailable(AudioClips.SfxCorrect, volume = 0.58f) }
+                        if (ui.audioEnabled) {
+                            deps.scope.launch { deps.sfx.playFirstAvailable(AudioClips.SfxCorrect, volume = 0.58f) }
                         }
                     },
                     onWrongMatch = { _, _ -> },
@@ -451,67 +467,67 @@ internal fun GameQuestionHost(
                     innerPictureScaleForChoice = { choice ->
                         Chapter1Station5And6ImageMatchInnerScale.innerScale(choice)
                     },
-                    captionSizeMultiplier = plan.imageMatchCaptionSizeMultiplier,
-                    chapterId = chapterId,
-                    stationId = stationId,
-                    instructionReadablePanel = stationUiSpec.matchLetterInstructionReadablePanel,
+                    captionSizeMultiplier = ui.plan.imageMatchCaptionSizeMultiplier,
+                    chapterId = ui.chapterId,
+                    stationId = ui.stationId,
+                    instructionReadablePanel = ui.stationUiSpec.matchLetterInstructionReadablePanel,
                     instructions =
-                        stationUiSpec.matchLetterInstructionText
+                        ui.stationUiSpec.matchLetterInstructionText
                             ?: StationInstructionCopy.MatchLetterFinale,
                     onSolved = { handleMatchSolved() },
                 )
             } else {
                 val listenOnlyTemporaryHintLetter =
-                    if (episode4HelpSt15 &&
-                        stationUiSpec.templateId == StationTemplateId.ImageMatch &&
-                        stationUiSpec.hintMode == com.tal.hebrewdino.ui.domain.StationHintMode.TemporaryTargetLetter
+                    if (ui.episode4HelpSt15 &&
+                        ui.stationUiSpec.templateId == StationTemplateId.ImageMatch &&
+                        ui.stationUiSpec.hintMode == com.tal.hebrewdino.ui.domain.StationHintMode.TemporaryTargetLetter
                     ) {
-                        episode4HelpActiveHintLetter
+                        ui.episode4HelpActiveHintLetter
                     } else {
                         null
                     }
                 ImageMatchQuestionRenderer(
                     current = current,
-                    stationUiSpec = stationUiSpec,
-                    isCompactLandscapePhone = isCompactLandscapePhone,
+                    stationUiSpec = ui.stationUiSpec,
+                    isCompactLandscapePhone = ui.isCompactLandscapePhone,
                     headerInstructionFontScale =
-                        (if (chapterId == TrainingV1Config.CHAPTER_ID) 1.35f else 1.35f * 2f),
+                        (if (ui.chapterId == TrainingV1Config.CHAPTER_ID) 1.35f else 1.35f * 2f),
                     listenOnlyTemporaryHintLetter = listenOnlyTemporaryHintLetter,
-                    contentKey = session.currentIndex,
-                    enabled = enabled,
-                    shakePx = optionsShakePx,
-                    entryPulseEpoch = entryPulseEpoch,
-                    hintCorrectChoiceId = current.correctChoiceId.takeIf { wrongTapsThisQuestion >= 2 },
-                    hintPulseEpoch = hintPulseEpoch,
-                    captionSizeMultiplier = plan.imageMatchCaptionSizeMultiplier,
-                    pictureSizeMultiplier = plan.imageMatchPictureSizeMultiplier,
+                    contentKey = deps.session.currentIndex,
+                    enabled = state.enabled,
+                    shakePx = state.optionsShakePx,
+                    entryPulseEpoch = state.entryPulseEpoch,
+                    hintCorrectChoiceId = current.correctChoiceId.takeIf { state.wrongTapsThisQuestion >= 2 },
+                    hintPulseEpoch = state.hintPulseEpoch,
+                    captionSizeMultiplier = ui.plan.imageMatchCaptionSizeMultiplier,
+                    pictureSizeMultiplier = ui.plan.imageMatchPictureSizeMultiplier,
                     innerPictureScaleForChoice = { choice ->
                         Chapter1Station5And6ImageMatchInnerScale.innerScale(choice)
                     },
-                    chapterId = chapterId,
-                    stationId = stationId,
-                    onAttempt = { choiceId -> handleImageMatchAttempt(choiceId) },
-                    entryPulseScale = entryPulseScale,
+                    chapterId = ui.chapterId,
+                    stationId = ui.stationId,
+                    onAttempt = { choiceId -> handlers.handleImageMatchAttempt(choiceId) },
+                    entryPulseScale = state.entryPulseScale,
                     modifier = Modifier.fillMaxSize(),
                 )
             }
         is Question.FinaleSlotQuestion ->
             FinaleSlotQuestionRenderer(
                 current = current,
-                contentKey = session.currentIndex,
-                enabled = enabled,
-                shakeEpoch = shakeEpoch,
+                contentKey = deps.session.currentIndex,
+                enabled = state.enabled,
+                shakeEpoch = state.shakeEpoch,
                 onWrongPlacement = {
-                    handleFinaleWrongPlacement()
-                    onWrongFeedback()
+                    handlers.handleFinaleWrongPlacement()
+                    handlers.onWrongFeedback()
                 },
                 onSolved = { words ->
-                    scope.launch {
-                        when (session.submitFinaleWords(words)) {
+                    deps.scope.launch {
+                        when (deps.session.submitFinaleWords(words)) {
                             AnswerResult.Correct -> {
-                                if (audioEnabled) ChildGameAudioHooks.onCorrect()
-                                val isLast = session.currentIndex >= session.totalQuestions - 1
-                                advanceAfterRound(isLast)
+                                if (ui.audioEnabled) ChildGameAudioHooks.onCorrect()
+                                val isLast = deps.session.currentIndex >= deps.session.totalQuestions - 1
+                                handlers.advanceAfterRound(isLast)
                             }
                             else -> {}
                         }
@@ -520,21 +536,21 @@ internal fun GameQuestionHost(
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .offset { IntOffset(optionsShakePx.toInt(), 0) },
+                        .offset { IntOffset(state.optionsShakePx.toInt(), 0) },
             )
     }
 
     val fullScreenBalloonHintLetter =
         when {
-            episode4HelpSt15 -> episode4HelpActiveHintLetter
-            popBalloonsHelpControlsEnabled -> balloonHelpHintLetter
+            ui.episode4HelpSt15 -> ui.episode4HelpActiveHintLetter
+            ui.popBalloonsHelpControlsEnabled -> ui.balloonHelpHintLetter
             else -> null
         }
-    if (phase == GamePhase.Play &&
+    if (ui.phase == GamePhase.Play &&
         fullScreenBalloonHintLetter != null &&
         current is Question.PopBalloonsQuestion &&
-        stationUiSpec.templateId == StationTemplateId.PopBalloons &&
-        !stationUiSpec.excludeFullScreenBalloonHintOverlay
+        ui.stationUiSpec.templateId == StationTemplateId.PopBalloons &&
+        !ui.stationUiSpec.excludeFullScreenBalloonHintOverlay
     ) {
         Box(
             modifier = Modifier.fillMaxSize().zIndex(3f),
