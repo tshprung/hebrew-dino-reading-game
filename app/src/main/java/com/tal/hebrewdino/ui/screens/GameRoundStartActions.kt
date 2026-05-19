@@ -66,7 +66,7 @@ internal object GameRoundStartActions {
                     gameViewModel.dinoTalking = true
                     try {
                         playIntroPrompt(
-                            audioEnabled = audioEnabled,
+                            audioEnabled = true,
                             chapterId = chapterId,
                             stationId = stationId,
                             listenOnlyTargetPrompt = listenOnlyTargetPrompt,

@@ -1,9 +1,6 @@
 package com.tal.hebrewdino.ui.screens
 
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.AnimationVector1D
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,12 +15,9 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -37,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.tal.hebrewdino.R
@@ -47,7 +42,6 @@ import com.tal.hebrewdino.ui.audio.VoicePlayer
 import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
 import com.tal.hebrewdino.ui.domain.Episode4Help
 import com.tal.hebrewdino.ui.domain.LetterPoolSpec
-import com.tal.hebrewdino.ui.domain.LevelSession
 import com.tal.hebrewdino.ui.domain.Question
 import com.tal.hebrewdino.ui.domain.StationBehaviorRegistry
 import com.tal.hebrewdino.ui.domain.StationQuizMode
@@ -59,12 +53,7 @@ import com.tal.hebrewdino.ui.domain.hasVariant
 import com.tal.hebrewdino.ui.feedback.GameFeedback
 import com.tal.hebrewdino.ui.game.ChildGameAudioHooks
 import com.tal.hebrewdino.ui.layout.ScreenFit
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withTimeoutOrNull
-import kotlin.random.Random
 
 internal enum class GamePhase { Intro, Play }
 
@@ -85,7 +74,7 @@ private data class GameUiCallbacks(
     val setFeedbackVoiceJob: (Job?) -> Unit,
 )
 
-private class GameAudioRuntimeState {
+internal class GameAudioRuntimeState {
     var feedbackVoiceJob: Job? = null
     var promptVoiceJob: Job? = null
     var station1VoiceStreamId: Int = 0
@@ -189,6 +178,75 @@ private object GameAudioPreloader {
         paths.add(AudioClips.SfxWrong)
         paths.add(AudioClips.SfxCorrect)
         sfx.preload(*paths.distinct().toTypedArray())
+    }
+}
+
+@Composable
+private fun GameAudioLifecycleEffects(
+    lifecycleOwner: LifecycleOwner,
+    stationId: Int,
+    cancelFeedbackVoice: () -> Unit,
+    releaseAudio: () -> Unit,
+) {
+    val cancelFeedbackVoiceLatest by rememberUpdatedState(cancelFeedbackVoice)
+    val releaseAudioLatest by rememberUpdatedState(releaseAudio)
+
+    DisposableEffect(lifecycleOwner, stationId) {
+        val observer =
+            LifecycleEventObserver { _, event ->
+                if (event == Lifecycle.Event.ON_PAUSE || event == Lifecycle.Event.ON_STOP) {
+                    cancelFeedbackVoiceLatest()
+                }
+            }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+            cancelFeedbackVoiceLatest()
+            releaseAudioLatest()
+        }
+    }
+}
+
+@Composable
+private fun GameAudioPreloadEffects(
+    stationId: Int,
+    chapterId: Int,
+    letterPoolSpec: LetterPoolSpec,
+    audioEnabled: Boolean,
+    sagaUsesPickLetterAudioStaging: Boolean,
+    usesPopBalloonsSoundPoolPrompt: Boolean,
+    sagaUsesFindGridAudioStaging: Boolean,
+    voice: VoicePlayer,
+    sfx: SoundPoolPlayer,
+) {
+    LaunchedEffect(stationId, chapterId, letterPoolSpec) {
+        GameAudioPreloader.preloadStation1(
+            audioEnabled = audioEnabled,
+            sagaUsesPickLetterAudioStaging = sagaUsesPickLetterAudioStaging,
+            chapterId = chapterId,
+            letterPoolSpec = letterPoolSpec,
+            voice = voice,
+            sfx = sfx,
+        )
+    }
+
+    LaunchedEffect(stationId, chapterId, letterPoolSpec) {
+        GameAudioPreloader.preloadPopBalloons(
+            audioEnabled = audioEnabled,
+            usesPopBalloonsSoundPoolPrompt = usesPopBalloonsSoundPoolPrompt,
+            letterPoolSpec = letterPoolSpec,
+            sfx = sfx,
+        )
+    }
+
+    LaunchedEffect(stationId, chapterId, letterPoolSpec) {
+        GameAudioPreloader.preloadFindGrid(
+            audioEnabled = audioEnabled,
+            sagaUsesFindGridAudioStaging = sagaUsesFindGridAudioStaging,
+            letterPoolSpec = letterPoolSpec,
+            voice = voice,
+            sfx = sfx,
+        )
     }
 }
 
@@ -358,47 +416,31 @@ fun GameScreen(
             sagaUsesFindGridAudioStaging = sagaUsesFindGridAudioStaging,
             sfx = sfx,
             stopAllStreams = stopAllStreams,
-            getStation1VoiceStreamId = { audioRuntime.station1VoiceStreamId },
-            setStation1VoiceStreamId = { id -> audioRuntime.station1VoiceStreamId = id },
-            getStation2VoiceStreamId = { audioRuntime.station2VoiceStreamId },
-            setStation2VoiceStreamId = { id -> audioRuntime.station2VoiceStreamId = id },
-            getStation3VoiceStreamId = { audioRuntime.station3VoiceStreamId },
-            setStation3VoiceStreamId = { id -> audioRuntime.station3VoiceStreamId = id },
+            audioRuntime = audioRuntime,
         )
     }
 
     fun cancelFeedbackVoice() {
         GameAudioActions.cancelFeedbackVoice(
             voice = voice,
-            getFeedbackVoiceJob = { audioRuntime.feedbackVoiceJob },
-            setFeedbackVoiceJob = { job -> audioRuntime.feedbackVoiceJob = job },
-            getPromptVoiceJob = { audioRuntime.promptVoiceJob },
-            setPromptVoiceJob = { job -> audioRuntime.promptVoiceJob = job },
+            audioRuntime = audioRuntime,
             stopStagingSfx = { stopAll -> stopStagingSfx(stopAllStreams = stopAll) },
         )
     }
 
-    DisposableEffect(lifecycleOwner, stationId) {
-        val observer =
-            LifecycleEventObserver { _, event ->
-                if (event == Lifecycle.Event.ON_PAUSE || event == Lifecycle.Event.ON_STOP) {
-                    cancelFeedbackVoice()
-                }
-            }
-        lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose {
-            lifecycleOwner.lifecycle.removeObserver(observer)
-            cancelFeedbackVoice()
-            audio.release()
-        }
-    }
+    GameAudioLifecycleEffects(
+        lifecycleOwner = lifecycleOwner,
+        stationId = stationId,
+        cancelFeedbackVoice = { cancelFeedbackVoice() },
+        releaseAudio = { audio.release() },
+    )
 
     val performSideHelpReplay: () -> Unit = {
         audioRuntime.feedbackVoiceJob =
             SideHelpActions.startReplay(
                 audioEnabled = audioEnabled,
                 isPlayPhase = gameViewModel.phase == GamePhase.Play,
-            episode4HelpEnabled = helpColumnEnabled,
+                episode4HelpEnabled = helpColumnEnabled,
                 popBalloonsHelpEnabled = popBalloonsHelpControlsEnabled,
                 chapterId = chapterId,
                 stationId = stationId,
@@ -431,39 +473,17 @@ fun GameScreen(
         }
     val forwardDir = if (LocalLayoutDirection.current == LayoutDirection.Rtl) -1f else 1f
 
-    // Station 1: preload ALL voice clips as early as possible (screen entry),
-    // so instruction playback has near-zero latency when the first question appears.
-    LaunchedEffect(stationId, chapterId, letterPoolSpec) {
-        GameAudioPreloader.preloadStation1(
-            audioEnabled = audioEnabled,
-            sagaUsesPickLetterAudioStaging = sagaUsesPickLetterAudioStaging,
-            chapterId = chapterId,
-            letterPoolSpec = letterPoolSpec,
-            voice = voice,
-            sfx = sfx,
-        )
-    }
-
-    // Episode 1 station 2: preload instruction + balloon feedback clips for low latency.
-    LaunchedEffect(stationId, chapterId, letterPoolSpec) {
-        GameAudioPreloader.preloadPopBalloons(
-            audioEnabled = audioEnabled,
-            usesPopBalloonsSoundPoolPrompt = usesPopBalloonsSoundPoolPrompt,
-            letterPoolSpec = letterPoolSpec,
-            sfx = sfx,
-        )
-    }
-
-    // Episode 1–4 station 3: warm instruction (MediaPlayer); preload tap SFX + letter clips for SoundPool.
-    LaunchedEffect(stationId, chapterId, letterPoolSpec) {
-        GameAudioPreloader.preloadFindGrid(
-            audioEnabled = audioEnabled,
-            sagaUsesFindGridAudioStaging = sagaUsesFindGridAudioStaging,
-            letterPoolSpec = letterPoolSpec,
-            voice = voice,
-            sfx = sfx,
-        )
-    }
+    GameAudioPreloadEffects(
+        stationId = stationId,
+        chapterId = chapterId,
+        letterPoolSpec = letterPoolSpec,
+        audioEnabled = audioEnabled,
+        sagaUsesPickLetterAudioStaging = sagaUsesPickLetterAudioStaging,
+        usesPopBalloonsSoundPoolPrompt = usesPopBalloonsSoundPoolPrompt,
+        sagaUsesFindGridAudioStaging = sagaUsesFindGridAudioStaging,
+        voice = voice,
+        sfx = sfx,
+    )
 
     val current = session.currentQuestion
     if (current == null) {
@@ -708,6 +728,7 @@ fun GameScreen(
                             question = question,
                             scope = scope,
                             sfx = sfx,
+                            cancelFeedbackVoice = ui.cancelFeedbackVoice,
                             setFeedbackVoiceJob = ui.setFeedbackVoiceJob,
                             setStation3VoiceStreamId = { id -> audioRuntime.station3VoiceStreamId = id },
                         )

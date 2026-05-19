@@ -167,9 +167,11 @@ internal fun GameQuestionHost(
                 onCorrectTap =
                     if (ui.audioEnabled && !ui.sagaUsesFindGridAudioStaging) {
                         {
-                            deps.scope.launch {
-                                deps.sfx.playFirstAvailable(AudioClips.SfxCorrect, volume = 0.58f)
-                            }
+                            FindGridActions.handleNonStagedCorrectTap(
+                                audioEnabled = ui.audioEnabled,
+                                scope = deps.scope,
+                                sfx = deps.sfx,
+                            )
                         }
                     } else {
                         null
@@ -359,157 +361,173 @@ internal fun GameQuestionHost(
             )
         }
         is Question.ImageMatchQuestion ->
-            if (ui.stationUiSpec.templateId == StationTemplateId.ImageToWord) {
-                ImageToWordQuestionRenderer(
-                    current = current,
-                    contentKey = deps.session.currentIndex,
-                    enabled = state.enabled,
-                    entryPulseScale = state.entryPulseScale,
-                    optionsShakePx = state.optionsShakePx,
-                    instructionText =
-                        ui.stationUiSpec.imageToWordInstructionText
-                            ?: StationInstructionCopy.Chapter3ImageToWord,
-                    onPictureTapReplayWord =
-                        if (ui.audioEnabled) {
-                            { handlers.handleImageToWordReplayCorrectChoice() }
+            when (ui.stationUiSpec.templateId) {
+                StationTemplateId.ImageToWord -> {
+                    ImageToWordQuestionRenderer(
+                        current = current,
+                        contentKey = deps.session.currentIndex,
+                        enabled = state.enabled,
+                        entryPulseScale = state.entryPulseScale,
+                        optionsShakePx = state.optionsShakePx,
+                        instructionText =
+                            ui.stationUiSpec.imageToWordInstructionText
+                                ?: StationInstructionCopy.Chapter3ImageToWord,
+                        onPictureTapReplayWord =
+                            if (ui.audioEnabled) {
+                                { handlers.handleImageToWordReplayCorrectChoice() }
+                            } else {
+                                null
+                            },
+                        onWordPressed = { choiceId -> handlers.handleImageToWordWordPressed(choiceId) },
+                        onAttempt = { choiceId -> handlers.handleImageToWordAttempt(choiceId) },
+                    )
+                }
+
+                StationTemplateId.MatchLetterToWord
+                    -> {
+                    val matchChoices = current.choices
+                    fun speakNow(play: suspend () -> Unit) {
+                        if (!ui.audioEnabled) return
+                        deps.cancelFeedbackVoice()
+                        val job = deps.scope.launch { play() }
+                        deps.setFeedbackVoiceJob(job)
+                    }
+
+                    var lastPraiseClip by remember(ui.chapterId, ui.stationId) { mutableStateOf<String?>(null) }
+                    val matchPraiseClips =
+                        listOf(
+                            AudioClips.VoPraiseMetzuyan,
+                            AudioClips.VoPraiseYofi,
+                            AudioClips.VoPraiseHitzlacht,
+                            AudioClips.VoNice1,
+                            AudioClips.VoGoodJob2,
+                            AudioClips.VoGoodJob1,
+                        )
+
+                    fun handleMatchWordPressed(choiceId: String) {
+                        speakNow {
+                            val clip =
+                                AudioClips.imageToWordClipByCatalogId(
+                                    catalogEntryId = choiceId,
+                                    chapterId = ui.chapterId,
+                                    voiceHasAsset = { path -> deps.voice.hasAsset(path) },
+                                )
+                            deps.voice.playBlocking(clip)
+                        }
+                    }
+
+                    fun handleMatchLetterPressed(letter: String) {
+                        val clip = AudioClips.letterNameClip(letter) ?: return
+                        speakNow { deps.voice.playBlocking(clip) }
+                    }
+
+                    fun handleMatchSolved() {
+                        if (!deps.gameViewModel.consumeTapCooldown()) return
+                        deps.scope.launch {
+                            withTimeoutOrNull(4500L) { deps.getFeedbackVoiceJob()?.join() }
+                            if (ui.audioEnabled) {
+                                deps.cancelFeedbackVoice()
+                                val job =
+                                    deps.scope.launch {
+                                        val candidates = matchPraiseClips.filter { it != lastPraiseClip }
+                                        val pickFrom =
+                                            candidates.ifEmpty {
+                                                listOfNotNull(
+                                                    lastPraiseClip
+                                                )
+                                            }
+                                        val picked = pickFrom.shuffled().firstOrNull()
+                                        if (picked != null) {
+                                            lastPraiseClip = picked
+                                            deps.voice.playBlocking(picked)
+                                        }
+                                    }
+                                deps.setFeedbackVoiceJob(job)
+                                withTimeoutOrNull(3000L) { job.join() }
+                            }
+                            when (deps.session.completeCurrentRound()) {
+                                AnswerResult.Correct -> {
+                                    if (ui.audioEnabled) ChildGameAudioHooks.onCorrect()
+                                    val isLast = deps.session.currentIndex >= deps.session.totalQuestions - 1
+                                    handlers.advanceAfterRound(isLast)
+                                }
+
+                                else -> {}
+                            }
+                        }
+                    }
+                    MatchLetterToWordQuestionRenderer(
+                        choices = matchChoices,
+                        stationUiSpec = ui.stationUiSpec,
+                        isCompactLandscapePhone = ui.isCompactLandscapePhone,
+                        choicePairLimit = 3,
+                        contentKey = deps.session.currentIndex,
+                        enabled = state.enabled,
+                        entryPulseScale = state.entryPulseScale,
+                        letterTileSizeMultiplier = if (ui.chapterId == TrainingV1Config.CHAPTER_ID) 1.10f else 1f,
+                        onWordPressed = { choiceId -> handleMatchWordPressed(choiceId) },
+                        onLetterPressed = { letter -> handleMatchLetterPressed(letter) },
+                        onCorrectMatch = { _ ->
+                            if (ui.audioEnabled) {
+                                deps.scope.launch {
+                                    deps.sfx.playFirstAvailable(
+                                        AudioClips.SfxCorrect,
+                                        volume = 0.58f
+                                    )
+                                }
+                            }
+                        },
+                        onWrongMatch = { _, _ -> },
+                        onMatchAttempt = { _ -> },
+                        innerPictureScaleForChoice = { choice ->
+                            Chapter1Station5And6ImageMatchInnerScale.innerScale(choice)
+                        },
+                        captionSizeMultiplier = ui.plan.imageMatchCaptionSizeMultiplier,
+                        chapterId = ui.chapterId,
+                        stationId = ui.stationId,
+                        instructionReadablePanel = ui.stationUiSpec.matchLetterInstructionReadablePanel,
+                        instructions =
+                            ui.stationUiSpec.matchLetterInstructionText
+                                ?: StationInstructionCopy.MatchLetterFinale,
+                        onSolved = { handleMatchSolved() },
+                    )
+                }
+
+                else -> {
+                    val listenOnlyTemporaryHintLetter =
+                        if (ui.episode4HelpSt15 &&
+                            ui.stationUiSpec.templateId == StationTemplateId.ImageMatch &&
+                            ui.stationUiSpec.hintMode == com.tal.hebrewdino.ui.domain.StationHintMode.TemporaryTargetLetter
+                        ) {
+                            ui.episode4HelpActiveHintLetter
                         } else {
                             null
+                        }
+                    ImageMatchQuestionRenderer(
+                        current = current,
+                        stationUiSpec = ui.stationUiSpec,
+                        isCompactLandscapePhone = ui.isCompactLandscapePhone,
+                        headerInstructionFontScale =
+                            (if (ui.chapterId == TrainingV1Config.CHAPTER_ID) 1.35f else 1.35f * 2f),
+                        listenOnlyTemporaryHintLetter = listenOnlyTemporaryHintLetter,
+                        contentKey = deps.session.currentIndex,
+                        enabled = state.enabled,
+                        shakePx = state.optionsShakePx,
+                        entryPulseEpoch = state.entryPulseEpoch,
+                        hintCorrectChoiceId = current.correctChoiceId.takeIf { state.wrongTapsThisQuestion >= 2 },
+                        hintPulseEpoch = state.hintPulseEpoch,
+                        captionSizeMultiplier = ui.plan.imageMatchCaptionSizeMultiplier,
+                        pictureSizeMultiplier = ui.plan.imageMatchPictureSizeMultiplier,
+                        innerPictureScaleForChoice = { choice ->
+                            Chapter1Station5And6ImageMatchInnerScale.innerScale(choice)
                         },
-                    onWordPressed = { choiceId -> handlers.handleImageToWordWordPressed(choiceId) },
-                    onAttempt = { choiceId -> handlers.handleImageToWordAttempt(choiceId) },
-                )
-            } else if (
-                ui.stationUiSpec.templateId == StationTemplateId.MatchLetterToWord
-            ) {
-                val matchChoices = current.choices
-                fun speakNow(play: suspend () -> Unit) {
-                    if (!ui.audioEnabled) return
-                    deps.cancelFeedbackVoice()
-                    val job = deps.scope.launch { play() }
-                    deps.setFeedbackVoiceJob(job)
-                }
-                var lastPraiseClip by remember(ui.chapterId, ui.stationId) { mutableStateOf<String?>(null) }
-                val matchPraiseClips =
-                    listOf(
-                        AudioClips.VoPraiseMetzuyan,
-                        AudioClips.VoPraiseYofi,
-                        AudioClips.VoPraiseHitzlacht,
-                        AudioClips.VoNice1,
-                        AudioClips.VoGoodJob2,
-                        AudioClips.VoGoodJob1,
+                        chapterId = ui.chapterId,
+                        stationId = ui.stationId,
+                        onAttempt = { choiceId -> handlers.handleImageMatchAttempt(choiceId) },
+                        entryPulseScale = state.entryPulseScale,
+                        modifier = Modifier.fillMaxSize(),
                     )
-
-                fun handleMatchWordPressed(choiceId: String) {
-                    speakNow {
-                        val clip =
-                            AudioClips.imageToWordClipByCatalogId(
-                                catalogEntryId = choiceId,
-                                chapterId = ui.chapterId,
-                                voiceHasAsset = { path -> deps.voice.hasAsset(path) },
-                            )
-                        deps.voice.playBlocking(clip)
-                    }
                 }
-
-                fun handleMatchLetterPressed(letter: String) {
-                    val clip = AudioClips.letterNameClip(letter) ?: return
-                    speakNow { deps.voice.playBlocking(clip) }
-                }
-
-                fun handleMatchSolved() {
-                    if (!deps.gameViewModel.consumeTapCooldown()) return
-                    deps.scope.launch {
-                        withTimeoutOrNull(4500L) { deps.getFeedbackVoiceJob()?.join() }
-                        if (ui.audioEnabled) {
-                            deps.cancelFeedbackVoice()
-                            val job =
-                                deps.scope.launch {
-                                    val candidates = matchPraiseClips.filter { it != lastPraiseClip }
-                                    val pickFrom =
-                                        if (candidates.isNotEmpty()) candidates else listOfNotNull(lastPraiseClip)
-                                    val picked = pickFrom.shuffled().firstOrNull()
-                                    if (picked != null) {
-                                        lastPraiseClip = picked
-                                        deps.voice.playBlocking(picked)
-                                    }
-                                }
-                            deps.setFeedbackVoiceJob(job)
-                            withTimeoutOrNull(3000L) { job.join() }
-                        }
-                        when (deps.session.completeCurrentRound()) {
-                            AnswerResult.Correct -> {
-                                if (ui.audioEnabled) ChildGameAudioHooks.onCorrect()
-                                val isLast = deps.session.currentIndex >= deps.session.totalQuestions - 1
-                                handlers.advanceAfterRound(isLast)
-                            }
-                            else -> {}
-                        }
-                    }
-                }
-                MatchLetterToWordQuestionRenderer(
-                    choices = matchChoices,
-                    stationUiSpec = ui.stationUiSpec,
-                    isCompactLandscapePhone = ui.isCompactLandscapePhone,
-                    choicePairLimit = 3,
-                    contentKey = deps.session.currentIndex,
-                    enabled = state.enabled,
-                    entryPulseScale = state.entryPulseScale,
-                    letterTileSizeMultiplier = if (ui.chapterId == TrainingV1Config.CHAPTER_ID) 1.10f else 1f,
-                    onWordPressed = { choiceId -> handleMatchWordPressed(choiceId) },
-                    onLetterPressed = { letter -> handleMatchLetterPressed(letter) },
-                    onCorrectMatch = { _ ->
-                        if (ui.audioEnabled) {
-                            deps.scope.launch { deps.sfx.playFirstAvailable(AudioClips.SfxCorrect, volume = 0.58f) }
-                        }
-                    },
-                    onWrongMatch = { _, _ -> },
-                    onMatchAttempt = { _ -> },
-                    innerPictureScaleForChoice = { choice ->
-                        Chapter1Station5And6ImageMatchInnerScale.innerScale(choice)
-                    },
-                    captionSizeMultiplier = ui.plan.imageMatchCaptionSizeMultiplier,
-                    chapterId = ui.chapterId,
-                    stationId = ui.stationId,
-                    instructionReadablePanel = ui.stationUiSpec.matchLetterInstructionReadablePanel,
-                    instructions =
-                        ui.stationUiSpec.matchLetterInstructionText
-                            ?: StationInstructionCopy.MatchLetterFinale,
-                    onSolved = { handleMatchSolved() },
-                )
-            } else {
-                val listenOnlyTemporaryHintLetter =
-                    if (ui.episode4HelpSt15 &&
-                        ui.stationUiSpec.templateId == StationTemplateId.ImageMatch &&
-                        ui.stationUiSpec.hintMode == com.tal.hebrewdino.ui.domain.StationHintMode.TemporaryTargetLetter
-                    ) {
-                        ui.episode4HelpActiveHintLetter
-                    } else {
-                        null
-                    }
-                ImageMatchQuestionRenderer(
-                    current = current,
-                    stationUiSpec = ui.stationUiSpec,
-                    isCompactLandscapePhone = ui.isCompactLandscapePhone,
-                    headerInstructionFontScale =
-                        (if (ui.chapterId == TrainingV1Config.CHAPTER_ID) 1.35f else 1.35f * 2f),
-                    listenOnlyTemporaryHintLetter = listenOnlyTemporaryHintLetter,
-                    contentKey = deps.session.currentIndex,
-                    enabled = state.enabled,
-                    shakePx = state.optionsShakePx,
-                    entryPulseEpoch = state.entryPulseEpoch,
-                    hintCorrectChoiceId = current.correctChoiceId.takeIf { state.wrongTapsThisQuestion >= 2 },
-                    hintPulseEpoch = state.hintPulseEpoch,
-                    captionSizeMultiplier = ui.plan.imageMatchCaptionSizeMultiplier,
-                    pictureSizeMultiplier = ui.plan.imageMatchPictureSizeMultiplier,
-                    innerPictureScaleForChoice = { choice ->
-                        Chapter1Station5And6ImageMatchInnerScale.innerScale(choice)
-                    },
-                    chapterId = ui.chapterId,
-                    stationId = ui.stationId,
-                    onAttempt = { choiceId -> handlers.handleImageMatchAttempt(choiceId) },
-                    entryPulseScale = state.entryPulseScale,
-                    modifier = Modifier.fillMaxSize(),
-                )
             }
         is Question.FinaleSlotQuestion ->
             FinaleSlotQuestionRenderer(

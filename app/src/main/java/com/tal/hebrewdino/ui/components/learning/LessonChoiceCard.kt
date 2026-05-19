@@ -1,5 +1,6 @@
 package com.tal.hebrewdino.ui.components.learning
 
+import android.annotation.SuppressLint
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -52,6 +53,7 @@ const val LessonChoiceCardPictureAspect: Float = 121f / 160f // +~10% taller tha
 val LessonChoiceCardCaptionAreaHeight: Dp = 66.dp
 val LessonChoiceCardCaptionSpacerHeight: Dp = 8.dp
 
+@SuppressLint("UnusedBoxWithConstraintsScope")
 @Composable
 fun LessonChoiceCard(
     choice: LessonChoice,

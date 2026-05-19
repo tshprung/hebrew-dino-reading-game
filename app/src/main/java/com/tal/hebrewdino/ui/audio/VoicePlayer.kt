@@ -84,7 +84,7 @@ class VoicePlayer(context: Context) {
             }
 
             val mp = player ?: return
-            suspendCancellableCoroutine<Unit> { cont ->
+            suspendCancellableCoroutine { cont ->
                 activeWaiter = cont
                 // IMPORTANT: attach listeners BEFORE starting playback.
                 mp.setOnCompletionListener {
@@ -121,7 +121,7 @@ class VoicePlayer(context: Context) {
     /**
      * Plays multiple clips back-to-back as one atomic unit (no overlap with other voice).
      *
-     * If the coroutine is cancelled (e.g. user taps again), playback stops immediately.
+     * If the coroutine is canceled (e.g. user taps again), playback stops immediately.
      */
     suspend fun playSequenceBlocking(vararg assetPaths: String) {
         // Keep the mutex for the whole sequence so nothing else can interleave.
@@ -141,7 +141,7 @@ class VoicePlayer(context: Context) {
                 }
 
                 val mp = player ?: continue
-                suspendCancellableCoroutine<Unit> { cont ->
+                suspendCancellableCoroutine { cont ->
                     activeWaiter = cont
                     // IMPORTANT: attach listeners BEFORE starting playback.
                     mp.setOnCompletionListener {

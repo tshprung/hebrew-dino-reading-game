@@ -168,7 +168,7 @@ class SoundPoolPlayer(context: Context) {
         if (ready == false) return null
 
         val ok =
-            suspendCancellableCoroutine<Boolean> { cont ->
+            suspendCancellableCoroutine { cont ->
                 val list = pendingLoads.getOrPut(soundId) { mutableListOf() }
                 list.add { success ->
                     if (cont.isActive) cont.resume(success)

@@ -17,10 +17,12 @@ internal object FindGridActions {
         question: Question.FindLetterGridQuestion,
         scope: CoroutineScope,
         sfx: SoundPoolPlayer,
+        cancelFeedbackVoice: () -> Unit,
         setFeedbackVoiceJob: (Job?) -> Unit,
         setStation3VoiceStreamId: (Int) -> Unit,
     ) {
         if (!audioEnabled) return
+        cancelFeedbackVoice()
         sfx.stopAllStreams()
         setStation3VoiceStreamId(0)
         val isCorrect = tapped == question.targetLetter
@@ -30,31 +32,45 @@ internal object FindGridActions {
                     sfx.playFirstAvailable(AudioClips.SfxCorrect, volume = 0.62f)
                 } else {
                     val tappedClip = AudioClips.letterNameClip(tapped)
+                    val playWrongSfx: suspend () -> Unit = {
+                        sfx.playFirstAvailable(AudioClips.SfxWrong, volume = 0.58f)
+                    }
+                    val playTappedClip: suspend () -> Boolean = {
+                        if (tappedClip == null) {
+                            false
+                        } else {
+                            setStation3VoiceStreamId(
+                                sfx.playReturningStreamId(tappedClip, volume = 1f) ?: 0,
+                            )
+                            true
+                        }
+                    }
                     when (Random.nextInt(100)) {
                         in 0..39 -> {
-                            sfx.playFirstAvailable(AudioClips.SfxWrong, volume = 0.58f)
+                            playWrongSfx()
                         }
                         in 40..89 -> {
-                            if (tappedClip != null) {
-                                setStation3VoiceStreamId(
-                                    sfx.playReturningStreamId(tappedClip, volume = 1f) ?: 0,
-                                )
-                            } else {
-                                sfx.playFirstAvailable(AudioClips.SfxWrong, volume = 0.58f)
-                            }
+                            if (!playTappedClip()) playWrongSfx()
                         }
                         else -> {
-                            sfx.playFirstAvailable(AudioClips.SfxWrong, volume = 0.58f)
-                            if (tappedClip != null) {
-                                setStation3VoiceStreamId(
-                                    sfx.playReturningStreamId(tappedClip, volume = 1f) ?: 0,
-                                )
-                            }
+                            playWrongSfx()
+                            playTappedClip()
                         }
                     }
                 }
             },
         )
+    }
+
+    fun handleNonStagedCorrectTap(
+        audioEnabled: Boolean,
+        scope: CoroutineScope,
+        sfx: SoundPoolPlayer,
+    ) {
+        if (!audioEnabled) return
+        scope.launch {
+            sfx.playFirstAvailable(AudioClips.SfxCorrect, volume = 0.58f)
+        }
     }
 
     fun handleCellTapped(
@@ -67,13 +83,13 @@ internal object FindGridActions {
         question: Question.FindLetterGridQuestion,
     ) {
         if (!gameViewModel.consumeTapCooldown()) return
+        val tappedLetter = question.cells.getOrNull(index)
         if (!sagaUsesFindGridAudioStaging) {
             cancelFeedbackVoice()
         }
         session.wrongTap()
         gameViewModel.shakeEpoch += 1
         HintPulseActions.registerWrongTapForHintPulse(gameViewModel)
-        val tappedLetter = question.cells.getOrNull(index)
         if (!sagaUsesFindGridAudioStaging) {
             onWrongFeedback(tappedLetter, false)
         }
@@ -87,12 +103,9 @@ internal object FindGridActions {
     ) {
         if (!gameViewModel.consumeTapCooldown()) return
         scope.launch {
-            when (session.completeCurrentRound()) {
-                AnswerResult.Correct -> {
-                    val isLast = session.currentIndex >= session.totalQuestions - 1
-                    advanceAfterRound(isLast)
-                }
-                else -> {}
+            if (session.completeCurrentRound() == AnswerResult.Correct) {
+                val isLast = session.currentIndex >= session.totalQuestions - 1
+                advanceAfterRound(isLast)
             }
         }
     }

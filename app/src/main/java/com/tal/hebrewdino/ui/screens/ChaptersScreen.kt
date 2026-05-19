@@ -1,5 +1,6 @@
 package com.tal.hebrewdino.ui.screens
 
+import android.annotation.SuppressLint
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -159,6 +160,7 @@ private val EggShape: Shape = ChapterEggShape
 /** Minimum clearance egg ↔ dino along path normal (no overlap). */
 private val DinoEggGap = 10.dp
 
+@SuppressLint("UnusedBoxWithConstraintsScope")
 @Composable
 fun ChaptersScreen(
     unlockedChapter: Int,
@@ -369,6 +371,7 @@ private object ChapterHexShape : Shape {
     }
 }
 
+@SuppressLint("UnusedBoxWithConstraintsScope")
 @Composable
 private fun ChaptersHexHoneycomb(
     chapters: List<ChapterCard>,
@@ -557,6 +560,7 @@ private fun ChaptersAmbientBackground(modifier: Modifier = Modifier) {
     }
 }
 
+@SuppressLint("UnusedBoxWithConstraintsScope")
 @Composable
 private fun ChapterVerticalPath(
     chapters: List<ChapterCard>,
