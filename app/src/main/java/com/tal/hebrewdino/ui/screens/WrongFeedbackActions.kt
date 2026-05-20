@@ -48,7 +48,7 @@ internal object WrongFeedbackActions {
                     stationId == Chapter1StationOrder.PICTURE_PICK_ONE &&
                     wrongPickedLetter != null
             if (immediateCh1Ch2Station4Voice) {
-                GameAudioActions.launchFeedbackVoiceAfterCancel(
+                GameAudioActions.launchFeedbackVoice(
                     audioEnabled = audioEnabled,
                     scope = scope,
                     audioRuntime = audioRuntime,
@@ -110,7 +110,7 @@ internal object WrongFeedbackActions {
                     onWrongHook()
                 }
                 if (sagaUsesPickLetterAudioStaging && wrongPickedLetter != null && chapterId != 3) {
-                    GameAudioActions.launchFeedbackVoiceAfterCancel(
+                    GameAudioActions.launchFeedbackVoice(
                         audioEnabled = audioEnabled,
                         scope = scope,
                         audioRuntime = audioRuntime,
@@ -165,7 +165,7 @@ internal object WrongFeedbackActions {
                     wrongPickedLetter != null &&
                     !immediateCh1Ch2Station4Voice
                 ) {
-                    GameAudioActions.launchFeedbackVoiceAfterCancel(
+                    GameAudioActions.launchFeedbackVoice(
                         audioEnabled = audioEnabled,
                         scope = scope,
                         audioRuntime = audioRuntime,
@@ -204,7 +204,7 @@ internal object WrongFeedbackActions {
                     return@launch
                 }
                 if (!immediateCh1Ch2Station4Voice) {
-                    GameAudioActions.launchFeedbackVoiceAfterCancel(
+                    GameAudioActions.launchFeedbackVoice(
                         audioEnabled = audioEnabled,
                         scope = scope,
                         audioRuntime = audioRuntime,

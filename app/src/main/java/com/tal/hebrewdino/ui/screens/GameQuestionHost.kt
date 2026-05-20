@@ -310,7 +310,7 @@ internal fun GameQuestionHost(
                         {
                             val wordPath = AudioClips.wordClipByCatalogId(current.catalogEntryId)
                             if (deps.voice.hasAsset(wordPath)) {
-                                GameAudioActions.launchFeedbackVoiceAfterCancel(
+                                GameAudioActions.launchFeedbackVoice(
                                     audioEnabled = ui.audioEnabled,
                                     scope = deps.scope,
                                     audioRuntime = deps.audioRuntime,

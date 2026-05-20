@@ -88,7 +88,7 @@ internal object AdvanceAfterRoundActions {
                 )
             candidates.shuffle()
             val arr = candidates.toTypedArray()
-            GameAudioActions.launchFeedbackVoiceAfterCancel(
+            GameAudioActions.launchFeedbackVoice(
                 audioEnabled = audioEnabled,
                 scope = scope,
                 audioRuntime = audioRuntime,
@@ -100,7 +100,7 @@ internal object AdvanceAfterRoundActions {
             if (sagaUsesFindGridAudioStaging) {
                 withTimeoutOrNull(5000L) { audioRuntime.feedbackVoiceJob?.join() }
             }
-            GameAudioActions.launchFeedbackVoiceAfterCancel(
+            GameAudioActions.launchFeedbackVoice(
                 audioEnabled = audioEnabled,
                 scope = scope,
                 audioRuntime = audioRuntime,
