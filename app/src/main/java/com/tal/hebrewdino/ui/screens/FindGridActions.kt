@@ -23,12 +23,10 @@ internal object FindGridActions {
         cancelFeedbackVoice()
         sfx.stopAllStreams()
         val isCorrect = tapped == question.targetLetter
-        GameAudioActions.launchFeedbackVoice(
+        GameAudioActions.launchFeedbackVoiceNoCancel(
             audioEnabled = true,
             scope = scope,
             audioRuntime = audioRuntime,
-            cancelFeedbackVoice = cancelFeedbackVoice,
-            cancelBeforeStart = false,
         ) {
             if (isCorrect) {
                 sfx.playFirstAvailable(AudioClips.SfxCorrect, volume = 0.62f)

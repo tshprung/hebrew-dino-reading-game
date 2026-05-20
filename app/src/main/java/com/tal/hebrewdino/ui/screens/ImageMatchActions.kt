@@ -31,12 +31,10 @@ internal object ImageMatchActions {
                 if (audioEnabled) ChildGameAudioHooks.onCorrect()
                 gameViewModel.inputLocked = true
                 val audioJob =
-                    GameAudioActions.launchFeedbackVoice(
+                    GameAudioActions.launchFeedbackVoiceNoCancel(
                         audioEnabled = audioEnabled,
                         scope = scope,
                         audioRuntime = audioRuntime,
-                        cancelFeedbackVoice = cancelFeedbackVoice,
-                        cancelBeforeStart = false,
                     ) {
                         val clip =
                             AudioClips.imageToWordClipByCatalogId(
@@ -151,12 +149,10 @@ internal object ImageMatchActions {
                 if (audioEnabled) ChildGameAudioHooks.onCorrect()
                 gameViewModel.inputLocked = true
                 val audioJob =
-                    GameAudioActions.launchFeedbackVoice(
+                    GameAudioActions.launchFeedbackVoiceNoCancel(
                         audioEnabled = audioEnabled,
                         scope = scope,
                         audioRuntime = audioRuntime,
-                        cancelFeedbackVoice = cancelFeedbackVoice,
-                        cancelBeforeStart = false,
                     ) {
                         if (sagaEpisode && stationId == Chapter1StationOrder.PICTURE_PICK_ALL) {
                             if (chapterId != 3 && chapterId != 6) {

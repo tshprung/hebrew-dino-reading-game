@@ -49,14 +49,15 @@ internal object GameAudioActions {
         scope: CoroutineScope,
         audioRuntime: GameAudioRuntimeState,
         cancelFeedbackVoice: () -> Unit,
-        cancelBeforeStart: Boolean = true,
         play: suspend () -> Unit,
     ): Job? {
-        if (!audioEnabled) return null
-        if (cancelBeforeStart) cancelFeedbackVoice()
-        val job = scope.launch { play() }
-        setFeedbackVoiceJob(audioRuntime, job)
-        return job
+        cancelFeedbackVoice()
+        return launchFeedbackVoiceNoCancel(
+            audioEnabled = audioEnabled,
+            scope = scope,
+            audioRuntime = audioRuntime,
+            play = play,
+        )
     }
 
     fun launchFeedbackVoiceAfterCancel(
@@ -67,14 +68,24 @@ internal object GameAudioActions {
         play: suspend () -> Unit,
     ): Job? {
         cancelFeedbackVoice()
-        return launchFeedbackVoice(
+        return launchFeedbackVoiceNoCancel(
             audioEnabled = audioEnabled,
             scope = scope,
             audioRuntime = audioRuntime,
-            cancelFeedbackVoice = cancelFeedbackVoice,
-            cancelBeforeStart = false,
             play = play,
         )
+    }
+
+    fun launchFeedbackVoiceNoCancel(
+        audioEnabled: Boolean,
+        scope: CoroutineScope,
+        audioRuntime: GameAudioRuntimeState,
+        play: suspend () -> Unit,
+    ): Job? {
+        if (!audioEnabled) return null
+        val job = scope.launch { play() }
+        setFeedbackVoiceJob(audioRuntime, job)
+        return job
     }
 }
 

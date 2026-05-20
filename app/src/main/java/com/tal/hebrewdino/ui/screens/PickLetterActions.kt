@@ -58,12 +58,10 @@ internal object PickLetterActions {
                                 )
                             praise.shuffle()
                             val job =
-                                GameAudioActions.launchFeedbackVoice(
+                                GameAudioActions.launchFeedbackVoiceNoCancel(
                                     audioEnabled = true,
                                     scope = scope,
                                     audioRuntime = audioRuntime,
-                                    cancelFeedbackVoice = cancelFeedbackVoice,
-                                    cancelBeforeStart = false,
                                 ) {
                                     voice.playFirstAvailableBlocking(*praise.toTypedArray())
                                 }
@@ -90,12 +88,10 @@ internal object PickLetterActions {
                                 .toMutableList()
                         praise.shuffle()
                         val job =
-                            GameAudioActions.launchFeedbackVoice(
+                            GameAudioActions.launchFeedbackVoiceNoCancel(
                                 audioEnabled = true,
                                 scope = scope,
                                 audioRuntime = audioRuntime,
-                                cancelFeedbackVoice = cancelFeedbackVoice,
-                                cancelBeforeStart = false,
                             ) {
                                 voice.playBlocking(letterName)
                                 voice.playFirstAvailableBlocking(*praise.toTypedArray())

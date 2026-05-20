@@ -36,12 +36,10 @@ internal object PopBalloonsActions {
         if (!audioEnabled) return
         cancelFeedbackVoice()
         if (sagaUsesPopBalloonsAudioStaging) {
-            GameAudioActions.launchFeedbackVoice(
+            GameAudioActions.launchFeedbackVoiceNoCancel(
                 audioEnabled = true,
                 scope = scope,
                 audioRuntime = audioRuntime,
-                cancelFeedbackVoice = cancelFeedbackVoice,
-                cancelBeforeStart = false,
             ) {
                     sfx.stopAllStreams()
                     if (isCorrect) {
@@ -132,12 +130,10 @@ internal object PopBalloonsActions {
         }
         val clip = AudioClips.letterNameClip(letter)
         if (clip != null) {
-            GameAudioActions.launchFeedbackVoice(
+            GameAudioActions.launchFeedbackVoiceNoCancel(
                 audioEnabled = true,
                 scope = scope,
                 audioRuntime = audioRuntime,
-                cancelFeedbackVoice = cancelFeedbackVoice,
-                cancelBeforeStart = false,
             ) {
                 delay(90)
                 voice.playSequenceBlocking(clip)

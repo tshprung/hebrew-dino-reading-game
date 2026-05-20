@@ -36,12 +36,10 @@ internal object PictureStartsWithActions {
         ) {
             val clip = AudioClips.letterNameClip(picked)
             if (clip != null && voice.hasAsset(clip)) {
-                GameAudioActions.launchFeedbackVoice(
+                GameAudioActions.launchFeedbackVoiceNoCancel(
                     audioEnabled = true,
                     scope = scope,
                     audioRuntime = audioRuntime,
-                    cancelFeedbackVoice = cancelFeedbackVoice,
-                    cancelBeforeStart = false,
                 ) {
                     voice.playBlocking(clip)
                 }
@@ -72,12 +70,10 @@ internal object PictureStartsWithActions {
                             )
                         praise.shuffle()
                         val job =
-                            GameAudioActions.launchFeedbackVoice(
+                            GameAudioActions.launchFeedbackVoiceNoCancel(
                                 audioEnabled = true,
                                 scope = scope,
                                 audioRuntime = audioRuntime,
-                                cancelFeedbackVoice = cancelFeedbackVoice,
-                                cancelBeforeStart = false,
                             ) {
                                 if (letterName != null && voice.hasAsset(letterName)) {
                                     voice.playBlocking(letterName)
