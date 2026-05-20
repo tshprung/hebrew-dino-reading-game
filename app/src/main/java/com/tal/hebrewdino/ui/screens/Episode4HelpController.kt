@@ -36,14 +36,12 @@ internal object SideHelpActions {
         if (episode4HelpEnabled) {
             if (!audioEnabled) return
             val q = session.currentQuestion ?: return
-            cancelFeedbackVoice()
             sfx.stopAllStreams()
-            GameAudioActions.launchFeedbackVoice(
-                audioEnabled = true,
+            GameAudioActions.launchFeedbackVoiceAfterCancel(
+                audioEnabled = audioEnabled,
                 scope = scope,
                 audioRuntime = audioRuntime,
                 cancelFeedbackVoice = cancelFeedbackVoice,
-                cancelBeforeStart = false,
             ) replay@{
                 if (plan.highlightedLetterInWordPickLetter && q is Question.PopBalloonsQuestion) {
                     val round = session.highlightedLetterInWordRound() ?: return@replay
@@ -98,15 +96,13 @@ internal object SideHelpActions {
         if (popBalloonsHelpEnabled) {
             if (!audioEnabled) return
             val q = session.currentQuestion as? Question.PopBalloonsQuestion ?: return
-            cancelFeedbackVoice()
             val letter = q.correctAnswer
             val letterClip = AudioClips.letterNameClip(letter)
-            GameAudioActions.launchFeedbackVoice(
-                audioEnabled = true,
+            GameAudioActions.launchFeedbackVoiceAfterCancel(
+                audioEnabled = audioEnabled,
                 scope = scope,
                 audioRuntime = audioRuntime,
                 cancelFeedbackVoice = cancelFeedbackVoice,
-                cancelBeforeStart = false,
             ) replay@{
                 if (letterClip != null && voice.hasAsset(letterClip)) {
                     voice.playBlocking(letterClip)
