@@ -13,7 +13,6 @@ import com.tal.hebrewdino.ui.game.ChildGameAudioHooks
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.random.Random
 
 internal object PopBalloonsActions {
@@ -217,7 +216,7 @@ internal object PopBalloonsActions {
                     scope.launch {
                         gameViewModel.inputLocked = true
                         if (ch1St2) {
-                            withTimeoutOrNull(4000) { audioRuntime.feedbackVoiceJob?.join() }
+                            GameAudioActions.awaitFeedbackVoice(audioRuntime, 4000L)
                             cancelFeedbackVoice()
                         }
                         if (audioEnabled && !ch1St2) {

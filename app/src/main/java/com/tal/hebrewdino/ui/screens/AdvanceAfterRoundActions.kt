@@ -12,7 +12,6 @@ import com.tal.hebrewdino.ui.feedback.GameFeedback
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.random.Random
 
 internal object AdvanceAfterRoundActions {
@@ -74,7 +73,7 @@ internal object AdvanceAfterRoundActions {
 
         if (episode1PraiseEligible) {
             if (sagaUsesFindGridAudioStaging) {
-                withTimeoutOrNull(5000L) { audioRuntime.feedbackVoiceJob?.join() }
+                GameAudioActions.awaitFeedbackVoice(audioRuntime, 5000L)
             }
             val candidates =
                 mutableListOf(
@@ -98,7 +97,7 @@ internal object AdvanceAfterRoundActions {
             }
         } else if (otherPraiseEligible) {
             if (sagaUsesFindGridAudioStaging) {
-                withTimeoutOrNull(5000L) { audioRuntime.feedbackVoiceJob?.join() }
+                GameAudioActions.awaitFeedbackVoice(audioRuntime, 5000L)
             }
             GameAudioActions.launchFeedbackVoice(
                 audioEnabled = audioEnabled,
@@ -147,15 +146,15 @@ internal object AdvanceAfterRoundActions {
                     sagaUsesFindGridAudioStaging ||
                     stationId == Chapter1StationOrder.PICTURE_PICK_ONE)
         if (sagaUsesPopBalloonsAudioStaging) {
-            withTimeoutOrNull(8000) { audioRuntime.feedbackVoiceJob?.join() }
+            GameAudioActions.awaitFeedbackVoice(audioRuntime, 8000L)
             gameViewModel.station2PinnedBalloonLetter = null
             gameViewModel.station2PinnedBalloonColor = null
         } else if (sagaEpisode && (sagaUsesFindGridAudioStaging || stationId == Chapter1StationOrder.PICTURE_PICK_ONE)) {
-            withTimeoutOrNull(8000) { audioRuntime.feedbackVoiceJob?.join() }
+            GameAudioActions.awaitFeedbackVoice(audioRuntime, 8000L)
         }
         contentAlpha.animateTo(0f, tween(BetweenQuestionFadeMs))
         if (!waitPraiseBeforeFade) {
-            withTimeoutOrNull(2500) { audioRuntime.feedbackVoiceJob?.join() }
+            GameAudioActions.awaitFeedbackVoice(audioRuntime, 2500L)
         }
         delay(5)
         session.nextQuestion()

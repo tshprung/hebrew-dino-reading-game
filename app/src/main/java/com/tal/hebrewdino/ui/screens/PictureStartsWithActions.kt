@@ -8,7 +8,6 @@ import com.tal.hebrewdino.ui.domain.LevelSession
 import com.tal.hebrewdino.ui.game.ChildGameAudioHooks
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withTimeoutOrNull
 
 internal object PictureStartsWithActions {
     fun handlePick(
@@ -89,7 +88,7 @@ internal object PictureStartsWithActions {
                         gameViewModel.correctTapPulseLetter = picked
                         gameViewModel.correctTapPulseEpoch += 1
                         if (audioEnabled && (chapterId == 3 || chapterId == 6) && stationId == 1) {
-                            withTimeoutOrNull(1200L) { audioRuntime.feedbackVoiceJob?.join() }
+                            GameAudioActions.awaitFeedbackVoice(audioRuntime, 1200L)
                         }
                         val isLast = session.currentIndex >= session.totalQuestions - 1
                         advanceAfterRound(isLast)

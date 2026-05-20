@@ -8,7 +8,6 @@ import com.tal.hebrewdino.ui.domain.LevelSession
 import com.tal.hebrewdino.ui.game.ChildGameAudioHooks
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withTimeoutOrNull
 
 internal object PickLetterActions {
     fun handlePick(
@@ -65,7 +64,7 @@ internal object PickLetterActions {
                                 ) {
                                     voice.playFirstAvailableBlocking(*praise.toTypedArray())
                                 }
-                            withTimeoutOrNull(2800L) { job?.join() }
+                            GameAudioActions.await(job, 2800L)
                         }
                         val isLast = session.currentIndex >= session.totalQuestions - 1
                         advanceAfterRound(

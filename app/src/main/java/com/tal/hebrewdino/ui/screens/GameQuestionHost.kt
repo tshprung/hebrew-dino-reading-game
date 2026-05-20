@@ -34,7 +34,6 @@ import com.tal.hebrewdino.ui.domain.TrainingV1Config
 import com.tal.hebrewdino.ui.game.ChildGameAudioHooks
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withTimeoutOrNull
 
 internal data class GameQuestionHostUi(
     val phase: GamePhase,
@@ -435,7 +434,7 @@ internal fun GameQuestionHost(
                         if (!deps.gameViewModel.consumeTapCooldown()) return
                         deps.gameViewModel.inputLocked = true
                         deps.scope.launch {
-                            withTimeoutOrNull(4500L) { deps.audioRuntime.feedbackVoiceJob?.join() }
+                            GameAudioActions.awaitFeedbackVoice(deps.audioRuntime, 4500L)
                             if (ui.audioEnabled) {
                                 val job =
                                     GameAudioActions.launchFeedbackVoice(
@@ -457,7 +456,7 @@ internal fun GameQuestionHost(
                                             deps.voice.playBlocking(picked)
                                         }
                                     }
-                                withTimeoutOrNull(3000L) { job?.join() }
+                                GameAudioActions.await(job, 3000L)
                             }
                             when (deps.session.completeCurrentRound()) {
                                 AnswerResult.Correct -> {

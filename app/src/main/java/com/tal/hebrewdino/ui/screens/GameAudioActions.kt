@@ -5,6 +5,7 @@ import com.tal.hebrewdino.ui.audio.VoicePlayer
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 
 internal object GameAudioActions {
     fun cancelFeedbackVoice(
@@ -70,6 +71,27 @@ internal object GameAudioActions {
         val job = scope.launch { play() }
         setFeedbackVoiceJob(audioRuntime, job)
         return job
+    }
+
+    suspend fun await(
+        job: Job?,
+        timeoutMs: Long,
+    ) {
+        withTimeoutOrNull(timeoutMs) { job?.join() }
+    }
+
+    suspend fun awaitFeedbackVoice(
+        audioRuntime: GameAudioRuntimeState,
+        timeoutMs: Long,
+    ) {
+        await(audioRuntime.feedbackVoiceJob, timeoutMs)
+    }
+
+    suspend fun awaitPromptVoice(
+        audioRuntime: GameAudioRuntimeState,
+        timeoutMs: Long,
+    ) {
+        await(audioRuntime.promptVoiceJob, timeoutMs)
     }
 }
 
