@@ -58,5 +58,23 @@ internal object GameAudioActions {
         setFeedbackVoiceJob(audioRuntime, job)
         return job
     }
+
+    fun launchFeedbackVoiceAfterCancel(
+        audioEnabled: Boolean,
+        scope: CoroutineScope,
+        audioRuntime: GameAudioRuntimeState,
+        cancelFeedbackVoice: () -> Unit,
+        play: suspend () -> Unit,
+    ): Job? {
+        cancelFeedbackVoice()
+        return launchFeedbackVoice(
+            audioEnabled = audioEnabled,
+            scope = scope,
+            audioRuntime = audioRuntime,
+            cancelFeedbackVoice = cancelFeedbackVoice,
+            cancelBeforeStart = false,
+            play = play,
+        )
+    }
 }
 

@@ -32,15 +32,13 @@ internal fun Chapter3Station5ReplayOverlay(
         onReplayLetter = {
             if (!audioEnabled || !replayEnabled) return@Chapter3Station5ReplayColumn
             val q = session.currentQuestion as? Question.PopBalloonsQuestion ?: return@Chapter3Station5ReplayColumn
-            cancelFeedbackVoice()
             val letterClip = AudioClips.letterNameClip(q.correctAnswer) ?: return@Chapter3Station5ReplayColumn
             if (voice.hasAsset(letterClip)) {
-                GameAudioActions.launchFeedbackVoice(
-                    audioEnabled = true,
+                GameAudioActions.launchFeedbackVoiceAfterCancel(
+                    audioEnabled = audioEnabled,
                     scope = scope,
                     audioRuntime = audioRuntime,
                     cancelFeedbackVoice = cancelFeedbackVoice,
-                    cancelBeforeStart = false,
                 ) {
                     voice.playBlocking(letterClip)
                 }
@@ -49,13 +47,11 @@ internal fun Chapter3Station5ReplayOverlay(
         onReplayFull = {
             if (!audioEnabled || !replayEnabled) return@Chapter3Station5ReplayColumn
             val q = session.currentQuestion as? Question.PopBalloonsQuestion ?: return@Chapter3Station5ReplayColumn
-            cancelFeedbackVoice()
-            GameAudioActions.launchFeedbackVoice(
-                audioEnabled = true,
+            GameAudioActions.launchFeedbackVoiceAfterCancel(
+                audioEnabled = audioEnabled,
                 scope = scope,
                 audioRuntime = audioRuntime,
                 cancelFeedbackVoice = cancelFeedbackVoice,
-                cancelBeforeStart = false,
             ) {
                 val instruction = AudioClips.VoChooseLetter
                 val letterClip = AudioClips.letterNameClip(q.correctAnswer)
