@@ -12,7 +12,6 @@ import com.tal.hebrewdino.ui.domain.StationUiSpec
 import com.tal.hebrewdino.ui.domain.StationQuizPlan
 import com.tal.hebrewdino.ui.domain.TrainingV1Config
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -30,17 +29,24 @@ internal object SideHelpActions {
         voice: VoicePlayer,
         sfx: SoundPoolPlayer,
         cancelFeedbackVoice: () -> Unit,
+        audioRuntime: GameAudioRuntimeState,
         scope: CoroutineScope,
-    ): Job? {
-        if (!isPlayPhase) return null
+    ) {
+        if (!isPlayPhase) return
         if (episode4HelpEnabled) {
-            if (!audioEnabled) return null
-            val q = session.currentQuestion ?: return null
+            if (!audioEnabled) return
+            val q = session.currentQuestion ?: return
             cancelFeedbackVoice()
             sfx.stopAllStreams()
-            return scope.launch {
+            GameAudioActions.launchFeedbackVoice(
+                audioEnabled = true,
+                scope = scope,
+                audioRuntime = audioRuntime,
+                cancelFeedbackVoice = cancelFeedbackVoice,
+                cancelBeforeStart = false,
+            ) replay@{
                 if (plan.highlightedLetterInWordPickLetter && q is Question.PopBalloonsQuestion) {
-                    val round = session.highlightedLetterInWordRound() ?: return@launch
+                    val round = session.highlightedLetterInWordRound() ?: return@replay
                     val wordPath = AudioClips.wordClipByCatalogId(round.catalogId)
                     val letterClip = AudioClips.letterNameClip(round.correctLetter)
                     val parts =
@@ -53,7 +59,7 @@ internal object SideHelpActions {
                     } else {
                         if (letterClip != null) speakLetterPrompt(voice, round.correctLetter)
                     }
-                    return@launch
+                    return@replay
                 }
                 if (plan.popAllLettersInWord && q is Question.PopBalloonsQuestion) {
                     val catalogId = session.chapter3PopAllLettersCurrentWord()?.second
@@ -61,21 +67,21 @@ internal object SideHelpActions {
                         val wordPath = AudioClips.wordClipByCatalogId(catalogId)
                         if (voice.hasAsset(wordPath)) voice.playBlocking(wordPath)
                     }
-                    return@launch
+                    return@replay
                 }
                 when (stationUiSpec.replayMode) {
                     StationReplayMode.TargetLetterOnly -> {
-                        val letter = Episode4Help.targetLetterForHelpHint(q) ?: return@launch
+                        val letter = Episode4Help.targetLetterForHelpHint(q) ?: return@replay
                         val letterClip = AudioClips.letterNameClip(letter)
                         if (letterClip != null) {
                             val id = sfx.playReturningStreamId(letterClip, volume = 1f)
-                            if (id != null) return@launch
+                            if (id != null) return@replay
                             if (voice.hasAsset(letterClip)) {
                                 voice.playBlocking(letterClip)
-                                return@launch
+                                return@replay
                             }
                         }
-                        if (chapterId == TrainingV1Config.CHAPTER_ID) return@launch
+                        if (chapterId == TrainingV1Config.CHAPTER_ID) return@replay
                         speakLetterPrompt(voice, letter)
                     }
                     StationReplayMode.TargetWordOnly -> {
@@ -87,22 +93,28 @@ internal object SideHelpActions {
                     else -> replayEpisode4Stations15RoundAudio(sfx = sfx, voice = voice, stationId = stationId, q = q)
                 }
             }
+            return
         }
         if (popBalloonsHelpEnabled) {
-            if (!audioEnabled) return null
-            val q = session.currentQuestion as? Question.PopBalloonsQuestion ?: return null
+            if (!audioEnabled) return
+            val q = session.currentQuestion as? Question.PopBalloonsQuestion ?: return
             cancelFeedbackVoice()
             val letter = q.correctAnswer
             val letterClip = AudioClips.letterNameClip(letter)
-            return scope.launch {
+            GameAudioActions.launchFeedbackVoice(
+                audioEnabled = true,
+                scope = scope,
+                audioRuntime = audioRuntime,
+                cancelFeedbackVoice = cancelFeedbackVoice,
+                cancelBeforeStart = false,
+            ) replay@{
                 if (letterClip != null && voice.hasAsset(letterClip)) {
                     voice.playBlocking(letterClip)
-                    return@launch
+                    return@replay
                 }
                 speakLetterPrompt(voice, letter)
             }
         }
-        return null
     }
 
     fun performHint(

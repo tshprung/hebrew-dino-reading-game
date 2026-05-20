@@ -417,28 +417,22 @@ fun GameScreen(
 
     val performSideHelpReplay: () -> Unit = {
         if (!gameViewModel.inputLocked) {
-            val job =
-                SideHelpActions.startReplay(
-                    audioEnabled = audioEnabled,
-                    isPlayPhase = gameViewModel.phase == GamePhase.Play && !gameViewModel.inputLocked,
-                    episode4HelpEnabled = helpColumnEnabled,
-                    popBalloonsHelpEnabled = popBalloonsHelpControlsEnabled,
-                    chapterId = chapterId,
-                    stationId = stationId,
-                    plan = plan,
-                    stationUiSpec = stationUiSpec,
-                    session = session,
-                    voice = voice,
-                    sfx = sfx,
-                    cancelFeedbackVoice = { cancelFeedbackVoice() },
-                    scope = scope,
-                )
-            audioRuntime.feedbackVoiceJob = job
-            job?.invokeOnCompletion {
-                if (audioRuntime.feedbackVoiceJob === job) {
-                    audioRuntime.feedbackVoiceJob = null
-                }
-            }
+            SideHelpActions.startReplay(
+                audioEnabled = audioEnabled,
+                isPlayPhase = gameViewModel.phase == GamePhase.Play && !gameViewModel.inputLocked,
+                episode4HelpEnabled = helpColumnEnabled,
+                popBalloonsHelpEnabled = popBalloonsHelpControlsEnabled,
+                chapterId = chapterId,
+                stationId = stationId,
+                plan = plan,
+                stationUiSpec = stationUiSpec,
+                session = session,
+                voice = voice,
+                sfx = sfx,
+                cancelFeedbackVoice = { cancelFeedbackVoice() },
+                audioRuntime = audioRuntime,
+                scope = scope,
+            )
         }
     }
 

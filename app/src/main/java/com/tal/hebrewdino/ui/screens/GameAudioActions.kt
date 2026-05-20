@@ -20,6 +20,18 @@ internal object GameAudioActions {
         sfx.stopAllStreams()
     }
 
+    fun setFeedbackVoiceJob(
+        audioRuntime: GameAudioRuntimeState,
+        job: Job?,
+    ) {
+        audioRuntime.feedbackVoiceJob = job
+        job?.invokeOnCompletion {
+            if (audioRuntime.feedbackVoiceJob === job) {
+                audioRuntime.feedbackVoiceJob = null
+            }
+        }
+    }
+
     fun launchFeedbackVoice(
         audioEnabled: Boolean,
         scope: CoroutineScope,
@@ -31,12 +43,7 @@ internal object GameAudioActions {
         if (!audioEnabled) return null
         if (cancelBeforeStart) cancelFeedbackVoice()
         val job = scope.launch { play() }
-        audioRuntime.feedbackVoiceJob = job
-        job.invokeOnCompletion {
-            if (audioRuntime.feedbackVoiceJob === job) {
-                audioRuntime.feedbackVoiceJob = null
-            }
-        }
+        setFeedbackVoiceJob(audioRuntime, job)
         return job
     }
 }
