@@ -7,7 +7,6 @@ import com.tal.hebrewdino.ui.domain.LevelSession
 import com.tal.hebrewdino.ui.domain.Question
 import com.tal.hebrewdino.ui.domain.StationTemplateId
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -41,7 +40,7 @@ internal object GameRoundStartActions {
         station4IntroToWordGapBoost: Float,
         station4IntroToWordExtraPauseMs: Long,
         cancelFeedbackVoice: () -> Unit,
-        setPromptVoiceJob: (Job?) -> Unit,
+        audioRuntime: GameAudioRuntimeState,
     ) {
         gameViewModel.phase = GamePhase.Intro
         gameViewModel.inputLocked = true
@@ -60,7 +59,7 @@ internal object GameRoundStartActions {
         cancelFeedbackVoice()
         val q: Question = session.currentQuestion ?: return
 
-        setPromptVoiceJob(
+        val promptJob =
             scope.launch {
                 if (audioEnabled) {
                     gameViewModel.dinoTalking = true
@@ -97,8 +96,11 @@ internal object GameRoundStartActions {
                         gameViewModel.dinoTalking = false
                     }
                 }
-            },
-        )
+            }
+        audioRuntime.promptVoiceJob = promptJob
+        promptJob.invokeOnCompletion {
+            if (audioRuntime.promptVoiceJob === promptJob) audioRuntime.promptVoiceJob = null
+        }
 
         scope.launch {
             if (audioEnabled) {

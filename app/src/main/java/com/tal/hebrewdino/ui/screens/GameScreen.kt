@@ -68,18 +68,9 @@ private val SixStationArcChapterRange = 1..5
 
 internal fun isSagaEpisode(chapterId: Int): Boolean = chapterId in SixStationArcChapterRange
 
-private data class GameUiCallbacks(
-    val cancelFeedbackVoice: () -> Unit,
-    val getFeedbackVoiceJob: () -> Job?,
-    val setFeedbackVoiceJob: (Job?) -> Unit,
-)
-
 internal class GameAudioRuntimeState {
     var feedbackVoiceJob: Job? = null
     var promptVoiceJob: Job? = null
-    var station1VoiceStreamId: Int = 0
-    var station2VoiceStreamId: Int = 0
-    var station3VoiceStreamId: Int = 0
 }
 
 private object GameAudioPreloader {
@@ -409,22 +400,11 @@ fun GameScreen(
             !gameViewModel.episode4HelpLocksChoices &&
             !(popBalloonsHelpControlsEnabled && gameViewModel.balloonHelpLocksChoices)
 
-    fun stopStagingSfx(stopAllStreams: Boolean) {
-        GameAudioActions.stopStagingSfx(
-            sagaUsesPickLetterAudioStaging = sagaUsesPickLetterAudioStaging,
-            usesPopBalloonsSoundPoolPrompt = usesPopBalloonsSoundPoolPrompt,
-            sagaUsesFindGridAudioStaging = sagaUsesFindGridAudioStaging,
-            sfx = sfx,
-            stopAllStreams = stopAllStreams,
-            audioRuntime = audioRuntime,
-        )
-    }
-
     fun cancelFeedbackVoice() {
         GameAudioActions.cancelFeedbackVoice(
             voice = voice,
+            sfx = sfx,
             audioRuntime = audioRuntime,
-            stopStagingSfx = { stopAll -> stopStagingSfx(stopAllStreams = stopAll) },
         )
     }
 
@@ -436,28 +416,29 @@ fun GameScreen(
     )
 
     val performSideHelpReplay: () -> Unit = {
-        audioRuntime.feedbackVoiceJob =
-            SideHelpActions.startReplay(
-                audioEnabled = audioEnabled,
-                isPlayPhase = gameViewModel.phase == GamePhase.Play,
-                episode4HelpEnabled = helpColumnEnabled,
-                popBalloonsHelpEnabled = popBalloonsHelpControlsEnabled,
-                chapterId = chapterId,
-                stationId = stationId,
-                plan = plan,
-                stationUiSpec = stationUiSpec,
-                session = session,
-                voice = voice,
-                sfx = sfx,
-                cancelFeedbackVoice = { cancelFeedbackVoice() },
-                stopStagingSfx = { stopAll -> stopStagingSfx(stopAllStreams = stopAll) },
-                scope = scope,
-            )
+        if (!gameViewModel.inputLocked) {
+            audioRuntime.feedbackVoiceJob =
+                SideHelpActions.startReplay(
+                    audioEnabled = audioEnabled,
+                    isPlayPhase = gameViewModel.phase == GamePhase.Play && !gameViewModel.inputLocked,
+                    episode4HelpEnabled = helpColumnEnabled,
+                    popBalloonsHelpEnabled = popBalloonsHelpControlsEnabled,
+                    chapterId = chapterId,
+                    stationId = stationId,
+                    plan = plan,
+                    stationUiSpec = stationUiSpec,
+                    session = session,
+                    voice = voice,
+                    sfx = sfx,
+                    cancelFeedbackVoice = { cancelFeedbackVoice() },
+                    scope = scope,
+                )
+        }
     }
 
     val performSideHelpHint: () -> Unit = {
         SideHelpActions.performHint(
-            isPlayPhase = gameViewModel.phase == GamePhase.Play,
+            isPlayPhase = gameViewModel.phase == GamePhase.Play && !gameViewModel.inputLocked,
             episode4HelpEnabled = helpColumnEnabled,
             popBalloonsHelpEnabled = popBalloonsHelpControlsEnabled,
             stationId = stationId,
@@ -528,7 +509,7 @@ fun GameScreen(
             station4IntroToWordGapBoost = Station4IntroToWordGapBoost,
             station4IntroToWordExtraPauseMs = Station4IntroToWordExtraPauseMs,
             cancelFeedbackVoice = { cancelFeedbackVoice() },
-            setPromptVoiceJob = { job -> audioRuntime.promptVoiceJob = job },
+            audioRuntime = audioRuntime,
         )
     }
 
@@ -567,8 +548,7 @@ fun GameScreen(
             gameFeedback = gameFeedback,
             voice = voice,
             cancelFeedbackVoice = { cancelFeedbackVoice() },
-            getFeedbackVoiceJob = { audioRuntime.feedbackVoiceJob },
-            setFeedbackVoiceJob = { job -> audioRuntime.feedbackVoiceJob = job },
+            audioRuntime = audioRuntime,
             dinoForward = dinoForward,
             forwardDir = forwardDir,
             dinoScale = dinoScale,
@@ -599,7 +579,7 @@ fun GameScreen(
             voice = voice,
             sfx = sfx,
             cancelFeedbackVoice = { cancelFeedbackVoice() },
-            setFeedbackVoiceJob = { job -> audioRuntime.feedbackVoiceJob = job },
+            audioRuntime = audioRuntime,
             optionsShake = optionsShake,
             dinoSlip = dinoSlip,
             dinoTilt = dinoTilt,
@@ -711,12 +691,7 @@ fun GameScreen(
                             .weight(1f, fill = true),
                     contentAlignment = Alignment.Center,
                 ) {
-                    val ui =
-                        GameUiCallbacks(
-                            cancelFeedbackVoice = { cancelFeedbackVoice() },
-                            getFeedbackVoiceJob = { audioRuntime.feedbackVoiceJob },
-                            setFeedbackVoiceJob = { job -> audioRuntime.feedbackVoiceJob = job },
-                        )
+                    val cancelFeedbackVoiceCb: () -> Unit = { cancelFeedbackVoice() }
 
                     fun handleFindGridSagaGridLetterTapped(
                         tapped: String,
@@ -728,9 +703,8 @@ fun GameScreen(
                             question = question,
                             scope = scope,
                             sfx = sfx,
-                            cancelFeedbackVoice = ui.cancelFeedbackVoice,
-                            setFeedbackVoiceJob = ui.setFeedbackVoiceJob,
-                            setStation3VoiceStreamId = { id -> audioRuntime.station3VoiceStreamId = id },
+                            cancelFeedbackVoice = cancelFeedbackVoiceCb,
+                            audioRuntime = audioRuntime,
                         )
                     }
 
@@ -741,7 +715,7 @@ fun GameScreen(
                         FindGridActions.handleCellTapped(
                             gameViewModel = gameViewModel,
                             sagaUsesFindGridAudioStaging = sagaUsesFindGridAudioStaging,
-                            cancelFeedbackVoice = ui.cancelFeedbackVoice,
+                            cancelFeedbackVoice = cancelFeedbackVoiceCb,
                             session = session,
                             onWrongFeedback = { wrongPickedLetter, wrongPickedLetterAlreadySpoken ->
                                 onWrongFeedback(
@@ -767,7 +741,7 @@ fun GameScreen(
                         PickLetterActions.handlePick(
                             picked = picked,
                             gameViewModel = gameViewModel,
-                            cancelFeedbackVoice = ui.cancelFeedbackVoice,
+                            cancelFeedbackVoice = cancelFeedbackVoiceCb,
                             audioEnabled = audioEnabled,
                             sagaUsesPickLetterAudioStaging = sagaUsesPickLetterAudioStaging,
                             isChapter3HighlightedLetterInWordStation = isChapter3HighlightedLetterInWordStation,
@@ -776,7 +750,7 @@ fun GameScreen(
                             scope = scope,
                             voice = voice,
                             sfx = sfx,
-                            setFeedbackVoiceJob = ui.setFeedbackVoiceJob,
+                            audioRuntime = audioRuntime,
                             onWrongFeedback = { wrongPickedLetter ->
                                 onWrongFeedback(wrongPickedLetter = wrongPickedLetter)
                             },
@@ -802,10 +776,8 @@ fun GameScreen(
                             scope = scope,
                             voice = voice,
                             sfx = sfx,
-                            cancelFeedbackVoice = ui.cancelFeedbackVoice,
-                            setFeedbackVoiceJob = ui.setFeedbackVoiceJob,
-                            getStation2VoiceStreamId = { audioRuntime.station2VoiceStreamId },
-                            setStation2VoiceStreamId = { id -> audioRuntime.station2VoiceStreamId = id },
+                            cancelFeedbackVoice = cancelFeedbackVoiceCb,
+                            audioRuntime = audioRuntime,
                             nextStation2CorrectPopVariant = {
                                 val v = gameViewModel.station2CorrectPopCount
                                 gameViewModel.station2CorrectPopCount += 1
@@ -820,7 +792,7 @@ fun GameScreen(
                         PopBalloonsActions.handleWrongPick(
                             gameViewModel = gameViewModel,
                             sagaUsesPopBalloonsAudioStaging = sagaUsesPopBalloonsAudioStaging,
-                            cancelFeedbackVoice = ui.cancelFeedbackVoice,
+                            cancelFeedbackVoice = cancelFeedbackVoiceCb,
                             onWrongFeedback = { onWrongFeedback() },
                             session = session,
                             chapterId = chapterId,
@@ -843,10 +815,10 @@ fun GameScreen(
                             sagaUsesPopBalloonsAudioStaging = sagaUsesPopBalloonsAudioStaging,
                             chapterId = chapterId,
                             audioEnabled = audioEnabled,
-                            cancelFeedbackVoice = ui.cancelFeedbackVoice,
+                            cancelFeedbackVoice = cancelFeedbackVoiceCb,
                             session = session,
                             scope = scope,
-                            getFeedbackVoiceJob = ui.getFeedbackVoiceJob,
+                            audioRuntime = audioRuntime,
                             advanceAfterRound = { isLast -> advanceAfterRound(isLast) },
                         )
                     }
@@ -855,7 +827,7 @@ fun GameScreen(
                         PictureStartsWithActions.handlePick(
                             picked = picked,
                             gameViewModel = gameViewModel,
-                            cancelFeedbackVoice = ui.cancelFeedbackVoice,
+                            cancelFeedbackVoice = cancelFeedbackVoiceCb,
                             audioEnabled = audioEnabled,
                             chapterId = chapterId,
                             stationId = stationId,
@@ -863,8 +835,7 @@ fun GameScreen(
                             session = session,
                             scope = scope,
                             voice = voice,
-                            getFeedbackVoiceJob = ui.getFeedbackVoiceJob,
-                            setFeedbackVoiceJob = ui.setFeedbackVoiceJob,
+                            audioRuntime = audioRuntime,
                             advanceAfterRound = { isLast -> advanceAfterRound(isLast) },
                             onWrongFeedback = { wrongPickedLetter, wrongPickedLetterAlreadySpoken ->
                                 onWrongFeedback(
@@ -878,12 +849,12 @@ fun GameScreen(
                     fun handleImageToWordReplayCorrectChoice() {
                         ImageMatchActions.handleImageToWordReplayCorrectChoice(
                             audioEnabled = audioEnabled,
-                            cancelFeedbackVoice = ui.cancelFeedbackVoice,
+                            cancelFeedbackVoice = cancelFeedbackVoiceCb,
                             chapterId = chapterId,
                             session = session,
                             scope = scope,
                             voice = voice,
-                            setFeedbackVoiceJob = ui.setFeedbackVoiceJob,
+                            audioRuntime = audioRuntime,
                         )
                     }
 
@@ -891,11 +862,11 @@ fun GameScreen(
                         ImageMatchActions.handleImageToWordWordPressed(
                             choiceId = choiceId,
                             audioEnabled = audioEnabled,
-                            cancelFeedbackVoice = ui.cancelFeedbackVoice,
+                            cancelFeedbackVoice = cancelFeedbackVoiceCb,
                             chapterId = chapterId,
                             scope = scope,
                             voice = voice,
-                            setFeedbackVoiceJob = ui.setFeedbackVoiceJob,
+                            audioRuntime = audioRuntime,
                         )
                     }
 
@@ -903,12 +874,13 @@ fun GameScreen(
                         return ImageMatchActions.handleImageToWordAttempt(
                             choiceId = choiceId,
                             gameViewModel = gameViewModel,
-                            cancelFeedbackVoice = ui.cancelFeedbackVoice,
+                            cancelFeedbackVoice = cancelFeedbackVoiceCb,
                             audioEnabled = audioEnabled,
                             chapterId = chapterId,
                             session = session,
                             scope = scope,
                             voice = voice,
+                            audioRuntime = audioRuntime,
                             advanceAfterRound = { isLast -> advanceAfterRound(isLast) },
                             onWrongFeedback = { wrongWordCatalogId ->
                                 onWrongFeedback(wrongWordCatalogId = wrongWordCatalogId)
@@ -920,7 +892,7 @@ fun GameScreen(
                         return ImageMatchActions.handleImageMatchAttempt(
                             choiceId = choiceId,
                             gameViewModel = gameViewModel,
-                            cancelFeedbackVoice = ui.cancelFeedbackVoice,
+                            cancelFeedbackVoice = cancelFeedbackVoiceCb,
                             audioEnabled = audioEnabled,
                             chapterId = chapterId,
                             stationId = stationId,
@@ -928,6 +900,7 @@ fun GameScreen(
                             session = session,
                             scope = scope,
                             voice = voice,
+                            audioRuntime = audioRuntime,
                             advanceAfterRound = { isLast -> advanceAfterRound(isLast) },
                             onWrongFeedback = { wrongWordCatalogId, generic ->
                                 if (generic) {
@@ -997,9 +970,8 @@ fun GameScreen(
                                 scope = scope,
                                 voice = voice,
                                 sfx = sfx,
-                                cancelFeedbackVoice = ui.cancelFeedbackVoice,
-                                getFeedbackVoiceJob = ui.getFeedbackVoiceJob,
-                                setFeedbackVoiceJob = ui.setFeedbackVoiceJob,
+                                cancelFeedbackVoice = cancelFeedbackVoiceCb,
+                                audioRuntime = audioRuntime,
                             ),
                         handlers =
                             GameQuestionHostHandlers(
@@ -1052,6 +1024,7 @@ fun GameScreen(
             episode4HelpSt15 = helpColumnEnabled,
             popBalloonsHelpControlsEnabled = popBalloonsHelpControlsEnabled,
             phase = gameViewModel.phase,
+            inputLocked = gameViewModel.inputLocked,
             audioEnabled = audioEnabled,
             stationUiSpec = stationUiSpec,
             episode4HelpLocksChoices = gameViewModel.episode4HelpLocksChoices,
@@ -1062,7 +1035,7 @@ fun GameScreen(
             scope = scope,
             voice = voice,
             cancelFeedbackVoice = { cancelFeedbackVoice() },
-            setFeedbackVoiceJob = { job -> audioRuntime.feedbackVoiceJob = job },
+            audioRuntime = audioRuntime,
         )
     }
 }

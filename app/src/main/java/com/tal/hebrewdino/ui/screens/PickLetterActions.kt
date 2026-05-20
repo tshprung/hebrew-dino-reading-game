@@ -7,7 +7,6 @@ import com.tal.hebrewdino.ui.domain.AnswerResult
 import com.tal.hebrewdino.ui.domain.LevelSession
 import com.tal.hebrewdino.ui.game.ChildGameAudioHooks
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 
@@ -24,7 +23,7 @@ internal object PickLetterActions {
         scope: CoroutineScope,
         voice: VoicePlayer,
         sfx: SoundPoolPlayer,
-        setFeedbackVoiceJob: (Job?) -> Unit,
+        audioRuntime: GameAudioRuntimeState,
         onWrongFeedback: (wrongPickedLetter: String) -> Unit,
         advanceAfterRound: suspend (isLast: Boolean, ch3SpellMidWord: Boolean) -> Unit,
     ) {
@@ -37,6 +36,7 @@ internal object PickLetterActions {
                 }
                 gameViewModel.correctTapPulseLetter = picked
                 gameViewModel.correctTapPulseEpoch += 1
+                gameViewModel.inputLocked = true
                 if (audioEnabled && isChapter3HighlightedLetterInWordStation) {
                     val wordDone = session.highlightedLetterInWordCompletesWordAfterCorrectRound()
                     scope.launch {
@@ -58,11 +58,16 @@ internal object PickLetterActions {
                                 )
                             praise.shuffle()
                             val job =
-                                scope.launch {
+                                GameAudioActions.launchFeedbackVoice(
+                                    audioEnabled = true,
+                                    scope = scope,
+                                    audioRuntime = audioRuntime,
+                                    cancelFeedbackVoice = cancelFeedbackVoice,
+                                    cancelBeforeStart = false,
+                                ) {
                                     voice.playFirstAvailableBlocking(*praise.toTypedArray())
                                 }
-                            setFeedbackVoiceJob(job)
-                            withTimeoutOrNull(2800L) { job.join() }
+                            withTimeoutOrNull(2800L) { job?.join() }
                         }
                         val isLast = session.currentIndex >= session.totalQuestions - 1
                         advanceAfterRound(
@@ -85,12 +90,17 @@ internal object PickLetterActions {
                                 .toMutableList()
                         praise.shuffle()
                         val job =
-                            scope.launch {
+                            GameAudioActions.launchFeedbackVoice(
+                                audioEnabled = true,
+                                scope = scope,
+                                audioRuntime = audioRuntime,
+                                cancelFeedbackVoice = cancelFeedbackVoice,
+                                cancelBeforeStart = false,
+                            ) {
                                 voice.playBlocking(letterName)
                                 voice.playFirstAvailableBlocking(*praise.toTypedArray())
                             }
-                        setFeedbackVoiceJob(job)
-                        job.join()
+                        job?.join()
                         val isLast = session.currentIndex >= session.totalQuestions - 1
                         advanceAfterRound(isLast, false)
                     }

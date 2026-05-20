@@ -33,7 +33,6 @@ import com.tal.hebrewdino.ui.domain.StationTemplateId
 import com.tal.hebrewdino.ui.domain.TrainingV1Config
 import com.tal.hebrewdino.ui.game.ChildGameAudioHooks
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 
@@ -89,8 +88,7 @@ internal data class GameQuestionHostDeps(
     val voice: VoicePlayer,
     val sfx: SoundPoolPlayer,
     val cancelFeedbackVoice: () -> Unit,
-    val getFeedbackVoiceJob: () -> Job?,
-    val setFeedbackVoiceJob: (Job?) -> Unit,
+    val audioRuntime: GameAudioRuntimeState,
 )
 
 internal data class GameQuestionHostHandlers(
@@ -206,11 +204,14 @@ internal fun GameQuestionHost(
                     temporaryHintLetter = ui.episode4HelpActiveHintLetter,
                     onRepeatLetterClick = repeatLetter@{
                         if (!ui.audioEnabled) return@repeatLetter
-                        deps.cancelFeedbackVoice()
                         val letter = current.correctAnswer
                         val clip = AudioClips.letterNameClip(letter) ?: return@repeatLetter
-                        val job = deps.scope.launch { deps.voice.playBlocking(clip) }
-                        deps.setFeedbackVoiceJob(job)
+                        GameAudioActions.launchFeedbackVoice(
+                            audioEnabled = ui.audioEnabled,
+                            scope = deps.scope,
+                            audioRuntime = deps.audioRuntime,
+                            cancelFeedbackVoice = deps.cancelFeedbackVoice,
+                        ) { deps.voice.playBlocking(clip) }
                     },
                     onPick = { picked -> handlers.handlePickLetterPick(picked) },
                 )
@@ -310,8 +311,15 @@ internal fun GameQuestionHost(
                             deps.cancelFeedbackVoice()
                             val wordPath = AudioClips.wordClipByCatalogId(current.catalogEntryId)
                             if (deps.voice.hasAsset(wordPath)) {
-                                val job = deps.scope.launch { deps.voice.playBlocking(wordPath) }
-                                deps.setFeedbackVoiceJob(job)
+                                GameAudioActions.launchFeedbackVoice(
+                                    audioEnabled = ui.audioEnabled,
+                                    scope = deps.scope,
+                                    audioRuntime = deps.audioRuntime,
+                                    cancelFeedbackVoice = deps.cancelFeedbackVoice,
+                                    cancelBeforeStart = false,
+                                ) {
+                                    deps.voice.playBlocking(wordPath)
+                                }
                             }
                         }
                     } else {
@@ -386,12 +394,6 @@ internal fun GameQuestionHost(
                 StationTemplateId.MatchLetterToWord
                     -> {
                     val matchChoices = current.choices
-                    fun speakNow(play: suspend () -> Unit) {
-                        if (!ui.audioEnabled) return
-                        deps.cancelFeedbackVoice()
-                        val job = deps.scope.launch { play() }
-                        deps.setFeedbackVoiceJob(job)
-                    }
 
                     var lastPraiseClip by remember(ui.chapterId, ui.stationId) { mutableStateOf<String?>(null) }
                     val matchPraiseClips =
@@ -405,7 +407,12 @@ internal fun GameQuestionHost(
                         )
 
                     fun handleMatchWordPressed(choiceId: String) {
-                        speakNow {
+                        GameAudioActions.launchFeedbackVoice(
+                            audioEnabled = ui.audioEnabled,
+                            scope = deps.scope,
+                            audioRuntime = deps.audioRuntime,
+                            cancelFeedbackVoice = deps.cancelFeedbackVoice,
+                        ) {
                             val clip =
                                 AudioClips.imageToWordClipByCatalogId(
                                     catalogEntryId = choiceId,
@@ -418,17 +425,27 @@ internal fun GameQuestionHost(
 
                     fun handleMatchLetterPressed(letter: String) {
                         val clip = AudioClips.letterNameClip(letter) ?: return
-                        speakNow { deps.voice.playBlocking(clip) }
+                        GameAudioActions.launchFeedbackVoice(
+                            audioEnabled = ui.audioEnabled,
+                            scope = deps.scope,
+                            audioRuntime = deps.audioRuntime,
+                            cancelFeedbackVoice = deps.cancelFeedbackVoice,
+                        ) { deps.voice.playBlocking(clip) }
                     }
 
                     fun handleMatchSolved() {
                         if (!deps.gameViewModel.consumeTapCooldown()) return
+                        deps.gameViewModel.inputLocked = true
                         deps.scope.launch {
-                            withTimeoutOrNull(4500L) { deps.getFeedbackVoiceJob()?.join() }
+                            withTimeoutOrNull(4500L) { deps.audioRuntime.feedbackVoiceJob?.join() }
                             if (ui.audioEnabled) {
-                                deps.cancelFeedbackVoice()
                                 val job =
-                                    deps.scope.launch {
+                                    GameAudioActions.launchFeedbackVoice(
+                                        audioEnabled = ui.audioEnabled,
+                                        scope = deps.scope,
+                                        audioRuntime = deps.audioRuntime,
+                                        cancelFeedbackVoice = deps.cancelFeedbackVoice,
+                                    ) {
                                         val candidates = matchPraiseClips.filter { it != lastPraiseClip }
                                         val pickFrom =
                                             candidates.ifEmpty {
@@ -442,8 +459,7 @@ internal fun GameQuestionHost(
                                             deps.voice.playBlocking(picked)
                                         }
                                     }
-                                deps.setFeedbackVoiceJob(job)
-                                withTimeoutOrNull(3000L) { job.join() }
+                                withTimeoutOrNull(3000L) { job?.join() }
                             }
                             when (deps.session.completeCurrentRound()) {
                                 AnswerResult.Correct -> {
@@ -540,6 +556,7 @@ internal fun GameQuestionHost(
                     handlers.onWrongFeedback()
                 },
                 onSolved = { words ->
+                    deps.gameViewModel.inputLocked = true
                     deps.scope.launch {
                         when (deps.session.submitFinaleWords(words)) {
                             AnswerResult.Correct -> {

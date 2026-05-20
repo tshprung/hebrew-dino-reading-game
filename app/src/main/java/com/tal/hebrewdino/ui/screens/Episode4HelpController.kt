@@ -30,7 +30,6 @@ internal object SideHelpActions {
         voice: VoicePlayer,
         sfx: SoundPoolPlayer,
         cancelFeedbackVoice: () -> Unit,
-        stopStagingSfx: (stopAllStreams: Boolean) -> Unit,
         scope: CoroutineScope,
     ): Job? {
         if (!isPlayPhase) return null
@@ -39,7 +38,6 @@ internal object SideHelpActions {
             val q = session.currentQuestion ?: return null
             cancelFeedbackVoice()
             sfx.stopAllStreams()
-            stopStagingSfx(false)
             return scope.launch {
                 if (plan.highlightedLetterInWordPickLetter && q is Question.PopBalloonsQuestion) {
                     val round = session.highlightedLetterInWordRound() ?: return@launch

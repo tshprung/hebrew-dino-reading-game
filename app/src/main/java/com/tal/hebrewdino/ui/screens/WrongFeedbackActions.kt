@@ -9,7 +9,6 @@ import com.tal.hebrewdino.ui.audio.VoicePlayer
 import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
 import com.tal.hebrewdino.ui.feedback.GameFeedback
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.random.Random
@@ -29,7 +28,7 @@ internal object WrongFeedbackActions {
         voice: VoicePlayer,
         sfx: SoundPoolPlayer,
         cancelFeedbackVoice: () -> Unit,
-        setFeedbackVoiceJob: (Job?) -> Unit,
+        audioRuntime: GameAudioRuntimeState,
         optionsShake: Animatable<Float, AnimationVector1D>,
         dinoSlip: Animatable<Float, AnimationVector1D>,
         dinoTilt: Animatable<Float, AnimationVector1D>,
@@ -50,8 +49,13 @@ internal object WrongFeedbackActions {
                     wrongPickedLetter != null
             if (immediateCh1Ch2Station4Voice) {
                 cancelFeedbackVoice()
-                setFeedbackVoiceJob(
-                    scope.launch {
+                GameAudioActions.launchFeedbackVoice(
+                    audioEnabled = true,
+                    scope = scope,
+                    audioRuntime = audioRuntime,
+                    cancelFeedbackVoice = cancelFeedbackVoice,
+                    cancelBeforeStart = false,
+                ) {
                         val lc = AudioClips.letterNameClip(wrongPickedLetter)
                         val letterMs = lc?.let { sfx.durationMs(it) } ?: 0L
                         if (lc != null && letterMs > 0L) {
@@ -79,8 +83,7 @@ internal object WrongFeedbackActions {
                             }
                             voice.playFirstAvailableBlocking(AudioClips.VoTryAgain2, AudioClips.VoTryAgain1)
                         }
-                    },
-                )
+                }
             }
             if (sagaEpisode) {
                 dinoSlip.snapTo(0f)
@@ -110,8 +113,13 @@ internal object WrongFeedbackActions {
                 }
                 if (sagaUsesPickLetterAudioStaging && wrongPickedLetter != null && chapterId != 3) {
                     cancelFeedbackVoice()
-                    setFeedbackVoiceJob(
-                        scope.launch {
+                    GameAudioActions.launchFeedbackVoice(
+                        audioEnabled = true,
+                        scope = scope,
+                        audioRuntime = audioRuntime,
+                        cancelFeedbackVoice = cancelFeedbackVoice,
+                        cancelBeforeStart = false,
+                    ) play@{
                             val letterClip = AudioClips.letterNameClip(wrongPickedLetter)
                             val letterMs = letterClip?.let { sfx.durationMs(it) } ?: 0L
                             val variant = Random.nextInt(100)
@@ -121,11 +129,11 @@ internal object WrongFeedbackActions {
                                     AudioClips.VoTryAgain1,
                                     volume = 1f,
                                 )
-                                return@launch
+                                return@play
                             }
                             if (variant < 55) {
                                 if (letterClip != null && voice.hasAsset(letterClip)) voice.playBlocking(letterClip)
-                                return@launch
+                                return@play
                             }
 
                             if (letterClip != null && letterMs > 0L) {
@@ -151,8 +159,7 @@ internal object WrongFeedbackActions {
                                 }
                                 voice.playFirstAvailableBlocking(AudioClips.VoTryAgain2, AudioClips.VoTryAgain1)
                             }
-                        },
-                    )
+                    }
                     gameViewModel.dinoVisual = DinoVisual.Idle
                     gameViewModel.inputLocked = false
                     return@launch
@@ -163,8 +170,13 @@ internal object WrongFeedbackActions {
                     !immediateCh1Ch2Station4Voice
                 ) {
                     cancelFeedbackVoice()
-                    setFeedbackVoiceJob(
-                        scope.launch {
+                    GameAudioActions.launchFeedbackVoice(
+                        audioEnabled = true,
+                        scope = scope,
+                        audioRuntime = audioRuntime,
+                        cancelFeedbackVoice = cancelFeedbackVoice,
+                        cancelBeforeStart = false,
+                    ) {
                             val lc = AudioClips.letterNameClip(wrongPickedLetter)
                             val letterMs = lc?.let { sfx.durationMs(it) } ?: 0L
                             if (lc != null && letterMs > 0L) {
@@ -192,16 +204,20 @@ internal object WrongFeedbackActions {
                                 }
                                 voice.playFirstAvailableBlocking(AudioClips.VoTryAgain2, AudioClips.VoTryAgain1)
                             }
-                        },
-                    )
+                    }
                     gameViewModel.dinoVisual = DinoVisual.Idle
                     gameViewModel.inputLocked = false
                     return@launch
                 }
                 if (!immediateCh1Ch2Station4Voice) {
                     cancelFeedbackVoice()
-                    setFeedbackVoiceJob(
-                        scope.launch {
+                    GameAudioActions.launchFeedbackVoice(
+                        audioEnabled = true,
+                        scope = scope,
+                        audioRuntime = audioRuntime,
+                        cancelFeedbackVoice = cancelFeedbackVoice,
+                        cancelBeforeStart = false,
+                    ) play@{
                             val feedbackDelayMs =
                                 when {
                                     chapterId == 4 && stationId == Chapter1StationOrder.TAP_LETTER -> 0L
@@ -216,7 +232,7 @@ internal object WrongFeedbackActions {
                                 val wordPath = AudioClips.wordClipByCatalogId(wrongWordCatalogId)
                                 if (voice.hasAsset(wordPath)) voice.playBlocking(wordPath)
                                 voice.playFirstAvailableBlocking(AudioClips.VoTryAgain2, AudioClips.VoTryAgain1)
-                                return@launch
+                                return@play
                             }
 
                             if (wrongPickedLetter != null) {
@@ -226,7 +242,7 @@ internal object WrongFeedbackActions {
                                         voice.playBlocking(lc)
                                     }
                                     voice.playFirstAvailableBlocking(AudioClips.VoTryAgain2, AudioClips.VoTryAgain1)
-                                    return@launch
+                                    return@play
                                 }
                                 if (!wrongPickedLetterAlreadySpoken) {
                                     val letterName = AudioClips.letterNameClip(wrongPickedLetter)
@@ -235,12 +251,11 @@ internal object WrongFeedbackActions {
                                     }
                                 }
                                 voice.playFirstAvailableBlocking(AudioClips.VoTryAgain2, AudioClips.VoTryAgain1)
-                                return@launch
+                                return@play
                             }
 
                             voice.playFirstAvailableBlocking(AudioClips.VoTryAgain2, AudioClips.VoTryAgain1)
-                        },
-                    )
+                    }
                 }
             }
             gameViewModel.dinoVisual = DinoVisual.Idle

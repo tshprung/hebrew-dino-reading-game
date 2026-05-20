@@ -43,6 +43,9 @@ fun Chapter3Station6ImageToWordStationContent(
                 when {
                     choice.word == "רגל" -> 0.70f
                     choice.word == "דבש" || choice.id == "w_ד_4" -> 0.50f
+                    choice.word == "וילון" -> 0.80f
+                    choice.word == "מוצץ" -> 0.50f
+                    choice.word == "וופל" || choice.id == "w_ו_2" -> 0.80f
                     else -> 1f
                 }
             base * scale

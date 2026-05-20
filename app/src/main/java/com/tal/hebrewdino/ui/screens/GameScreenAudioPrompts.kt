@@ -33,6 +33,25 @@ private const val Station5WhichWordIntroToLetterGapBoost = 0.50f
 /** Fixed extra pause after that lead before the letter name clip (ms). */
 private const val Station5WhichWordIntroToLetterExtraPauseMs = 500L
 
+private suspend fun playSoundPoolIntroWithOverlappedLetter(
+    sfx: SoundPoolPlayer,
+    intro: String,
+    introMs: Long,
+    letter: String,
+    leadFraction: Float,
+    extraPauseMs: Long,
+    delayScale: Float,
+) {
+    sfx.stopAllStreams()
+    sfx.playReturningStreamId(intro, volume = 1f)
+    val lead =
+        (introMs * leadFraction)
+            .toLong()
+            .coerceIn(16L, introMs)
+    delay(((lead + extraPauseMs) * delayScale).toLong())
+    sfx.playReturningStreamId(letter, volume = 1f)
+}
+
 /** Chapter 1 station 3 / Episode 3 station 1: find-grid intro (letter name on SoundPool overlap). */
 internal suspend fun playSagaFindGridIntroSoundPool(
     sfx: SoundPoolPlayer,
@@ -56,19 +75,21 @@ internal suspend fun playSagaFindGridIntroSoundPool(
         }
     if (letter != null && introPair != null) {
         val (intro, introMs) = introPair
-        sfx.playReturningStreamId(intro, volume = 1f)
         val stretch =
             if (chapterId == 4) {
                 Station3IntroToLetterLeadStretchEpisode4
             } else {
                 Station3IntroToLetterLeadStretchDefault
             }
-        val lead =
-            (introMs * introLetterLeadFraction * stretch)
-                .toLong()
-                .coerceIn(16L, introMs)
-        delay(lead)
-        sfx.playReturningStreamId(letter, volume = 1f)
+        playSoundPoolIntroWithOverlappedLetter(
+            sfx = sfx,
+            intro = intro,
+            introMs = introMs,
+            letter = letter,
+            leadFraction = introLetterLeadFraction * stretch,
+            extraPauseMs = 0L,
+            delayScale = 1f,
+        )
     } else {
         val bundledPath =
             sfx.playFirstAvailableReturningPath(
@@ -285,21 +306,22 @@ internal suspend fun speakPromptForQuestion(
                 val letterName = AudioClips.letterNameClip(q.targetLetter)
                 val introMs = sfx.durationMs(intro) ?: 0L
                 if (introMs > 0L && letterName != null) {
-                    sfx.stopAllStreams()
-                    sfx.playReturningStreamId(intro, volume = 1f)
                     val baseWhichWordLeadFrac =
                         Station5WhichWordIntroLetterLeadFraction *
                             Station5WhichWordIntroToLetterLeadScale
                     val whichWordLeadFrac =
                         baseWhichWordLeadFrac +
                             Station5WhichWordIntroToLetterGapBoost * (1f - baseWhichWordLeadFrac)
-                    val lead =
-                        (introMs * whichWordLeadFrac)
-                            .toLong()
-                            .coerceIn(16L, introMs)
                     val delayScale = if (chapterId == 4) 1.10f else 1f
-                    delay(((lead + Station5WhichWordIntroToLetterExtraPauseMs) * delayScale).toLong())
-                    sfx.playReturningStreamId(letterName, volume = 1f)
+                    playSoundPoolIntroWithOverlappedLetter(
+                        sfx = sfx,
+                        intro = intro,
+                        introMs = introMs,
+                        letter = letterName,
+                        leadFraction = whichWordLeadFrac,
+                        extraPauseMs = Station5WhichWordIntroToLetterExtraPauseMs,
+                        delayScale = delayScale,
+                    )
                 } else {
                     voice.playBlocking(intro)
                     if (letterName != null) voice.playBlocking(letterName)

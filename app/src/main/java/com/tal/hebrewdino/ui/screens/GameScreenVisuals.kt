@@ -419,6 +419,7 @@ internal fun BoxScope.GameOverlayLayer(
     episode4HelpSt15: Boolean,
     popBalloonsHelpControlsEnabled: Boolean,
     phase: GamePhase,
+    inputLocked: Boolean,
     audioEnabled: Boolean,
     stationUiSpec: StationUiSpec,
     episode4HelpLocksChoices: Boolean,
@@ -429,11 +430,11 @@ internal fun BoxScope.GameOverlayLayer(
     scope: CoroutineScope,
     voice: VoicePlayer,
     cancelFeedbackVoice: () -> Unit,
-    setFeedbackVoiceJob: (Job?) -> Unit,
+    audioRuntime: GameAudioRuntimeState,
 ) {
     val showSideHelpColumn = episode4HelpSt15 || popBalloonsHelpControlsEnabled
     if (showSideHelpColumn) {
-        val replayEnabled = phase == GamePhase.Play
+        val replayEnabled = phase == GamePhase.Play && !inputLocked
         val hintEnabled =
             when {
                 episode4HelpSt15 ->
@@ -460,12 +461,13 @@ internal fun BoxScope.GameOverlayLayer(
         stationId = stationId,
         episode4HelpSt15 = episode4HelpSt15,
         phase = phase,
+        inputLocked = inputLocked,
         audioEnabled = audioEnabled,
         session = session,
         scope = scope,
         voice = voice,
         cancelFeedbackVoice = cancelFeedbackVoice,
-        setFeedbackVoiceJob = setFeedbackVoiceJob,
+        audioRuntime = audioRuntime,
         modifier =
             Modifier
                 .align(Alignment.CenterStart)

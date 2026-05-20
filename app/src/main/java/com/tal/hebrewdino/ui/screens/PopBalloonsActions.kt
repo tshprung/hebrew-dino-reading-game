@@ -11,7 +11,6 @@ import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
 import com.tal.hebrewdino.ui.domain.LevelSession
 import com.tal.hebrewdino.ui.game.ChildGameAudioHooks
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
@@ -29,9 +28,7 @@ internal object PopBalloonsActions {
         voice: VoicePlayer,
         sfx: SoundPoolPlayer,
         cancelFeedbackVoice: () -> Unit,
-        setFeedbackVoiceJob: (Job?) -> Unit,
-        getStation2VoiceStreamId: () -> Int,
-        setStation2VoiceStreamId: (Int) -> Unit,
+        audioRuntime: GameAudioRuntimeState,
         nextStation2CorrectPopVariant: () -> Int,
         station2PopTailPaddingMs: Long,
         station2PopFallbackDurationMs: Long,
@@ -39,10 +36,14 @@ internal object PopBalloonsActions {
         if (!audioEnabled) return
         cancelFeedbackVoice()
         if (sagaUsesPopBalloonsAudioStaging) {
-            setFeedbackVoiceJob(
-                scope.launch {
-                    sfx.stopStream(getStation2VoiceStreamId())
-                    setStation2VoiceStreamId(0)
+            GameAudioActions.launchFeedbackVoice(
+                audioEnabled = true,
+                scope = scope,
+                audioRuntime = audioRuntime,
+                cancelFeedbackVoice = cancelFeedbackVoice,
+                cancelBeforeStart = false,
+            ) {
+                    sfx.stopAllStreams()
                     if (isCorrect) {
                         val variant = nextStation2CorrectPopVariant()
                         val rate =
@@ -81,9 +82,7 @@ internal object PopBalloonsActions {
                         if (speakLetter) {
                             val letterClip = AudioClips.letterNameClip(letter)
                             if (letterClip != null) {
-                                setStation2VoiceStreamId(
-                                    sfx.playReturningStreamId(letterClip, volume = 1f) ?: 0,
-                                )
+                                sfx.playReturningStreamId(letterClip, volume = 1f)
                                 val d = sfx.durationMs(letterClip) ?: 0L
                                 if (d > 0) delay(d)
                             }
@@ -120,8 +119,7 @@ internal object PopBalloonsActions {
                             AudioClips.VoTryAgain1,
                         )
                     }
-                },
-            )
+                }
             return
         }
         scope.launch {
@@ -134,12 +132,16 @@ internal object PopBalloonsActions {
         }
         val clip = AudioClips.letterNameClip(letter)
         if (clip != null) {
-            setFeedbackVoiceJob(
-                scope.launch {
-                    delay(90)
-                    voice.playSequenceBlocking(clip)
-                },
-            )
+            GameAudioActions.launchFeedbackVoice(
+                audioEnabled = true,
+                scope = scope,
+                audioRuntime = audioRuntime,
+                cancelFeedbackVoice = cancelFeedbackVoice,
+                cancelBeforeStart = false,
+            ) {
+                delay(90)
+                voice.playSequenceBlocking(clip)
+            }
         }
     }
 
@@ -195,7 +197,7 @@ internal object PopBalloonsActions {
         cancelFeedbackVoice: () -> Unit,
         session: LevelSession,
         scope: CoroutineScope,
-        getFeedbackVoiceJob: () -> Job?,
+        audioRuntime: GameAudioRuntimeState,
         advanceAfterRound: suspend (isLast: Boolean) -> Unit,
     ) {
         val ch1St2 = sagaUsesPopBalloonsAudioStaging
@@ -206,6 +208,7 @@ internal object PopBalloonsActions {
             cancelFeedbackVoice()
         }
         if (isChapter3PopAllLettersStation) {
+            gameViewModel.inputLocked = true
             scope.launch {
                 session.completeCurrentRound()
                 if (audioEnabled) ChildGameAudioHooks.onCorrect()
@@ -216,8 +219,9 @@ internal object PopBalloonsActions {
             when (session.submitAnswer(lastLetter)) {
                 AnswerResult.Correct ->
                     scope.launch {
+                        gameViewModel.inputLocked = true
                         if (ch1St2) {
-                            withTimeoutOrNull(4000) { getFeedbackVoiceJob()?.join() }
+                            withTimeoutOrNull(4000) { audioRuntime.feedbackVoiceJob?.join() }
                             cancelFeedbackVoice()
                         }
                         if (audioEnabled && !ch1St2) {

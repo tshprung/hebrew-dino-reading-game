@@ -7,7 +7,6 @@ import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
 import com.tal.hebrewdino.ui.domain.LevelSession
 import com.tal.hebrewdino.ui.game.ChildGameAudioHooks
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 
@@ -23,8 +22,7 @@ internal object PictureStartsWithActions {
         session: LevelSession,
         scope: CoroutineScope,
         voice: VoicePlayer,
-        getFeedbackVoiceJob: () -> Job?,
-        setFeedbackVoiceJob: (Job?) -> Unit,
+        audioRuntime: GameAudioRuntimeState,
         advanceAfterRound: suspend (Boolean) -> Unit,
         onWrongFeedback: (wrongPickedLetter: String?, wrongPickedLetterAlreadySpoken: Boolean) -> Unit,
     ) {
@@ -38,12 +36,21 @@ internal object PictureStartsWithActions {
         ) {
             val clip = AudioClips.letterNameClip(picked)
             if (clip != null && voice.hasAsset(clip)) {
-                setFeedbackVoiceJob(scope.launch { voice.playBlocking(clip) })
+                GameAudioActions.launchFeedbackVoice(
+                    audioEnabled = true,
+                    scope = scope,
+                    audioRuntime = audioRuntime,
+                    cancelFeedbackVoice = cancelFeedbackVoice,
+                    cancelBeforeStart = false,
+                ) {
+                    voice.playBlocking(clip)
+                }
             }
         }
         when (session.submitPictureStartsWith(picked)) {
             AnswerResult.Correct -> {
                 if (audioEnabled) ChildGameAudioHooks.onCorrect()
+                gameViewModel.inputLocked = true
                 if (chapterId == 4 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
                     gameViewModel.station4PinnedCorrectLetter = picked
                 }
@@ -65,14 +72,19 @@ internal object PictureStartsWithActions {
                             )
                         praise.shuffle()
                         val job =
-                            scope.launch {
+                            GameAudioActions.launchFeedbackVoice(
+                                audioEnabled = true,
+                                scope = scope,
+                                audioRuntime = audioRuntime,
+                                cancelFeedbackVoice = cancelFeedbackVoice,
+                                cancelBeforeStart = false,
+                            ) {
                                 if (letterName != null && voice.hasAsset(letterName)) {
                                     voice.playBlocking(letterName)
                                 }
                                 voice.playFirstAvailableBlocking(*praise.toTypedArray())
                             }
-                        setFeedbackVoiceJob(job)
-                        job.join()
+                        job?.join()
                         val isLast = session.currentIndex >= session.totalQuestions - 1
                         advanceAfterRound(isLast)
                     }
@@ -81,7 +93,7 @@ internal object PictureStartsWithActions {
                         gameViewModel.correctTapPulseLetter = picked
                         gameViewModel.correctTapPulseEpoch += 1
                         if (audioEnabled && (chapterId == 3 || chapterId == 6) && stationId == 1) {
-                            withTimeoutOrNull(1200L) { getFeedbackVoiceJob()?.join() }
+                            withTimeoutOrNull(1200L) { audioRuntime.feedbackVoiceJob?.join() }
                         }
                         val isLast = session.currentIndex >= session.totalQuestions - 1
                         advanceAfterRound(isLast)

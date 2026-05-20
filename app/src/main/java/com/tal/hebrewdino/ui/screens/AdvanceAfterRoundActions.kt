@@ -10,7 +10,6 @@ import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
 import com.tal.hebrewdino.ui.domain.LevelSession
 import com.tal.hebrewdino.ui.feedback.GameFeedback
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
@@ -35,8 +34,7 @@ internal object AdvanceAfterRoundActions {
         gameFeedback: GameFeedback,
         voice: VoicePlayer,
         cancelFeedbackVoice: () -> Unit,
-        getFeedbackVoiceJob: () -> Job?,
-        setFeedbackVoiceJob: (Job?) -> Unit,
+        audioRuntime: GameAudioRuntimeState,
         dinoForward: Animatable<Float, AnimationVector1D>,
         forwardDir: Float,
         dinoScale: Animatable<Float, AnimationVector1D>,
@@ -76,7 +74,7 @@ internal object AdvanceAfterRoundActions {
 
         if (episode1PraiseEligible) {
             if (sagaUsesFindGridAudioStaging) {
-                withTimeoutOrNull(5000L) { getFeedbackVoiceJob()?.join() }
+                withTimeoutOrNull(5000L) { audioRuntime.feedbackVoiceJob?.join() }
             }
             cancelFeedbackVoice()
             val candidates =
@@ -91,19 +89,31 @@ internal object AdvanceAfterRoundActions {
                 )
             candidates.shuffle()
             val arr = candidates.toTypedArray()
-            setFeedbackVoiceJob(scope.launch { voice.playFirstAvailableBlocking(*arr) })
+            GameAudioActions.launchFeedbackVoice(
+                audioEnabled = true,
+                scope = scope,
+                audioRuntime = audioRuntime,
+                cancelFeedbackVoice = cancelFeedbackVoice,
+                cancelBeforeStart = false,
+            ) {
+                voice.playFirstAvailableBlocking(*arr)
+            }
         } else if (otherPraiseEligible) {
             if (sagaUsesFindGridAudioStaging) {
-                withTimeoutOrNull(5000L) { getFeedbackVoiceJob()?.join() }
+                withTimeoutOrNull(5000L) { audioRuntime.feedbackVoiceJob?.join() }
             }
             cancelFeedbackVoice()
-            setFeedbackVoiceJob(
-                scope.launch {
-                    val pool = mutableListOf(AudioClips.VoKolHakavod, AudioClips.VoGoodJob1)
-                    pool.shuffle()
-                    voice.playFirstAvailableBlocking(*pool.toTypedArray())
-                },
-            )
+            GameAudioActions.launchFeedbackVoice(
+                audioEnabled = true,
+                scope = scope,
+                audioRuntime = audioRuntime,
+                cancelFeedbackVoice = cancelFeedbackVoice,
+                cancelBeforeStart = false,
+            ) {
+                val pool = mutableListOf(AudioClips.VoKolHakavod, AudioClips.VoGoodJob1)
+                pool.shuffle()
+                voice.playFirstAvailableBlocking(*pool.toTypedArray())
+            }
         }
         if (!suppressInGameDinoProgress && !(isChapter3HighlightedLetterInWordStation && ch3SpellMidWord)) {
             dinoForward.animateTo(dinoForward.value + forwardDir * 12f, spring(dampingRatio = 0.75f, stiffness = 520f))
@@ -141,15 +151,15 @@ internal object AdvanceAfterRoundActions {
                     sagaUsesFindGridAudioStaging ||
                     stationId == Chapter1StationOrder.PICTURE_PICK_ONE)
         if (sagaUsesPopBalloonsAudioStaging) {
-            withTimeoutOrNull(8000) { getFeedbackVoiceJob()?.join() }
+            withTimeoutOrNull(8000) { audioRuntime.feedbackVoiceJob?.join() }
             gameViewModel.station2PinnedBalloonLetter = null
             gameViewModel.station2PinnedBalloonColor = null
         } else if (sagaEpisode && (sagaUsesFindGridAudioStaging || stationId == Chapter1StationOrder.PICTURE_PICK_ONE)) {
-            withTimeoutOrNull(8000) { getFeedbackVoiceJob()?.join() }
+            withTimeoutOrNull(8000) { audioRuntime.feedbackVoiceJob?.join() }
         }
         contentAlpha.animateTo(0f, tween(BetweenQuestionFadeMs))
         if (!waitPraiseBeforeFade) {
-            withTimeoutOrNull(2500) { getFeedbackVoiceJob()?.join() }
+            withTimeoutOrNull(2500) { audioRuntime.feedbackVoiceJob?.join() }
         }
         delay(5)
         session.nextQuestion()

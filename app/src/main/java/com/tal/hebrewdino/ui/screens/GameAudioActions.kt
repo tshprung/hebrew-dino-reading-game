@@ -2,44 +2,37 @@ package com.tal.hebrewdino.ui.screens
 
 import com.tal.hebrewdino.ui.audio.SoundPoolPlayer
 import com.tal.hebrewdino.ui.audio.VoicePlayer
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
 
 internal object GameAudioActions {
-    fun stopStagingSfx(
-        sagaUsesPickLetterAudioStaging: Boolean,
-        usesPopBalloonsSoundPoolPrompt: Boolean,
-        sagaUsesFindGridAudioStaging: Boolean,
-        sfx: SoundPoolPlayer,
-        stopAllStreams: Boolean,
-        audioRuntime: GameAudioRuntimeState,
-    ) {
-        if (sagaUsesPickLetterAudioStaging) {
-            if (stopAllStreams) sfx.stopAllStreams()
-            sfx.stopStream(audioRuntime.station1VoiceStreamId)
-            audioRuntime.station1VoiceStreamId = 0
-        }
-        if (usesPopBalloonsSoundPoolPrompt) {
-            if (stopAllStreams) sfx.stopAllStreams()
-            sfx.stopStream(audioRuntime.station2VoiceStreamId)
-            audioRuntime.station2VoiceStreamId = 0
-        }
-        if (sagaUsesFindGridAudioStaging) {
-            if (stopAllStreams) sfx.stopAllStreams()
-            sfx.stopStream(audioRuntime.station3VoiceStreamId)
-            audioRuntime.station3VoiceStreamId = 0
-        }
-    }
-
     fun cancelFeedbackVoice(
         voice: VoicePlayer,
+        sfx: SoundPoolPlayer,
         audioRuntime: GameAudioRuntimeState,
-        stopStagingSfx: (stopAllStreams: Boolean) -> Unit,
     ) {
         audioRuntime.feedbackVoiceJob?.cancel()
         audioRuntime.feedbackVoiceJob = null
         audioRuntime.promptVoiceJob?.cancel()
         audioRuntime.promptVoiceJob = null
         voice.stopNow()
-        stopStagingSfx(true)
+        sfx.stopAllStreams()
+    }
+
+    fun launchFeedbackVoice(
+        audioEnabled: Boolean,
+        scope: CoroutineScope,
+        audioRuntime: GameAudioRuntimeState,
+        cancelFeedbackVoice: () -> Unit,
+        cancelBeforeStart: Boolean = true,
+        play: suspend () -> Unit,
+    ): Job? {
+        if (!audioEnabled) return null
+        if (cancelBeforeStart) cancelFeedbackVoice()
+        val job = scope.launch { play() }
+        audioRuntime.feedbackVoiceJob = job
+        return job
     }
 }
 

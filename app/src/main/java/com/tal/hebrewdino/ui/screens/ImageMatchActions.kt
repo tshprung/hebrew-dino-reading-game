@@ -8,7 +8,6 @@ import com.tal.hebrewdino.ui.domain.LevelSession
 import com.tal.hebrewdino.ui.domain.Question
 import com.tal.hebrewdino.ui.game.ChildGameAudioHooks
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
 internal object ImageMatchActions {
@@ -21,6 +20,7 @@ internal object ImageMatchActions {
         session: LevelSession,
         scope: CoroutineScope,
         voice: VoicePlayer,
+        audioRuntime: GameAudioRuntimeState,
         advanceAfterRound: suspend (Boolean) -> Unit,
         onWrongFeedback: (wrongWordCatalogId: String?) -> Unit,
     ): Boolean {
@@ -29,8 +29,10 @@ internal object ImageMatchActions {
         return when (session.submitImageMatch(choiceId)) {
             AnswerResult.Correct -> {
                 if (audioEnabled) ChildGameAudioHooks.onCorrect()
-                scope.launch {
-                    if (audioEnabled) {
+                gameViewModel.inputLocked = true
+                val audioJob =
+                    scope.launch {
+                        if (!audioEnabled) return@launch
                         val clip =
                             AudioClips.imageToWordClipByCatalogId(
                                 catalogEntryId = choiceId,
@@ -50,6 +52,9 @@ internal object ImageMatchActions {
                         praise.shuffle()
                         voice.playFirstAvailableBlocking(*praise.toTypedArray())
                     }
+                audioRuntime.feedbackVoiceJob = audioJob
+                scope.launch {
+                    runCatching { audioJob.join() }
                     val isLast = session.currentIndex >= session.totalQuestions - 1
                     advanceAfterRound(isLast)
                 }
@@ -72,7 +77,7 @@ internal object ImageMatchActions {
         session: LevelSession,
         scope: CoroutineScope,
         voice: VoicePlayer,
-        setFeedbackVoiceJob: (Job?) -> Unit,
+        audioRuntime: GameAudioRuntimeState,
     ) {
         if (!audioEnabled) return
         cancelFeedbackVoice()
@@ -84,7 +89,15 @@ internal object ImageMatchActions {
                 voiceHasAsset = { path -> voice.hasAsset(path) },
             )
         if (voice.hasAsset(clip)) {
-            setFeedbackVoiceJob(scope.launch { voice.playBlocking(clip) })
+            GameAudioActions.launchFeedbackVoice(
+                audioEnabled = true,
+                scope = scope,
+                audioRuntime = audioRuntime,
+                cancelFeedbackVoice = cancelFeedbackVoice,
+                cancelBeforeStart = false,
+            ) {
+                voice.playBlocking(clip)
+            }
         }
     }
 
@@ -95,21 +108,25 @@ internal object ImageMatchActions {
         chapterId: Int,
         scope: CoroutineScope,
         voice: VoicePlayer,
-        setFeedbackVoiceJob: (Job?) -> Unit,
+        audioRuntime: GameAudioRuntimeState,
     ) {
         if (!audioEnabled) return
         cancelFeedbackVoice()
-        setFeedbackVoiceJob(
-            scope.launch {
-                val clip =
-                    AudioClips.imageToWordClipByCatalogId(
-                        catalogEntryId = choiceId,
-                        chapterId = chapterId,
-                        voiceHasAsset = { path -> voice.hasAsset(path) },
-                    )
-                voice.playBlocking(clip)
-            },
-        )
+        GameAudioActions.launchFeedbackVoice(
+            audioEnabled = true,
+            scope = scope,
+            audioRuntime = audioRuntime,
+            cancelFeedbackVoice = cancelFeedbackVoice,
+            cancelBeforeStart = false,
+        ) {
+            val clip =
+                AudioClips.imageToWordClipByCatalogId(
+                    catalogEntryId = choiceId,
+                    chapterId = chapterId,
+                    voiceHasAsset = { path -> voice.hasAsset(path) },
+                )
+            voice.playBlocking(clip)
+        }
     }
 
     fun handleImageMatchAttempt(
@@ -123,6 +140,7 @@ internal object ImageMatchActions {
         session: LevelSession,
         scope: CoroutineScope,
         voice: VoicePlayer,
+        audioRuntime: GameAudioRuntimeState,
         advanceAfterRound: suspend (Boolean) -> Unit,
         onWrongFeedback: (wrongWordCatalogId: String?, generic: Boolean) -> Unit,
     ): Boolean {
@@ -131,12 +149,19 @@ internal object ImageMatchActions {
         return when (session.submitImageMatch(choiceId)) {
             AnswerResult.Correct -> {
                 if (audioEnabled) ChildGameAudioHooks.onCorrect()
-                scope.launch {
-                    if (sagaEpisode && stationId == Chapter1StationOrder.PICTURE_PICK_ALL) {
-                        if (chapterId != 3 && chapterId != 6) {
-                            voice.playBlocking(AudioClips.wordClipByCatalogId(choiceId))
+                gameViewModel.inputLocked = true
+                val audioJob =
+                    scope.launch {
+                        if (!audioEnabled) return@launch
+                        if (sagaEpisode && stationId == Chapter1StationOrder.PICTURE_PICK_ALL) {
+                            if (chapterId != 3 && chapterId != 6) {
+                                voice.playBlocking(AudioClips.wordClipByCatalogId(choiceId))
+                            }
                         }
                     }
+                audioRuntime.feedbackVoiceJob = audioJob
+                scope.launch {
+                    runCatching { audioJob.join() }
                     val isLast = session.currentIndex >= session.totalQuestions - 1
                     advanceAfterRound(isLast)
                 }
