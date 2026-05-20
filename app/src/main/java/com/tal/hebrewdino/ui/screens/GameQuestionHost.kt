@@ -308,15 +308,13 @@ internal fun GameQuestionHost(
                         { handlers.performSideHelpReplay() }
                     } else if (ui.audioEnabled) {
                         {
-                            deps.cancelFeedbackVoice()
                             val wordPath = AudioClips.wordClipByCatalogId(current.catalogEntryId)
                             if (deps.voice.hasAsset(wordPath)) {
-                                GameAudioActions.launchFeedbackVoice(
+                                GameAudioActions.launchFeedbackVoiceAfterCancel(
                                     audioEnabled = ui.audioEnabled,
                                     scope = deps.scope,
                                     audioRuntime = deps.audioRuntime,
                                     cancelFeedbackVoice = deps.cancelFeedbackVoice,
-                                    cancelBeforeStart = false,
                                 ) {
                                     deps.voice.playBlocking(wordPath)
                                 }

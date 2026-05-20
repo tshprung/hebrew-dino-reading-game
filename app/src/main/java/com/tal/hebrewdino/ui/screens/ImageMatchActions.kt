@@ -84,7 +84,6 @@ internal object ImageMatchActions {
         audioRuntime: GameAudioRuntimeState,
     ) {
         if (!audioEnabled) return
-        cancelFeedbackVoice()
         val q = session.currentQuestion as? Question.ImageMatchQuestion ?: return
         val clip =
             AudioClips.imageToWordClipByCatalogId(
@@ -93,12 +92,11 @@ internal object ImageMatchActions {
                 voiceHasAsset = { path -> voice.hasAsset(path) },
             )
         if (voice.hasAsset(clip)) {
-            GameAudioActions.launchFeedbackVoice(
-                audioEnabled = true,
+            GameAudioActions.launchFeedbackVoiceAfterCancel(
+                audioEnabled = audioEnabled,
                 scope = scope,
                 audioRuntime = audioRuntime,
                 cancelFeedbackVoice = cancelFeedbackVoice,
-                cancelBeforeStart = false,
             ) {
                 voice.playBlocking(clip)
             }
@@ -115,13 +113,11 @@ internal object ImageMatchActions {
         audioRuntime: GameAudioRuntimeState,
     ) {
         if (!audioEnabled) return
-        cancelFeedbackVoice()
-        GameAudioActions.launchFeedbackVoice(
-            audioEnabled = true,
+        GameAudioActions.launchFeedbackVoiceAfterCancel(
+            audioEnabled = audioEnabled,
             scope = scope,
             audioRuntime = audioRuntime,
             cancelFeedbackVoice = cancelFeedbackVoice,
-            cancelBeforeStart = false,
         ) {
             val clip =
                 AudioClips.imageToWordClipByCatalogId(
