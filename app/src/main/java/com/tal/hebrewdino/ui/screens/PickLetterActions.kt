@@ -27,8 +27,8 @@ internal object PickLetterActions {
         onWrongFeedback: (wrongPickedLetter: String) -> Unit,
         advanceAfterRound: suspend (isLast: Boolean, ch3SpellMidWord: Boolean) -> Unit,
     ) {
-        cancelFeedbackVoice()
         if (!gameViewModel.consumeTapCooldown()) return
+        cancelFeedbackVoice()
         when (session.submitAnswer(picked)) {
             AnswerResult.Correct -> {
                 if (audioEnabled && !sagaUsesPickLetterAudioStaging) {
