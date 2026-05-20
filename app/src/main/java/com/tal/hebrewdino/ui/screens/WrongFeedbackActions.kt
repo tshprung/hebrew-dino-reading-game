@@ -48,13 +48,11 @@ internal object WrongFeedbackActions {
                     stationId == Chapter1StationOrder.PICTURE_PICK_ONE &&
                     wrongPickedLetter != null
             if (immediateCh1Ch2Station4Voice) {
-                cancelFeedbackVoice()
-                GameAudioActions.launchFeedbackVoice(
-                    audioEnabled = true,
+                GameAudioActions.launchFeedbackVoiceAfterCancel(
+                    audioEnabled = audioEnabled,
                     scope = scope,
                     audioRuntime = audioRuntime,
                     cancelFeedbackVoice = cancelFeedbackVoice,
-                    cancelBeforeStart = false,
                 ) {
                         val lc = AudioClips.letterNameClip(wrongPickedLetter)
                         val letterMs = lc?.let { sfx.durationMs(it) } ?: 0L
@@ -112,13 +110,11 @@ internal object WrongFeedbackActions {
                     onWrongHook()
                 }
                 if (sagaUsesPickLetterAudioStaging && wrongPickedLetter != null && chapterId != 3) {
-                    cancelFeedbackVoice()
-                    GameAudioActions.launchFeedbackVoice(
-                        audioEnabled = true,
+                    GameAudioActions.launchFeedbackVoiceAfterCancel(
+                        audioEnabled = audioEnabled,
                         scope = scope,
                         audioRuntime = audioRuntime,
                         cancelFeedbackVoice = cancelFeedbackVoice,
-                        cancelBeforeStart = false,
                     ) play@{
                             val letterClip = AudioClips.letterNameClip(wrongPickedLetter)
                             val letterMs = letterClip?.let { sfx.durationMs(it) } ?: 0L
@@ -169,13 +165,11 @@ internal object WrongFeedbackActions {
                     wrongPickedLetter != null &&
                     !immediateCh1Ch2Station4Voice
                 ) {
-                    cancelFeedbackVoice()
-                    GameAudioActions.launchFeedbackVoice(
-                        audioEnabled = true,
+                    GameAudioActions.launchFeedbackVoiceAfterCancel(
+                        audioEnabled = audioEnabled,
                         scope = scope,
                         audioRuntime = audioRuntime,
                         cancelFeedbackVoice = cancelFeedbackVoice,
-                        cancelBeforeStart = false,
                     ) {
                             val lc = AudioClips.letterNameClip(wrongPickedLetter)
                             val letterMs = lc?.let { sfx.durationMs(it) } ?: 0L
@@ -210,13 +204,11 @@ internal object WrongFeedbackActions {
                     return@launch
                 }
                 if (!immediateCh1Ch2Station4Voice) {
-                    cancelFeedbackVoice()
-                    GameAudioActions.launchFeedbackVoice(
-                        audioEnabled = true,
+                    GameAudioActions.launchFeedbackVoiceAfterCancel(
+                        audioEnabled = audioEnabled,
                         scope = scope,
                         audioRuntime = audioRuntime,
                         cancelFeedbackVoice = cancelFeedbackVoice,
-                        cancelBeforeStart = false,
                     ) play@{
                             val feedbackDelayMs =
                                 when {

@@ -76,7 +76,6 @@ internal object AdvanceAfterRoundActions {
             if (sagaUsesFindGridAudioStaging) {
                 withTimeoutOrNull(5000L) { audioRuntime.feedbackVoiceJob?.join() }
             }
-            cancelFeedbackVoice()
             val candidates =
                 mutableListOf(
                     AudioClips.VoKolHakavod,
@@ -89,12 +88,11 @@ internal object AdvanceAfterRoundActions {
                 )
             candidates.shuffle()
             val arr = candidates.toTypedArray()
-            GameAudioActions.launchFeedbackVoice(
-                audioEnabled = true,
+            GameAudioActions.launchFeedbackVoiceAfterCancel(
+                audioEnabled = audioEnabled,
                 scope = scope,
                 audioRuntime = audioRuntime,
                 cancelFeedbackVoice = cancelFeedbackVoice,
-                cancelBeforeStart = false,
             ) {
                 voice.playFirstAvailableBlocking(*arr)
             }
@@ -102,13 +100,11 @@ internal object AdvanceAfterRoundActions {
             if (sagaUsesFindGridAudioStaging) {
                 withTimeoutOrNull(5000L) { audioRuntime.feedbackVoiceJob?.join() }
             }
-            cancelFeedbackVoice()
-            GameAudioActions.launchFeedbackVoice(
-                audioEnabled = true,
+            GameAudioActions.launchFeedbackVoiceAfterCancel(
+                audioEnabled = audioEnabled,
                 scope = scope,
                 audioRuntime = audioRuntime,
                 cancelFeedbackVoice = cancelFeedbackVoice,
-                cancelBeforeStart = false,
             ) {
                 val pool = mutableListOf(AudioClips.VoKolHakavod, AudioClips.VoGoodJob1)
                 pool.shuffle()
