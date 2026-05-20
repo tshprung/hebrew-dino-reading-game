@@ -31,8 +31,13 @@ internal object ImageMatchActions {
                 if (audioEnabled) ChildGameAudioHooks.onCorrect()
                 gameViewModel.inputLocked = true
                 val audioJob =
-                    scope.launch {
-                        if (!audioEnabled) return@launch
+                    GameAudioActions.launchFeedbackVoice(
+                        audioEnabled = audioEnabled,
+                        scope = scope,
+                        audioRuntime = audioRuntime,
+                        cancelFeedbackVoice = cancelFeedbackVoice,
+                        cancelBeforeStart = false,
+                    ) {
                         val clip =
                             AudioClips.imageToWordClipByCatalogId(
                                 catalogEntryId = choiceId,
@@ -52,9 +57,8 @@ internal object ImageMatchActions {
                         praise.shuffle()
                         voice.playFirstAvailableBlocking(*praise.toTypedArray())
                     }
-                audioRuntime.feedbackVoiceJob = audioJob
                 scope.launch {
-                    runCatching { audioJob.join() }
+                    runCatching { audioJob?.join() }
                     val isLast = session.currentIndex >= session.totalQuestions - 1
                     advanceAfterRound(isLast)
                 }
@@ -151,17 +155,21 @@ internal object ImageMatchActions {
                 if (audioEnabled) ChildGameAudioHooks.onCorrect()
                 gameViewModel.inputLocked = true
                 val audioJob =
-                    scope.launch {
-                        if (!audioEnabled) return@launch
+                    GameAudioActions.launchFeedbackVoice(
+                        audioEnabled = audioEnabled,
+                        scope = scope,
+                        audioRuntime = audioRuntime,
+                        cancelFeedbackVoice = cancelFeedbackVoice,
+                        cancelBeforeStart = false,
+                    ) {
                         if (sagaEpisode && stationId == Chapter1StationOrder.PICTURE_PICK_ALL) {
                             if (chapterId != 3 && chapterId != 6) {
                                 voice.playBlocking(AudioClips.wordClipByCatalogId(choiceId))
                             }
                         }
                     }
-                audioRuntime.feedbackVoiceJob = audioJob
                 scope.launch {
-                    runCatching { audioJob.join() }
+                    runCatching { audioJob?.join() }
                     val isLast = session.currentIndex >= session.totalQuestions - 1
                     advanceAfterRound(isLast)
                 }
