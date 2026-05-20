@@ -32,6 +32,18 @@ internal object GameAudioActions {
         }
     }
 
+    fun setPromptVoiceJob(
+        audioRuntime: GameAudioRuntimeState,
+        job: Job?,
+    ) {
+        audioRuntime.promptVoiceJob = job
+        job?.invokeOnCompletion {
+            if (audioRuntime.promptVoiceJob === job) {
+                audioRuntime.promptVoiceJob = null
+            }
+        }
+    }
+
     fun launchFeedbackVoice(
         audioEnabled: Boolean,
         scope: CoroutineScope,

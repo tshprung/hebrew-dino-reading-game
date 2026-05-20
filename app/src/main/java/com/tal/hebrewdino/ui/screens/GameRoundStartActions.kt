@@ -97,10 +97,7 @@ internal object GameRoundStartActions {
                     }
                 }
             }
-        audioRuntime.promptVoiceJob = promptJob
-        promptJob.invokeOnCompletion {
-            if (audioRuntime.promptVoiceJob === promptJob) audioRuntime.promptVoiceJob = null
-        }
+        GameAudioActions.setPromptVoiceJob(audioRuntime, promptJob)
 
         scope.launch {
             if (audioEnabled) {
