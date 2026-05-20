@@ -32,6 +32,11 @@ internal object GameAudioActions {
         if (cancelBeforeStart) cancelFeedbackVoice()
         val job = scope.launch { play() }
         audioRuntime.feedbackVoiceJob = job
+        job.invokeOnCompletion {
+            if (audioRuntime.feedbackVoiceJob === job) {
+                audioRuntime.feedbackVoiceJob = null
+            }
+        }
         return job
     }
 }

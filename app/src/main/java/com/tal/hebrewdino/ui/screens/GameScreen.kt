@@ -417,7 +417,7 @@ fun GameScreen(
 
     val performSideHelpReplay: () -> Unit = {
         if (!gameViewModel.inputLocked) {
-            audioRuntime.feedbackVoiceJob =
+            val job =
                 SideHelpActions.startReplay(
                     audioEnabled = audioEnabled,
                     isPlayPhase = gameViewModel.phase == GamePhase.Play && !gameViewModel.inputLocked,
@@ -433,6 +433,12 @@ fun GameScreen(
                     cancelFeedbackVoice = { cancelFeedbackVoice() },
                     scope = scope,
                 )
+            audioRuntime.feedbackVoiceJob = job
+            job?.invokeOnCompletion {
+                if (audioRuntime.feedbackVoiceJob === job) {
+                    audioRuntime.feedbackVoiceJob = null
+                }
+            }
         }
     }
 
