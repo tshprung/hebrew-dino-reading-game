@@ -14,6 +14,26 @@ import kotlinx.coroutines.launch
 import kotlin.random.Random
 
 internal object WrongFeedbackActions {
+    private suspend fun playLetterThenTryAgainOnSoundPool(
+        sfx: SoundPoolPlayer,
+        letterClip: String,
+        letterMs: Long,
+        followLeadFrac: Float,
+    ) {
+        sfx.stopAllStreams()
+        sfx.playReturningStreamId(letterClip, volume = 1f)
+        val lead =
+            (letterMs * followLeadFrac)
+                .toLong()
+                .coerceIn(16L, letterMs)
+        delay(lead)
+        sfx.playFirstAvailable(
+            AudioClips.VoTryAgain2,
+            AudioClips.VoTryAgain1,
+            volume = 1f,
+        )
+    }
+
     fun trigger(
         scope: CoroutineScope,
         gameViewModel: GameViewModel,
@@ -57,24 +77,13 @@ internal object WrongFeedbackActions {
                         val lc = AudioClips.letterNameClip(wrongPickedLetter)
                         val letterMs = lc?.let { sfx.durationMs(it) } ?: 0L
                         if (lc != null && letterMs > 0L) {
-                            sfx.stopAllStreams()
-                            sfx.playReturningStreamId(lc, volume = 1f)
                             val baseWrongFrac =
                                 Station1WrongLetterToFollowLeadFraction *
                                     Station4WrongLetterToFollowLeadScale
                             val followLeadFrac =
                                 baseWrongFrac +
                                     Station4WrongLetterToTryAgainGapBoost * (1f - baseWrongFrac)
-                            val lead =
-                                (letterMs * followLeadFrac)
-                                    .toLong()
-                                    .coerceIn(16L, letterMs)
-                            delay(lead)
-                            sfx.playFirstAvailable(
-                                AudioClips.VoTryAgain2,
-                                AudioClips.VoTryAgain1,
-                                volume = 1f,
-                            )
+                            playLetterThenTryAgainOnSoundPool(sfx, lc, letterMs, followLeadFrac)
                         } else {
                             if (lc != null && voice.hasAsset(lc)) {
                                 voice.playBlocking(lc)
@@ -133,22 +142,11 @@ internal object WrongFeedbackActions {
                             }
 
                             if (letterClip != null && letterMs > 0L) {
-                                sfx.stopAllStreams()
-                                sfx.playReturningStreamId(letterClip, volume = 1f)
                                 val followLeadFrac =
                                     Station1WrongLetterToFollowLeadFraction +
                                         Station1WrongLetterToTryAgainGapBoost *
                                         (1f - Station1WrongLetterToFollowLeadFraction)
-                                val lead =
-                                    (letterMs * followLeadFrac)
-                                        .toLong()
-                                        .coerceIn(16L, letterMs)
-                                delay(lead)
-                                sfx.playFirstAvailable(
-                                    AudioClips.VoTryAgain2,
-                                    AudioClips.VoTryAgain1,
-                                    volume = 1f,
-                                )
+                                playLetterThenTryAgainOnSoundPool(sfx, letterClip, letterMs, followLeadFrac)
                             } else {
                                 if (letterClip != null && voice.hasAsset(letterClip)) {
                                     voice.playBlocking(letterClip)
@@ -174,24 +172,13 @@ internal object WrongFeedbackActions {
                             val lc = AudioClips.letterNameClip(wrongPickedLetter)
                             val letterMs = lc?.let { sfx.durationMs(it) } ?: 0L
                             if (lc != null && letterMs > 0L) {
-                                sfx.stopAllStreams()
-                                sfx.playReturningStreamId(lc, volume = 1f)
                                 val baseWrongFrac =
                                     Station1WrongLetterToFollowLeadFraction *
                                         Station4WrongLetterToFollowLeadScale
                                 val followLeadFrac =
                                     baseWrongFrac +
                                         Station4WrongLetterToTryAgainGapBoost * (1f - baseWrongFrac)
-                                val lead =
-                                    (letterMs * followLeadFrac)
-                                        .toLong()
-                                        .coerceIn(16L, letterMs)
-                                delay(lead)
-                                sfx.playFirstAvailable(
-                                    AudioClips.VoTryAgain2,
-                                    AudioClips.VoTryAgain1,
-                                    volume = 1f,
-                                )
+                                playLetterThenTryAgainOnSoundPool(sfx, lc, letterMs, followLeadFrac)
                             } else {
                                 if (lc != null && voice.hasAsset(lc)) {
                                     voice.playBlocking(lc)
