@@ -140,14 +140,15 @@ internal suspend fun playIntroPrompt(
                 }
             val introMs = sfx.durationMs(intro) ?: 0L
             if (introMs > 0L && letterClip != null) {
-                sfx.stopAllStreams()
-                sfx.playReturningStreamId(intro, volume = 1f)
-                val lead =
-                    (introMs * station1IntroLetterLeadFraction * station1IntroToLetterLeadScale)
-                        .toLong()
-                        .coerceIn(16L, introMs)
-                delay(lead)
-                sfx.playReturningStreamId(letterClip, volume = 1f)
+                GameAudioActions.playSoundPoolIntroWithOverlappedLetter(
+                    sfx = sfx,
+                    intro = intro,
+                    introMs = introMs,
+                    letter = letterClip,
+                    leadFraction = station1IntroLetterLeadFraction * station1IntroToLetterLeadScale,
+                    extraPauseMs = 0L,
+                    delayScale = 1f,
+                )
             } else {
                 voice.playSequenceBlocking(
                     intro,
@@ -294,17 +295,18 @@ internal suspend fun playIntroPrompt(
             val letterClip = AudioClips.letterNameClip(q.correctAnswer)
             val introMs = sfx.durationMs(intro) ?: 0L
             if (introMs > 0 && letterClip != null) {
-                sfx.stopAllStreams()
-                sfx.playReturningStreamId(intro, volume = 1f)
                 val baseIntroLeadFrac = station2BalloonIntroLetterLeadFraction * station2IntroToLetterLeadScale
                 val introLeadFrac =
                     baseIntroLeadFrac + station2BalloonIntroToLetterGapBoost * (1f - baseIntroLeadFrac)
-                val lead =
-                    (introMs * introLeadFrac)
-                        .toLong()
-                        .coerceIn(16L, introMs)
-                delay(lead + station2BalloonIntroToLetterExtraPauseMs)
-                sfx.playReturningStreamId(letterClip, volume = 1f)
+                GameAudioActions.playSoundPoolIntroWithOverlappedLetter(
+                    sfx = sfx,
+                    intro = intro,
+                    introMs = introMs,
+                    letter = letterClip,
+                    leadFraction = introLeadFrac,
+                    extraPauseMs = station2BalloonIntroToLetterExtraPauseMs,
+                    delayScale = 1f,
+                )
             } else {
                 voice.playSequenceBlocking(
                     intro,

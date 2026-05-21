@@ -4,6 +4,7 @@ import com.tal.hebrewdino.ui.audio.SoundPoolPlayer
 import com.tal.hebrewdino.ui.audio.VoicePlayer
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 
@@ -99,6 +100,25 @@ internal object GameAudioActions {
         val job = scope.launch { play() }
         setPromptVoiceJob(audioRuntime, job)
         return job
+    }
+
+    suspend fun playSoundPoolIntroWithOverlappedLetter(
+        sfx: SoundPoolPlayer,
+        intro: String,
+        introMs: Long,
+        letter: String,
+        leadFraction: Float,
+        extraPauseMs: Long,
+        delayScale: Float,
+    ) {
+        sfx.stopAllStreams()
+        sfx.playReturningStreamId(intro, volume = 1f)
+        val lead =
+            (introMs * leadFraction)
+                .toLong()
+                .coerceIn(16L, introMs)
+        delay(((lead + extraPauseMs) * delayScale).toLong())
+        sfx.playReturningStreamId(letter, volume = 1f)
     }
 
     suspend fun await(

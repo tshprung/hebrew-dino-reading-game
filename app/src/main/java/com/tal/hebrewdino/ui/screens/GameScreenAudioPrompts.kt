@@ -33,25 +33,6 @@ private const val Station5WhichWordIntroToLetterGapBoost = 0.50f
 /** Fixed extra pause after that lead before the letter name clip (ms). */
 private const val Station5WhichWordIntroToLetterExtraPauseMs = 500L
 
-private suspend fun playSoundPoolIntroWithOverlappedLetter(
-    sfx: SoundPoolPlayer,
-    intro: String,
-    introMs: Long,
-    letter: String,
-    leadFraction: Float,
-    extraPauseMs: Long,
-    delayScale: Float,
-) {
-    sfx.stopAllStreams()
-    sfx.playReturningStreamId(intro, volume = 1f)
-    val lead =
-        (introMs * leadFraction)
-            .toLong()
-            .coerceIn(16L, introMs)
-    delay(((lead + extraPauseMs) * delayScale).toLong())
-    sfx.playReturningStreamId(letter, volume = 1f)
-}
-
 /** Chapter 1 station 3 / Episode 3 station 1: find-grid intro (letter name on SoundPool overlap). */
 internal suspend fun playSagaFindGridIntroSoundPool(
     sfx: SoundPoolPlayer,
@@ -81,7 +62,7 @@ internal suspend fun playSagaFindGridIntroSoundPool(
             } else {
                 Station3IntroToLetterLeadStretchDefault
             }
-        playSoundPoolIntroWithOverlappedLetter(
+        GameAudioActions.playSoundPoolIntroWithOverlappedLetter(
             sfx = sfx,
             intro = intro,
             introMs = introMs,
@@ -313,7 +294,7 @@ internal suspend fun speakPromptForQuestion(
                         baseWhichWordLeadFrac +
                             Station5WhichWordIntroToLetterGapBoost * (1f - baseWhichWordLeadFrac)
                     val delayScale = if (chapterId == 4) 1.10f else 1f
-                    playSoundPoolIntroWithOverlappedLetter(
+                    GameAudioActions.playSoundPoolIntroWithOverlappedLetter(
                         sfx = sfx,
                         intro = intro,
                         introMs = introMs,
