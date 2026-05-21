@@ -70,14 +70,7 @@ internal data class AppNavHostState(
             )
 
     companion object {
-        fun from(
-            uiState: MainUiState,
-            navController: NavHostController,
-            scope: CoroutineScope,
-            context: Context,
-            progress: ProgressPrefs,
-            prefs: CharacterPrefs,
-        ): AppNavHostState {
+        internal fun deriveChapterFlags(uiState: MainUiState): AppNavChapterFlags {
             val beachOutroSeen = uiState.beachOutroSeen
             val chapter1AllStationsComplete =
                 (1..Chapter1Config.STATION_COUNT).all { station -> uiState.completedLevels.contains(station) }
@@ -108,13 +101,46 @@ internal data class AppNavHostState(
                     beachOutroSeen || chapter1AllStationsComplete -> 2
                     else -> 1
                 }
+            return AppNavChapterFlags(
+                beachOutroSeen = beachOutroSeen,
+                chapter1AllStationsComplete = chapter1AllStationsComplete,
+                chapter2AllStationsComplete = chapter2AllStationsComplete,
+                chapter3AllStationsComplete = chapter3AllStationsComplete,
+                chapter4AllStationsComplete = chapter4AllStationsComplete,
+                chapter5AllStationsComplete = chapter5AllStationsComplete,
+                chapter6AllStationsComplete = chapter6AllStationsComplete,
+                chapter1ProgressForStrip = chapter1ProgressForStrip,
+                collectedEggStripCount = collectedEggStripCount,
+                unlockedChapter = unlockedChapter,
+                chapter4ComingSoon = !uiState.chapter3Completed,
+                chapter5ComingSoon = !uiState.chapter4Completed,
+                chapter6ComingSoon = !uiState.chapter5Completed,
+                maxSelectableChapterId =
+                    when {
+                        uiState.chapter5Completed -> 6
+                        uiState.chapter4Completed -> 5
+                        uiState.chapter3Completed -> 4
+                        else -> 3
+                    },
+            )
+        }
+
+        fun from(
+            uiState: MainUiState,
+            navController: NavHostController,
+            scope: CoroutineScope,
+            context: Context,
+            progress: ProgressPrefs,
+            prefs: CharacterPrefs,
+        ): AppNavHostState {
+            val flags = deriveChapterFlags(uiState)
             return AppNavHostState(
                 navController = navController,
                 scope = scope,
                 context = context,
                 progress = progress,
                 prefs = prefs,
-                beachOutroSeen = beachOutroSeen,
+                beachOutroSeen = flags.beachOutroSeen,
                 chapter1MidBoostSeen = uiState.chapter1MidBoostSeen,
                 chapter2MidBoostSeen = uiState.chapter2MidBoostSeen,
                 chapter2UnlockedStation = uiState.chapter2UnlockedStation,
@@ -138,26 +164,37 @@ internal data class AppNavHostState(
                 chapter6Completed = uiState.chapter6Completed,
                 unlockedLevel = uiState.unlockedLevel,
                 completedLevels = uiState.completedLevels,
-                chapter1AllStationsComplete = chapter1AllStationsComplete,
-                chapter2AllStationsComplete = chapter2AllStationsComplete,
-                chapter3AllStationsComplete = chapter3AllStationsComplete,
-                chapter4AllStationsComplete = chapter4AllStationsComplete,
-                chapter5AllStationsComplete = chapter5AllStationsComplete,
-                chapter6AllStationsComplete = chapter6AllStationsComplete,
-                chapter1ProgressForStrip = chapter1ProgressForStrip,
-                collectedEggStripCount = collectedEggStripCount,
-                unlockedChapter = unlockedChapter,
-                chapter4ComingSoon = !uiState.chapter3Completed,
-                chapter5ComingSoon = !uiState.chapter4Completed,
-                chapter6ComingSoon = !uiState.chapter5Completed,
-                maxSelectableChapterId =
-                    when {
-                        uiState.chapter5Completed -> 6
-                        uiState.chapter4Completed -> 5
-                        uiState.chapter3Completed -> 4
-                        else -> 3
-                    },
+                chapter1AllStationsComplete = flags.chapter1AllStationsComplete,
+                chapter2AllStationsComplete = flags.chapter2AllStationsComplete,
+                chapter3AllStationsComplete = flags.chapter3AllStationsComplete,
+                chapter4AllStationsComplete = flags.chapter4AllStationsComplete,
+                chapter5AllStationsComplete = flags.chapter5AllStationsComplete,
+                chapter6AllStationsComplete = flags.chapter6AllStationsComplete,
+                chapter1ProgressForStrip = flags.chapter1ProgressForStrip,
+                collectedEggStripCount = flags.collectedEggStripCount,
+                unlockedChapter = flags.unlockedChapter,
+                chapter4ComingSoon = flags.chapter4ComingSoon,
+                chapter5ComingSoon = flags.chapter5ComingSoon,
+                chapter6ComingSoon = flags.chapter6ComingSoon,
+                maxSelectableChapterId = flags.maxSelectableChapterId,
             )
         }
     }
 }
+
+internal data class AppNavChapterFlags(
+    val beachOutroSeen: Boolean,
+    val chapter1AllStationsComplete: Boolean,
+    val chapter2AllStationsComplete: Boolean,
+    val chapter3AllStationsComplete: Boolean,
+    val chapter4AllStationsComplete: Boolean,
+    val chapter5AllStationsComplete: Boolean,
+    val chapter6AllStationsComplete: Boolean,
+    val chapter1ProgressForStrip: Boolean,
+    val collectedEggStripCount: Int,
+    val unlockedChapter: Int,
+    val chapter4ComingSoon: Boolean,
+    val chapter5ComingSoon: Boolean,
+    val chapter6ComingSoon: Boolean,
+    val maxSelectableChapterId: Int,
+)
