@@ -18,7 +18,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
+import com.tal.hebrewdino.ui.layout.topChromeInsetsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -261,7 +261,7 @@ fun ChaptersScreen(
             modifier =
                 Modifier
                     .align(Alignment.TopEnd)
-                    .statusBarsPadding()
+                    .topChromeInsetsPadding()
                     .padding(top = 4.dp, end = 8.dp)
                     .zIndex(1f),
         ) {
@@ -277,7 +277,7 @@ fun ChaptersScreen(
             modifier =
                 Modifier
                     .align(Alignment.TopStart)
-                    .statusBarsPadding()
+                    .topChromeInsetsPadding()
                     .padding(top = 4.dp, start = 8.dp)
                     .zIndex(1f),
         ) {

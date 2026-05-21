@@ -78,7 +78,7 @@ import com.tal.hebrewdino.ui.domain.DevTools
 import com.tal.hebrewdino.ui.domain.JourneyEndMarkerIdle
 import com.tal.hebrewdino.ui.domain.JourneyMapLayout
 import androidx.compose.ui.draw.scale
-import androidx.compose.foundation.layout.statusBarsPadding
+import com.tal.hebrewdino.ui.layout.topChromeInsetsPadding
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
@@ -338,7 +338,7 @@ fun JourneyScreen(
             contentScale = ContentScale.Crop,
         )
 
-        Column(modifier = Modifier.fillMaxSize().statusBarsPadding()) {
+        Column(modifier = Modifier.fillMaxSize().topChromeInsetsPadding()) {
             // RTL Row: physical right = חזור + ביצים, center = כותרת + שחק + אותיות, physical left = בדיקה.
             Row(
                 modifier =
@@ -487,7 +487,6 @@ fun JourneyScreen(
                 modifier =
                     Modifier
                         .align(Alignment.TopStart)
-                        .statusBarsPadding()
                         .padding(start = 8.dp, top = 4.dp)
                         .offset(y = backButtonHeightDp + JourneySpaceBelowBackBeforeEggs),
             )

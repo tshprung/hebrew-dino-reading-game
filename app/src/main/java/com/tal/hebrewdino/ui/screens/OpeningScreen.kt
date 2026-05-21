@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.tal.hebrewdino.R
+import com.tal.hebrewdino.ui.layout.topChromeInsetsPadding
 
 @Composable
 fun OpeningScreen(
@@ -69,6 +70,7 @@ fun OpeningScreen(
                 modifier =
                     Modifier
                         .align(Alignment.TopEnd)
+                        .topChromeInsetsPadding()
                         .padding(top = 8.dp, end = 10.dp),
             )
 

@@ -16,7 +16,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
+import com.tal.hebrewdino.ui.layout.topChromeInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -93,7 +93,7 @@ fun SeasonsScreen(
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .statusBarsPadding()
+                    .topChromeInsetsPadding()
                     .verticalScroll(scroll)
                     .padding(horizontal = 16.dp, vertical = 14.dp),
             horizontalAlignment = Alignment.CenterHorizontally,

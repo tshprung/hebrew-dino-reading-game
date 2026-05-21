@@ -9,7 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
+import com.tal.hebrewdino.ui.layout.topChromeInsetsPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
@@ -620,13 +620,11 @@ fun GameScreen(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .statusBarsPadding()
-                    // Give a consistent ~1cm breathing room below the status bar so the progress line
-                    // and the "חזור" button are never clipped.
+                    .topChromeInsetsPadding()
                     .padding(
                         start = if (isCompactLandscapePhone) 6.dp else 8.dp,
                         end = if (isCompactLandscapePhone) 6.dp else 8.dp,
-                        top = if (isCompactLandscapePhone) 12.dp else 38.dp,
+                        top = if (isCompactLandscapePhone) 8.dp else 10.dp,
                         bottom = 0.dp,
                     )
                     .offset(y = if (isSagaEpisode(chapterId)) -SixStationArcHalfCmNudge else 0.dp)
