@@ -2,6 +2,7 @@ package com.tal.hebrewdino.ui
 
 /** Central route strings for navigation (used from screens and [AppNav]). */
 object NavRoutes {
+    const val Opening = "opening"
     const val Seasons = "seasons"
     const val Chapters = "chapters"
     const val StoryIntro = "story_intro"

@@ -63,6 +63,7 @@ import com.tal.hebrewdino.ui.screens.LevelScreen
 import com.tal.hebrewdino.ui.screens.RewardScreen
 import com.tal.hebrewdino.ui.screens.SeasonsScreen
 import com.tal.hebrewdino.ui.screens.SettingsScreen
+import com.tal.hebrewdino.ui.screens.OpeningScreen
 import com.tal.hebrewdino.ui.screens.Chapter2LevelScreen
 import com.tal.hebrewdino.R
 import kotlinx.coroutines.launch
@@ -156,8 +157,7 @@ fun AppNav() {
             else -> 3
         }
 
-    // TODO: Future: add app title/logo opening screen before Seasons.
-    val startDestination = NavRoutes.Seasons
+    val startDestination = NavRoutes.Opening
 
     LaunchedEffect(Unit) {
         progress.repairChapter2ProgressIfNeeded()
@@ -169,6 +169,18 @@ fun AppNav() {
     }
 
     fun NavGraphBuilder.systemAndTrainingGraph() {
+        composable(NavRoutes.Opening) {
+            OpeningScreen(
+                onPlay = {
+                    navController.navigate(NavRoutes.Seasons) {
+                        popUpTo(NavRoutes.Opening) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                },
+                onOpenSettings = { navController.navigate(NavRoutes.Settings) },
+            )
+        }
+
         composable(NavRoutes.Seasons) {
             SeasonsScreen(
                 onOpenSeason1 = {
