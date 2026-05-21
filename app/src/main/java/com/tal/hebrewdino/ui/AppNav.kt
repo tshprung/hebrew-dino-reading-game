@@ -173,7 +173,6 @@ fun AppNav() {
             OpeningScreen(
                 onPlay = {
                     navController.navigate(NavRoutes.Seasons) {
-                        popUpTo(NavRoutes.Opening) { inclusive = true }
                         launchSingleTop = true
                     }
                 },
@@ -185,6 +184,12 @@ fun AppNav() {
             SeasonsScreen(
                 onOpenSeason1 = {
                     navController.navigate(NavRoutes.Chapters) { launchSingleTop = true }
+                },
+                onBackToOpening = {
+                    navController.navigate(NavRoutes.Opening) {
+                        popUpTo(NavRoutes.Opening) { inclusive = false }
+                        launchSingleTop = true
+                    }
                 },
             )
         }

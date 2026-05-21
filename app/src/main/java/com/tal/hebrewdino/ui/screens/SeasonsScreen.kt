@@ -8,10 +8,13 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
@@ -48,6 +51,7 @@ private data class SeasonCardConfig(
 @Composable
 fun SeasonsScreen(
     onOpenSeason1: () -> Unit,
+    onBackToOpening: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val scroll = rememberScrollState()
@@ -94,12 +98,21 @@ fun SeasonsScreen(
                     .padding(horizontal = 16.dp, vertical = 14.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Text(
-                text = "בחר עונה",
-                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.ExtraBold),
-                color = Color(0xFF0B2B3D),
-                textAlign = TextAlign.Center,
-            )
+            Box(modifier = Modifier.fillMaxWidth()) {
+                TopPillButton(
+                    text = "חזור",
+                    onClick = onBackToOpening,
+                    modifier = Modifier.align(Alignment.CenterStart),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
+                )
+                Text(
+                    text = "בחר עונה",
+                    modifier = Modifier.align(Alignment.Center),
+                    style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.ExtraBold),
+                    color = Color(0xFF0B2B3D),
+                    textAlign = TextAlign.Center,
+                )
+            }
             Spacer(modifier = Modifier.height(14.dp))
 
             Column(
@@ -119,6 +132,36 @@ fun SeasonsScreen(
             }
 
             Spacer(modifier = Modifier.height(18.dp))
+        }
+    }
+}
+
+@Composable
+private fun TopPillButton(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    contentPadding: PaddingValues = PaddingValues(horizontal = 14.dp, vertical = 10.dp),
+) {
+    Surface(
+        onClick = onClick,
+        modifier =
+            modifier
+                .shadow(6.dp, RoundedCornerShape(999.dp))
+                .clip(RoundedCornerShape(999.dp)),
+        color = Color.White.copy(alpha = 0.5f),
+        tonalElevation = 0.dp,
+        shadowElevation = 0.dp,
+    ) {
+        Row(
+            modifier = Modifier.padding(contentPadding),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = text,
+                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                color = Color(0xFF102A43),
+            )
         }
     }
 }
