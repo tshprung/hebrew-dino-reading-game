@@ -31,6 +31,7 @@ import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -46,15 +47,22 @@ fun OpeningScreen(
     onOpenSettings: () -> Unit,
     onExit: () -> Unit,
     modifier: Modifier = Modifier,
+    enableMotion: Boolean = true,
 ) {
-    val infinite = rememberInfiniteTransition(label = "opening")
-    val playPulse by
-        infinite.animateFloat(
-            initialValue = 1f,
-            targetValue = 1.05f,
-            animationSpec = infiniteRepeatable(tween(durationMillis = 2200), repeatMode = RepeatMode.Reverse),
-            label = "playPulse",
-        )
+    val playPulse =
+        if (enableMotion) {
+            val infinite = rememberInfiniteTransition(label = "opening")
+            infinite
+                .animateFloat(
+                    initialValue = 1f,
+                    targetValue = 1.05f,
+                    animationSpec = infiniteRepeatable(tween(durationMillis = 2200), repeatMode = RepeatMode.Reverse),
+                    label = "playPulse",
+                )
+                .value
+        } else {
+            1f
+        }
 
     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
         Box(modifier = modifier.fillMaxSize()) {
@@ -73,7 +81,8 @@ fun OpeningScreen(
                     Modifier
                         .align(Alignment.TopStart)
                         .topChromeInsetsPadding()
-                        .padding(top = 8.dp, start = 10.dp),
+                        .padding(top = 8.dp, start = 10.dp)
+                        .testTag("opening_exit"),
             )
 
             OpeningTopChip(
@@ -83,7 +92,8 @@ fun OpeningScreen(
                     Modifier
                         .align(Alignment.TopEnd)
                         .topChromeInsetsPadding()
-                        .padding(top = 8.dp, end = 10.dp),
+                        .padding(top = 8.dp, end = 10.dp)
+                        .testTag("opening_settings"),
             )
 
             OpeningPlayButton(
@@ -92,7 +102,8 @@ fun OpeningScreen(
                 modifier =
                     Modifier
                         .align(Alignment.BottomStart)
-                        .padding(start = 22.dp, bottom = 18.dp),
+                        .padding(start = 22.dp, bottom = 18.dp)
+                        .testTag("opening_play"),
             )
         }
     }
@@ -134,7 +145,7 @@ private fun OpeningPlayButton(
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
                 Text(
-                    text = "בואו נשחק!",
+                    text = "בואו נשחק",
                     textAlign = TextAlign.Center,
                     style =
                         MaterialTheme.typography.titleLarge.copy(
