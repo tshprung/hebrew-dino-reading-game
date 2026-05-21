@@ -624,10 +624,18 @@ fun GameScreen(
                     .padding(
                         start = if (isCompactLandscapePhone) 6.dp else 8.dp,
                         end = if (isCompactLandscapePhone) 6.dp else 8.dp,
-                        top = if (isCompactLandscapePhone) 8.dp else 10.dp,
+                        top =
+                            (if (isCompactLandscapePhone) 8.dp else 10.dp) + GameBackButtonExtraTopInset,
                         bottom = 0.dp,
                     )
-                    .offset(y = if (isSagaEpisode(chapterId)) -SixStationArcHalfCmNudge else 0.dp)
+                    .offset(
+                        y =
+                            if (isSagaEpisode(chapterId)) {
+                                -SixStationArcHalfCmNudge + GameBackButtonExtraTopInset
+                            } else {
+                                0.dp
+                            },
+                    )
                     .align(Alignment.TopCenter)
                     .zIndex(4f),
         )

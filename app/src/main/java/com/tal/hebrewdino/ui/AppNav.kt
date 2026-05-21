@@ -170,6 +170,7 @@ fun AppNav() {
 
     fun NavGraphBuilder.systemAndTrainingGraph() {
         composable(NavRoutes.Opening) {
+            val context = LocalContext.current
             OpeningScreen(
                 onPlay = {
                     navController.navigate(NavRoutes.Seasons) {
@@ -177,6 +178,7 @@ fun AppNav() {
                     }
                 },
                 onOpenSettings = { navController.navigate(NavRoutes.Settings) },
+                onExit = { (context as? android.app.Activity)?.finish() },
             )
         }
 

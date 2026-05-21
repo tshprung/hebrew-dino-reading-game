@@ -33,6 +33,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -43,6 +44,7 @@ import com.tal.hebrewdino.ui.layout.topChromeInsetsPadding
 fun OpeningScreen(
     onPlay: () -> Unit,
     onOpenSettings: () -> Unit,
+    onExit: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val infinite = rememberInfiniteTransition(label = "opening")
@@ -64,7 +66,17 @@ fun OpeningScreen(
                 alignment = Alignment.Center,
             )
 
-            OpeningSettingsChip(
+            OpeningTopChip(
+                text = "יציאה",
+                onClick = onExit,
+                modifier =
+                    Modifier
+                        .align(Alignment.TopStart)
+                        .topChromeInsetsPadding()
+                        .padding(top = 8.dp, start = 10.dp),
+            )
+
+            OpeningTopChip(
                 text = "הגדרות",
                 onClick = onOpenSettings,
                 modifier =
@@ -120,26 +132,29 @@ private fun OpeningPlayButton(
         shadowElevation = 0.dp,
     ) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text(
-                text = "בואו נשחק!",
-                style =
-                    MaterialTheme.typography.titleLarge.copy(
-                        fontWeight = FontWeight.Black,
-                        fontSize = 26.sp,
-                        shadow =
-                            Shadow(
-                                color = Color.White.copy(alpha = 0.85f),
-                                blurRadius = 6f,
-                            ),
-                    ),
-                color = Color(0xFF102A43),
-            )
+            CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+                Text(
+                    text = "בואו נשחק!",
+                    textAlign = TextAlign.Center,
+                    style =
+                        MaterialTheme.typography.titleLarge.copy(
+                            fontWeight = FontWeight.Black,
+                            fontSize = 26.sp,
+                            shadow =
+                                Shadow(
+                                    color = Color.White.copy(alpha = 0.85f),
+                                    blurRadius = 6f,
+                                ),
+                        ),
+                    color = Color(0xFF102A43),
+                )
+            }
         }
     }
 }
 
 @Composable
-private fun OpeningSettingsChip(
+private fun OpeningTopChip(
     text: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -154,11 +169,14 @@ private fun OpeningSettingsChip(
         tonalElevation = 0.dp,
         shadowElevation = 0.dp,
     ) {
-        Text(
-            text = text,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
-            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-            color = Color(0xFF102A43),
-        )
+        CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+            Text(
+                text = text,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+                textAlign = TextAlign.Center,
+                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                color = Color(0xFF102A43),
+            )
+        }
     }
 }

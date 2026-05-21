@@ -65,6 +65,9 @@ import kotlinx.coroutines.launch
 /** ~½ cm: shared layout nudges for the six-station arc (chapters 1–4); letters/art/intros differ per chapter. */
 internal val SixStationArcHalfCmNudge = 19.dp
 
+/** ~3–4 mm: lowers top chrome so "חזור" clears the cutout in immersive fullscreen. */
+internal val GameBackButtonExtraTopInset = 12.dp
+
 enum class StationHeaderMode {
     /** Default: keep gameplay stations clean (back + progress only). */
     None,
