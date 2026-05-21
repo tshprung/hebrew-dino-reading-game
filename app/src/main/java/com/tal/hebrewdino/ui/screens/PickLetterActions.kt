@@ -95,7 +95,7 @@ internal object PickLetterActions {
                                 voice.playBlocking(letterName)
                                 voice.playFirstAvailableBlocking(*praise.toTypedArray())
                             }
-                        job?.join()
+                        GameAudioActions.joinSilently(job)
                         val isLast = session.currentIndex >= session.totalQuestions - 1
                         advanceAfterRound(isLast, false)
                     }
