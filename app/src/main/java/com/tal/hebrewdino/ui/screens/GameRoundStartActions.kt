@@ -59,45 +59,45 @@ internal object GameRoundStartActions {
         cancelFeedbackVoice()
         val q: Question = session.currentQuestion ?: return
 
-        val promptJob =
-            scope.launch {
-                if (audioEnabled) {
-                    gameViewModel.dinoTalking = true
-                    try {
-                        playIntroPrompt(
-                            audioEnabled = true,
-                            chapterId = chapterId,
-                            stationId = stationId,
-                            listenOnlyTargetPrompt = listenOnlyTargetPrompt,
-                            stationTemplateId = stationTemplateId,
-                            planPopAllLettersInWord = planPopAllLettersInWord,
-                            isSagaEpisode = isSagaEpisode(chapterId),
-                            sagaUsesPickLetterAudioStaging = sagaUsesPickLetterAudioStaging,
-                            sagaUsesPopBalloonsAudioStaging = sagaUsesPopBalloonsAudioStaging,
-                            sagaUsesFindGridAudioStaging = sagaUsesFindGridAudioStaging,
-                            isChapter3HighlightedLetterInWordStation = isChapter3HighlightedLetterInWordStation,
-                            isChapter3AudioLetterRecognitionStation = isChapter3AudioLetterRecognitionStation,
-                            session = session,
-                            q = q,
-                            voice = voice,
-                            sfx = sfx,
-                            station1IntroLetterLeadFraction = station1IntroLetterLeadFraction,
-                            station1IntroToLetterLeadScale = station1IntroToLetterLeadScale,
-                            station2BalloonIntroLetterLeadFraction = station2BalloonIntroLetterLeadFraction,
-                            station2IntroToLetterLeadScale = station2IntroToLetterLeadScale,
-                            station2BalloonIntroToLetterGapBoost = station2BalloonIntroToLetterGapBoost,
-                            station2BalloonIntroToLetterExtraPauseMs = station2BalloonIntroToLetterExtraPauseMs,
-                            station4IntroWordLeadFraction = station4IntroWordLeadFraction,
-                            station4IntroToWordLeadScale = station4IntroToWordLeadScale,
-                            station4IntroToWordGapBoost = station4IntroToWordGapBoost,
-                            station4IntroToWordExtraPauseMs = station4IntroToWordExtraPauseMs,
-                        )
-                    } finally {
-                        gameViewModel.dinoTalking = false
-                    }
-                }
+        GameAudioActions.launchPromptVoiceNoCancel(
+            audioEnabled = audioEnabled,
+            scope = scope,
+            audioRuntime = audioRuntime,
+        ) {
+            gameViewModel.dinoTalking = true
+            try {
+                playIntroPrompt(
+                    audioEnabled = true,
+                    chapterId = chapterId,
+                    stationId = stationId,
+                    listenOnlyTargetPrompt = listenOnlyTargetPrompt,
+                    stationTemplateId = stationTemplateId,
+                    planPopAllLettersInWord = planPopAllLettersInWord,
+                    isSagaEpisode = isSagaEpisode(chapterId),
+                    sagaUsesPickLetterAudioStaging = sagaUsesPickLetterAudioStaging,
+                    sagaUsesPopBalloonsAudioStaging = sagaUsesPopBalloonsAudioStaging,
+                    sagaUsesFindGridAudioStaging = sagaUsesFindGridAudioStaging,
+                    isChapter3HighlightedLetterInWordStation = isChapter3HighlightedLetterInWordStation,
+                    isChapter3AudioLetterRecognitionStation = isChapter3AudioLetterRecognitionStation,
+                    session = session,
+                    q = q,
+                    voice = voice,
+                    sfx = sfx,
+                    station1IntroLetterLeadFraction = station1IntroLetterLeadFraction,
+                    station1IntroToLetterLeadScale = station1IntroToLetterLeadScale,
+                    station2BalloonIntroLetterLeadFraction = station2BalloonIntroLetterLeadFraction,
+                    station2IntroToLetterLeadScale = station2IntroToLetterLeadScale,
+                    station2BalloonIntroToLetterGapBoost = station2BalloonIntroToLetterGapBoost,
+                    station2BalloonIntroToLetterExtraPauseMs = station2BalloonIntroToLetterExtraPauseMs,
+                    station4IntroWordLeadFraction = station4IntroWordLeadFraction,
+                    station4IntroToWordLeadScale = station4IntroToWordLeadScale,
+                    station4IntroToWordGapBoost = station4IntroToWordGapBoost,
+                    station4IntroToWordExtraPauseMs = station4IntroToWordExtraPauseMs,
+                )
+            } finally {
+                gameViewModel.dinoTalking = false
             }
-        GameAudioActions.setPromptVoiceJob(audioRuntime, promptJob)
+        }
 
         scope.launch {
             if (audioEnabled) {

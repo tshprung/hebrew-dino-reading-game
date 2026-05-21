@@ -73,6 +73,34 @@ internal object GameAudioActions {
         return job
     }
 
+    fun launchPromptVoice(
+        audioEnabled: Boolean,
+        scope: CoroutineScope,
+        audioRuntime: GameAudioRuntimeState,
+        cancelFeedbackVoice: () -> Unit,
+        play: suspend () -> Unit,
+    ): Job? {
+        cancelFeedbackVoice()
+        return launchPromptVoiceNoCancel(
+            audioEnabled = audioEnabled,
+            scope = scope,
+            audioRuntime = audioRuntime,
+            play = play,
+        )
+    }
+
+    fun launchPromptVoiceNoCancel(
+        audioEnabled: Boolean,
+        scope: CoroutineScope,
+        audioRuntime: GameAudioRuntimeState,
+        play: suspend () -> Unit,
+    ): Job? {
+        if (!audioEnabled) return null
+        val job = scope.launch { play() }
+        setPromptVoiceJob(audioRuntime, job)
+        return job
+    }
+
     suspend fun await(
         job: Job?,
         timeoutMs: Long,
