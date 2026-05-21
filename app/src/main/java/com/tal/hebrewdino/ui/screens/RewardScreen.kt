@@ -37,7 +37,6 @@ import com.tal.hebrewdino.ui.audio.VoicePlayer
 import com.tal.hebrewdino.ui.layout.ScreenFit
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.random.Random
 
 /** Random celebratory dino pose on the stage-complete screen (not a single static "nice" moment). */
@@ -107,7 +106,7 @@ fun RewardScreen(
                     voice.playFirstAvailableBlocking(*tail.toTypedArray())
                 }
             // Safety: always navigate back even if audio hangs.
-            withTimeoutOrNull(9000) { voiceJob.join() }
+            GameAudioActions.await(voiceJob, 9000L)
             if (!navigatedAway) {
                 navigatedAway = true
                 onBackToMap()

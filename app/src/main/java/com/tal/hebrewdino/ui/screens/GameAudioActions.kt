@@ -80,6 +80,10 @@ internal object GameAudioActions {
         withTimeoutOrNull(timeoutMs) { job?.join() }
     }
 
+    suspend fun joinSilently(job: Job?) {
+        runCatching { job?.join() }
+    }
+
     suspend fun awaitFeedbackVoice(
         audioRuntime: GameAudioRuntimeState,
         timeoutMs: Long,
@@ -94,4 +98,3 @@ internal object GameAudioActions {
         await(audioRuntime.promptVoiceJob, timeoutMs)
     }
 }
-

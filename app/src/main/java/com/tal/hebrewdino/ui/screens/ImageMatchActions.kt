@@ -56,7 +56,7 @@ internal object ImageMatchActions {
                         voice.playFirstAvailableBlocking(*praise.toTypedArray())
                     }
                 scope.launch {
-                    runCatching { audioJob?.join() }
+                    GameAudioActions.joinSilently(audioJob)
                     val isLast = session.currentIndex >= session.totalQuestions - 1
                     advanceAfterRound(isLast)
                 }
@@ -161,7 +161,7 @@ internal object ImageMatchActions {
                         }
                     }
                 scope.launch {
-                    runCatching { audioJob?.join() }
+                    GameAudioActions.joinSilently(audioJob)
                     val isLast = session.currentIndex >= session.totalQuestions - 1
                     advanceAfterRound(isLast)
                 }
