@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import com.tal.hebrewdino.ui.layout.topChromeInsetsPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
@@ -600,13 +599,11 @@ fun GameScreen(
 
         // Station screens: keep the top bar fixed (like Journey). Do not show collected eggs/letters/debug inside stations.
         val isCompactLandscapePhone = ScreenFit.isCompactLandscapePhone()
-        val contentTopInsetBase = (stationUiSpec.contentTopInsetDp?.dp ?: 40.dp)
         val contentTopInset =
-            if (isCompactLandscapePhone) {
-                contentTopInsetBase.coerceAtMost(28.dp)
-            } else {
-                contentTopInsetBase
-            }
+            gameScreenContentTopInset(
+                isCompactLandscapePhone = isCompactLandscapePhone,
+                stationUiSpec = stationUiSpec,
+            )
         val (topQuestionNumber, topTotalQuestions) =
             topChromeProgressOverride ?: (session.questionNumber to session.totalQuestions)
         GameScreenTopChrome(
@@ -620,21 +617,9 @@ fun GameScreen(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .topChromeInsetsPadding()
-                    .padding(
-                        start = if (isCompactLandscapePhone) 6.dp else 8.dp,
-                        end = if (isCompactLandscapePhone) 6.dp else 8.dp,
-                        top =
-                            (if (isCompactLandscapePhone) 8.dp else 10.dp) + GameBackButtonExtraTopInset,
-                        bottom = 0.dp,
-                    )
-                    .offset(
-                        y =
-                            if (isSagaEpisode(chapterId)) {
-                                -SixStationArcHalfCmNudge + GameBackButtonExtraTopInset
-                            } else {
-                                0.dp
-                            },
+                    .gameScreenStationTopChrome(
+                        isCompactLandscapePhone = isCompactLandscapePhone,
+                        chapterId = chapterId,
                     )
                     .align(Alignment.TopCenter)
                     .zIndex(4f),
