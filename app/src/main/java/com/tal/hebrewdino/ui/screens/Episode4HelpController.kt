@@ -37,7 +37,7 @@ internal object SideHelpActions {
             if (!audioEnabled) return
             val q = session.currentQuestion ?: return
             sfx.stopAllStreams()
-            GameAudioActions.launchFeedbackVoice(
+            GameAudioActions.launchPromptVoice(
                 audioEnabled = audioEnabled,
                 scope = scope,
                 audioRuntime = audioRuntime,
@@ -98,7 +98,7 @@ internal object SideHelpActions {
             val q = session.currentQuestion as? Question.PopBalloonsQuestion ?: return
             val letter = q.correctAnswer
             val letterClip = AudioClips.letterNameClip(letter)
-            GameAudioActions.launchFeedbackVoice(
+            GameAudioActions.launchPromptVoice(
                 audioEnabled = audioEnabled,
                 scope = scope,
                 audioRuntime = audioRuntime,

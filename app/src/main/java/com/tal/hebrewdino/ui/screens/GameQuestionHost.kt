@@ -205,7 +205,7 @@ internal fun GameQuestionHost(
                         if (!ui.audioEnabled) return@repeatLetter
                         val letter = current.correctAnswer
                         val clip = AudioClips.letterNameClip(letter) ?: return@repeatLetter
-                        GameAudioActions.launchFeedbackVoice(
+                        GameAudioActions.launchPromptVoice(
                             audioEnabled = ui.audioEnabled,
                             scope = deps.scope,
                             audioRuntime = deps.audioRuntime,
@@ -309,7 +309,7 @@ internal fun GameQuestionHost(
                         {
                             val wordPath = AudioClips.wordClipByCatalogId(current.catalogEntryId)
                             if (deps.voice.hasAsset(wordPath)) {
-                                GameAudioActions.launchFeedbackVoice(
+                                GameAudioActions.launchPromptVoice(
                                     audioEnabled = ui.audioEnabled,
                                     scope = deps.scope,
                                     audioRuntime = deps.audioRuntime,
@@ -404,7 +404,7 @@ internal fun GameQuestionHost(
                         )
 
                     fun handleMatchWordPressed(choiceId: String) {
-                        GameAudioActions.launchFeedbackVoice(
+                        GameAudioActions.launchPromptVoice(
                             audioEnabled = ui.audioEnabled,
                             scope = deps.scope,
                             audioRuntime = deps.audioRuntime,
@@ -422,7 +422,7 @@ internal fun GameQuestionHost(
 
                     fun handleMatchLetterPressed(letter: String) {
                         val clip = AudioClips.letterNameClip(letter) ?: return
-                        GameAudioActions.launchFeedbackVoice(
+                        GameAudioActions.launchPromptVoice(
                             audioEnabled = ui.audioEnabled,
                             scope = deps.scope,
                             audioRuntime = deps.audioRuntime,
@@ -434,7 +434,7 @@ internal fun GameQuestionHost(
                         if (!deps.gameViewModel.consumeTapCooldown()) return
                         deps.gameViewModel.inputLocked = true
                         deps.scope.launch {
-                            GameAudioActions.awaitFeedbackVoice(deps.audioRuntime, 4500L)
+                            GameAudioActions.awaitTrackedVoices(deps.audioRuntime, 4500L)
                             if (ui.audioEnabled) {
                                 val job =
                                     GameAudioActions.launchFeedbackVoice(

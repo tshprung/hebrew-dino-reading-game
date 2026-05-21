@@ -145,4 +145,14 @@ internal object GameAudioActions {
     ) {
         await(audioRuntime.promptVoiceJob, timeoutMs)
     }
+
+    suspend fun awaitTrackedVoices(
+        audioRuntime: GameAudioRuntimeState,
+        timeoutMs: Long,
+    ) {
+        withTimeoutOrNull(timeoutMs) {
+            audioRuntime.feedbackVoiceJob?.join()
+            audioRuntime.promptVoiceJob?.join()
+        }
+    }
 }

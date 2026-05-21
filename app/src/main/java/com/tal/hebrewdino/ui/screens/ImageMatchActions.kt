@@ -90,7 +90,7 @@ internal object ImageMatchActions {
                 voiceHasAsset = { path -> voice.hasAsset(path) },
             )
         if (voice.hasAsset(clip)) {
-            GameAudioActions.launchFeedbackVoice(
+            GameAudioActions.launchPromptVoice(
                 audioEnabled = audioEnabled,
                 scope = scope,
                 audioRuntime = audioRuntime,
@@ -111,7 +111,7 @@ internal object ImageMatchActions {
         audioRuntime: GameAudioRuntimeState,
     ) {
         if (!audioEnabled) return
-        GameAudioActions.launchFeedbackVoice(
+        GameAudioActions.launchPromptVoice(
             audioEnabled = audioEnabled,
             scope = scope,
             audioRuntime = audioRuntime,
