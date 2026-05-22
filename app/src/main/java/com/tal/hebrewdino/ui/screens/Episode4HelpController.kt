@@ -53,7 +53,7 @@ internal object SideHelpActions {
                             if (letterClip != null && voice.hasAsset(letterClip)) add(letterClip)
                         }
                     if (parts.isNotEmpty()) {
-                        voice.playSequenceBlocking(*parts.toTypedArray())
+                        voice.playSequenceBlocking(parts)
                     } else {
                         if (letterClip != null) speakLetterPrompt(voice, round.correctLetter)
                     }

@@ -137,6 +137,47 @@ class VoicePlayer(context: Context) {
         }
     }
 
+    suspend fun playSequenceBlocking(assetPaths: List<String>) {
+        // Keep the mutex for the whole sequence so nothing else can interleave.
+        mutex.withLock {
+            for (p in assetPaths) {
+                if (p.isBlank()) continue
+                val ok = exists(p)
+                if (!ok) continue
+
+                stopLocked()
+                player = MediaPlayer()
+
+                val success = withContext(Dispatchers.IO) { prepareLocked(p) }
+                if (!success) {
+                    stopLocked()
+                    continue
+                }
+
+                val mp = player ?: continue
+                suspendCancellableCoroutine { cont ->
+                    activeWaiter = cont
+                    mp.setOnCompletionListener {
+                        if (activeWaiter === cont) activeWaiter = null
+                        if (cont.isActive) cont.resume(Unit)
+                    }
+                    mp.setOnErrorListener { _, _, _ ->
+                        if (activeWaiter === cont) activeWaiter = null
+                        if (cont.isActive) cont.resume(Unit)
+                        true
+                    }
+                    cont.invokeOnCancellation {
+                        if (activeWaiter === cont) activeWaiter = null
+                        stopLocked()
+                    }
+                    mp.start()
+                }
+
+                stopLocked()
+            }
+        }
+    }
+
     /**
      * Plays multiple clips back-to-back as one atomic unit (no overlap with other voice).
      *

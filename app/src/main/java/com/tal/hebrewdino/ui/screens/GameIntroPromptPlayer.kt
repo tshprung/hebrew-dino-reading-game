@@ -50,7 +50,7 @@ internal suspend fun playIntroPrompt(
                 add(AudioClips.wordClipByCatalogId(round.catalogId))
                 AudioClips.letterNameClip(round.correctLetter)?.let { add(it) }
             }.filter { voice.hasAsset(it) }
-        if (parts.isNotEmpty()) voice.playSequenceBlocking(*parts.toTypedArray())
+    if (parts.isNotEmpty()) voice.playSequenceBlocking(parts)
         return
     }
 
@@ -63,7 +63,7 @@ internal suspend fun playIntroPrompt(
                 if (voice.hasAsset(instruction)) add(instruction)
                 if (letterClip != null) add(letterClip)
             }.filter { voice.hasAsset(it) }
-        if (parts.isNotEmpty()) voice.playSequenceBlocking(*parts.toTypedArray())
+    if (parts.isNotEmpty()) voice.playSequenceBlocking(parts)
         return
     }
 
@@ -83,7 +83,7 @@ internal suspend fun playIntroPrompt(
                 if (letterName != null) add(letterName)
             }.filter { voice.hasAsset(it) }
         if (parts.isNotEmpty()) {
-            voice.playSequenceBlocking(*parts.toTypedArray())
+        voice.playSequenceBlocking(parts)
         } else {
             speakLetterPrompt(voice, q.targetLetter)
         }
@@ -201,7 +201,7 @@ internal suspend fun playIntroPrompt(
                 if (letterClip != null && voice.hasAsset(letterClip)) add(letterClip)
             }
         if (parts.isNotEmpty()) {
-            voice.playSequenceBlocking(*parts.toTypedArray())
+        voice.playSequenceBlocking(parts)
         } else {
             speakLetterPrompt(voice, q.correctAnswer)
         }
@@ -226,7 +226,7 @@ internal suspend fun playIntroPrompt(
                 if (letterClip != null && voice.hasAsset(letterClip)) add(letterClip)
             }
         if (parts.isNotEmpty()) {
-            voice.playSequenceBlocking(*parts.toTypedArray())
+        voice.playSequenceBlocking(parts)
         } else {
             speakLetterPrompt(voice, q.targetLetter)
         }

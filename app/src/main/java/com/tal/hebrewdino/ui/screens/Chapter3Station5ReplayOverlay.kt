@@ -59,7 +59,7 @@ internal fun Chapter3Station5ReplayOverlay(
                         if (voice.hasAsset(instruction)) add(instruction)
                         if (letterClip != null && voice.hasAsset(letterClip)) add(letterClip)
                     }
-                if (parts.isNotEmpty()) voice.playSequenceBlocking(*parts.toTypedArray())
+                if (parts.isNotEmpty()) voice.playSequenceBlocking(parts)
             }
         },
         modifier = modifier,

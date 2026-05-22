@@ -221,7 +221,7 @@ internal suspend fun speakLetterPrompt(
     when (parts.size) {
         0 -> return
         1 -> voice.playBlocking(parts[0])
-        else -> voice.playSequenceBlocking(*parts.toTypedArray())
+        else -> voice.playSequenceBlocking(parts)
     }
 }
 
