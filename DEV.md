@@ -42,7 +42,7 @@ See [TESTING.md](TESTING.md) for full detail.
 ## Assets
 
 - Large PNGs live in `drawable-nodpi/` (no density scaling).
-- Opening hero: `opening_splash_art.png`
+- Opening hero: `opening_splash_art.jpg`
 - Forest/journey backgrounds: `forest_bg_*`, `chapter*_*.png`
 - Dino animation frames: `dino_talk_0..3`, `dino_idle`, etc.
 - Third-party notes: [ASSETS.md](ASSETS.md)
