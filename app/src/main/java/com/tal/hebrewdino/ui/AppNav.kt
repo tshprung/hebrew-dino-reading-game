@@ -20,6 +20,19 @@ import com.tal.hebrewdino.ui.data.AudioPrefs
 import com.tal.hebrewdino.ui.data.DinoCharacter
 import kotlinx.coroutines.launch
 
+private val BackgroundMusicEligibleRoutes: Set<String> =
+    setOf(
+        NavRoutes.Opening,
+        NavRoutes.Seasons,
+        NavRoutes.Chapters,
+        NavRoutes.Journey,
+        NavRoutes.Ch2Journey,
+        NavRoutes.Ch3Journey,
+        NavRoutes.Ch4Journey,
+        NavRoutes.Ch5Journey,
+        NavRoutes.Ch6Journey,
+    )
+
 @Composable
 fun AppNav() {
     val navController = rememberNavController()
@@ -39,16 +52,7 @@ fun AppNav() {
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
 
-    val bgMusicEligible =
-        currentRoute == NavRoutes.Opening ||
-            currentRoute == NavRoutes.Seasons ||
-            currentRoute == NavRoutes.Chapters ||
-            currentRoute == NavRoutes.Journey ||
-            currentRoute == NavRoutes.Ch2Journey ||
-            currentRoute == NavRoutes.Ch3Journey ||
-            currentRoute == NavRoutes.Ch4Journey ||
-            currentRoute == NavRoutes.Ch5Journey ||
-            currentRoute == NavRoutes.Ch6Journey
+    val bgMusicEligible = currentRoute != null && currentRoute in BackgroundMusicEligibleRoutes
 
     LaunchedEffect(currentRoute, backgroundMusicEnabled) {
         if (backgroundMusicEnabled && bgMusicEligible) {

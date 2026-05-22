@@ -73,6 +73,13 @@ import kotlin.random.Random
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
+private fun Modifier.offsetYIfNonZero(y: Dp): Modifier =
+    if (y != 0.dp) {
+        this.offset(y = y)
+    } else {
+        this
+    }
+
 @Composable
 fun MatchLetterToWordGame(
     choices: List<LessonChoice>,
@@ -242,7 +249,7 @@ fun MatchLetterToWordGame(
                         ((chapterId == 3 || chapterId == 6) && stationId == 2) ||
                         (chapterId == TrainingV1Config.CHAPTER_ID && stationId == TrainingV1Config.STATION_MATCH_LETTER_TO_WORD)
                 )
-        val chapter2Station6ExtraDownDp =
+        val headerAndCardsExtraDownDp =
             if ((chapterId == 2 && stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH) ||
                 (chapterId == 3 && stationId == 2)
             ) {
@@ -276,13 +283,7 @@ fun MatchLetterToWordGame(
                     modifier =
                         Modifier
                             .padding(top = headerPadTop, bottom = headerPadBottom, start = 12.dp, end = 12.dp)
-                            .then(
-                                if (chapter2Station6ExtraDownDp > 0.dp) {
-                                    Modifier.offset(y = chapter2Station6ExtraDownDp)
-                                } else {
-                                    Modifier
-                                },
-                            )
+                            .offsetYIfNonZero(headerAndCardsExtraDownDp)
                             .then(
                                 if (instructionReadablePanel) {
                                     Modifier
@@ -496,13 +497,7 @@ fun MatchLetterToWordGame(
                         modifier =
                             Modifier
                                 .fillMaxWidth()
-                                .then(
-                                    if (chapter2Station6ExtraDownDp > 0.dp) {
-                                        Modifier.offset(y = chapter2Station6ExtraDownDp)
-                                    } else {
-                                        Modifier
-                                    },
-                                ),
+                                .offsetYIfNonZero(headerAndCardsExtraDownDp),
                         horizontalArrangement =
                             Arrangement.spacedBy(
                                 gap,
@@ -782,13 +777,7 @@ fun MatchLetterToWordGame(
                         modifier =
                             Modifier
                                 .width(wordColW)
-                                .then(
-                                    if (chapter2Station6ExtraDownDp > 0.dp) {
-                                        Modifier.offset(y = chapter2Station6ExtraDownDp)
-                                    } else {
-                                        Modifier
-                                    },
-                                ),
+                                .offsetYIfNonZero(headerAndCardsExtraDownDp),
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
@@ -930,7 +919,7 @@ private fun SixStationArcStation6Board(
     val letterTileHeightScale = 0.46f
     val letterFontSp = 30.sp
     val topGroupOffsetY = (-24).dp
-    val chapter2Station6ExtraDownDp =
+    val headerAndCardsExtraDownDp =
         if ((chapterId == 2 && stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH) ||
             (chapterId == 3 && stationId == 2)
         ) {
@@ -938,7 +927,7 @@ private fun SixStationArcStation6Board(
         } else {
             0.dp
         }
-    val topGroupOffsetEffectiveY = topGroupOffsetY + chapter2Station6ExtraDownDp
+    val topGroupOffsetEffectiveY = topGroupOffsetY + headerAndCardsExtraDownDp
     val columns = wordColumn.size.coerceIn(1, 6)
     val rowInnerW = (innerW - boardHorizontalPadding * 2f).coerceAtLeast(1.dp)
     val cardWBase =
