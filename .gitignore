@@ -17,3 +17,7 @@ gradle-8.7-bin.zip
 # Temporary asset downloads
 .tmp_assets/
 
+# Build artifacts (keep out of VCS)
+app/release/
+*.aab
+
