@@ -10,6 +10,16 @@ import com.tal.hebrewdino.ui.game.ChildGameAudioHooks
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
+private val ImageToWordPraiseCandidates =
+    arrayOf(
+        AudioClips.VoPraiseMetzuyan,
+        AudioClips.VoPraiseYofi,
+        AudioClips.VoPraiseHitzlacht,
+        AudioClips.VoNice1,
+        AudioClips.VoGoodJob2,
+        AudioClips.VoGoodJob1,
+    )
+
 internal object ImageMatchActions {
     fun handleImageToWordAttempt(
         choiceId: String,
@@ -43,17 +53,7 @@ internal object ImageMatchActions {
                                 voiceHasAsset = { path -> voice.hasAsset(path) },
                             )
                         voice.playBlocking(clip)
-                        val praise =
-                            mutableListOf(
-                                AudioClips.VoPraiseMetzuyan,
-                                AudioClips.VoPraiseYofi,
-                                AudioClips.VoPraiseHitzlacht,
-                                AudioClips.VoNice1,
-                                AudioClips.VoGoodJob2,
-                                AudioClips.VoGoodJob1,
-                            )
-                        praise.shuffle()
-                        voice.playFirstAvailableBlocking(*praise.toTypedArray())
+                        voice.playFirstAvailableBlockingRandomized(ImageToWordPraiseCandidates)
                     }
                 scope.launch {
                     GameAudioActions.joinSilently(audioJob)

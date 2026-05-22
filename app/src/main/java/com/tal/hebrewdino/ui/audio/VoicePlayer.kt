@@ -12,6 +12,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.suspendCancellableCoroutine
 import java.io.IOException
 import kotlin.coroutines.resume
+import kotlin.random.Random
 
 class VoicePlayer(context: Context) {
     companion object {
@@ -109,6 +110,24 @@ class VoicePlayer(context: Context) {
 
     suspend fun playFirstAvailableBlocking(vararg assetPaths: String) {
         for (p in assetPaths) {
+            if (p.isBlank()) continue
+            val ok = exists(p)
+            if (ok) {
+                playBlocking(p)
+                return
+            }
+        }
+    }
+
+    suspend fun playFirstAvailableBlockingRandomized(
+        assetPaths: Array<String>,
+        random: Random = Random.Default,
+    ) {
+        val n = assetPaths.size
+        if (n == 0) return
+        val start = random.nextInt(n)
+        for (k in 0 until n) {
+            val p = assetPaths[(start + k) % n]
             if (p.isBlank()) continue
             val ok = exists(p)
             if (ok) {

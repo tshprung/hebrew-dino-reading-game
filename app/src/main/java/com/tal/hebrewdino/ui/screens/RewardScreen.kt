@@ -101,9 +101,7 @@ fun RewardScreen(
                     val praisePool = AudioClips.rewardStagePraiseTailCandidates()
                     voice.warmUp(AudioClips.VoLevelDone, *praisePool)
                     voice.playBlocking(AudioClips.VoLevelDone)
-                    val tail = praisePool.toMutableList()
-                    tail.shuffle()
-                    voice.playFirstAvailableBlocking(*tail.toTypedArray())
+                    voice.playFirstAvailableBlockingRandomized(praisePool)
                 }
             // Safety: always navigate back even if audio hangs.
             GameAudioActions.await(voiceJob, 9000L)

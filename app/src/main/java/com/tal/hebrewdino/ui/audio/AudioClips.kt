@@ -65,19 +65,28 @@ object AudioClips {
      * Correct balloon pop playlist for Episode 1 station 2.
      * We prefer the “natural” Station 2 assets above; if they are missing, we fall back to the existing generic pops.
      */
+    private val Station2CorrectPopFinalePlaylist =
+        arrayOf(SfxStation2PopFinale, SfxStation2PopPlop, SfxStation2PopSoft1, SfxBalloonPopSoft)
+    private val Station2CorrectPopVariant0Playlist =
+        arrayOf(SfxStation2PopSoft1, SfxBalloonPopSoft, SfxBalloonPop)
+    private val Station2CorrectPopVariant1Playlist =
+        arrayOf(SfxStation2PopSoft2, SfxBalloonPopSoft, SfxBalloonPop)
+
     fun station2CorrectPopPlaylist(variant: Int, finale: Boolean): Array<String> {
         if (finale) {
-            return arrayOf(SfxStation2PopFinale, SfxStation2PopPlop, SfxStation2PopSoft1, SfxBalloonPopSoft)
+            return Station2CorrectPopFinalePlaylist
         }
         return when (variant % 2) {
-            0 -> arrayOf(SfxStation2PopSoft1, SfxBalloonPopSoft, SfxBalloonPop)
-            else -> arrayOf(SfxStation2PopSoft2, SfxBalloonPopSoft, SfxBalloonPop)
+            0 -> Station2CorrectPopVariant0Playlist
+            else -> Station2CorrectPopVariant1Playlist
         }
     }
 
     /** Wrong balloon: plop first, then funny (no fallback). */
+    private val Station2WrongPopPlaylist = arrayOf(SfxStation2PopPlop, SfxBalloonPopWrongFunny)
+
     fun station2WrongPopPlaylist(@Suppress("UNUSED_PARAMETER") balloonIndex: Int): Array<String> {
-        return arrayOf(SfxStation2PopPlop, SfxBalloonPopWrongFunny)
+        return Station2WrongPopPlaylist
     }
     const val SfxCorrect = "audio/sfx_correct.wav"
     const val SfxWrong = "audio/sfx_wrong.wav"
@@ -248,7 +257,7 @@ object AudioClips {
     /**
      * Station 1 correct: after the letter clip, play the first loadable tail (caller shuffles for variety).
      */
-    fun station1CorrectPraiseTailCandidates(): Array<String> =
+    private val Station1CorrectPraiseTailCandidates =
         arrayOf(
             VoYafeMeod,
             VoKolHakavod,
@@ -260,11 +269,13 @@ object AudioClips {
             VoPraiseHitzlacht,
         )
 
+    fun station1CorrectPraiseTailCandidates(): Array<String> = Station1CorrectPraiseTailCandidates
+
     /**
      * After [VoLevelDone] on the "שלב הסתיים" reward screen — caller shuffles, then [VoicePlayer.playFirstAvailableBlocking].
      * Wider than "יפה" alone so the tail feels varied.
      */
-    fun rewardStagePraiseTailCandidates(): Array<String> =
+    private val RewardStagePraiseTailCandidates =
         arrayOf(
             VoKolHakavod,
             VoNice1,
@@ -275,5 +286,7 @@ object AudioClips {
             VoPraiseYofi,
             VoPraiseHitzlacht,
         )
+
+    fun rewardStagePraiseTailCandidates(): Array<String> = RewardStagePraiseTailCandidates
 }
 

@@ -14,6 +14,23 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.random.Random
 
+private val Episode1PraiseCandidates =
+    arrayOf(
+        AudioClips.VoKolHakavod,
+        AudioClips.VoNice1,
+        AudioClips.VoGoodJob2,
+        AudioClips.VoGoodJob1,
+        AudioClips.VoPraiseMetzuyan,
+        AudioClips.VoPraiseYofi,
+        AudioClips.VoPraiseHitzlacht,
+    )
+
+private val OtherPraiseCandidates =
+    arrayOf(
+        AudioClips.VoKolHakavod,
+        AudioClips.VoGoodJob1,
+    )
+
 internal object AdvanceAfterRoundActions {
     suspend fun run(
         scope: CoroutineScope,
@@ -75,25 +92,13 @@ internal object AdvanceAfterRoundActions {
             if (sagaUsesFindGridAudioStaging) {
                 GameAudioActions.awaitFeedbackVoice(audioRuntime, 5000L)
             }
-            val candidates =
-                mutableListOf(
-                    AudioClips.VoKolHakavod,
-                    AudioClips.VoNice1,
-                    AudioClips.VoGoodJob2,
-                    AudioClips.VoGoodJob1,
-                    AudioClips.VoPraiseMetzuyan,
-                    AudioClips.VoPraiseYofi,
-                    AudioClips.VoPraiseHitzlacht,
-                )
-            candidates.shuffle()
-            val arr = candidates.toTypedArray()
             GameAudioActions.launchFeedbackVoice(
                 audioEnabled = audioEnabled,
                 scope = scope,
                 audioRuntime = audioRuntime,
                 cancelFeedbackVoice = cancelFeedbackVoice,
             ) {
-                voice.playFirstAvailableBlocking(*arr)
+                voice.playFirstAvailableBlockingRandomized(Episode1PraiseCandidates)
             }
         } else if (otherPraiseEligible) {
             if (sagaUsesFindGridAudioStaging) {
@@ -105,9 +110,7 @@ internal object AdvanceAfterRoundActions {
                 audioRuntime = audioRuntime,
                 cancelFeedbackVoice = cancelFeedbackVoice,
             ) {
-                val pool = mutableListOf(AudioClips.VoKolHakavod, AudioClips.VoGoodJob1)
-                pool.shuffle()
-                voice.playFirstAvailableBlocking(*pool.toTypedArray())
+                voice.playFirstAvailableBlockingRandomized(OtherPraiseCandidates)
             }
         }
         if (!suppressInGameDinoProgress && !(isChapter3HighlightedLetterInWordStation && ch3SpellMidWord)) {

@@ -9,6 +9,16 @@ import com.tal.hebrewdino.ui.game.ChildGameAudioHooks
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
+private val HighlightedWordDonePraiseCandidates =
+    arrayOf(
+        AudioClips.VoPraiseMetzuyan,
+        AudioClips.VoPraiseYofi,
+        AudioClips.VoPraiseHitzlacht,
+        AudioClips.VoNice1,
+        AudioClips.VoGoodJob2,
+        AudioClips.VoGoodJob1,
+    )
+
 internal object PickLetterActions {
     fun handlePick(
         picked: String,
@@ -46,23 +56,13 @@ internal object PickLetterActions {
                         }
                         if (wordDone) {
                             cancelFeedbackVoice()
-                            val praise =
-                                mutableListOf(
-                                    AudioClips.VoPraiseMetzuyan,
-                                    AudioClips.VoPraiseYofi,
-                                    AudioClips.VoPraiseHitzlacht,
-                                    AudioClips.VoNice1,
-                                    AudioClips.VoGoodJob2,
-                                    AudioClips.VoGoodJob1,
-                                )
-                            praise.shuffle()
                             val job =
                                 GameAudioActions.launchFeedbackVoiceNoCancel(
                                     audioEnabled = true,
                                     scope = scope,
                                     audioRuntime = audioRuntime,
                                 ) {
-                                    voice.playFirstAvailableBlocking(*praise.toTypedArray())
+                                    voice.playFirstAvailableBlockingRandomized(HighlightedWordDonePraiseCandidates)
                                 }
                             GameAudioActions.await(job, 2800L)
                         }
@@ -82,10 +82,7 @@ internal object PickLetterActions {
                             return@launch
                         }
                         gameViewModel.station1PinnedCorrectLetter = picked
-                        val praise =
-                            AudioClips.station1CorrectPraiseTailCandidates()
-                                .toMutableList()
-                        praise.shuffle()
+                        val praise = AudioClips.station1CorrectPraiseTailCandidates()
                         val job =
                             GameAudioActions.launchFeedbackVoiceNoCancel(
                                 audioEnabled = true,
@@ -93,7 +90,7 @@ internal object PickLetterActions {
                                 audioRuntime = audioRuntime,
                             ) {
                                 voice.playBlocking(letterName)
-                                voice.playFirstAvailableBlocking(*praise.toTypedArray())
+                                voice.playFirstAvailableBlockingRandomized(praise)
                             }
                         GameAudioActions.joinSilently(job)
                         val isLast = session.currentIndex >= session.totalQuestions - 1

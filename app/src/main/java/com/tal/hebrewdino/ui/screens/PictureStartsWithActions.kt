@@ -9,6 +9,17 @@ import com.tal.hebrewdino.ui.game.ChildGameAudioHooks
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
+private val SagaPictureStartsWithPraiseCandidates =
+    arrayOf(
+        AudioClips.VoKolHakavod,
+        AudioClips.VoNice1,
+        AudioClips.VoGoodJob2,
+        AudioClips.VoGoodJob1,
+        AudioClips.VoPraiseMetzuyan,
+        AudioClips.VoPraiseYofi,
+        AudioClips.VoPraiseHitzlacht,
+    )
+
 internal object PictureStartsWithActions {
     fun handlePick(
         picked: String,
@@ -57,17 +68,6 @@ internal object PictureStartsWithActions {
                         gameViewModel.correctTapPulseEpoch += 1
                         cancelFeedbackVoice()
                         val letterName = AudioClips.letterNameClip(picked)
-                        val praise =
-                            mutableListOf(
-                                AudioClips.VoKolHakavod,
-                                AudioClips.VoNice1,
-                                AudioClips.VoGoodJob2,
-                                AudioClips.VoGoodJob1,
-                                AudioClips.VoPraiseMetzuyan,
-                                AudioClips.VoPraiseYofi,
-                                AudioClips.VoPraiseHitzlacht,
-                            )
-                        praise.shuffle()
                         val job =
                             GameAudioActions.launchFeedbackVoiceNoCancel(
                                 audioEnabled = true,
@@ -77,7 +77,7 @@ internal object PictureStartsWithActions {
                                 if (letterName != null && voice.hasAsset(letterName)) {
                                     voice.playBlocking(letterName)
                                 }
-                                voice.playFirstAvailableBlocking(*praise.toTypedArray())
+                                voice.playFirstAvailableBlockingRandomized(SagaPictureStartsWithPraiseCandidates)
                             }
                         GameAudioActions.joinSilently(job)
                         val isLast = session.currentIndex >= session.totalQuestions - 1

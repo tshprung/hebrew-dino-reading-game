@@ -22,7 +22,7 @@ internal object GameAudioActions {
         sfx.stopAllStreams()
     }
 
-    fun setFeedbackVoiceJob(
+    private fun setFeedbackVoiceJob(
         audioRuntime: GameAudioRuntimeState,
         job: Job?,
     ) {
@@ -34,7 +34,7 @@ internal object GameAudioActions {
         }
     }
 
-    fun setPromptVoiceJob(
+    private fun setPromptVoiceJob(
         audioRuntime: GameAudioRuntimeState,
         job: Job?,
     ) {

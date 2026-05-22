@@ -34,6 +34,41 @@ import com.tal.hebrewdino.ui.domain.TrainingV1Config
 import com.tal.hebrewdino.ui.game.ChildGameAudioHooks
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import kotlin.random.Random
+
+private val MatchPraiseClips =
+    arrayOf(
+        AudioClips.VoPraiseMetzuyan,
+        AudioClips.VoPraiseYofi,
+        AudioClips.VoPraiseHitzlacht,
+        AudioClips.VoNice1,
+        AudioClips.VoGoodJob2,
+        AudioClips.VoGoodJob1,
+    )
+
+internal fun pickRandomAvoiding(
+    values: Array<String>,
+    avoid: String?,
+    random: Random = Random.Default,
+): String? {
+    val n = values.size
+    if (n == 0) return null
+    if (n == 1) return values[0]
+    if (avoid == null) return values[random.nextInt(n)]
+
+    var avoidIndex = -1
+    for (i in 0 until n) {
+        if (values[i] == avoid) {
+            avoidIndex = i
+            break
+        }
+    }
+    if (avoidIndex == -1) return values[random.nextInt(n)]
+
+    val r = random.nextInt(n - 1)
+    val idx = if (r >= avoidIndex) r + 1 else r
+    return values[idx]
+}
 
 internal data class GameQuestionHostUi(
     val phase: GamePhase,
@@ -393,15 +428,6 @@ internal fun GameQuestionHost(
                     val matchChoices = current.choices
 
                     var lastPraiseClip by remember(ui.chapterId, ui.stationId) { mutableStateOf<String?>(null) }
-                    val matchPraiseClips =
-                        listOf(
-                            AudioClips.VoPraiseMetzuyan,
-                            AudioClips.VoPraiseYofi,
-                            AudioClips.VoPraiseHitzlacht,
-                            AudioClips.VoNice1,
-                            AudioClips.VoGoodJob2,
-                            AudioClips.VoGoodJob1,
-                        )
 
                     fun handleMatchWordPressed(choiceId: String) {
                         GameAudioActions.launchPromptVoice(
@@ -443,14 +469,7 @@ internal fun GameQuestionHost(
                                         audioRuntime = deps.audioRuntime,
                                         cancelFeedbackVoice = deps.cancelFeedbackVoice,
                                     ) {
-                                        val candidates = matchPraiseClips.filter { it != lastPraiseClip }
-                                        val pickFrom =
-                                            candidates.ifEmpty {
-                                                listOfNotNull(
-                                                    lastPraiseClip
-                                                )
-                                            }
-                                        val picked = pickFrom.shuffled().firstOrNull()
+                                        val picked = pickRandomAvoiding(MatchPraiseClips, lastPraiseClip)
                                         if (picked != null) {
                                             lastPraiseClip = picked
                                             deps.voice.playBlocking(picked)
