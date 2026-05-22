@@ -5,7 +5,7 @@ Android game app (Kotlin, Jetpack Compose). Landscape-first children’s reading
 ## Requirements
 
 - Android Studio (recent stable) or JDK 17 + Android SDK
-- Device or emulator for UI tests and manual QA
+- Device or emulator for manual QA
 
 ## Build and run
 
@@ -26,7 +26,6 @@ See [TESTING.md](TESTING.md) for full detail.
 | Command | What it runs |
 |---------|----------------|
 | `.\gradlew.bat test` | JVM unit tests (`app/src/test/`) |
-| `.\gradlew.bat connectedDebugAndroidTest` | Instrumentation UI tests (device required) |
 
 ## Project layout (high level)
 
