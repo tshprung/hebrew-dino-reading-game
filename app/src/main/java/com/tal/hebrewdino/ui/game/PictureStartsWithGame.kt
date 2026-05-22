@@ -94,6 +94,12 @@ fun PictureStartsWithGame(
     modifier: Modifier = Modifier,
 ) {
     val isCompactLandscapePhone = ScreenFit.isCompactLandscapePhone()
+    val instructionExtraDownDp =
+        if ((chapterId == 1 || chapterId == 2) && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
+            32.dp
+        } else {
+            0.dp
+        }
     val useTwoColumn =
         isCompactLandscapePhone &&
             (chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) &&
@@ -126,7 +132,7 @@ fun PictureStartsWithGame(
                         modifier =
                             Modifier
                                 .align(Alignment.TopCenter)
-                                .offset(y = instructionOffsetY)
+                                .offset(y = instructionOffsetY + instructionExtraDownDp)
                                 .padding(top = 0.dp, start = 12.dp, end = 12.dp)
                                 .then(
                                     if (instructionReadablePanel) {
@@ -286,13 +292,14 @@ fun PictureStartsWithGame(
                 modifier =
                     if (instructionReadablePanel) {
                         Modifier
+                            .offset(y = instructionExtraDownDp)
                             .background(Color.White.copy(alpha = 0.72f), RoundedCornerShape(18.dp))
                             .padding(
                                 horizontal = 14.dp,
                                 vertical = if (isCompactLandscapePhone) 5.dp else 8.dp,
                             )
                     } else {
-                        Modifier
+                        Modifier.offset(y = instructionExtraDownDp)
                     },
             )
             Spacer(modifier = Modifier.height(if (isCompactLandscapePhone) 6.dp else 12.dp))

@@ -63,9 +63,11 @@ internal object PictureStartsWithActions {
             AnswerResult.Correct -> {
                 if (audioEnabled) ChildGameAudioHooks.onCorrect()
                 gameViewModel.inputLocked = true
-                if (((chapterId == 4 || chapterId == 5) && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) ||
-                    (chapterId == 6 && stationId == 1)
-                ) {
+                val shouldPinCorrectLetter =
+                    (sagaEpisode && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) ||
+                        (chapterId == 3 && stationId == 1) ||
+                        (chapterId == 6 && stationId == 1)
+                if (shouldPinCorrectLetter) {
                     gameViewModel.station4PinnedCorrectLetter = picked
                 }
                 if (sagaEpisode && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
@@ -100,7 +102,8 @@ internal object PictureStartsWithActions {
                         gameViewModel.correctTapPulseLetter = picked
                         gameViewModel.correctTapPulseEpoch += 1
                         if (audioEnabled && (chapterId == 3 || chapterId == 6) && stationId == 1) {
-                            GameAudioActions.awaitFeedbackVoice(audioRuntime, 1200L)
+                            val timeoutMs = if (chapterId == 3) 4500L else 1200L
+                            GameAudioActions.awaitTrackedVoices(audioRuntime, timeoutMs)
                         }
                         val isLast = session.currentIndex >= session.totalQuestions - 1
                         advanceAfterRound(isLast)

@@ -203,6 +203,9 @@ internal object WrongFeedbackActions {
                                     chapterId == 4 && stationId == Chapter1StationOrder.TAP_LETTER -> 0L
                                     chapterId == 4 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE -> 0L
                                     chapterId == 4 && stationId == Chapter1StationOrder.PICTURE_PICK_ALL -> 0L
+                                    (chapterId == 1 || chapterId == 2) &&
+                                        stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH ->
+                                        0L
                                     (chapterId == 3 || chapterId == 6) && stationId == 4 -> 0L
                                     chapterId == 5 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE -> 0L
                                     else -> 110L

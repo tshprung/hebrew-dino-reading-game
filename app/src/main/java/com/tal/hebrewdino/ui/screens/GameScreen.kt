@@ -980,7 +980,14 @@ fun GameScreen(
                                 handleImageToWordAttempt = ::handleImageToWordAttempt,
                                 handleImageMatchAttempt = ::handleImageMatchAttempt,
                                 handleFinaleWrongPlacement = ::handleFinaleWrongPlacement,
-                                onWrongFeedback = { onWrongFeedback() },
+                                onWrongFeedback = { wrongPickedLetter, wrongWordCatalogId, wrongPickedLetterAlreadySpoken, wrongWordAlreadySpoken ->
+                                    onWrongFeedback(
+                                        wrongPickedLetter = wrongPickedLetter,
+                                        wrongWordCatalogId = wrongWordCatalogId,
+                                        wrongPickedLetterAlreadySpoken = wrongPickedLetterAlreadySpoken,
+                                        wrongWordAlreadySpoken = wrongWordAlreadySpoken,
+                                    )
+                                },
                                 advanceAfterRound = { isLast -> advanceAfterRound(isLast) },
                             ),
                     )

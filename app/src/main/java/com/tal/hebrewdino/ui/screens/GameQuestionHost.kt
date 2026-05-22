@@ -140,7 +140,7 @@ internal data class GameQuestionHostHandlers(
     val handleImageToWordAttempt: (choiceId: String) -> Boolean,
     val handleImageMatchAttempt: (choiceId: String) -> Boolean,
     val handleFinaleWrongPlacement: () -> Unit,
-    val onWrongFeedback: () -> Unit,
+    val onWrongFeedback: (wrongPickedLetter: String?, wrongWordCatalogId: String?, wrongPickedLetterAlreadySpoken: Boolean, wrongWordAlreadySpoken: Boolean) -> Unit,
     val advanceAfterRound: suspend (isLast: Boolean) -> Unit,
 )
 
@@ -364,7 +364,8 @@ internal fun GameQuestionHost(
                         null
                     },
                 pinnedCorrectLetter =
-                    if (((ui.chapterId == 4 || ui.chapterId == 5) && ui.stationId == Chapter1StationOrder.PICTURE_PICK_ONE) ||
+                    if ((ui.chapterId in 1..5 && ui.stationId == Chapter1StationOrder.PICTURE_PICK_ONE) ||
+                        (ui.chapterId == 3 && ui.stationId == 1) ||
                         (ui.chapterId == 6 && ui.stationId == 1)
                     ) {
                         state.station4PinnedCorrectLetter
@@ -511,7 +512,18 @@ internal fun GameQuestionHost(
                                 }
                             }
                         },
-                        onWrongMatch = { _, _ -> },
+                        onWrongMatch = { pickedLetter, pickedChoiceId ->
+                            if ((ui.chapterId == 1 || ui.chapterId == 2) &&
+                                ui.stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH
+                            ) {
+                                handlers.onWrongFeedback(
+                                    pickedLetter,
+                                    pickedChoiceId,
+                                    false,
+                                    false,
+                                )
+                            }
+                        },
                         onMatchAttempt = { _ -> },
                         innerPictureScaleForChoice = { choice ->
                             Chapter1Station5And6ImageMatchInnerScale.innerScale(choice)
@@ -571,7 +583,7 @@ internal fun GameQuestionHost(
                 shakeEpoch = state.shakeEpoch,
                 onWrongPlacement = {
                     handlers.handleFinaleWrongPlacement()
-                    handlers.onWrongFeedback()
+                    handlers.onWrongFeedback(null, null, false, false)
                 },
                 onSolved = { words ->
                     deps.gameViewModel.inputLocked = true
