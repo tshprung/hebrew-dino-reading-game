@@ -113,7 +113,8 @@ internal object WrongFeedbackActions {
             if (audioEnabled) {
                 val allowWrongSfx =
                     (!(sagaUsesPickLetterAudioStaging) || isChapter3HighlightedLetterInWordStation || isChapter3AudioLetterRecognitionStation) &&
-                        !(sagaEpisode && stationId == Chapter1StationOrder.PICTURE_PICK_ALL)
+                        !(sagaEpisode && stationId == Chapter1StationOrder.PICTURE_PICK_ALL) &&
+                        !(chapterId == 3 && stationId == 3)
                 if (allowWrongSfx) {
                     gameFeedback.playWrong()
                     onWrongHook()

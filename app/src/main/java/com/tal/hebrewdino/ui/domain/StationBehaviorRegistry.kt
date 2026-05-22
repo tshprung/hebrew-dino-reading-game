@@ -569,6 +569,7 @@ object StationBehaviorRegistry {
             1 ->
                 pictureStartsWithSpec(chapterId = 6, stationId = stationId, plan = plan)
                     .copy(
+                        contentTopInsetDp = 62f,
                         riskNotes = "Ch6 st1 picture; aligned with Chapter 3 station 1.",
                     )
             2 ->
@@ -625,7 +626,7 @@ object StationBehaviorRegistry {
                     replayMode = StationReplayMode.ExistingStationSpecific,
                     hintMode = StationHintMode.ExistingStationSpecific,
                     imageToWordInstructionText = StationInstructionCopy.Chapter3ImageToWord,
-                    contentTopInsetDp = 56f,
+                    contentTopInsetDp = 88f,
                     riskNotes = "Ch6 st6 uses ImageToWordGame; aligned with Chapter 3 station 6.",
                 )
             else -> error("Unexpected Ch6 stationId=$stationId")

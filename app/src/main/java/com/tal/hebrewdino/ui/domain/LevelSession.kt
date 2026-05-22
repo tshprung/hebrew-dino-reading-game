@@ -265,7 +265,7 @@ class LevelSession(
                                     } else {
                                         nextBalancedCorrect(group)
                                     }
-                                if (letterPoolSpec === Chapter3LetterPoolSpec) {
+                                if (letterPoolSpec === Chapter3LetterPoolSpec || letterPoolSpec === Chapter6LetterPoolSpec) {
                                     popGenerator.generateWithRepeatedCorrect(
                                         rnd = rnd,
                                         group = group,

@@ -69,6 +69,18 @@ internal fun PickLetterQuestionRenderer(
                 listOf(current.correctAnswer)
             } else if (isChapter3AudioLetterRecognitionStation && correctTapPulseLetter != null) {
                 listOf(correctTapPulseLetter)
+            } else if (chapterId == 6 &&
+                stationId == 4 &&
+                isChapter3HighlightedLetterInWordStation &&
+                !enabled
+            ) {
+                listOf(current.correctAnswer)
+            } else if (chapterId == 6 &&
+                stationId == 4 &&
+                isChapter3HighlightedLetterInWordStation &&
+                correctTapPulseLetter != null
+            ) {
+                listOf(correctTapPulseLetter)
             } else {
                 pickLetterOptions
             }

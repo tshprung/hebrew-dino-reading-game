@@ -63,7 +63,9 @@ internal object PictureStartsWithActions {
             AnswerResult.Correct -> {
                 if (audioEnabled) ChildGameAudioHooks.onCorrect()
                 gameViewModel.inputLocked = true
-                if ((chapterId == 4 || chapterId == 5) && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
+                if (((chapterId == 4 || chapterId == 5) && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) ||
+                    (chapterId == 6 && stationId == 1)
+                ) {
                     gameViewModel.station4PinnedCorrectLetter = picked
                 }
                 if (sagaEpisode && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
