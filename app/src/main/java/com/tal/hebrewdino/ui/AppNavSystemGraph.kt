@@ -1,10 +1,14 @@
 package com.tal.hebrewdino.ui
 
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavType
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+import com.tal.hebrewdino.ui.data.AudioPrefs
 import com.tal.hebrewdino.ui.data.DinoCharacter
 import com.tal.hebrewdino.ui.screens.ChaptersScreen
 import com.tal.hebrewdino.ui.screens.OpeningScreen
@@ -152,7 +156,16 @@ internal fun NavGraphBuilder.systemAndTrainingGraph(host: AppNavHostState) {
     }
 
     composable(NavRoutes.Settings) {
+        val context = LocalContext.current
+        val audioPrefs = remember(context) { AudioPrefs(context.applicationContext) }
+        val backgroundMusicEnabled by audioPrefs.backgroundMusicEnabledFlow.collectAsState(initial = true)
         SettingsScreen(
+            backgroundMusicEnabled = backgroundMusicEnabled,
+            onBackgroundMusicEnabledChange = { enabled ->
+                host.scope.launch {
+                    audioPrefs.setBackgroundMusicEnabled(enabled)
+                }
+            },
             onResetAll = {
                 host.scope.launch {
                     host.progress.resetAll()

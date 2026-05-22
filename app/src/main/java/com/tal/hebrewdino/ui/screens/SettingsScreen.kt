@@ -27,6 +27,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.testTag
 
 private data class ChapterResetRow(
     val id: Int,
@@ -45,8 +46,12 @@ private val chapterResetRows =
 
 internal fun chapterResetRowIdsForTest(): List<Int> = chapterResetRows.map { it.id }
 
+private const val TestTagBackgroundMusicToggle: String = "settings_bg_music_toggle"
+
 @Composable
 fun SettingsScreen(
+    backgroundMusicEnabled: Boolean,
+    onBackgroundMusicEnabledChange: (Boolean) -> Unit,
     onResetAll: () -> Unit,
     onResetChapters: (Set<Int>) -> Unit,
     onBack: () -> Unit,
@@ -71,6 +76,40 @@ fun SettingsScreen(
             color = Color(0xFF0B2B3D),
         )
         Spacer(modifier = Modifier.height(16.dp))
+
+        Text(
+            text = "שמע",
+            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+            color = Color(0xFF0B2B3D),
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Row(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Start,
+        ) {
+            Checkbox(
+                checked = backgroundMusicEnabled,
+                onCheckedChange = { checked -> onBackgroundMusicEnabledChange(checked) },
+                modifier = Modifier.testTag(TestTagBackgroundMusicToggle),
+            )
+            Text(
+                text = "מוזיקת רקע",
+                style = MaterialTheme.typography.bodyLarge,
+                color = Color(0xFF0B2B3D),
+                modifier = Modifier.weight(1f),
+            )
+        }
+        Text(
+            text = "מנוגן במסכי כניסה/בחירה בלבד (ללא דיבור).",
+            style = MaterialTheme.typography.bodyMedium,
+            color = Color(0xFF0B2B3D).copy(alpha = 0.88f),
+            modifier = Modifier.fillMaxWidth().padding(top = 2.dp, bottom = 16.dp),
+            textAlign = TextAlign.Start,
+        )
 
         Text(
             text = "איפוס פרקים",
