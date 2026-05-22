@@ -27,4 +27,21 @@ class PopBalloonsGeneratorTest {
             assertTrue("$letter missing from ${q.options}", letter in q.options)
         }
     }
+
+    @Test
+    fun generateWithRepeatedCorrect_repeatsCorrectBetween1And3_withoutForcingAllLetters() {
+        val rnd = Random(123)
+        val group = listOf("א", "ב", "ג", "ד", "ה", "ו", "ז", "ח", "ט", "י")
+        val q =
+            gen.generateWithRepeatedCorrect(
+                rnd = rnd,
+                group = group,
+                correctAnswer = "ב",
+                optionCount = 10,
+                correctBalloonCountRange = 1..3,
+            )
+        val count = q.options.count { it == "ב" }
+        assertTrue("Expected 1..3 repeats but got $count in ${q.options}", count in 1..3)
+        assertEquals(10, q.options.size)
+    }
 }

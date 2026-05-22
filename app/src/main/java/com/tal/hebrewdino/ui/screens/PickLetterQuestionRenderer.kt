@@ -65,7 +65,9 @@ internal fun PickLetterQuestionRenderer(
         val pickLetterBoxTopPaddingDp =
             if (sagaUsesPickLetterAudioStaging) SixStationArcHalfCmNudge else 0.dp
         val pickLetterDisplayOptions =
-            if (isChapter3AudioLetterRecognitionStation && correctTapPulseLetter != null) {
+            if (isChapter3AudioLetterRecognitionStation && !enabled) {
+                listOf(current.correctAnswer)
+            } else if (isChapter3AudioLetterRecognitionStation && correctTapPulseLetter != null) {
                 listOf(correctTapPulseLetter)
             } else {
                 pickLetterOptions

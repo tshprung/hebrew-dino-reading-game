@@ -265,18 +265,28 @@ class LevelSession(
                                     } else {
                                         nextBalancedCorrect(group)
                                     }
-                                popGenerator.generate(
-                                    rnd = rnd,
-                                    group = group,
-                                    correctAnswer = correct,
-                                    optionCount = plan.optionCount ?: 7,
-                                    correctBalloonCountRange =
-                                        if (letterPoolSpec === TrainingV1LetterPoolSpec) {
-                                            2..3
-                                        } else {
-                                            null
-                                        },
-                                )
+                                if (letterPoolSpec === Chapter3LetterPoolSpec) {
+                                    popGenerator.generateWithRepeatedCorrect(
+                                        rnd = rnd,
+                                        group = group,
+                                        correctAnswer = correct,
+                                        optionCount = plan.optionCount ?: 10,
+                                        correctBalloonCountRange = 1..3,
+                                    )
+                                } else {
+                                    popGenerator.generate(
+                                        rnd = rnd,
+                                        group = group,
+                                        correctAnswer = correct,
+                                        optionCount = plan.optionCount ?: 7,
+                                        correctBalloonCountRange =
+                                            if (letterPoolSpec === TrainingV1LetterPoolSpec) {
+                                                2..3
+                                            } else {
+                                                null
+                                            },
+                                    )
+                                }
                             }
                         }
                         StationQuizMode.PictureStartsWith -> {

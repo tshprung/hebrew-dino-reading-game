@@ -7,6 +7,33 @@ class PopBalloonsGenerator(
 ) {
     fun group(groupIndex: Int): List<String> = pool.groups.getOrNull(groupIndex).orEmpty()
 
+    fun generateWithRepeatedCorrect(
+        rnd: Random,
+        group: List<String>,
+        correctAnswer: String,
+        optionCount: Int,
+        correctBalloonCountRange: IntRange,
+    ): Question.PopBalloonsQuestion {
+        require(group.isNotEmpty()) { "Letter group must not be empty" }
+        require(correctAnswer in group) { "correctAnswer must be in group" }
+        require(optionCount >= 1)
+        val base = group.distinct()
+        val repeatsCorrect =
+            correctBalloonCountRange
+                .random(rnd)
+                .coerceIn(1, optionCount)
+        val fillerPool = base.filter { it != correctAnswer }.ifEmpty { base }
+        val options = ArrayList<String>(optionCount)
+        repeat(repeatsCorrect) { options.add(correctAnswer) }
+        while (options.size < optionCount) {
+            options.add(fillerPool.random(rnd))
+        }
+        options.shuffle(rnd)
+        options.shuffle(rnd)
+        require(correctAnswer in options)
+        return Question.PopBalloonsQuestion(correctAnswer = correctAnswer, options = options)
+    }
+
     fun generate(
         rnd: Random,
         group: List<String>,

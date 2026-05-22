@@ -243,7 +243,9 @@ fun MatchLetterToWordGame(
                         (chapterId == TrainingV1Config.CHAPTER_ID && stationId == TrainingV1Config.STATION_MATCH_LETTER_TO_WORD)
                 )
         val chapter2Station6ExtraDownDp =
-            if (chapterId == 2 && stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH) {
+            if ((chapterId == 2 && stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH) ||
+                (chapterId == 3 && stationId == 2)
+            ) {
                 32.dp
             } else {
                 0.dp
@@ -929,7 +931,9 @@ private fun SixStationArcStation6Board(
     val letterFontSp = 30.sp
     val topGroupOffsetY = (-24).dp
     val chapter2Station6ExtraDownDp =
-        if (chapterId == 2 && stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH) {
+        if ((chapterId == 2 && stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH) ||
+            (chapterId == 3 && stationId == 2)
+        ) {
             32.dp
         } else {
             0.dp
