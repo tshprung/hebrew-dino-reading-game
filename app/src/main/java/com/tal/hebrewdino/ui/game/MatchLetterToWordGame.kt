@@ -250,12 +250,11 @@ fun MatchLetterToWordGame(
                         (chapterId == TrainingV1Config.CHAPTER_ID && stationId == TrainingV1Config.STATION_MATCH_LETTER_TO_WORD)
                 )
         val headerAndCardsExtraDownDp =
-            if ((chapterId == 2 && stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH) ||
-                (chapterId == 3 && stationId == 2)
-            ) {
-                32.dp
-            } else {
-                0.dp
+            when {
+                chapterId == 2 && stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH -> 32.dp
+                chapterId == 3 && stationId == 2 -> 32.dp
+                chapterId == 4 && stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH -> 22.dp
+                else -> 0.dp
             }
 
         // Header stays pinned; content below scales down if needed so nothing is clipped.
@@ -920,12 +919,11 @@ private fun SixStationArcStation6Board(
     val letterFontSp = 30.sp
     val topGroupOffsetY = (-24).dp
     val headerAndCardsExtraDownDp =
-        if ((chapterId == 2 && stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH) ||
-            (chapterId == 3 && stationId == 2)
-        ) {
-            32.dp
-        } else {
-            0.dp
+        when {
+            chapterId == 2 && stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH -> 32.dp
+            chapterId == 3 && stationId == 2 -> 32.dp
+            chapterId == 4 && stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH -> 22.dp
+            else -> 0.dp
         }
     val topGroupOffsetEffectiveY = topGroupOffsetY + headerAndCardsExtraDownDp
     val columns = wordColumn.size.coerceIn(1, 6)

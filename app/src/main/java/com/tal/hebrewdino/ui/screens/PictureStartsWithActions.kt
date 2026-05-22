@@ -1,5 +1,6 @@
 package com.tal.hebrewdino.ui.screens
 
+import android.os.SystemClock
 import com.tal.hebrewdino.ui.audio.AudioClips
 import com.tal.hebrewdino.ui.audio.VoicePlayer
 import com.tal.hebrewdino.ui.domain.AnswerResult
@@ -7,6 +8,7 @@ import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
 import com.tal.hebrewdino.ui.domain.LevelSession
 import com.tal.hebrewdino.ui.game.ChildGameAudioHooks
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 private val SagaPictureStartsWithPraiseCandidates =
@@ -21,6 +23,8 @@ private val SagaPictureStartsWithPraiseCandidates =
     )
 
 internal object PictureStartsWithActions {
+    private const val Chapter4Station4MinCorrectDisplayMs: Long = 650L
+
     fun handlePick(
         picked: String,
         gameViewModel: GameViewModel,
@@ -64,6 +68,7 @@ internal object PictureStartsWithActions {
                 }
                 if (sagaEpisode && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
                     scope.launch {
+                        val tapAtMs = SystemClock.uptimeMillis()
                         gameViewModel.correctTapPulseLetter = picked
                         gameViewModel.correctTapPulseEpoch += 1
                         cancelFeedbackVoice()
@@ -80,6 +85,11 @@ internal object PictureStartsWithActions {
                                 voice.playFirstAvailableBlockingRandomized(SagaPictureStartsWithPraiseCandidates)
                             }
                         GameAudioActions.joinSilently(job)
+                        if (chapterId == 4 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
+                            val elapsedMs = SystemClock.uptimeMillis() - tapAtMs
+                            val remainingMs = Chapter4Station4MinCorrectDisplayMs - elapsedMs
+                            if (remainingMs > 0L) delay(remainingMs)
+                        }
                         val isLast = session.currentIndex >= session.totalQuestions - 1
                         advanceAfterRound(isLast)
                     }
