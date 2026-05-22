@@ -75,13 +75,13 @@ internal object PickLetterActions {
                 } else if (audioEnabled && sagaUsesPickLetterAudioStaging) {
                     scope.launch {
                         cancelFeedbackVoice()
+                        gameViewModel.station1PinnedCorrectLetter = picked
                         val letterName = AudioClips.letterNameClip(picked)
                         if (letterName == null || !voice.hasAsset(letterName)) {
                             val isLast = session.currentIndex >= session.totalQuestions - 1
                             advanceAfterRound(isLast, false)
                             return@launch
                         }
-                        gameViewModel.station1PinnedCorrectLetter = picked
                         val praise = AudioClips.station1CorrectPraiseTailCandidates()
                         val job =
                             GameAudioActions.launchFeedbackVoiceNoCancel(

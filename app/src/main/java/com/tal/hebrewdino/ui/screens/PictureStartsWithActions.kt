@@ -63,7 +63,7 @@ internal object PictureStartsWithActions {
             AnswerResult.Correct -> {
                 if (audioEnabled) ChildGameAudioHooks.onCorrect()
                 gameViewModel.inputLocked = true
-                if (chapterId == 4 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
+                if ((chapterId == 4 || chapterId == 5) && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
                     gameViewModel.station4PinnedCorrectLetter = picked
                 }
                 if (sagaEpisode && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
@@ -85,7 +85,7 @@ internal object PictureStartsWithActions {
                                 voice.playFirstAvailableBlockingRandomized(SagaPictureStartsWithPraiseCandidates)
                             }
                         GameAudioActions.joinSilently(job)
-                        if (chapterId == 4 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
+                        if ((chapterId == 4 || chapterId == 5) && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
                             val elapsedMs = SystemClock.uptimeMillis() - tapAtMs
                             val remainingMs = Chapter4Station4MinCorrectDisplayMs - elapsedMs
                             if (remainingMs > 0L) delay(remainingMs)

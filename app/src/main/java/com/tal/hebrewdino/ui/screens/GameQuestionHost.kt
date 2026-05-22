@@ -364,7 +364,7 @@ internal fun GameQuestionHost(
                         null
                     },
                 pinnedCorrectLetter =
-                    if (ui.chapterId == 4 && ui.stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
+                    if ((ui.chapterId == 4 || ui.chapterId == 5) && ui.stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
                         state.station4PinnedCorrectLetter
                     } else {
                         null
