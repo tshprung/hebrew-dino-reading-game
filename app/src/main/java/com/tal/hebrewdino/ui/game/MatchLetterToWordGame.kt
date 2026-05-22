@@ -242,6 +242,12 @@ fun MatchLetterToWordGame(
                         ((chapterId == 3 || chapterId == 6) && stationId == 2) ||
                         (chapterId == TrainingV1Config.CHAPTER_ID && stationId == TrainingV1Config.STATION_MATCH_LETTER_TO_WORD)
                 )
+        val chapter2Station6ExtraDownDp =
+            if (chapterId == 2 && stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH) {
+                32.dp
+            } else {
+                0.dp
+            }
 
         // Header stays pinned; content below scales down if needed so nothing is clipped.
         val headerPadTop = 6.dp
@@ -268,6 +274,13 @@ fun MatchLetterToWordGame(
                     modifier =
                         Modifier
                             .padding(top = headerPadTop, bottom = headerPadBottom, start = 12.dp, end = 12.dp)
+                            .then(
+                                if (chapter2Station6ExtraDownDp > 0.dp) {
+                                    Modifier.offset(y = chapter2Station6ExtraDownDp)
+                                } else {
+                                    Modifier
+                                },
+                            )
                             .then(
                                 if (instructionReadablePanel) {
                                     Modifier
@@ -478,7 +491,16 @@ fun MatchLetterToWordGame(
                                 1f
                             }
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .then(
+                                    if (chapter2Station6ExtraDownDp > 0.dp) {
+                                        Modifier.offset(y = chapter2Station6ExtraDownDp)
+                                    } else {
+                                        Modifier
+                                    },
+                                ),
                         horizontalArrangement =
                             Arrangement.spacedBy(
                                 gap,
@@ -755,7 +777,16 @@ fun MatchLetterToWordGame(
                     }
 
                     Column(
-                        modifier = Modifier.width(wordColW),
+                        modifier =
+                            Modifier
+                                .width(wordColW)
+                                .then(
+                                    if (chapter2Station6ExtraDownDp > 0.dp) {
+                                        Modifier.offset(y = chapter2Station6ExtraDownDp)
+                                    } else {
+                                        Modifier
+                                    },
+                                ),
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
@@ -897,6 +928,13 @@ private fun SixStationArcStation6Board(
     val letterTileHeightScale = 0.46f
     val letterFontSp = 30.sp
     val topGroupOffsetY = (-24).dp
+    val chapter2Station6ExtraDownDp =
+        if (chapterId == 2 && stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH) {
+            32.dp
+        } else {
+            0.dp
+        }
+    val topGroupOffsetEffectiveY = topGroupOffsetY + chapter2Station6ExtraDownDp
     val columns = wordColumn.size.coerceIn(1, 6)
     val rowInnerW = (innerW - boardHorizontalPadding * 2f).coerceAtLeast(1.dp)
     val cardWBase =
@@ -1009,7 +1047,7 @@ private fun SixStationArcStation6Board(
                 textAlign = TextAlign.Center,
                 modifier =
                     Modifier
-                        .offset(y = topGroupOffsetY)
+                        .offset(y = topGroupOffsetEffectiveY)
                         .background(Color.White.copy(alpha = 0.72f), RoundedCornerShape(18.dp))
                         .padding(horizontal = 14.dp, vertical = 4.dp),
             )
@@ -1019,7 +1057,7 @@ private fun SixStationArcStation6Board(
                     Modifier
                         .fillMaxWidth()
                         .padding(horizontal = boardHorizontalPadding)
-                        .offset(y = topGroupOffsetY)
+                        .offset(y = topGroupOffsetEffectiveY)
                         .offset { IntOffset(shake.value.roundToInt(), 0) },
                 horizontalArrangement = Arrangement.spacedBy(gap, Alignment.CenterHorizontally),
             ) {
