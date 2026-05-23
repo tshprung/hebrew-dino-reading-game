@@ -94,12 +94,17 @@ fun PictureStartsWithGame(
     modifier: Modifier = Modifier,
 ) {
     val isCompactLandscapePhone = ScreenFit.isCompactLandscapePhone()
+    val isSagaStation4 =
+        (chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) &&
+            stationId == Chapter1StationOrder.PICTURE_PICK_ONE
     val instructionExtraDownDp =
-        if ((chapterId == 1 || chapterId == 2) && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
-            32.dp
+        if (isSagaStation4) {
+            (-19).dp
         } else {
             0.dp
         }
+    val instructionPanelPadH = if (isSagaStation4) 10.dp else 14.dp
+    val instructionPanelPadV = if (isSagaStation4) 4.dp else 8.dp
     val useTwoColumn =
         isCompactLandscapePhone &&
             (chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) &&
@@ -138,7 +143,7 @@ fun PictureStartsWithGame(
                                     if (instructionReadablePanel) {
                                         Modifier
                                             .background(Color.White.copy(alpha = 0.72f), RoundedCornerShape(18.dp))
-                                            .padding(horizontal = 14.dp, vertical = 8.dp)
+                                            .padding(horizontal = instructionPanelPadH, vertical = instructionPanelPadV)
                                     } else {
                                         Modifier
                                     },
@@ -287,7 +292,12 @@ fun PictureStartsWithGame(
                 style =
                     MaterialTheme.typography.titleMedium.copy(
                         fontSize = MaterialTheme.typography.titleMedium.fontSize * instructionScale,
-                        fontWeight = if (chapterId == 6) FontWeight.Black else MaterialTheme.typography.titleMedium.fontWeight,
+                        fontWeight =
+                            if (chapterId == 3 || chapterId == 6) {
+                                FontWeight.Black
+                            } else {
+                                MaterialTheme.typography.titleMedium.fontWeight
+                            },
                     ),
                 color = Color(0xFF0B2B3D),
                 textAlign = TextAlign.Center,
@@ -297,8 +307,8 @@ fun PictureStartsWithGame(
                             .offset(y = instructionExtraDownDp)
                             .background(Color.White.copy(alpha = 0.72f), RoundedCornerShape(18.dp))
                             .padding(
-                                horizontal = 14.dp,
-                                vertical = if (isCompactLandscapePhone) 5.dp else 8.dp,
+                                horizontal = instructionPanelPadH,
+                                vertical = if (isCompactLandscapePhone) 5.dp else instructionPanelPadV,
                             )
                     } else {
                         Modifier.offset(y = instructionExtraDownDp)

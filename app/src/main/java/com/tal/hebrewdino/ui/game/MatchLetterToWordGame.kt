@@ -253,9 +253,9 @@ fun MatchLetterToWordGame(
             when {
                 (chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) &&
                     stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH ->
-                    64.dp
-                chapterId == 3 && stationId == 2 -> 32.dp
-                chapterId == 6 && stationId == 2 -> 22.dp
+                    20.dp
+                chapterId == 3 && stationId == 2 -> 20.dp
+                chapterId == 6 && stationId == 2 -> 20.dp
                 else -> 0.dp
             }
 
@@ -924,9 +924,9 @@ private fun SixStationArcStation6Board(
         when {
             (chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) &&
                 stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH ->
-                64.dp
-            chapterId == 3 && stationId == 2 -> 32.dp
-            chapterId == 6 && stationId == 2 -> 22.dp
+                20.dp
+            chapterId == 3 && stationId == 2 -> 20.dp
+            chapterId == 6 && stationId == 2 -> 20.dp
             else -> 0.dp
         }
     val topGroupOffsetEffectiveY = topGroupOffsetY + headerAndCardsExtraDownDp

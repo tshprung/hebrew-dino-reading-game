@@ -332,7 +332,7 @@ object StationBehaviorRegistry {
                         },
                     imageMatchHeaderReadablePanel = true,
                     imageMatchCompactLandscapeRtlWrapHeaderInstruction = true,
-                    imageMatchHeaderTopPaddingDp = 10f,
+                    imageMatchHeaderTopPaddingDp = 29f,
                     imageMatchTargetLetterChipOffsetYDp = 0f,
                     imageMatchVerticalNudgeDp = 19f,
                     imageMatchSuppressEntryPulseEpoch = true,
@@ -352,6 +352,10 @@ object StationBehaviorRegistry {
     private fun chapter3UiSpec(stationId: Int, plan: StationQuizPlan): StationUiSpec {
         return when (stationId) {
             1 -> pictureStartsWithSpec(chapterId = 3, stationId = stationId, plan = plan)
+                .copy(
+                    pictureStartsWithVerticalNudgeDp = 19f,
+                    riskNotes = "Ch3 st1 picture; lowered ~5mm per QA.",
+                )
             2 ->
                 matchLetterToWordSpec(
                     chapterId = 3,
@@ -363,7 +367,7 @@ object StationBehaviorRegistry {
                 )
             3 ->
                 popBalloonsSpec(chapterId = 3, stationId = stationId, plan = plan, isPopAllLetters = false)
-                    .copy(contentTopInsetDp = 8f)
+                    .copy(contentTopInsetDp = 27f)
             4 ->
                 pickLetterSpec(
                     chapterId = 3,
@@ -404,7 +408,7 @@ object StationBehaviorRegistry {
                     replayMode = StationReplayMode.ExistingStationSpecific,
                     hintMode = StationHintMode.ExistingStationSpecific,
                     imageToWordInstructionText = StationInstructionCopy.Chapter3ImageToWord,
-                    contentTopInsetDp = 56f,
+                    contentTopInsetDp = 75f,
                     riskNotes = "Ch3 st6 uses ImageToWordGame (instruction from spec).",
                 )
             else -> error("Unexpected Ch3 stationId=$stationId")
@@ -547,7 +551,7 @@ object StationBehaviorRegistry {
                     imageMatchHeaderReadablePanel = true,
                     imageMatchShowTargetLetterChip = !listenOnly,
                     imageMatchCompactLandscapeRtlWrapHeaderInstruction = true,
-                    imageMatchHeaderTopPaddingDp = 10f,
+                    imageMatchHeaderTopPaddingDp = 29f,
                     imageMatchTargetLetterChipOffsetYDp = 0f,
                     imageMatchVerticalNudgeDp = 19f,
                     imageMatchSuppressEntryPulseEpoch = true,

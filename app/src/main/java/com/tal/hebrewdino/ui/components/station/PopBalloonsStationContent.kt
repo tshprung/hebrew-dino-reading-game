@@ -146,7 +146,7 @@ fun PopBalloonsInstructionHeaderBlock(
                         )
                     }
                 }
-            } else if (sagaUsesPopBalloonsAudioStaging && station2PinnedBalloonLetter != null) {
+            } else if (station2PinnedBalloonLetter != null) {
                 Text(
                     text =
                         balloonInstructionOverride
@@ -184,7 +184,7 @@ fun PopBalloonsInstructionHeaderBlock(
                     Station2PinnedBalloonMini(
                         letter = station2PinnedBalloonLetter,
                         balloonColor = station2PinnedBalloonColor ?: Color(0xFF6BCB77),
-                        showLetter = showTargetLetterChip,
+                        showLetter = showTargetLetterChip || !sagaUsesPopBalloonsAudioStaging,
                         modifier = Modifier.scale(hintHeaderScale),
                     )
                 }

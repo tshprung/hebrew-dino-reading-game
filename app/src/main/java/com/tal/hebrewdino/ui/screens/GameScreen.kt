@@ -805,6 +805,7 @@ fun GameScreen(
                             gameViewModel = gameViewModel,
                             sagaUsesPopBalloonsAudioStaging = sagaUsesPopBalloonsAudioStaging,
                             chapterId = chapterId,
+                            stationId = stationId,
                             audioEnabled = audioEnabled,
                             cancelFeedbackVoice = cancelFeedbackVoiceCb,
                             session = session,

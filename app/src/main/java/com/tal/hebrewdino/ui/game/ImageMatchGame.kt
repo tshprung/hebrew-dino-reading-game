@@ -287,6 +287,7 @@ fun ImageMatchGame(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.Top,
                         ) {
+                        val compactHeaderExtraOffsetY = (headerTopPaddingDp - 10).dp
                         if (headerInstructionText != null) {
                             val effectiveFontSize =
                                 if (rowInnerWidth < 480.dp) 24.sp else 28.sp
@@ -303,7 +304,7 @@ fun ImageMatchGame(
                                 modifier =
                                     Modifier
                                         .then(
-                                            Modifier.offset(y = (-18).dp),
+                                            Modifier.offset(y = (-18).dp + compactHeaderExtraOffsetY),
                                         )
                                         .padding(horizontal = 6.dp)
                                         .then(
@@ -336,13 +337,13 @@ fun ImageMatchGame(
                             TargetLetterHeaderChip(
                                 letter = question.targetLetter,
                                 fontSize = 46.sp,
-                                modifier = Modifier.offset(y = targetLetterChipOffsetYDp.dp),
+                                modifier = Modifier.offset(y = targetLetterChipOffsetYDp.dp + compactHeaderExtraOffsetY),
                             )
                         } else if (listenOnlyTemporaryHintLetter != null) {
                             TargetLetterHeaderChip(
                                 letter = listenOnlyTemporaryHintLetter,
                                 fontSize = 46.sp,
-                                modifier = Modifier.offset(y = targetLetterChipOffsetYDp.dp),
+                                modifier = Modifier.offset(y = targetLetterChipOffsetYDp.dp + compactHeaderExtraOffsetY),
                             )
                         }
                     }
