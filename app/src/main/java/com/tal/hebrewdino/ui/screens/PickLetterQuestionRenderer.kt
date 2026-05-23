@@ -45,17 +45,7 @@ internal fun PickLetterQuestionRenderer(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Top,
     ) {
-        val pickLetterOptions =
-            if (sagaUsesPickLetterAudioStaging &&
-                station1PinnedCorrectLetter != null &&
-                !isChapter3HighlightedLetterInWordStation &&
-                !isChapter3AudioLetterRecognitionStation &&
-                stationUiSpec.pickLetterAllowPinnedCorrectShortcut
-            ) {
-                listOf(station1PinnedCorrectLetter)
-            } else {
-                HebrewLetterOrder.sortForDisplay(current.options)
-            }
+        val pickLetterOptions = HebrewLetterOrder.sortForDisplay(current.options)
         val letterOptionsExtraTopPaddingDp =
             when {
                 isChapter3AudioLetterRecognitionStation -> 6.dp
@@ -64,6 +54,7 @@ internal fun PickLetterQuestionRenderer(
             }
         val pickLetterBoxTopPaddingDp =
             if (sagaUsesPickLetterAudioStaging) SixStationArcHalfCmNudge else 0.dp
+        val pinnedCorrect = station1PinnedCorrectLetter
         val pickLetterDisplayOptions =
             if (isChapter3AudioLetterRecognitionStation && !enabled) {
                 listOf(current.correctAnswer)
@@ -81,6 +72,10 @@ internal fun PickLetterQuestionRenderer(
                 correctTapPulseLetter != null
             ) {
                 listOf(correctTapPulseLetter)
+            } else if (!enabled &&
+                pinnedCorrect != null
+            ) {
+                listOf(pinnedCorrect)
             } else {
                 pickLetterOptions
             }

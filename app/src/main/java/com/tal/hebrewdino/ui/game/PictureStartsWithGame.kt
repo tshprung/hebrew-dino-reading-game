@@ -178,6 +178,8 @@ fun PictureStartsWithGame(
                                 correctPulseEpoch = correctPulseEpoch,
                                 wrongFlashLetter = wrongFlashLetter,
                                 wrongFlashEpoch = wrongFlashEpoch,
+                                visualEnabled = enabled || pinnedCorrectLetter != null,
+                                inputEnabled = enabled,
                                 onPick = onPickLetter,
                             )
                         }
@@ -413,6 +415,8 @@ fun PictureStartsWithGame(
                     correctPulseEpoch = correctPulseEpoch,
                     wrongFlashLetter = wrongFlashLetter,
                     wrongFlashEpoch = wrongFlashEpoch,
+                    visualEnabled = enabled || pinnedCorrectLetter != null,
+                    inputEnabled = enabled,
                     onPick = onPickLetter,
                 )
             }

@@ -208,6 +208,7 @@ fun PickLetterStationContent(
                 Spacer(modifier = Modifier.height(10.dp))
             }
             CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+                val pinnedMode = !enabled && letterOptions.size == 1
                 LetterOptions(
                     options = letterOptions,
                     enabled = enabled,
@@ -215,6 +216,8 @@ fun PickLetterStationContent(
                     correctPulseLetter = correctPulseLetter,
                     correctPulseEpoch = correctPulseEpoch,
                     strongPressFeedback = strongLetterButtonFeedback,
+                    visualEnabled = enabled || pinnedMode,
+                    inputEnabled = enabled && !pinnedMode,
                     onPick = onPick,
                     modifier =
                         Modifier

@@ -175,6 +175,8 @@ internal fun LetterOptions(
     wrongFlashEpoch: Int = 0,
     /** Deeper press squish + larger bounce (e.g. Ch3 st5 “מצא את האות שנאמרת”). */
     strongPressFeedback: Boolean = false,
+    visualEnabled: Boolean = enabled,
+    inputEnabled: Boolean = enabled,
     onPick: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -230,8 +232,10 @@ internal fun LetterOptions(
                 }
             val letterFontSize = if (strongPressFeedback) 46.sp else 42.sp
             Button(
-                onClick = { onPick(letter) },
-                enabled = enabled,
+                onClick = {
+                    if (inputEnabled) onPick(letter)
+                },
+                enabled = visualEnabled,
                 interactionSource = interaction,
                 modifier =
                     Modifier.border(

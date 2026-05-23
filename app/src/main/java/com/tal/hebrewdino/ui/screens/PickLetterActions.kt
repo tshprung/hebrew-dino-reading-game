@@ -46,6 +46,7 @@ internal object PickLetterActions {
                 gameViewModel.correctTapPulseLetter = picked
                 gameViewModel.correctTapPulseEpoch += 1
                 gameViewModel.inputLocked = true
+                gameViewModel.station1PinnedCorrectLetter = picked
                 if (audioEnabled && isChapter3HighlightedLetterInWordStation) {
                     val wordDone = session.highlightedLetterInWordCompletesWordAfterCorrectRound()
                     scope.launch {
@@ -75,7 +76,6 @@ internal object PickLetterActions {
                 } else if (audioEnabled && sagaUsesPickLetterAudioStaging) {
                     scope.launch {
                         cancelFeedbackVoice()
-                        gameViewModel.station1PinnedCorrectLetter = picked
                         val letterName = AudioClips.letterNameClip(picked)
                         if (letterName == null || !voice.hasAsset(letterName)) {
                             val isLast = session.currentIndex >= session.totalQuestions - 1
@@ -98,6 +98,9 @@ internal object PickLetterActions {
                     }
                 } else {
                     scope.launch {
+                        if (audioEnabled) {
+                            GameAudioActions.awaitTrackedVoices(audioRuntime, 4500L)
+                        }
                         val isLast = session.currentIndex >= session.totalQuestions - 1
                         advanceAfterRound(isLast, false)
                     }
