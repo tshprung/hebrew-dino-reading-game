@@ -99,7 +99,7 @@ fun PictureStartsWithGame(
             stationId == Chapter1StationOrder.PICTURE_PICK_ONE
     val instructionExtraDownDp =
         if (isSagaStation4) {
-            (-19).dp
+            19.dp
         } else {
             0.dp
         }
@@ -123,7 +123,7 @@ fun PictureStartsWithGame(
                 val instructionOffsetY =
                     if ((chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) && stationId == Chapter1StationOrder.PICTURE_PICK_ONE
                     ) {
-                        (-22).dp
+                        (-12).dp
                     } else {
                         (-6).dp
                     }
@@ -314,7 +314,10 @@ fun PictureStartsWithGame(
                         Modifier.offset(y = instructionExtraDownDp)
                     },
             )
-            Spacer(modifier = Modifier.height(if (isCompactLandscapePhone) 6.dp else 12.dp))
+            val instructionBottomSpacer =
+                (if (isCompactLandscapePhone) 6.dp else 12.dp) +
+                    if (isSagaStation4) 10.dp else 0.dp
+            Spacer(modifier = Modifier.height(instructionBottomSpacer))
             BoxWithConstraints(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
             val rowInnerWidth = maxWidth
             val frameCap =

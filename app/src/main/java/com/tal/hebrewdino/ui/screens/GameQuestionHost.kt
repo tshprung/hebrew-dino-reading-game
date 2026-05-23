@@ -300,7 +300,13 @@ internal fun GameQuestionHost(
                     episode4CorrectBalloonHintEpoch = episode4CorrectBalloonHintEpoch,
                     helpSideInsetDp = helpSideInsetDp,
                     contentTopPaddingDp =
-                        if (ui.sagaUsesPopBalloonsAudioStaging) SixStationArcHalfCmNudge else 0.dp,
+                        if (ui.sagaUsesPopBalloonsAudioStaging ||
+                            (ui.chapterId == 3 && ui.stationId == 3)
+                        ) {
+                            SixStationArcHalfCmNudge
+                        } else {
+                            0.dp
+                        },
                     onBalloonPressed = { _ -> },
                     onPopSfx = handlers.handlePopBalloonsPopSfx,
                     onWrongPick = { handlers.handlePopBalloonsWrongPick() },

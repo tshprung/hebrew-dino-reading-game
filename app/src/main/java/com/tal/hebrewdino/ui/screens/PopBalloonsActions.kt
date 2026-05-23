@@ -197,7 +197,7 @@ internal object PopBalloonsActions {
         advanceAfterRound: suspend (isLast: Boolean) -> Unit,
     ) {
         val ch1St2 = sagaUsesPopBalloonsAudioStaging
-        if ((ch1St2 && chapterId != 4 && chapterId != 5) || (chapterId == 3 && stationId == 3)) {
+        if (ch1St2 || (chapterId == 3 && stationId == 3)) {
             gameViewModel.station2PinnedBalloonLetter = lastLetter
             gameViewModel.station2PinnedBalloonColor = poppedBalloonColor
         } else if (!ch1St2) {

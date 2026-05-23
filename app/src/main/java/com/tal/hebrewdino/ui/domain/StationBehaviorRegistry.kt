@@ -367,7 +367,6 @@ object StationBehaviorRegistry {
                 )
             3 ->
                 popBalloonsSpec(chapterId = 3, stationId = stationId, plan = plan, isPopAllLetters = false)
-                    .copy(contentTopInsetDp = 27f)
             4 ->
                 pickLetterSpec(
                     chapterId = 3,
@@ -408,7 +407,7 @@ object StationBehaviorRegistry {
                     replayMode = StationReplayMode.ExistingStationSpecific,
                     hintMode = StationHintMode.ExistingStationSpecific,
                     imageToWordInstructionText = StationInstructionCopy.Chapter3ImageToWord,
-                    contentTopInsetDp = 75f,
+                    contentTopInsetDp = 94f,
                     riskNotes = "Ch3 st6 uses ImageToWordGame (instruction from spec).",
                 )
             else -> error("Unexpected Ch3 stationId=$stationId")

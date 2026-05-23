@@ -184,7 +184,7 @@ fun PopBalloonsInstructionHeaderBlock(
                     Station2PinnedBalloonMini(
                         letter = station2PinnedBalloonLetter,
                         balloonColor = station2PinnedBalloonColor ?: Color(0xFF6BCB77),
-                        showLetter = showTargetLetterChip || !sagaUsesPopBalloonsAudioStaging,
+                        showLetter = true,
                         modifier = Modifier.scale(hintHeaderScale),
                     )
                 }
