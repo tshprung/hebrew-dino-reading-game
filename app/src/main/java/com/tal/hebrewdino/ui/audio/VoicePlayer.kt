@@ -11,18 +11,33 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.suspendCancellableCoroutine
 import java.io.IOException
+import java.util.Collections
+import java.util.WeakHashMap
 import kotlin.coroutines.resume
 import kotlin.random.Random
 
 class VoicePlayer(context: Context) {
     companion object {
         private const val TAG: String = "VoicePlayer"
+        private val Registry: MutableSet<VoicePlayer> =
+            Collections.newSetFromMap(WeakHashMap())
+
+        fun stopAllNow() {
+            val snapshot = synchronized(Registry) { Registry.toList() }
+            for (p in snapshot) {
+                p.stopNow()
+            }
+        }
     }
 
     private val appContext = context.applicationContext
     private val mutex = Mutex()
     private var player: MediaPlayer? = null
     @Volatile private var activeWaiter: CancellableContinuation<Unit>? = null
+
+    init {
+        synchronized(Registry) { Registry.add(this) }
+    }
 
     /**
      * Best-effort warm-up for an asset so later playback starts faster.
@@ -227,15 +242,8 @@ class VoicePlayer(context: Context) {
 
     fun release() {
         // Non-suspending; best-effort cleanup.
-        try {
-            player?.stop()
-        } catch (_: Throwable) {
-        }
-        try {
-            player?.release()
-        } catch (_: Throwable) {
-        }
-        player = null
+        stopNow()
+        synchronized(Registry) { Registry.remove(this) }
     }
 
     private fun stopLocked() {

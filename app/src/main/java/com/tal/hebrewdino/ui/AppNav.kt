@@ -16,6 +16,8 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.rememberNavController
 import com.tal.hebrewdino.ui.audio.BackgroundMusicPlayer
+import com.tal.hebrewdino.ui.audio.SoundPoolPlayer
+import com.tal.hebrewdino.ui.audio.VoicePlayer
 import com.tal.hebrewdino.ui.data.AudioPrefs
 import com.tal.hebrewdino.ui.data.DinoCharacter
 import kotlinx.coroutines.launch
@@ -67,6 +69,8 @@ fun AppNav() {
             LifecycleEventObserver { _, event ->
                 if (event == Lifecycle.Event.ON_PAUSE || event == Lifecycle.Event.ON_STOP) {
                     bgMusic.stop()
+                    VoicePlayer.stopAllNow()
+                    SoundPoolPlayer.stopAllNow()
                 }
             }
         lifecycleOwner.lifecycle.addObserver(observer)

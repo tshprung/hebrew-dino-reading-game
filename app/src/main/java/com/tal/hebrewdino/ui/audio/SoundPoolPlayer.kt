@@ -10,11 +10,23 @@ import java.io.IOException
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.charset.StandardCharsets
+import java.util.Collections
+import java.util.WeakHashMap
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.coroutines.resume
 
 class SoundPoolPlayer(context: Context) {
-    companion object;
+    companion object {
+        private val Registry: MutableSet<SoundPoolPlayer> =
+            Collections.newSetFromMap(WeakHashMap())
+
+        fun stopAllNow() {
+            val snapshot = synchronized(Registry) { Registry.toList() }
+            for (p in snapshot) {
+                p.stopAllStreams()
+            }
+        }
+    }
 
     private val appContext = context.applicationContext
 
@@ -38,6 +50,7 @@ class SoundPoolPlayer(context: Context) {
     private val activeStreamIds = ConcurrentHashMap<Int, Boolean>()
 
     init {
+        synchronized(Registry) { Registry.add(this) }
         soundPool?.setOnLoadCompleteListener { _, sampleId, status ->
             val ok = status == 0
             readySoundIds[sampleId] = ok
@@ -139,6 +152,7 @@ class SoundPoolPlayer(context: Context) {
         readySoundIds.clear()
         pendingLoads.clear()
         activeStreamIds.clear()
+        synchronized(Registry) { Registry.remove(this) }
     }
 
     private suspend fun loadIfNeeded(pool: SoundPool, assetPath: String): Int? {
