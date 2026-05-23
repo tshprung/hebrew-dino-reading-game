@@ -153,10 +153,8 @@ fun ImageToWordGame(
                     maxEach = 168.dp,
                 )
             val optionW =
-                if (chapterId == 3 && stationId == 6) {
+                if ((chapterId == 3 || chapterId == 6) && stationId == 6) {
                     optionWBase * 0.80f
-                } else if (chapterId == 6 && stationId == 6) {
-                    optionWBase * 0.90f
                 } else {
                     optionWBase
                 }
