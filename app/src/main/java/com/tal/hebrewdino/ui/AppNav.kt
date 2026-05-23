@@ -57,11 +57,12 @@ fun AppNav() {
     val bgMusicEligible = currentRoute != null && currentRoute in BackgroundMusicEligibleRoutes
 
     LaunchedEffect(currentRoute, backgroundMusicEnabled) {
-        if (backgroundMusicEnabled && bgMusicEligible) {
-            bgMusic.playLoopFromAssets(assetPath = "audio/bg_music.mp3")
-        } else {
+        if (!backgroundMusicEnabled) {
             bgMusic.stop()
+            return@LaunchedEffect
         }
+        bgMusic.playLoopFromAssets(assetPath = "audio/bg_music.mp3")
+        bgMusic.setMuted(!bgMusicEligible)
     }
 
     DisposableEffect(lifecycleOwner) {

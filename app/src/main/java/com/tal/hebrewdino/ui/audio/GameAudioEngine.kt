@@ -28,13 +28,26 @@ class BackgroundMusicPlayer(
     private val appContext = context.applicationContext
     private var player: MediaPlayer? = null
     private var currentAssetPath: String? = null
+    private var targetVolume: Float = 0.28f
+    private var muted: Boolean = false
 
     fun playLoopFromAssets(
         assetPath: String,
         volume: Float = 0.28f,
     ) {
         if (assetPath.isBlank()) return
-        if (currentAssetPath == assetPath && player?.isPlaying == true) return
+        val v = volume.coerceIn(0f, 1f)
+        targetVolume = v
+        if (currentAssetPath == assetPath && player != null) {
+            applyVolume()
+            if (player?.isPlaying != true) {
+                try {
+                    player?.start()
+                } catch (_: Throwable) {
+                }
+            }
+            return
+        }
         stop()
 
         try {
@@ -49,8 +62,7 @@ class BackgroundMusicPlayer(
             mp.setDataSource(afd.fileDescriptor, afd.startOffset, afd.length)
             afd.close()
             mp.isLooping = true
-            val v = volume.coerceIn(0f, 1f)
-            mp.setVolume(v, v)
+            mp.setVolume(if (muted) 0f else v, if (muted) 0f else v)
             mp.setOnErrorListener { _, _, _ ->
                 stop()
                 true
@@ -64,6 +76,20 @@ class BackgroundMusicPlayer(
             stop()
         } catch (_: Throwable) {
             stop()
+        }
+    }
+
+    fun setMuted(muted: Boolean) {
+        this.muted = muted
+        applyVolume()
+    }
+
+    private fun applyVolume() {
+        val p = player ?: return
+        val v = if (muted) 0f else targetVolume.coerceIn(0f, 1f)
+        try {
+            p.setVolume(v, v)
+        } catch (_: Throwable) {
         }
     }
 
