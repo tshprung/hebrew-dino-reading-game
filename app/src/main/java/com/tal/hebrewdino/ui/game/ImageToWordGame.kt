@@ -179,7 +179,12 @@ fun ImageToWordGame(
                             density = density,
                             cardWidth = optionW,
                             word = choice.word,
-                            sizeMultiplier = 1.25f,
+                            sizeMultiplier =
+                                if ((chapterId == 3 || chapterId == 6) && stationId == 6) {
+                                    1.25f * 0.70f
+                                } else {
+                                    1.25f
+                                },
                             chapterId = chapterId,
                             stationId = stationId,
                         )

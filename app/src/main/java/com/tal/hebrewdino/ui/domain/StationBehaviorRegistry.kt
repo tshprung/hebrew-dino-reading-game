@@ -407,7 +407,7 @@ object StationBehaviorRegistry {
                     replayMode = StationReplayMode.ExistingStationSpecific,
                     hintMode = StationHintMode.ExistingStationSpecific,
                     imageToWordInstructionText = StationInstructionCopy.Chapter3ImageToWord,
-                    contentTopInsetDp = 94f,
+                    contentTopInsetDp = 113f,
                     riskNotes = "Ch3 st6 uses ImageToWordGame (instruction from spec).",
                 )
             else -> error("Unexpected Ch3 stationId=$stationId")
@@ -629,7 +629,7 @@ object StationBehaviorRegistry {
                     replayMode = StationReplayMode.ExistingStationSpecific,
                     hintMode = StationHintMode.ExistingStationSpecific,
                     imageToWordInstructionText = StationInstructionCopy.Chapter3ImageToWord,
-                    contentTopInsetDp = 94f,
+                    contentTopInsetDp = 113f,
                     riskNotes = "Ch6 st6 uses ImageToWordGame; aligned with Chapter 3 station 6.",
                 )
             else -> error("Unexpected Ch6 stationId=$stationId")
