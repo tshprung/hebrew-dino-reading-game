@@ -25,6 +25,8 @@ fun Chapter3Station6ImageToWordStationContent(
     entryPulseScale: Float,
     optionsShakePx: Float,
     instructionText: String,
+    chapterId: Int,
+    stationId: Int,
     onPictureTapReplayWord: (() -> Unit)? = null,
     onWordPressed: (String) -> Unit,
     onAttempt: (String) -> Boolean,
@@ -35,6 +37,8 @@ fun Chapter3Station6ImageToWordStationContent(
         contentKey = contentKey,
         enabled = enabled,
         instructionText = instructionText,
+        chapterId = chapterId,
+        stationId = stationId,
         onPictureTapReplayWord = onPictureTapReplayWord,
         onWordPressed = onWordPressed,
         innerPictureScaleForChoice = { choice ->

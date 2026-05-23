@@ -52,6 +52,8 @@ fun ImageToWordGame(
     contentKey: Int,
     enabled: Boolean,
     instructionText: String,
+    chapterId: Int? = null,
+    stationId: Int? = null,
     onPictureTapReplayWord: (() -> Unit)? = null,
     onWordPressed: ((choiceId: String) -> Unit)? = null,
     innerPictureScaleForChoice: (LessonChoice) -> Float = { choice -> Chapter1Station5And6ImageMatchInnerScale.innerScale(choice) },
@@ -142,7 +144,7 @@ fun ImageToWordGame(
             Spacer(modifier = Modifier.height(if (isCompactLandscapePhone) 6.dp else 14.dp))
 
             val optionCount = question.choices.size.coerceIn(2, 6)
-            val optionW =
+            val optionWBase =
                 ScreenFit.rowChildWidthDp(
                     rowInnerWidth = w,
                     count = optionCount,
@@ -150,6 +152,12 @@ fun ImageToWordGame(
                     minEach = 80.dp,
                     maxEach = 168.dp,
                 )
+            val optionW =
+                if (chapterId == 6 && stationId == 6) {
+                    optionWBase * 0.90f
+                } else {
+                    optionWBase
+                }
 
             androidx.compose.foundation.layout.Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -172,8 +180,8 @@ fun ImageToWordGame(
                             cardWidth = optionW,
                             word = choice.word,
                             sizeMultiplier = 1.25f,
-                            chapterId = null,
-                            stationId = null,
+                            chapterId = chapterId,
+                            stationId = stationId,
                         )
 
                     Box(

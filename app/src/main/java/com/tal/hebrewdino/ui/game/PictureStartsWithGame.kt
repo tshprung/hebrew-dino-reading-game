@@ -97,9 +97,15 @@ fun PictureStartsWithGame(
     val isSagaStation4 =
         (chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) &&
             stationId == Chapter1StationOrder.PICTURE_PICK_ONE
-    val instructionExtraDownDp =
+    val pictureCardExtraDownDp =
         if (isSagaStation4) {
             19.dp
+        } else {
+            0.dp
+        }
+    val instructionExtraDownDp =
+        if (isSagaStation4) {
+            8.dp
         } else {
             0.dp
         }
@@ -210,6 +216,7 @@ fun PictureStartsWithGame(
                     Column(
                         modifier =
                             Modifier
+                                .offset(y = pictureCardExtraDownDp)
                                 .then(
                                     if (pictureFrameMaxWidthFraction != null) {
                                         Modifier.widthIn(max = frameCap)
@@ -314,10 +321,7 @@ fun PictureStartsWithGame(
                         Modifier.offset(y = instructionExtraDownDp)
                     },
             )
-            val instructionBottomSpacer =
-                (if (isCompactLandscapePhone) 6.dp else 12.dp) +
-                    if (isSagaStation4) 10.dp else 0.dp
-            Spacer(modifier = Modifier.height(instructionBottomSpacer))
+            Spacer(modifier = Modifier.height(if (isCompactLandscapePhone) 6.dp else 12.dp))
             BoxWithConstraints(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
             val rowInnerWidth = maxWidth
             val frameCap =
@@ -393,19 +397,21 @@ fun PictureStartsWithGame(
                         stationId = stationId,
                     )
                 val pictureTapReplays = onPictureTapReplayWord != null
-                Chapter1Station4To6LessonChoiceCardSpec.Card(
-                    choice = choice,
-                    enabled = enabled && pictureTapReplays,
-                    showWordCaption = showWordCaption,
-                    cardWidth = cardW,
-                    // Use station-5 aspect ratio; this also fixes "too tall" without a custom frame.
-                    cardHeight = cardH,
-                    captionFontSize = captionSp,
-                    innerPictureScale = innerPictureScale,
-                    onClick = { if (pictureTapReplays) onPictureTapReplayWord.invoke() },
-                    scale = 1f,
-                    isCorrectPick = false,
-                )
+                Box(modifier = Modifier.offset(y = pictureCardExtraDownDp)) {
+                    Chapter1Station4To6LessonChoiceCardSpec.Card(
+                        choice = choice,
+                        enabled = enabled && pictureTapReplays,
+                        showWordCaption = showWordCaption,
+                        cardWidth = cardW,
+                        // Use station-5 aspect ratio; this also fixes "too tall" without a custom frame.
+                        cardHeight = cardH,
+                        captionFontSize = captionSp,
+                        innerPictureScale = innerPictureScale,
+                        onClick = { if (pictureTapReplays) onPictureTapReplayWord.invoke() },
+                        scale = 1f,
+                        isCorrectPick = false,
+                    )
+                }
             }
             }
             Spacer(modifier = Modifier.height(if (isCompactLandscapePhone) 8.dp else 16.dp))

@@ -304,6 +304,8 @@ internal fun GameQuestionHost(
                             (ui.chapterId == 3 && ui.stationId == 3)
                         ) {
                             SixStationArcHalfCmNudge
+                        } else if (ui.chapterId == 6 && ui.stationId == 3) {
+                            SixStationArcHalfCmNudge
                         } else {
                             0.dp
                         },
@@ -421,6 +423,8 @@ internal fun GameQuestionHost(
                         instructionText =
                             ui.stationUiSpec.imageToWordInstructionText
                                 ?: StationInstructionCopy.Chapter3ImageToWord,
+                        chapterId = ui.chapterId,
+                        stationId = ui.stationId,
                         onPictureTapReplayWord =
                             if (ui.audioEnabled) {
                                 { handlers.handleImageToWordReplayCorrectChoice() }
