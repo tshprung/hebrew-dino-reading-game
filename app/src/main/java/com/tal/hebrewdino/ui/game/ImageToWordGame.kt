@@ -92,19 +92,17 @@ fun ImageToWordGame(
             pictureCardW *= 0.70f
         }
         val pictureCardH = pictureCardW * LessonChoiceCardPictureAspect
+        val chapter3Station6ExtraDown = if (chapterId == 3 && stationId == 6) 19.dp else 0.dp
+        val chapter6Station6ExtraDown = if (chapterId == 6 && stationId == 6) 38.dp else 0.dp
+        val baseDown = if (isCompactLandscapePhone) (-10).dp else 0.dp
+        val totalDown = baseDown + chapter3Station6ExtraDown + chapter6Station6ExtraDown
 
         Column(
             modifier =
                 Modifier
                     .fillMaxSize()
                     .padding(horizontal = 12.dp, vertical = if (isCompactLandscapePhone) 0.dp else 8.dp)
-                    .then(
-                        if (isCompactLandscapePhone) {
-                            Modifier.offset(y = (-10).dp)
-                        } else {
-                            Modifier
-                        },
-                    ),
+                    .then(if (totalDown != 0.dp) Modifier.offset(y = totalDown) else Modifier),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Top,
         ) {
@@ -164,6 +162,8 @@ fun ImageToWordGame(
                 horizontalArrangement = Arrangement.spacedBy(cardGap, Alignment.CenterHorizontally),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
+                val isChapter6Station6 = chapterId == 6 && stationId == 6
+                val hasLockedCorrectChoice = isChapter6Station6 && successChoiceId != null
                 question.choices.forEach { choice ->
                     val scale = remember(choice.id, contentKey) { Animatable(1f) }
                     val flash = remember(choice.id, contentKey) { Animatable(0f) }
@@ -189,18 +189,34 @@ fun ImageToWordGame(
                             stationId = stationId,
                         )
 
+                    val isLockedCorrectThisChoice = hasLockedCorrectChoice && choice.id == successChoiceId
                     Box(
                         modifier =
                             Modifier
                                 .width(optionW)
                                 .height((optionW * 0.54f).coerceAtLeast(if (isCompactLandscapePhone) 56.dp else 64.dp))
-                                .background(Color.White.copy(alpha = 0.92f), RoundedCornerShape(16.dp))
+                                .background(
+                                    if (!hasLockedCorrectChoice) {
+                                        Color.White.copy(alpha = 0.92f)
+                                    } else if (isLockedCorrectThisChoice) {
+                                        Color.White.copy(alpha = 0.92f)
+                                    } else {
+                                        Color.Transparent
+                                    },
+                                    RoundedCornerShape(16.dp),
+                                )
                                 .border(
-                                    width = 2.dp,
+                                    width =
+                                        when {
+                                            flash.value > 0.01f -> 2.dp
+                                            isLockedCorrectThisChoice -> 4.dp
+                                            else -> 2.dp
+                                        },
                                     color =
                                         when {
-                                            choice.id == successChoiceId -> Color(0xFF2E7D32).copy(alpha = 0.95f)
+                                            isLockedCorrectThisChoice -> Color(0xFF2E7D32).copy(alpha = 0.95f)
                                             flash.value > 0.01f -> Color(0xFFE53935).copy(alpha = 0.90f)
+                                            hasLockedCorrectChoice -> Color(0xFF0B2B3D).copy(alpha = 0.10f)
                                             else -> Color(0xFF0B2B3D).copy(alpha = 0.18f)
                                         },
                                     shape = RoundedCornerShape(16.dp),

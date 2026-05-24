@@ -136,6 +136,10 @@ internal object AdvanceAfterRoundActions {
                     },
             )
         }
+        if (audioEnabled && chapterId == 6) {
+            GameAudioActions.awaitTrackedVoices(audioRuntime, 10000L)
+            cancelFeedbackVoice()
+        }
         delay(
             when {
                 ch3SpellMidWord -> 38

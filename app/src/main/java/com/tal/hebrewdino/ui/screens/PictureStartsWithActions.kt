@@ -102,8 +102,7 @@ internal object PictureStartsWithActions {
                         gameViewModel.correctTapPulseLetter = picked
                         gameViewModel.correctTapPulseEpoch += 1
                         if (audioEnabled && (chapterId == 3 || chapterId == 6) && stationId == 1) {
-                            val timeoutMs = if (chapterId == 3) 4500L else 1200L
-                            GameAudioActions.awaitTrackedVoices(audioRuntime, timeoutMs)
+                            GameAudioActions.awaitTrackedVoices(audioRuntime, 10000L)
                         }
                         val isLast = session.currentIndex >= session.totalQuestions - 1
                         advanceAfterRound(isLast)

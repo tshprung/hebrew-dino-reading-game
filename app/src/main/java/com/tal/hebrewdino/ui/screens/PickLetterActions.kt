@@ -65,7 +65,7 @@ internal object PickLetterActions {
                                 ) {
                                     voice.playFirstAvailableBlockingRandomized(HighlightedWordDonePraiseCandidates)
                                 }
-                            GameAudioActions.await(job, 2800L)
+                            GameAudioActions.joinSilently(job)
                         }
                         val isLast = session.currentIndex >= session.totalQuestions - 1
                         advanceAfterRound(
@@ -99,7 +99,7 @@ internal object PickLetterActions {
                 } else {
                     scope.launch {
                         if (audioEnabled) {
-                            GameAudioActions.awaitTrackedVoices(audioRuntime, 4500L)
+                            GameAudioActions.awaitTrackedVoices(audioRuntime, 10000L)
                         }
                         val isLast = session.currentIndex >= session.totalQuestions - 1
                         advanceAfterRound(isLast, false)

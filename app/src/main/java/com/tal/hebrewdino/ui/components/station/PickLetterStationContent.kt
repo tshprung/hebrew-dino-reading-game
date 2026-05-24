@@ -73,7 +73,9 @@ fun PickLetterStationContent(
             (chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) &&
             stationId == Chapter1StationOrder.TAP_LETTER
     val instructionFont = (39f * if (isPhoneSixStationArcStation1) 0.80f else 1f).sp
-    val instructionPadV = 8.dp
+    val isChapter6Station5 = chapterId == 6 && stationId == 5
+    val instructionPadV = if (isChapter6Station5) 6.dp else 8.dp
+    val instructionPadH = if (isChapter6Station5) 10.dp else 14.dp
     val headerChipFont = 56.sp
     Box(
         modifier =
@@ -104,7 +106,7 @@ fun PickLetterStationContent(
                         Modifier
                             .padding(start = 8.dp, end = 8.dp, bottom = 6.dp)
                             .background(Color.White.copy(alpha = 0.72f), RoundedCornerShape(18.dp))
-                            .padding(horizontal = 14.dp, vertical = instructionPadV),
+                            .padding(horizontal = instructionPadH, vertical = instructionPadV),
                 )
                 Row(
                     horizontalArrangement = Arrangement.Center,
@@ -138,7 +140,7 @@ fun PickLetterStationContent(
                     modifier =
                         Modifier
                             .background(Color.White.copy(alpha = 0.72f), RoundedCornerShape(18.dp))
-                            .padding(horizontal = 14.dp, vertical = instructionPadV),
+                            .padding(horizontal = instructionPadH, vertical = instructionPadV),
                 )
                 Spacer(modifier = Modifier.height(10.dp))
                 OutlinedButton(
@@ -162,7 +164,7 @@ fun PickLetterStationContent(
                     modifier =
                         Modifier
                             .background(Color.White.copy(alpha = 0.72f), RoundedCornerShape(18.dp))
-                            .padding(horizontal = 14.dp, vertical = instructionPadV),
+                            .padding(horizontal = instructionPadH, vertical = instructionPadV),
                 )
                 if (temporaryHintLetter != null) {
                     TargetLetterHeaderChip(
@@ -191,7 +193,7 @@ fun PickLetterStationContent(
                     modifier =
                         Modifier
                             .background(Color.White.copy(alpha = 0.72f), RoundedCornerShape(18.dp))
-                            .padding(horizontal = 14.dp, vertical = instructionPadV),
+                            .padding(horizontal = instructionPadH, vertical = instructionPadV),
                 )
                 TargetLetterHeaderChip(
                     letter = question.correctAnswer,

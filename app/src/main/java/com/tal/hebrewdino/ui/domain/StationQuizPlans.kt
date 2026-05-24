@@ -113,21 +113,7 @@ object StationQuizPlans {
             }
 
     fun chapter6(stationId: Int): StationQuizPlan =
-        Chapter6StationOrder.quizPlan(stationId).let { plan ->
-            when (stationId) {
-                1 ->
-                    plan.copy(
-                        optionCount = 5,
-                        sortOptionLetters = true,
-                    )
-                5 ->
-                    plan.copy(
-                        sortOptionLetters = true,
-                        listenOnlyTargetPrompt = true
-                    )
-                else -> plan
-            }
-        }
+        chapter3(stationId)
 
     fun trainingV1(stationId: Int): StationQuizPlan =
         when (stationId) {

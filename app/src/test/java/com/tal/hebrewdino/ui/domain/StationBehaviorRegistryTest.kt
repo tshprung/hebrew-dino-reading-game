@@ -16,6 +16,16 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class StationBehaviorRegistryTest {
+    private fun StationUiSpec.layoutComparable(): StationUiSpec =
+        copy(
+            chapterId = 0,
+            stationId = 0,
+            audioStagingPickLetter = false,
+            audioStagingPopBalloons = false,
+            audioStagingFindGrid = false,
+            popBalloonsUseSoundPoolPrompt = false,
+            riskNotes = "",
+        )
 
     @Test
     fun everyChapterStationPair_hasSpecAlignedWithQuizPlan() {
@@ -198,6 +208,15 @@ class StationBehaviorRegistryTest {
         assertEquals(6, plan.optionCount)
         assertTrue(spec.helpControlsEnabled)
         assertTrue(spec.variants.contains(StationVariant.HighlightedLetterInWord))
+    }
+
+    @Test
+    fun chapter6_station_layout_matches_chapter3_station_layout() {
+        for (stationId in 1..6) {
+            val ch3 = StationBehaviorRegistry.getStationUiSpec(3, stationId).layoutComparable()
+            val ch6 = StationBehaviorRegistry.getStationUiSpec(6, stationId).layoutComparable()
+            assertEquals("Station $stationId layout must match between ch3 and ch6", ch3, ch6)
+        }
     }
 
     @Test
@@ -498,9 +517,8 @@ class StationBehaviorRegistryTest {
     }
 
     @Test
-    fun popBalloonsUseSoundPoolPrompt_is_enabled_for_sagaStation2_and_ch6st3_and_trainingWordBalloons() {
+    fun popBalloonsUseSoundPoolPrompt_is_enabled_for_sagaStation2_and_trainingWordBalloons() {
         assertTrue(StationBehaviorRegistry.getStationUiSpec(1, BALLOON_POP).popBalloonsUseSoundPoolPrompt)
-        assertTrue(StationBehaviorRegistry.getStationUiSpec(6, 3).popBalloonsUseSoundPoolPrompt)
         assertTrue(
             StationBehaviorRegistry.getStationUiSpec(
                 TrainingV1Config.CHAPTER_ID,

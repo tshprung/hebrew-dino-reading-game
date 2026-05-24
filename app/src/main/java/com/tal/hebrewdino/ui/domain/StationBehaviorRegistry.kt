@@ -55,7 +55,6 @@ object StationBehaviorRegistry {
             plan.mode == StationQuizMode.PopBalloons &&
                 (
                     audioStagingPopBalloons ||
-                        (chapterId == 6 && sid == 3) ||
                         (chapterId == TrainingV1Config.CHAPTER_ID && sid == TrainingV1Config.STATION_WORD_BALLOONS)
                 )
         val popBalloonsHelpControlsEnabled =
@@ -112,8 +111,6 @@ object StationBehaviorRegistry {
             pickLetterSagaStation1CompactPreamble = null,
             pickLetterAllowPinnedCorrectShortcut = true,
             pickLetterListenOnlyHebrewPanel = false,
-            // Ch6 st1 needs slightly more inset
-            contentTopInsetDp = if (chapterId == 6 && stationId == 1) 72f else null
         )
     }
 

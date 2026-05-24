@@ -164,15 +164,6 @@ internal suspend fun playIntroPrompt(
         return
     }
 
-    if (chapterId == 6 && stationId == 4 && q is Question.PictureStartsWithQuestion) {
-        sfx.stopAllStreams()
-        val clip = AudioClips.WhichLetterDoesWordStart
-        val wordPath = AudioClips.wordClipByCatalogId(q.catalogEntryId)
-        if (voice.hasAsset(clip)) voice.playBlocking(clip)
-        if (voice.hasAsset(wordPath)) voice.playBlocking(wordPath)
-        return
-    }
-
     if ((chapterId == 3 || chapterId == 6) && stationId == 1 && q is Question.PictureStartsWithQuestion) {
         sfx.stopAllStreams()
         val clip = AudioClips.WhichLetterDoesWordStart

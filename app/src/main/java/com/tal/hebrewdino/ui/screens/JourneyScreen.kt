@@ -654,10 +654,16 @@ private fun JourneyRoadStrip(
                         .align(Alignment.TopStart)
                         .size(118.dp, 102.dp)
                         .offset {
+                            val goalTopPadDp =
+                                if (endMarker == JourneyEndMarker.Mom) {
+                                    76.dp
+                                } else {
+                                    88.dp
+                                }
                             with(density) {
                                 IntOffset(
                                     (gfx * wPx - 18.dp.toPx()).roundToInt(),
-                                    (gfy * hPx - 88.dp.toPx()).roundToInt(),
+                                    (gfy * hPx - goalTopPadDp.toPx()).roundToInt(),
                                 )
                             }
                         },

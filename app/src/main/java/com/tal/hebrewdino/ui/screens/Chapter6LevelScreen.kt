@@ -25,7 +25,7 @@ fun Chapter6LevelScreen(
         stageLabel = "תחנה $station",
         plan = StationQuizPlans.chapter6(station),
         letterPoolSpec = Chapter6LetterPoolSpec,
-        backgroundRes = R.drawable.forest_bg_journey_road,
+        backgroundRes = R.drawable.ch3_journey_bg,
         onBack = onBack,
         onComplete = onComplete,
         suppressInGameDinoProgress = suppressInGameDinoProgress,

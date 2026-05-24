@@ -488,7 +488,7 @@ internal fun GameQuestionHost(
                                             deps.voice.playBlocking(picked)
                                         }
                                     }
-                                GameAudioActions.await(job, 3000L)
+                                GameAudioActions.joinSilently(job)
                             }
                             when (deps.session.completeCurrentRound()) {
                                 AnswerResult.Correct -> {

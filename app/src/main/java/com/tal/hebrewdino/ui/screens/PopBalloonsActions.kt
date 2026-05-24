@@ -223,6 +223,10 @@ internal object PopBalloonsActions {
                         if (audioEnabled && !ch1St2) {
                             ChildGameAudioHooks.onCorrect()
                         }
+                        if (audioEnabled && chapterId == 6 && stationId == 3) {
+                            GameAudioActions.awaitTrackedVoices(audioRuntime, 4500L)
+                            cancelFeedbackVoice()
+                        }
                         val isLast = session.currentIndex >= session.totalQuestions - 1
                         advanceAfterRound(isLast)
                     }

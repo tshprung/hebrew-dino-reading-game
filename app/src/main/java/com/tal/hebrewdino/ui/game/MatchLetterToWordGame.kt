@@ -255,9 +255,10 @@ fun MatchLetterToWordGame(
                     stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH ->
                     20.dp
                 chapterId == 3 && stationId == 2 -> 20.dp
-                chapterId == 6 && stationId == 2 -> 20.dp
+                chapterId == 6 && stationId == 2 -> 28.dp
                 else -> 0.dp
             }
+        val chapter6Station2CaptionBoost = if (chapterId == 6 && stationId == 2) 1.30f else 1f
 
         // Header stays pinned; content below scales down if needed so nothing is clipped.
         val headerPadTop = 6.dp
@@ -534,6 +535,7 @@ fun MatchLetterToWordGame(
                                     word = ch.word,
                                     sizeMultiplier =
                                         (if (isPhoneSixStationArcStation6) captionSizeMultiplier * 0.92f else captionSizeMultiplier) *
+                                            chapter6Station2CaptionBoost *
                                             if (isCompactLandscapePhone && chapterId == 2 && ch.word == "היפופוטם") {
                                                 0.95f
                                             } else {
@@ -804,7 +806,7 @@ fun MatchLetterToWordGame(
                                     density = density,
                                     cardWidth = cardW,
                                     word = ch.word,
-                                    sizeMultiplier = captionSizeMultiplier,
+                                    sizeMultiplier = captionSizeMultiplier * chapter6Station2CaptionBoost,
                                     chapterId = chapterId,
                                     stationId = stationId,
                                 )
@@ -919,6 +921,7 @@ private fun SixStationArcStation6Board(
     val cardScale = 0.41f
     val letterTileHeightScale = 0.46f
     val letterFontSp = 30.sp
+    val chapter6Station2CaptionBoost = if (chapterId == 6 && stationId == 2) 1.30f else 1f
     val topGroupOffsetY = (-24).dp
     val headerAndCardsExtraDownDp =
         when {
@@ -926,7 +929,7 @@ private fun SixStationArcStation6Board(
                 stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH ->
                 20.dp
             chapterId == 3 && stationId == 2 -> 20.dp
-            chapterId == 6 && stationId == 2 -> 20.dp
+            chapterId == 6 && stationId == 2 -> 28.dp
             else -> 0.dp
         }
     val topGroupOffsetEffectiveY = topGroupOffsetY + headerAndCardsExtraDownDp
@@ -1086,6 +1089,7 @@ private fun SixStationArcStation6Board(
                             sizeMultiplier =
                                 captionSizeMultiplier *
                                     0.92f *
+                                    chapter6Station2CaptionBoost *
                                     if (isCompactLandscapePhone && chapterId == 2 && ch.word == "היפופוטם") {
                                         0.95f
                                     } else {

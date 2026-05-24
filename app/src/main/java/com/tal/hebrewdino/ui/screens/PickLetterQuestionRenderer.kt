@@ -53,24 +53,21 @@ internal fun PickLetterQuestionRenderer(
                 else -> 0.dp
             }
         val pickLetterBoxTopPaddingDp =
-            if (sagaUsesPickLetterAudioStaging) SixStationArcHalfCmNudge else 0.dp
+            when {
+                sagaUsesPickLetterAudioStaging -> SixStationArcHalfCmNudge
+                chapterId == 6 && stationId == 4 -> SixStationArcHalfCmNudge
+                chapterId == 6 && stationId == 5 -> SixStationArcHalfCmNudge
+                else -> 0.dp
+            }
         val pinnedCorrect = station1PinnedCorrectLetter
         val pickLetterDisplayOptions =
-            if (isChapter3AudioLetterRecognitionStation && !enabled) {
+            if (isChapter3AudioLetterRecognitionStation && !enabled && pinnedCorrect != null) {
                 listOf(current.correctAnswer)
             } else if (isChapter3AudioLetterRecognitionStation && correctTapPulseLetter != null) {
                 listOf(correctTapPulseLetter)
-            } else if (chapterId == 6 &&
-                stationId == 4 &&
-                isChapter3HighlightedLetterInWordStation &&
-                !enabled
-            ) {
+            } else if (isChapter3HighlightedLetterInWordStation && !enabled && pinnedCorrect != null) {
                 listOf(current.correctAnswer)
-            } else if (chapterId == 6 &&
-                stationId == 4 &&
-                isChapter3HighlightedLetterInWordStation &&
-                correctTapPulseLetter != null
-            ) {
+            } else if (isChapter3HighlightedLetterInWordStation && correctTapPulseLetter != null) {
                 listOf(correctTapPulseLetter)
             } else if (!enabled &&
                 pinnedCorrect != null
