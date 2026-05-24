@@ -162,8 +162,8 @@ fun ImageToWordGame(
                 horizontalArrangement = Arrangement.spacedBy(cardGap, Alignment.CenterHorizontally),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                val isChapter6Station6 = chapterId == 6 && stationId == 6
-                val hasLockedCorrectChoice = isChapter6Station6 && successChoiceId != null
+                val isChapter3Or6Station6 = (chapterId == 3 || chapterId == 6) && stationId == 6
+                val hasLockedCorrectChoice = isChapter3Or6Station6 && successChoiceId != null
                 question.choices.forEach { choice ->
                     val scale = remember(choice.id, contentKey) { Animatable(1f) }
                     val flash = remember(choice.id, contentKey) { Animatable(0f) }
