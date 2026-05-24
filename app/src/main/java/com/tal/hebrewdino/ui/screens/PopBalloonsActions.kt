@@ -9,6 +9,7 @@ import com.tal.hebrewdino.ui.audio.VoicePlayer
 import com.tal.hebrewdino.ui.domain.AnswerResult
 import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
 import com.tal.hebrewdino.ui.domain.LevelSession
+import com.tal.hebrewdino.ui.domain.TrainingV1Config
 import com.tal.hebrewdino.ui.game.ChildGameAudioHooks
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
@@ -197,7 +198,10 @@ internal object PopBalloonsActions {
         advanceAfterRound: suspend (isLast: Boolean) -> Unit,
     ) {
         val ch1St2 = sagaUsesPopBalloonsAudioStaging
-        if (ch1St2 || ((chapterId == 3 || chapterId == 6) && stationId == 3)) {
+        if (ch1St2 ||
+            ((chapterId == 3 || chapterId == 6) && stationId == 3) ||
+            (chapterId == TrainingV1Config.CHAPTER_ID && stationId == TrainingV1Config.STATION_WORD_BALLOONS)
+        ) {
             gameViewModel.station2PinnedBalloonLetter = lastLetter
             gameViewModel.station2PinnedBalloonColor = poppedBalloonColor
         } else if (!ch1St2) {
@@ -224,6 +228,13 @@ internal object PopBalloonsActions {
                             ChildGameAudioHooks.onCorrect()
                         }
                         if (audioEnabled && chapterId == 6 && stationId == 3) {
+                            GameAudioActions.awaitTrackedVoices(audioRuntime, 4500L)
+                            cancelFeedbackVoice()
+                        }
+                        if (audioEnabled &&
+                            chapterId == TrainingV1Config.CHAPTER_ID &&
+                            stationId == TrainingV1Config.STATION_WORD_BALLOONS
+                        ) {
                             GameAudioActions.awaitTrackedVoices(audioRuntime, 4500L)
                             cancelFeedbackVoice()
                         }

@@ -256,7 +256,18 @@ fun MatchLetterToWordGame(
                     20.dp
                 chapterId == 3 && stationId == 2 -> 20.dp
                 chapterId == 6 && stationId == 2 -> 28.dp
+                chapterId == TrainingV1Config.CHAPTER_ID &&
+                    stationId == TrainingV1Config.STATION_MATCH_LETTER_TO_WORD ->
+                    38.dp
                 else -> 0.dp
+            }
+        val letterRowExtraDownDp =
+            if (chapterId == TrainingV1Config.CHAPTER_ID &&
+                stationId == TrainingV1Config.STATION_MATCH_LETTER_TO_WORD
+            ) {
+                15.dp
+            } else {
+                0.dp
             }
         val chapter6Station2CaptionBoost = if (chapterId == 6 && stationId == 2) 1.30f else 1f
 
@@ -578,7 +589,7 @@ fun MatchLetterToWordGame(
                     }
                     Spacer(modifier = Modifier.height(landscapePictureLetterGap))
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().offsetYIfNonZero(letterRowExtraDownDp),
                         horizontalArrangement =
                             Arrangement.spacedBy(
                                 gap,
@@ -930,7 +941,18 @@ private fun SixStationArcStation6Board(
                 20.dp
             chapterId == 3 && stationId == 2 -> 20.dp
             chapterId == 6 && stationId == 2 -> 28.dp
+            chapterId == TrainingV1Config.CHAPTER_ID &&
+                stationId == TrainingV1Config.STATION_MATCH_LETTER_TO_WORD ->
+                38.dp
             else -> 0.dp
+        }
+    val letterRowExtraDownDp =
+        if (chapterId == TrainingV1Config.CHAPTER_ID &&
+            stationId == TrainingV1Config.STATION_MATCH_LETTER_TO_WORD
+        ) {
+            15.dp
+        } else {
+            0.dp
         }
     val topGroupOffsetEffectiveY = topGroupOffsetY + headerAndCardsExtraDownDp
     val columns = wordColumn.size.coerceIn(1, 6)
@@ -1140,6 +1162,7 @@ private fun SixStationArcStation6Board(
                     .align(Alignment.BottomCenter)
                     .fillMaxWidth()
                     .padding(start = boardHorizontalPadding, end = boardHorizontalPadding, bottom = 12.dp)
+                    .offsetYIfNonZero(letterRowExtraDownDp)
                     .offset { IntOffset(shake.value.roundToInt(), 0) },
             horizontalArrangement = Arrangement.spacedBy(gap, Alignment.CenterHorizontally),
             verticalAlignment = Alignment.CenterVertically,

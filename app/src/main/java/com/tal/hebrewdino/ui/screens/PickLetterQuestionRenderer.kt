@@ -13,6 +13,7 @@ import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
 import com.tal.hebrewdino.ui.domain.HebrewLetterOrder
 import com.tal.hebrewdino.ui.domain.Question
 import com.tal.hebrewdino.ui.domain.StationUiSpec
+import com.tal.hebrewdino.ui.domain.TrainingV1Config
 
 @Composable
 internal fun PickLetterQuestionRenderer(
@@ -57,6 +58,7 @@ internal fun PickLetterQuestionRenderer(
                 sagaUsesPickLetterAudioStaging -> SixStationArcHalfCmNudge
                 chapterId == 6 && stationId == 4 -> SixStationArcHalfCmNudge
                 chapterId == 6 && stationId == 5 -> SixStationArcHalfCmNudge
+                chapterId == TrainingV1Config.CHAPTER_ID && stationId == TrainingV1Config.STATION_HEAR_LETTER_CHOOSE -> SixStationArcHalfCmNudge
                 else -> 0.dp
             }
         val pinnedCorrect = station1PinnedCorrectLetter

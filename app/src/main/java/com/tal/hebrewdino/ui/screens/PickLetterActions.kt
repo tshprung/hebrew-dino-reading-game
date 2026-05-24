@@ -5,6 +5,7 @@ import com.tal.hebrewdino.ui.audio.SoundPoolPlayer
 import com.tal.hebrewdino.ui.audio.VoicePlayer
 import com.tal.hebrewdino.ui.domain.AnswerResult
 import com.tal.hebrewdino.ui.domain.LevelSession
+import com.tal.hebrewdino.ui.domain.TrainingV1Config
 import com.tal.hebrewdino.ui.game.ChildGameAudioHooks
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -25,6 +26,8 @@ internal object PickLetterActions {
         gameViewModel: GameViewModel,
         cancelFeedbackVoice: () -> Unit,
         audioEnabled: Boolean,
+        chapterId: Int,
+        stationId: Int,
         sagaUsesPickLetterAudioStaging: Boolean,
         isChapter3HighlightedLetterInWordStation: Boolean,
         isChapter3AudioLetterRecognitionStation: Boolean,
@@ -40,6 +43,9 @@ internal object PickLetterActions {
         cancelFeedbackVoice()
         when (session.submitAnswer(picked)) {
             AnswerResult.Correct -> {
+                val isTrainingStation1 =
+                    chapterId == TrainingV1Config.CHAPTER_ID &&
+                        stationId == TrainingV1Config.STATION_HEAR_LETTER_CHOOSE
                 if (audioEnabled && !sagaUsesPickLetterAudioStaging) {
                     ChildGameAudioHooks.onCorrect()
                 }
@@ -63,7 +69,7 @@ internal object PickLetterActions {
                                     scope = scope,
                                     audioRuntime = audioRuntime,
                                 ) {
-                                    voice.playFirstAvailableBlockingRandomized(HighlightedWordDonePraiseCandidates)
+                                    GameAudioActions.playPraiseNoImmediateRepeat(voice, audioRuntime, HighlightedWordDonePraiseCandidates)
                                 }
                             GameAudioActions.joinSilently(job)
                         }
@@ -90,7 +96,27 @@ internal object PickLetterActions {
                                 audioRuntime = audioRuntime,
                             ) {
                                 voice.playBlocking(letterName)
-                                voice.playFirstAvailableBlockingRandomized(praise)
+                                GameAudioActions.playPraiseNoImmediateRepeat(voice, audioRuntime, praise)
+                            }
+                        GameAudioActions.joinSilently(job)
+                        val isLast = session.currentIndex >= session.totalQuestions - 1
+                        advanceAfterRound(isLast, false)
+                    }
+                } else if (audioEnabled && isTrainingStation1) {
+                    scope.launch {
+                        cancelFeedbackVoice()
+                        val letterName = AudioClips.letterNameClip(picked)
+                        val praise = AudioClips.station1CorrectPraiseTailCandidates()
+                        val job =
+                            GameAudioActions.launchFeedbackVoiceNoCancel(
+                                audioEnabled = true,
+                                scope = scope,
+                                audioRuntime = audioRuntime,
+                            ) {
+                                if (letterName != null && voice.hasAsset(letterName)) {
+                                    voice.playBlocking(letterName)
+                                }
+                                GameAudioActions.playPraiseNoImmediateRepeat(voice, audioRuntime, praise)
                             }
                         GameAudioActions.joinSilently(job)
                         val isLast = session.currentIndex >= session.totalQuestions - 1

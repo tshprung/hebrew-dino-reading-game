@@ -28,6 +28,7 @@ class BackgroundMusicPlayer(
     private val appContext = context.applicationContext
     private var player: MediaPlayer? = null
     private var currentAssetPath: String? = null
+    private val positionMsByAssetPath: HashMap<String, Int> = hashMapOf()
     private var targetVolume: Float = 0.28f
     private var muted: Boolean = false
 
@@ -68,6 +69,10 @@ class BackgroundMusicPlayer(
                 true
             }
             mp.prepare()
+            val resumePosMs = positionMsByAssetPath[assetPath] ?: 0
+            if (resumePosMs > 0) {
+                runCatching { mp.seekTo(resumePosMs) }
+            }
             mp.start()
             player = mp
             currentAssetPath = assetPath
@@ -94,6 +99,18 @@ class BackgroundMusicPlayer(
     }
 
     fun stop() {
+        val p = player
+        val path = currentAssetPath
+        if (p != null && path != null) {
+            val pos =
+                runCatching { p.currentPosition }
+                    .getOrNull()
+                    ?.coerceAtLeast(0)
+                    ?: 0
+            if (pos > 0) {
+                positionMsByAssetPath[path] = pos
+            }
+        }
         currentAssetPath = null
         try {
             player?.stop()

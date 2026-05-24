@@ -98,7 +98,7 @@ internal object AdvanceAfterRoundActions {
                 audioRuntime = audioRuntime,
                 cancelFeedbackVoice = cancelFeedbackVoice,
             ) {
-                voice.playFirstAvailableBlockingRandomized(Episode1PraiseCandidates)
+                GameAudioActions.playPraiseNoImmediateRepeat(voice, audioRuntime, Episode1PraiseCandidates)
             }
         } else if (otherPraiseEligible) {
             if (sagaUsesFindGridAudioStaging) {
@@ -110,7 +110,7 @@ internal object AdvanceAfterRoundActions {
                 audioRuntime = audioRuntime,
                 cancelFeedbackVoice = cancelFeedbackVoice,
             ) {
-                voice.playFirstAvailableBlockingRandomized(OtherPraiseCandidates)
+                GameAudioActions.playPraiseNoImmediateRepeat(voice, audioRuntime, OtherPraiseCandidates)
             }
         }
         if (!suppressInGameDinoProgress && !(isChapter3HighlightedLetterInWordStation && ch3SpellMidWord)) {

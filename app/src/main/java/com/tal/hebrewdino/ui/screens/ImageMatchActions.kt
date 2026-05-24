@@ -6,6 +6,7 @@ import com.tal.hebrewdino.ui.domain.AnswerResult
 import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
 import com.tal.hebrewdino.ui.domain.LevelSession
 import com.tal.hebrewdino.ui.domain.Question
+import com.tal.hebrewdino.ui.domain.TrainingV1Config
 import com.tal.hebrewdino.ui.game.ChildGameAudioHooks
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -53,7 +54,7 @@ internal object ImageMatchActions {
                                 voiceHasAsset = { path -> voice.hasAsset(path) },
                             )
                         voice.playBlocking(clip)
-                        voice.playFirstAvailableBlockingRandomized(ImageToWordPraiseCandidates)
+                        GameAudioActions.playPraiseNoImmediateRepeat(voice, audioRuntime, ImageToWordPraiseCandidates)
                     }
                 scope.launch {
                     GameAudioActions.joinSilently(audioJob)
@@ -154,10 +155,19 @@ internal object ImageMatchActions {
                         scope = scope,
                         audioRuntime = audioRuntime,
                     ) {
-                        if (sagaEpisode && stationId == Chapter1StationOrder.PICTURE_PICK_ALL) {
-                            if (chapterId != 3 && chapterId != 6) {
-                                voice.playBlocking(AudioClips.wordClipByCatalogId(choiceId))
+                        when {
+                            chapterId == TrainingV1Config.CHAPTER_ID &&
+                                stationId == TrainingV1Config.STATION_WHICH_WORD_STARTS_WITH_LETTER -> {
+                                val wordPath = AudioClips.wordClipByCatalogId(choiceId)
+                                if (voice.hasAsset(wordPath)) voice.playBlocking(wordPath)
+                                GameAudioActions.playPraiseNoImmediateRepeat(voice, audioRuntime, ImageToWordPraiseCandidates)
                             }
+                            sagaEpisode && stationId == Chapter1StationOrder.PICTURE_PICK_ALL -> {
+                                if (chapterId != 3 && chapterId != 6) {
+                                    voice.playBlocking(AudioClips.wordClipByCatalogId(choiceId))
+                                }
+                            }
+                            else -> Unit
                         }
                     }
                 scope.launch {
@@ -170,10 +180,16 @@ internal object ImageMatchActions {
             AnswerResult.Wrong -> {
                 if (audioEnabled) ChildGameAudioHooks.onWrong()
                 HintPulseActions.registerWrongTapForHintPulse(gameViewModel)
-                if (sagaEpisode && stationId == Chapter1StationOrder.PICTURE_PICK_ALL) {
-                    onWrongFeedback(choiceId, false)
-                } else {
-                    onWrongFeedback(null, true)
+                when {
+                    chapterId == TrainingV1Config.CHAPTER_ID &&
+                        stationId == TrainingV1Config.STATION_WHICH_WORD_STARTS_WITH_LETTER ->
+                        onWrongFeedback(choiceId, false)
+
+                    sagaEpisode && stationId == Chapter1StationOrder.PICTURE_PICK_ALL ->
+                        onWrongFeedback(choiceId, false)
+
+                    else ->
+                        onWrongFeedback(null, true)
                 }
                 false
             }
