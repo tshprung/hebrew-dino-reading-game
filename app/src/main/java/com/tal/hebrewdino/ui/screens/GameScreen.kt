@@ -70,6 +70,7 @@ internal fun isSagaEpisode(chapterId: Int): Boolean = chapterId in SixStationArc
 internal class GameAudioRuntimeState {
     var feedbackVoiceJob: Job? = null
     var promptVoiceJob: Job? = null
+    var lastPraiseAssetPath: String? = null
 }
 
 private object GameAudioPreloader {
@@ -734,6 +735,8 @@ fun GameScreen(
                             gameViewModel = gameViewModel,
                             cancelFeedbackVoice = cancelFeedbackVoiceCb,
                             audioEnabled = audioEnabled,
+                            chapterId = chapterId,
+                            stationId = stationId,
                             sagaUsesPickLetterAudioStaging = sagaUsesPickLetterAudioStaging,
                             isChapter3HighlightedLetterInWordStation = isChapter3HighlightedLetterInWordStation,
                             isChapter3AudioLetterRecognitionStation = isChapter3AudioLetterRecognitionStation,
@@ -916,6 +919,12 @@ fun GameScreen(
                                 stationUiSpec = stationUiSpec,
                                 stationId = stationId,
                                 chapterId = chapterId,
+                                trainingRoundIndex =
+                                    if (chapterId == TrainingV1Config.CHAPTER_ID) {
+                                        topChromeProgressOverride?.first
+                                    } else {
+                                        null
+                                    },
                                 plan = plan,
                                 listenOnly = listenOnly,
                                 sagaUsesPickLetterAudioStaging = sagaUsesPickLetterAudioStaging,

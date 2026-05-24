@@ -11,6 +11,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -18,11 +20,15 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -31,19 +37,26 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.tal.hebrewdino.ui.components.TargetLetterHeaderChip
 import com.tal.hebrewdino.ui.components.learning.LessonChoiceCard
 import com.tal.hebrewdino.ui.components.learning.LessonChoiceCardPictureAspect
 import com.tal.hebrewdino.ui.components.learning.captionFontSizeForWordCard
 import com.tal.hebrewdino.ui.domain.Chapter1Station5And6ImageMatchInnerScale
 import com.tal.hebrewdino.ui.domain.LessonChoice
 import com.tal.hebrewdino.ui.domain.Question
+import com.tal.hebrewdino.ui.domain.TrainingV1Config
 import com.tal.hebrewdino.ui.layout.ScreenFit
 import kotlin.math.roundToInt
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+
+private const val TrainingV1ImageToWordReplayButtonTag: String = "training_v1_image_to_word_replay"
+private const val TrainingV1ImageToWordHintButtonTag: String = "training_v1_image_to_word_hint"
 
 @SuppressLint("UnusedBoxWithConstraintsScope")
 @Composable
@@ -77,6 +90,8 @@ fun ImageToWordGame(
         val w = maxWidth
         val density = LocalDensity.current
         val isCompactLandscapePhone = ScreenFit.isCompactLandscapePhone()
+        val isTrainingStation3 =
+            chapterId == TrainingV1Config.CHAPTER_ID && stationId == TrainingV1Config.STATION_PICTURE_CHOOSE_WORD
 
         // Match the same card sizing math as PictureStartsWith/ImageMatch (Episode 1/2 station 4).
         val cardGap = 10.dp
@@ -94,50 +109,64 @@ fun ImageToWordGame(
         val pictureCardH = pictureCardW * LessonChoiceCardPictureAspect
         val chapter3Station6ExtraDown = if (chapterId == 3 && stationId == 6) 19.dp else 0.dp
         val chapter6Station6ExtraDown = if (chapterId == 6 && stationId == 6) 38.dp else 0.dp
+        val trainingStation3ExtraDown = if (isTrainingStation3) 19.dp else 0.dp
         val baseDown = if (isCompactLandscapePhone) (-10).dp else 0.dp
-        val totalDown = baseDown + chapter3Station6ExtraDown + chapter6Station6ExtraDown
+        val totalDown = baseDown + chapter3Station6ExtraDown + chapter6Station6ExtraDown + trainingStation3ExtraDown
+        var hintLetter by remember(contentKey) { mutableStateOf<String?>(null) }
+        var hintEpoch by remember(contentKey) { mutableIntStateOf(0) }
 
-        Column(
+        Box(
             modifier =
                 Modifier
                     .fillMaxSize()
                     .padding(horizontal = 12.dp, vertical = if (isCompactLandscapePhone) 0.dp else 8.dp)
                     .then(if (totalDown != 0.dp) Modifier.offset(y = totalDown) else Modifier),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Top,
         ) {
-            Text(
-                text = instructionText,
-                fontSize = if (isCompactLandscapePhone) 20.sp else 24.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF0B2B3D),
-                textAlign = TextAlign.Center,
-                modifier =
-                    Modifier
-                        .padding(top = if (isCompactLandscapePhone) 2.dp else 6.dp, bottom = if (isCompactLandscapePhone) 6.dp else 10.dp)
-                        .background(Color.White.copy(alpha = 0.72f), RoundedCornerShape(18.dp))
-                        .padding(horizontal = 14.dp, vertical = 8.dp),
-            )
-
-            if (correctChoice != null) {
-                val pictureTapReplays = onPictureTapReplayWord != null
-                val innerScale =
-                    innerPictureScaleForChoice(correctChoice) *
-                        if (isCompactLandscapePhone) 1.50f else 1f
-                LessonChoiceCard(
-                    choice = correctChoice,
-                    enabled = enabled && pictureTapReplays,
-                    scale = 1f,
-                    showWordCaption = false,
-                    cardWidth = pictureCardW,
-                    cardHeight = pictureCardH,
-                    captionFontSize = 1.sp,
-                    innerPictureScale = innerScale,
-                    onClick = { if (pictureTapReplays) onPictureTapReplayWord.invoke() },
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Top,
+            ) {
+                Text(
+                    text = instructionText,
+                    fontSize = if (isCompactLandscapePhone) 20.sp else 24.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF0B2B3D),
+                    textAlign = TextAlign.Center,
+                    modifier =
+                        Modifier
+                            .padding(top = if (isCompactLandscapePhone) 2.dp else 6.dp, bottom = if (isCompactLandscapePhone) 6.dp else 10.dp)
+                            .background(Color.White.copy(alpha = 0.72f), RoundedCornerShape(18.dp))
+                            .padding(horizontal = 14.dp, vertical = 8.dp),
                 )
-            } else {
-                Spacer(modifier = Modifier.height(pictureCardH))
-            }
+
+                if (hintLetter != null) {
+                    TargetLetterHeaderChip(
+                        letter = hintLetter!!,
+                        fontSize = if (isCompactLandscapePhone) 44.sp else 54.sp,
+                        modifier = Modifier.padding(bottom = 10.dp),
+                    )
+                }
+
+                if (correctChoice != null) {
+                    val pictureTapReplays = onPictureTapReplayWord != null
+                    val innerScale =
+                        innerPictureScaleForChoice(correctChoice) *
+                            if (isCompactLandscapePhone) 1.50f else 1f
+                    LessonChoiceCard(
+                        choice = correctChoice,
+                        enabled = enabled && pictureTapReplays,
+                        scale = 1f,
+                        showWordCaption = false,
+                        cardWidth = pictureCardW,
+                        cardHeight = pictureCardH,
+                        captionFontSize = 1.sp,
+                        innerPictureScale = innerScale,
+                        onClick = { if (pictureTapReplays) onPictureTapReplayWord.invoke() },
+                    )
+                } else {
+                    Spacer(modifier = Modifier.height(pictureCardH))
+                }
 
             Spacer(modifier = Modifier.height(if (isCompactLandscapePhone) 6.dp else 14.dp))
 
@@ -162,8 +191,12 @@ fun ImageToWordGame(
                 horizontalArrangement = Arrangement.spacedBy(cardGap, Alignment.CenterHorizontally),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                val isChapter6Station6 = chapterId == 6 && stationId == 6
-                val hasLockedCorrectChoice = isChapter6Station6 && successChoiceId != null
+                val hasLockedCorrectChoice =
+                    (
+                        (chapterId == 3 && stationId == 6) ||
+                            (chapterId == 6 && stationId == 6) ||
+                            isTrainingStation3
+                    ) && successChoiceId != null
                 question.choices.forEach { choice ->
                     val scale = remember(choice.id, contentKey) { Animatable(1f) }
                     val flash = remember(choice.id, contentKey) { Animatable(0f) }
@@ -251,6 +284,45 @@ fun ImageToWordGame(
                 }
             }
         }
+
+        if (isTrainingStation3) {
+            Column(
+                modifier =
+                    Modifier
+                        .align(Alignment.CenterStart)
+                        .padding(start = 10.dp)
+                        .widthIn(max = 118.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                FilledTonalButton(
+                    onClick = { onPictureTapReplayWord?.invoke() },
+                    enabled = enabled && onPictureTapReplayWord != null,
+                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 8.dp),
+                    modifier = Modifier.testTag(TrainingV1ImageToWordReplayButtonTag),
+                ) {
+                    Text("🔊 שוב", fontSize = 22.sp)
+                }
+                FilledTonalButton(
+                    onClick = {
+                        val first = question.targetWord.firstOrNull()?.toString() ?: return@FilledTonalButton
+                        hintLetter = first
+                        hintEpoch += 1
+                        val epoch = hintEpoch
+                        scope.launch {
+                            delay(2100L)
+                            if (hintEpoch == epoch) hintLetter = null
+                        }
+                    },
+                    enabled = enabled,
+                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 8.dp),
+                    modifier = Modifier.testTag(TrainingV1ImageToWordHintButtonTag),
+                ) {
+                    Text("רמז", fontSize = 22.sp)
+                }
+            }
+        }
+    }
     }
 }
 

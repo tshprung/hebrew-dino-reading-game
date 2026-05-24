@@ -443,6 +443,7 @@ object StationBehaviorRegistry {
                     imageMatchShowTargetLetterChip = false,
                     imageMatchHeaderInstructionOverride = StationInstructionCopy.TrainingWhichWordStartsWithLetter,
                     imageMatchHeaderReadablePanel = true,
+                    imageMatchVerticalNudgeDp = 19f,
                     contentTopInsetDp = 72f,
                 )
             TrainingV1Config.STATION_PICTURE_CHOOSE_WORD ->
@@ -473,10 +474,11 @@ object StationBehaviorRegistry {
                     hintDurationMs = 2100L,
                     replayMode = StationReplayMode.TargetLetterOnly,
                     hintMode = StationHintMode.TemporaryTargetLetter,
-                    findGridInlineInstructionOverride = StationInstructionCopy.TrainingFindLetterInGrid,
+                    findGridInlineInstructionOverride = StationInstructionCopy.TrainingHearLetterChoose,
                     findGridInlineInstructionPanelStyle = InstructionPanelStyle.WhiteRounded,
                     findGridSuppressHeaderTargetLetter = true,
                     findGridHideListenOnlyHeaderTargetLetter = true,
+                    findGridUseEpisode4HelpHints = true,
                     contentTopInsetDp = 56f,
                 )
             TrainingV1Config.STATION_WORD_BALLOONS ->
@@ -491,7 +493,7 @@ object StationBehaviorRegistry {
                     replayMode = StationReplayMode.None,
                     hintMode = StationHintMode.None,
                     hintDurationMs = null,
-                    balloonInstructionOverride = "פוצץ את כל הבלונים עם האות:",
+                    balloonInstructionOverride = "פוצץ את הבלונים עם האות:",
                     contentTopInsetDp = 56f,
                 )
             TrainingV1Config.STATION_MATCH_LETTER_TO_WORD ->

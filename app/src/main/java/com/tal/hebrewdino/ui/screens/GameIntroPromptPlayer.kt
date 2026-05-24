@@ -274,35 +274,39 @@ internal suspend fun playIntroPrompt(
             if (voice.hasAsset(clip)) voice.playBlocking(clip)
             if (voice.hasAsset(wordPath)) voice.playBlocking(wordPath)
         } else {
-            val intro =
-                if (chapterId == TrainingV1Config.CHAPTER_ID &&
-                    stationId == TrainingV1Config.STATION_WORD_BALLOONS &&
-                    voice.hasAsset(AudioClips.PopAllBalloonsWithLetter)
-                ) {
-                    AudioClips.PopAllBalloonsWithLetter
-                } else {
-                    AudioClips.PopBalloonsWithLetter
-                }
+            val intro = AudioClips.PopBalloonsWithLetter
             val letterClip = AudioClips.letterNameClip(q.correctAnswer)
             val introMs = sfx.durationMs(intro) ?: 0L
-            if (introMs > 0 && letterClip != null) {
+            if (introMs > 0) {
+                sfx.stopAllStreams()
+                sfx.playReturningStreamId(intro, volume = 1f)
                 val baseIntroLeadFrac = station2BalloonIntroLetterLeadFraction * station2IntroToLetterLeadScale
                 val introLeadFrac =
                     baseIntroLeadFrac + station2BalloonIntroToLetterGapBoost * (1f - baseIntroLeadFrac)
-                GameAudioActions.playSoundPoolIntroWithOverlappedLetter(
-                    sfx = sfx,
-                    intro = intro,
-                    introMs = introMs,
-                    letter = letterClip,
-                    leadFraction = introLeadFrac,
-                    extraPauseMs = station2BalloonIntroToLetterExtraPauseMs,
-                    delayScale = 1f,
-                )
+                val lead =
+                    (introMs * introLeadFrac)
+                        .toLong()
+                        .coerceIn(16L, introMs)
+                delay(lead + station2BalloonIntroToLetterExtraPauseMs)
+                if (letterClip != null) {
+                    val id = sfx.playReturningStreamId(letterClip, volume = 1f)
+                    if (id == null) {
+                        if (voice.hasAsset(letterClip)) {
+                            voice.playBlocking(letterClip)
+                        } else {
+                            speakLetterPrompt(voice, q.correctAnswer)
+                        }
+                    }
+                } else {
+                    speakLetterPrompt(voice, q.correctAnswer)
+                }
             } else {
-                voice.playSequenceBlocking(
-                    intro,
-                    letterClip ?: "",
-                )
+                voice.playBlocking(intro)
+                if (letterClip != null && voice.hasAsset(letterClip)) {
+                    voice.playBlocking(letterClip)
+                } else {
+                    speakLetterPrompt(voice, q.correctAnswer)
+                }
             }
         }
         return

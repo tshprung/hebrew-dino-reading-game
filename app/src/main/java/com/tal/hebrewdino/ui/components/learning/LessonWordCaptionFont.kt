@@ -5,6 +5,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.sp
 import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
+import com.tal.hebrewdino.ui.domain.TrainingV1Config
 
 /**
  * Station 4/5/6 word cards: caption size is derived from card width; long words need an extra tighten
@@ -85,6 +86,7 @@ private val CaptionOverridesByChapterStationWord: Map<CaptionOverrideKey, Float>
         CaptionOverrideKey(chapterId = 2, stationId = Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH, word = "רכבת") to (0.86f * 0.80f),
         CaptionOverrideKey(chapterId = 4, stationId = null, word = "פילפל") to (0.855f * 0.90f),
         CaptionOverrideKey(chapterId = 1, stationId = null, word = "מכונית") to (0.81f * 0.90f),
+        CaptionOverrideKey(chapterId = TrainingV1Config.CHAPTER_ID, stationId = TrainingV1Config.STATION_MATCH_LETTER_TO_WORD, word = "מכונית") to (0.81f * 0.85f),
     )
 
 private val CaptionOverridesByWord: Map<String, Float> =

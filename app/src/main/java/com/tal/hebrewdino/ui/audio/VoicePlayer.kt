@@ -152,6 +152,38 @@ class VoicePlayer(context: Context) {
         }
     }
 
+    suspend fun playFirstAvailableBlockingRandomizedNoRepeat(
+        assetPaths: Array<String>,
+        avoidAssetPath: String?,
+        random: Random = Random.Default,
+    ): String? {
+        val n = assetPaths.size
+        if (n == 0) return null
+        val start = random.nextInt(n)
+        for (k in 0 until n) {
+            val p = assetPaths[(start + k) % n]
+            if (p.isBlank()) continue
+            if (avoidAssetPath != null && p == avoidAssetPath) continue
+            val ok = exists(p)
+            if (ok) {
+                playBlocking(p)
+                return p
+            }
+        }
+        if (avoidAssetPath != null) {
+            for (k in 0 until n) {
+                val p = assetPaths[(start + k) % n]
+                if (p.isBlank()) continue
+                val ok = exists(p)
+                if (ok) {
+                    playBlocking(p)
+                    return p
+                }
+            }
+        }
+        return null
+    }
+
     suspend fun playSequenceBlocking(assetPaths: List<String>) {
         // Keep the mutex for the whole sequence so nothing else can interleave.
         mutex.withLock {

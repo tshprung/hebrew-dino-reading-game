@@ -75,6 +75,7 @@ internal data class GameQuestionHostUi(
     val stationUiSpec: com.tal.hebrewdino.ui.domain.StationUiSpec,
     val stationId: Int,
     val chapterId: Int,
+    val trainingRoundIndex: Int?,
     val plan: StationQuizPlan,
     val listenOnly: Boolean,
     val sagaUsesPickLetterAudioStaging: Boolean,
@@ -301,7 +302,8 @@ internal fun GameQuestionHost(
                     helpSideInsetDp = helpSideInsetDp,
                     contentTopPaddingDp =
                         if (ui.sagaUsesPopBalloonsAudioStaging ||
-                            (ui.chapterId == 3 && ui.stationId == 3)
+                            (ui.chapterId == 3 && ui.stationId == 3) ||
+                            (ui.chapterId == TrainingV1Config.CHAPTER_ID && ui.stationId == TrainingV1Config.STATION_WORD_BALLOONS)
                         ) {
                             SixStationArcHalfCmNudge
                         } else if (ui.chapterId == 6 && ui.stationId == 3) {
@@ -559,9 +561,26 @@ internal fun GameQuestionHost(
                         } else {
                             null
                         }
+                    val imageMatchExtraNudgeDp =
+                        if (ui.chapterId == TrainingV1Config.CHAPTER_ID &&
+                            ui.stationId == TrainingV1Config.STATION_WHICH_WORD_STARTS_WITH_LETTER &&
+                            ui.trainingRoundIndex == 9
+                        ) {
+                            SixStationArcHalfCmNudge
+                        } else {
+                            0.dp
+                        }
+                    val effectiveStationUiSpec =
+                        if (imageMatchExtraNudgeDp != 0.dp) {
+                            ui.stationUiSpec.copy(
+                                imageMatchVerticalNudgeDp = ui.stationUiSpec.imageMatchVerticalNudgeDp + imageMatchExtraNudgeDp.value,
+                            )
+                        } else {
+                            ui.stationUiSpec
+                        }
                     ImageMatchQuestionRenderer(
                         current = current,
-                        stationUiSpec = ui.stationUiSpec,
+                        stationUiSpec = effectiveStationUiSpec,
                         isCompactLandscapePhone = ui.isCompactLandscapePhone,
                         headerInstructionFontScale =
                             (if (ui.chapterId == TrainingV1Config.CHAPTER_ID) 1.35f else 1.35f * 2f),

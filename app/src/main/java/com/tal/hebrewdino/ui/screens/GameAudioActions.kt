@@ -155,4 +155,19 @@ internal object GameAudioActions {
             audioRuntime.promptVoiceJob?.join()
         }
     }
+
+    suspend fun playPraiseNoImmediateRepeat(
+        voice: VoicePlayer,
+        audioRuntime: GameAudioRuntimeState,
+        candidates: Array<String>,
+    ) {
+        val played =
+            voice.playFirstAvailableBlockingRandomizedNoRepeat(
+                assetPaths = candidates,
+                avoidAssetPath = audioRuntime.lastPraiseAssetPath,
+            )
+        if (played != null) {
+            audioRuntime.lastPraiseAssetPath = played
+        }
+    }
 }

@@ -86,7 +86,7 @@ internal object PictureStartsWithActions {
                                 if (letterName != null && voice.hasAsset(letterName)) {
                                     voice.playBlocking(letterName)
                                 }
-                                voice.playFirstAvailableBlockingRandomized(SagaPictureStartsWithPraiseCandidates)
+                                GameAudioActions.playPraiseNoImmediateRepeat(voice, audioRuntime, SagaPictureStartsWithPraiseCandidates)
                             }
                         GameAudioActions.joinSilently(job)
                         if ((chapterId == 4 || chapterId == 5) && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {

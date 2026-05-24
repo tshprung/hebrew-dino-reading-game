@@ -35,6 +35,16 @@ private val BackgroundMusicEligibleRoutes: Set<String> =
         NavRoutes.Ch6Journey,
     )
 
+private const val BgmMenuAssetPath: String = "audio/bgm_menu.mp3"
+private const val BgmSeason1AssetPath: String = "audio/bgm_season1.mp3"
+private const val BgmSeason2AssetPath: String = "audio/bgm_season2.mp3"
+
+private fun bgmAssetPathForRoute(route: String?): String =
+    when (route) {
+        NavRoutes.Opening, NavRoutes.Seasons -> BgmMenuAssetPath
+        else -> if (route?.startsWith("s2_") == true) BgmSeason2AssetPath else BgmSeason1AssetPath
+    }
+
 @Composable
 fun AppNav() {
     val navController = rememberNavController()
@@ -61,7 +71,7 @@ fun AppNav() {
             bgMusic.stop()
             return@LaunchedEffect
         }
-        bgMusic.playLoopFromAssets(assetPath = "audio/bg_music.mp3")
+        bgMusic.playLoopFromAssets(assetPath = bgmAssetPathForRoute(currentRoute))
         bgMusic.setMuted(!bgMusicEligible)
     }
 
