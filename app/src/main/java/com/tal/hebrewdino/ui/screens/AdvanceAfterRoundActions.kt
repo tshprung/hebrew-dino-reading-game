@@ -60,6 +60,7 @@ internal object AdvanceAfterRoundActions {
         session: LevelSession,
         onComplete: (stationId: Int, correctCount: Int, mistakeCount: Int) -> Unit,
         onLevelCompleteHook: () -> Unit,
+        grantFoodReward: suspend (delta: Int) -> Unit = {},
     ) {
         gameViewModel.inputLocked = true
         if (audioEnabled && !ch3SpellMidWord) onLevelCompleteHook()
@@ -177,6 +178,7 @@ internal object AdvanceAfterRoundActions {
                 stationId = stationId,
                 timeTakenSeconds = timeTakenSeconds,
             )
+            scope.launch { grantFoodReward(3) }
             onComplete(stationId, session.correctCount, session.mistakeCount)
         }
         contentAlpha.animateTo(1f, tween(BetweenQuestionFadeMs))

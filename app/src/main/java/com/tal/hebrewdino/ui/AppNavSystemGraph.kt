@@ -21,6 +21,7 @@ import com.tal.hebrewdino.ui.screens.SettingsScreen
 import com.tal.hebrewdino.ui.screens.TrainingV1CompleteScreen
 import com.tal.hebrewdino.ui.screens.TrainingV1IntroScreen
 import com.tal.hebrewdino.ui.screens.TrainingV1RoundScreen
+import com.tal.hebrewdino.ui.screens.WordChallengeScreen
 import com.tal.hebrewdino.ui.domain.TrainingV1Config
 import kotlinx.coroutines.launch
 
@@ -31,6 +32,23 @@ internal fun NavGraphBuilder.systemAndTrainingGraph(host: AppNavHostState) {
                 host.scope.launch { host.prefs.setCharacter(character) }
                 host.navController.navigate(NavRoutes.Opening) {
                     popUpTo(NavRoutes.CharacterSelection) { inclusive = true }
+                    launchSingleTop = true
+                }
+            },
+        )
+    }
+
+    composable(NavRoutes.WordChallenge) {
+        WordChallengeScreen(
+            onExitToHome = {
+                host.navController.navigate(NavRoutes.Chapters) {
+                    popUpTo(NavRoutes.WordChallenge) { inclusive = true }
+                    launchSingleTop = true
+                }
+            },
+            onRoundCompleteToHome = {
+                host.navController.navigate(NavRoutes.Chapters) {
+                    popUpTo(NavRoutes.WordChallenge) { inclusive = true }
                     launchSingleTop = true
                 }
             },
@@ -93,6 +111,7 @@ internal fun NavGraphBuilder.systemAndTrainingGraph(host: AppNavHostState) {
                 }
             },
             onOpenSettings = { host.navController.navigate(NavRoutes.Settings) },
+            onOpenWordChallenge = { host.navController.navigate(NavRoutes.WordChallenge) { launchSingleTop = true } },
             onOpenChapter = { chapterId ->
                 when (chapterId) {
                     1 -> {

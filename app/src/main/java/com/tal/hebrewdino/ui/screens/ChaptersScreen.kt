@@ -172,6 +172,7 @@ fun ChaptersScreen(
     chaptersProgress: ChaptersProgress,
     onBackToSeasons: () -> Unit,
     onOpenSettings: () -> Unit,
+    onOpenWordChallenge: () -> Unit,
     onOpenChapter: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -217,6 +218,18 @@ fun ChaptersScreen(
                 style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.ExtraBold),
                 color = Color(0xFF0B2B3D),
                 textAlign = TextAlign.Center,
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            TrainingComingSoonCard(
+                title = "אתגר מילים",
+                subtitle = "מצא את המילה יוצאת הדופן",
+                statusText = "התחל",
+                enabled = true,
+                onClick = onOpenWordChallenge,
+                modifier =
+                    Modifier
+                        .fillMaxWidth(0.80f)
+                        .align(Alignment.CenterHorizontally),
             )
             Spacer(modifier = Modifier.height(10.dp))
             ChaptersHexHoneycomb(

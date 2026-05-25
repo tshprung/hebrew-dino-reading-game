@@ -16,6 +16,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -34,6 +35,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.tal.hebrewdino.R
 import com.tal.hebrewdino.ui.audio.AudioClips
 import com.tal.hebrewdino.ui.audio.VoicePlayer
+import com.tal.hebrewdino.ui.data.CharacterRepository
 import com.tal.hebrewdino.ui.layout.ScreenFit
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
@@ -72,6 +74,9 @@ fun RewardScreen(
     val lifecycleOwner = LocalLifecycleOwner.current
     val voice = remember { VoicePlayer(context = context) }
     var navigatedAway by remember(levelId) { mutableStateOf(false) }
+    val rewardRepo = remember(context) { CharacterRepository(context.applicationContext) }
+    val pendingRewardDelta by rewardRepo.pendingRewardFoodDeltaFlow.collectAsState(initial = 0)
+    var showRewardDelta by remember(levelId) { mutableStateOf(0) }
     val isCompactLandscapePhone = ScreenFit.isCompactLandscapePhone()
     val mascotRes =
         remember {
@@ -112,6 +117,13 @@ fun RewardScreen(
         }
     }
 
+    LaunchedEffect(pendingRewardDelta, levelId) {
+        if (pendingRewardDelta > 0) {
+            showRewardDelta = pendingRewardDelta
+            rewardRepo.clearPendingRewardFoodDelta()
+        }
+    }
+
     Box(modifier = modifier.fillMaxSize()) {
         Image(
             painter = painterResource(id = backgroundRes),
@@ -149,6 +161,15 @@ fun RewardScreen(
                         color = Color(0xFF0B2B3D),
                         textAlign = TextAlign.Center,
                     )
+                    if (showRewardDelta > 0) {
+                        Spacer(modifier = Modifier.height(3.dp))
+                        Text(
+                            text = "Earned +$showRewardDelta 🍎!",
+                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Black),
+                            color = Color(0xFF0B2B3D),
+                            textAlign = TextAlign.Center,
+                        )
+                    }
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = "שלב $levelId הסתיים",
@@ -171,6 +192,15 @@ fun RewardScreen(
                     style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Black),
                     color = Color(0xFF0B2B3D),
                 )
+                if (showRewardDelta > 0) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "Earned +$showRewardDelta 🍎!",
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black),
+                        color = Color(0xFF0B2B3D),
+                        textAlign = TextAlign.Center,
+                    )
+                }
                 Spacer(modifier = Modifier.height(6.dp))
                 Text(
                     text = "שלב $levelId הסתיים",

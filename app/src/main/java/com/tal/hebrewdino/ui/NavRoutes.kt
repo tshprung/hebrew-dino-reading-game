@@ -7,6 +7,7 @@ object NavRoutes {
     const val Seasons = "seasons"
     const val Chapters = "chapters"
     const val ChapterSelect = "chapter_select"
+    const val WordChallenge = "word_challenge"
     const val StoryIntro = "story_intro"
     const val ChapterLettersIntro = "chapter_letters_intro"
     const val Journey = "journey"

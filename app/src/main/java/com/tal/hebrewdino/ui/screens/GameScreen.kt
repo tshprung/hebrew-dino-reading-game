@@ -39,6 +39,7 @@ import com.tal.hebrewdino.ui.audio.GameAudioEngine
 import com.tal.hebrewdino.ui.audio.SoundPoolPlayer
 import com.tal.hebrewdino.ui.audio.VoicePlayer
 import com.tal.hebrewdino.ui.AppAnalytics
+import com.tal.hebrewdino.ui.data.CharacterRepository
 import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
 import com.tal.hebrewdino.ui.domain.Episode4Help
 import com.tal.hebrewdino.ui.domain.LetterPoolSpec
@@ -379,6 +380,7 @@ fun GameScreen(
     val context = LocalContext.current
     val view = LocalView.current
     val lifecycleOwner = LocalLifecycleOwner.current
+    val rewardRepo = remember(context) { CharacterRepository(context.applicationContext) }
     val audio = remember { GameAudioEngine(context = context) }
     val voice = audio.voice
     val sfx = audio.sfx
@@ -561,6 +563,10 @@ fun GameScreen(
             session = session,
             onComplete = onComplete,
             onLevelCompleteHook = { ChildGameAudioHooks.onLevelComplete() },
+            grantFoodReward = { delta ->
+                rewardRepo.addFood(delta)
+                rewardRepo.setPendingRewardFoodDelta(delta)
+            },
         )
     }
 
