@@ -4,12 +4,16 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavType
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.tal.hebrewdino.ui.data.AudioPrefs
 import com.tal.hebrewdino.ui.data.DinoCharacter
+import com.tal.hebrewdino.ui.screens.CharacterSelectionScreen
+import com.tal.hebrewdino.ui.screens.DinoHomeScreen
+import com.tal.hebrewdino.ui.screens.DinoHomeViewModel
 import com.tal.hebrewdino.ui.screens.ChaptersScreen
 import com.tal.hebrewdino.ui.screens.OpeningScreen
 import com.tal.hebrewdino.ui.screens.SeasonsScreen
@@ -21,6 +25,18 @@ import com.tal.hebrewdino.ui.domain.TrainingV1Config
 import kotlinx.coroutines.launch
 
 internal fun NavGraphBuilder.systemAndTrainingGraph(host: AppNavHostState) {
+    composable(NavRoutes.CharacterSelection) {
+        CharacterSelectionScreen(
+            onSelect = { character ->
+                host.scope.launch { host.prefs.setCharacter(character) }
+                host.navController.navigate(NavRoutes.Opening) {
+                    popUpTo(NavRoutes.CharacterSelection) { inclusive = true }
+                    launchSingleTop = true
+                }
+            },
+        )
+    }
+
     composable(NavRoutes.Opening) {
         val context = LocalContext.current
         OpeningScreen(
@@ -49,6 +65,20 @@ internal fun NavGraphBuilder.systemAndTrainingGraph(host: AppNavHostState) {
     }
 
     composable(NavRoutes.Chapters) {
+        val context = LocalContext.current
+        val vm: DinoHomeViewModel =
+            viewModel(
+                factory = remember(context) { DinoHomeViewModel.Factory(context) },
+            )
+        DinoHomeScreen(
+            viewModel = vm,
+            onGoOnMission = {
+                host.navController.navigate(NavRoutes.ChapterSelect) { launchSingleTop = true }
+            },
+        )
+    }
+
+    composable(NavRoutes.ChapterSelect) {
         ChaptersScreen(
             unlockedChapter = host.unlockedChapter,
             chapter4ComingSoon = host.chapter4ComingSoon,

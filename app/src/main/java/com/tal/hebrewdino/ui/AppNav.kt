@@ -7,8 +7,10 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -22,7 +24,7 @@ import com.tal.hebrewdino.ui.audio.BackgroundMusicPlayer
 import com.tal.hebrewdino.ui.audio.SoundPoolPlayer
 import com.tal.hebrewdino.ui.audio.VoicePlayer
 import com.tal.hebrewdino.ui.data.AudioPrefs
-import com.tal.hebrewdino.ui.data.DinoCharacter
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 internal object AppAnalytics {
@@ -76,9 +78,11 @@ internal object AppAnalytics {
 
 private val BackgroundMusicEligibleRoutes: Set<String> =
     setOf(
+        NavRoutes.CharacterSelection,
         NavRoutes.Opening,
         NavRoutes.Seasons,
         NavRoutes.Chapters,
+        NavRoutes.ChapterSelect,
         NavRoutes.Journey,
         NavRoutes.Ch2Journey,
         NavRoutes.Ch3Journey,
@@ -93,7 +97,7 @@ private const val BgmSeason2AssetPath: String = "audio/bgm_season2.mp3"
 
 private fun bgmAssetPathForRoute(route: String?): String =
     when (route) {
-        NavRoutes.Opening, NavRoutes.Seasons -> BgmMenuAssetPath
+        NavRoutes.CharacterSelection, NavRoutes.Opening, NavRoutes.Seasons, NavRoutes.ChapterSelect -> BgmMenuAssetPath
         else -> BgmSeason1AssetPath
     }
 
@@ -115,10 +119,12 @@ fun AppNav() {
     val bgMusic = remember { BackgroundMusicPlayer(context.applicationContext) }
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
+    var startDestination: String? by remember { mutableStateOf(null) }
 
     val bgMusicEligible = currentRoute != null && currentRoute in BackgroundMusicEligibleRoutes
 
-    LaunchedEffect(currentRoute, backgroundMusicEnabled) {
+    LaunchedEffect(startDestination, currentRoute, backgroundMusicEnabled) {
+        if (startDestination == null) return@LaunchedEffect
         if (!backgroundMusicEnabled) {
             bgMusic.stop()
             return@LaunchedEffect
@@ -168,12 +174,18 @@ fun AppNav() {
         progress.repairChapter4ProgressIfNeeded()
         progress.repairChapter5ProgressIfNeeded()
         progress.repairChapter6ProgressIfNeeded()
-        prefs.setCharacter(DinoCharacter.Dino)
+        startDestination =
+            when (prefs.characterFlow.first()) {
+                null -> NavRoutes.CharacterSelection
+                else -> NavRoutes.Opening
+            }
     }
 
-    NavHost(navController = navController, startDestination = NavRoutes.Opening) {
-        systemAndTrainingGraph(host)
-        chapterOneToThreeGraph(host)
-        chapterFourToSixGraph(host)
+    if (startDestination != null) {
+        NavHost(navController = navController, startDestination = startDestination!!) {
+            systemAndTrainingGraph(host)
+            chapterOneToThreeGraph(host)
+            chapterFourToSixGraph(host)
+        }
     }
 }

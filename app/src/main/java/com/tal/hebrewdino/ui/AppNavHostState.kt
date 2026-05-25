@@ -3,6 +3,7 @@ package com.tal.hebrewdino.ui
 import android.content.Context
 import androidx.navigation.NavHostController
 import com.tal.hebrewdino.ui.data.CharacterPrefs
+import com.tal.hebrewdino.ui.data.DinoCharacter
 import com.tal.hebrewdino.ui.data.ProgressPrefs
 import com.tal.hebrewdino.ui.domain.Chapter1Config
 import com.tal.hebrewdino.ui.domain.Chapter2Config
@@ -20,6 +21,7 @@ internal data class AppNavHostState(
     val context: Context,
     val progress: ProgressPrefs,
     val prefs: CharacterPrefs,
+    val character: DinoCharacter?,
     val beachOutroSeen: Boolean,
     val chapter1MidBoostSeen: Boolean,
     val chapter2MidBoostSeen: Boolean,
@@ -140,6 +142,7 @@ internal data class AppNavHostState(
                 context = context,
                 progress = progress,
                 prefs = prefs,
+                character = uiState.character,
                 beachOutroSeen = flags.beachOutroSeen,
                 chapter1MidBoostSeen = uiState.chapter1MidBoostSeen,
                 chapter2MidBoostSeen = uiState.chapter2MidBoostSeen,

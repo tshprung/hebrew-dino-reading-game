@@ -35,7 +35,7 @@ import kotlinx.coroutines.launch
 internal fun NavGraphBuilder.chapterOneToThreeGraph(host: AppNavHostState) {
     composable(NavRoutes.StoryIntro) {
         ForestIntroScreen(
-            character = DinoCharacter.Dino,
+            character = host.character ?: DinoCharacter.Dino,
             onContinue = {
                 host.scope.launch { host.progress.markBeachIntroSeen() }
                 // After intro, always show letters presentation, then continue to journey.
@@ -499,7 +499,7 @@ internal fun NavGraphBuilder.chapterOneToThreeGraph(host: AppNavHostState) {
 
     composable(NavRoutes.StoryOutro) {
         ForestOutroScreen(
-            character = DinoCharacter.Dino,
+            character = host.character ?: DinoCharacter.Dino,
             onContinue = {
                 host.scope.launch { host.progress.markBeachOutroSeen() }
                 host.navController.navigate(NavRoutes.Chapters) {
