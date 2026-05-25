@@ -13,10 +13,12 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlin.random.Random
 
 @Immutable
 data class WordChallengeUiState(
     val challenges: List<WordChallenge>,
+    val challengeType: ChallengeType,
     val index: Int,
     val selectedCorrectOption: String?,
     val wrongAttemptToken: Int,
@@ -28,12 +30,23 @@ data class WordChallengeUiState(
     val questionNumber: Int get() = (index + 1).coerceAtMost(total)
 }
 
-class WordChallengeViewModel : ViewModel() {
+class WordChallengeViewModel(
+    private val challengeType: ChallengeType = ChallengeType.ODD_ONE_OUT,
+) : ViewModel() {
     private val challenges: List<WordChallenge> =
-        WordChallengeRepository.oddOneOutHebrew
+        when (challengeType) {
+            ChallengeType.ODD_ONE_OUT -> WordChallengeRepository.oddOneOutHebrew
+            ChallengeType.RHYME -> WordChallengeRepository.rhymesHebrew
+            ChallengeType.WORD_MATCH -> emptyList()
+            ChallengeType.IMAGE_MATCH -> emptyList()
+        }
             .asSequence()
-            .filter { it.challengeType == ChallengeType.ODD_ONE_OUT }
+            .filter { it.challengeType == challengeType }
             .filter { it.options.size == 4 && it.options.contains(it.correctOption) }
+            .map { challenge ->
+                val seeded = Random(challenge.id.hashCode())
+                challenge.copy(options = challenge.options.shuffled(seeded))
+            }
             .take(5)
             .toList()
 
@@ -41,6 +54,7 @@ class WordChallengeViewModel : ViewModel() {
         MutableStateFlow(
             WordChallengeUiState(
                 challenges = challenges,
+                challengeType = challengeType,
                 index = 0,
                 selectedCorrectOption = null,
                 wrongAttemptToken = 0,
@@ -91,5 +105,14 @@ class WordChallengeViewModel : ViewModel() {
             }
         }
     }
-}
 
+    class Factory(private val challengeType: ChallengeType) : androidx.lifecycle.ViewModelProvider.Factory {
+        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+            if (modelClass.isAssignableFrom(WordChallengeViewModel::class.java)) {
+                @Suppress("UNCHECKED_CAST")
+                return WordChallengeViewModel(challengeType = challengeType) as T
+            }
+            error("Unknown ViewModel class: $modelClass")
+        }
+    }
+}

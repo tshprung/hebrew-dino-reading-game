@@ -39,6 +39,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.tal.hebrewdino.R
 import com.tal.hebrewdino.ui.data.CharacterRepository
+import com.tal.hebrewdino.ui.domain.ChallengeType
 import com.tal.hebrewdino.ui.layout.topChromeInsetsPadding
 import kotlinx.coroutines.delay
 
@@ -46,8 +47,12 @@ import kotlinx.coroutines.delay
 fun WordChallengeScreen(
     onExitToHome: () -> Unit,
     onRoundCompleteToHome: () -> Unit,
+    challengeType: ChallengeType = ChallengeType.ODD_ONE_OUT,
     modifier: Modifier = Modifier,
-    viewModel: WordChallengeViewModel = viewModel(),
+    viewModel: WordChallengeViewModel =
+        viewModel(
+            factory = remember(challengeType) { WordChallengeViewModel.Factory(challengeType) },
+        ),
 ) {
     val context = LocalContext.current
     val repo = remember(context) { CharacterRepository(context.applicationContext) }
@@ -64,6 +69,7 @@ fun WordChallengeScreen(
     }
 
     WordChallengeContent(
+        challengeType = state.challengeType,
         questionText = state.current?.questionText.orEmpty(),
         options = state.current?.options.orEmpty(),
         correctOption = state.current?.correctOption,
@@ -81,6 +87,7 @@ fun WordChallengeScreen(
 
 @Composable
 private fun WordChallengeContent(
+    challengeType: ChallengeType,
     questionText: String,
     options: List<String>,
     correctOption: String?,
@@ -130,7 +137,13 @@ private fun WordChallengeContent(
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Text(
-                    text = rtl(questionText),
+                    text =
+                        rtl(
+                            when (challengeType) {
+                                ChallengeType.RHYME -> "מצאו את המילה המתחרזת עם: $questionText"
+                                else -> questionText
+                            },
+                        ),
                     style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Black),
                     color = Color.White,
                     textAlign = TextAlign.Center,
