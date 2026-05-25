@@ -49,23 +49,32 @@ fun WordChallengeScreen(
     onRoundCompleteToHome: () -> Unit,
     challengeType: ChallengeType = ChallengeType.ODD_ONE_OUT,
     modifier: Modifier = Modifier,
-    viewModel: WordChallengeViewModel =
-        viewModel(
-            factory = remember(challengeType) { WordChallengeViewModel.Factory(challengeType) },
-        ),
 ) {
     val context = LocalContext.current
     val repo = remember(context) { CharacterRepository(context.applicationContext) }
-    val state by viewModel.uiState.collectAsState()
     var showEarned by remember { mutableStateOf(false) }
 
-    LaunchedEffect(state.isRoundComplete) {
-        if (!state.isRoundComplete) return@LaunchedEffect
-        repo.addFood(3)
-        repo.setPendingRewardFoodDelta(3)
-        showEarned = true
-        delay(900L)
-        onRoundCompleteToHome()
+    val viewModel: WordChallengeViewModel =
+        viewModel(
+            factory =
+                remember(challengeType, repo) {
+                    WordChallengeViewModel.Factory(
+                        challengeType = challengeType,
+                        rewardHandler = WordChallengeViewModel.RewardHandler {
+                            repo.addFood(3)
+                            repo.setPendingRewardFoodDelta(3)
+                        },
+                    )
+                },
+        )
+    val state by viewModel.uiState.collectAsState()
+
+    LaunchedEffect(viewModel) {
+        viewModel.finishEvents.collect {
+            showEarned = true
+            delay(900L)
+            onRoundCompleteToHome()
+        }
     }
 
     WordChallengeContent(

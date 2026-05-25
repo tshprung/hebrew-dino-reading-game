@@ -8,9 +8,12 @@ import com.tal.hebrewdino.ui.domain.WordChallenge
 import com.tal.hebrewdino.ui.domain.WordChallengeRepository
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlin.random.Random
@@ -32,6 +35,7 @@ data class WordChallengeUiState(
 
 class WordChallengeViewModel(
     private val challengeType: ChallengeType = ChallengeType.ODD_ONE_OUT,
+    private val rewardHandler: RewardHandler = RewardHandler { },
 ) : ViewModel() {
     private val challenges: List<WordChallenge> =
         when (challengeType) {
@@ -64,6 +68,9 @@ class WordChallengeViewModel(
         )
     val uiState: StateFlow<WordChallengeUiState> = _uiState.asStateFlow()
 
+    private val _finishEvents: MutableSharedFlow<Unit> = MutableSharedFlow(extraBufferCapacity = 1)
+    val finishEvents: SharedFlow<Unit> = _finishEvents.asSharedFlow()
+
     private var advanceJob: Job? = null
 
     fun onOptionSelected(option: String) {
@@ -95,6 +102,11 @@ class WordChallengeViewModel(
                             )
                         }
                     }
+                    val finalState = _uiState.value
+                    if (finalState.isRoundComplete) {
+                        rewardHandler.onRoundComplete()
+                        _finishEvents.tryEmit(Unit)
+                    }
                 }
         } else {
             _uiState.update {
@@ -106,11 +118,18 @@ class WordChallengeViewModel(
         }
     }
 
-    class Factory(private val challengeType: ChallengeType) : androidx.lifecycle.ViewModelProvider.Factory {
+    fun interface RewardHandler {
+        suspend fun onRoundComplete()
+    }
+
+    class Factory(
+        private val challengeType: ChallengeType,
+        private val rewardHandler: RewardHandler = RewardHandler { },
+    ) : androidx.lifecycle.ViewModelProvider.Factory {
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             if (modelClass.isAssignableFrom(WordChallengeViewModel::class.java)) {
                 @Suppress("UNCHECKED_CAST")
-                return WordChallengeViewModel(challengeType = challengeType) as T
+                return WordChallengeViewModel(challengeType = challengeType, rewardHandler = rewardHandler) as T
             }
             error("Unknown ViewModel class: $modelClass")
         }
