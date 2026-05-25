@@ -11,6 +11,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.tal.hebrewdino.ui.data.AudioPrefs
 import com.tal.hebrewdino.ui.data.DinoCharacter
+import com.tal.hebrewdino.ui.domain.ChallengeType
 import com.tal.hebrewdino.ui.screens.CharacterSelectionScreen
 import com.tal.hebrewdino.ui.screens.DinoHomeScreen
 import com.tal.hebrewdino.ui.screens.DinoHomeViewModel
@@ -38,7 +39,23 @@ internal fun NavGraphBuilder.systemAndTrainingGraph(host: AppNavHostState) {
         )
     }
 
-    composable(NavRoutes.WordChallenge) {
+    composable(
+        route = NavRoutes.WordChallenge,
+        arguments =
+            listOf(
+                navArgument(NavRoutes.WordChallengeTypeArg) {
+                    type = NavType.StringType
+                    defaultValue = ChallengeType.ODD_ONE_OUT.name
+                },
+            ),
+    ) { backStackEntry ->
+        val rawType = backStackEntry.arguments?.getString(NavRoutes.WordChallengeTypeArg) ?: ChallengeType.ODD_ONE_OUT.name
+        val challengeType =
+            try {
+                ChallengeType.valueOf(rawType)
+            } catch (_: Throwable) {
+                ChallengeType.ODD_ONE_OUT
+            }
         WordChallengeScreen(
             onExitToHome = {
                 host.navController.navigate(NavRoutes.Chapters) {
@@ -52,6 +69,7 @@ internal fun NavGraphBuilder.systemAndTrainingGraph(host: AppNavHostState) {
                     launchSingleTop = true
                 }
             },
+            challengeType = challengeType,
         )
     }
 
@@ -111,7 +129,14 @@ internal fun NavGraphBuilder.systemAndTrainingGraph(host: AppNavHostState) {
                 }
             },
             onOpenSettings = { host.navController.navigate(NavRoutes.Settings) },
-            onOpenWordChallenge = { host.navController.navigate(NavRoutes.WordChallenge) { launchSingleTop = true } },
+            onOpenWordChallengeStation = { stationId ->
+                val type =
+                    when (stationId) {
+                        2 -> ChallengeType.RHYME
+                        else -> ChallengeType.ODD_ONE_OUT
+                    }
+                host.navController.navigate(NavRoutes.wordChallengeRoute(type)) { launchSingleTop = true }
+            },
             onOpenChapter = { chapterId ->
                 when (chapterId) {
                     1 -> {

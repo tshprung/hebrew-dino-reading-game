@@ -172,7 +172,7 @@ fun ChaptersScreen(
     chaptersProgress: ChaptersProgress,
     onBackToSeasons: () -> Unit,
     onOpenSettings: () -> Unit,
-    onOpenWordChallenge: () -> Unit,
+    onOpenWordChallengeStation: (Int) -> Unit,
     onOpenChapter: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -221,11 +221,23 @@ fun ChaptersScreen(
             )
             Spacer(modifier = Modifier.height(12.dp))
             TrainingComingSoonCard(
-                title = "אתגר מילים",
+                title = "אתגר מילים — תחנה 1",
                 subtitle = "מצא את המילה יוצאת הדופן",
                 statusText = "התחל",
                 enabled = true,
-                onClick = onOpenWordChallenge,
+                onClick = { onOpenWordChallengeStation(1) },
+                modifier =
+                    Modifier
+                        .fillMaxWidth(0.80f)
+                        .align(Alignment.CenterHorizontally),
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+            TrainingComingSoonCard(
+                title = "אתגר מילים — תחנה 2",
+                subtitle = "מצא את המילה המתחרזת",
+                statusText = "התחל",
+                enabled = true,
+                onClick = { onOpenWordChallengeStation(2) },
                 modifier =
                     Modifier
                         .fillMaxWidth(0.80f)

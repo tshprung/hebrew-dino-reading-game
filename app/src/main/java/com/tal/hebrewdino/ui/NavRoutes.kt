@@ -1,5 +1,7 @@
 package com.tal.hebrewdino.ui
 
+import com.tal.hebrewdino.ui.domain.ChallengeType
+
 /** Central route strings for navigation (used from screens and [AppNav]). */
 object NavRoutes {
     const val CharacterSelection = "character_selection"
@@ -7,7 +9,9 @@ object NavRoutes {
     const val Seasons = "seasons"
     const val Chapters = "chapters"
     const val ChapterSelect = "chapter_select"
-    const val WordChallenge = "word_challenge"
+    const val WordChallengeTypeArg = "type"
+    const val WordChallenge = "word_challenge?$WordChallengeTypeArg={$WordChallengeTypeArg}"
+    fun wordChallengeRoute(type: ChallengeType): String = "word_challenge?$WordChallengeTypeArg=${type.name}"
     const val StoryIntro = "story_intro"
     const val ChapterLettersIntro = "chapter_letters_intro"
     const val Journey = "journey"
