@@ -14,12 +14,14 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.LayoutDirection
 import com.tal.hebrewdino.ui.AppNav
+import com.tal.hebrewdino.ui.AppAnalytics
 import com.tal.hebrewdino.ui.layout.applyImmersiveSystemBarsHidden
 import com.tal.hebrewdino.ui.layout.enableImmersiveFullscreen
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        AppAnalytics.init(applicationContext)
         enableImmersiveFullscreen()
         setContent {
             CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {

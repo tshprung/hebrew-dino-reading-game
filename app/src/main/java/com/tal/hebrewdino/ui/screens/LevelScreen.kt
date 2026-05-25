@@ -331,6 +331,69 @@ private fun separateBalloonCentersJacobi(
     }
 }
 
+private fun resolveBalloonElasticOverlaps(
+    posX: FloatArray,
+    posY: FloatArray,
+    velX: FloatArray,
+    velY: FloatArray,
+    alive: BooleanArray,
+    halfW: Float,
+    halfH: Float,
+    radius: Float,
+    minX: Float,
+    maxX: Float,
+    minY: Float,
+    maxY: Float,
+    restitution: Float,
+) {
+    val n = posX.size
+    val minDist = radius * 2f
+    val minDistSq = minDist * minDist
+    for (i in 0 until n) {
+        if (!alive[i]) continue
+        for (j in i + 1 until n) {
+            if (!alive[j]) continue
+            var dx = (posX[j] + halfW) - (posX[i] + halfW)
+            var dy = (posY[j] + halfH) - (posY[i] + halfH)
+            var distSq = dx * dx + dy * dy
+            if (distSq >= minDistSq) continue
+            if (distSq < 1e-6f) {
+                dx = if (((i + j) and 1) == 0) 1f else -1f
+                dy = if ((i and 1) == 0) 0.6f else -0.6f
+                distSq = dx * dx + dy * dy
+            }
+            val dist = sqrt(distSq)
+            val invDist = 1f / dist
+            val nx = dx * invDist
+            val ny = dy * invDist
+            val penetration = (minDist - dist).coerceAtLeast(0f)
+            val correction = penetration * 0.5f
+            posX[i] -= nx * correction
+            posY[i] -= ny * correction
+            posX[j] += nx * correction
+            posY[j] += ny * correction
+
+            val rvx = velX[j] - velX[i]
+            val rvy = velY[j] - velY[i]
+            val velAlongNormal = rvx * nx + rvy * ny
+            if (velAlongNormal < 0f) {
+                val jImpulse = (-(1f + restitution) * velAlongNormal) * 0.5f
+                val ix = jImpulse * nx
+                val iy = jImpulse * ny
+                velX[i] -= ix
+                velY[i] -= iy
+                velX[j] += ix
+                velY[j] += iy
+            }
+        }
+    }
+    for (k in 0 until n) {
+        if (!alive[k]) continue
+        posX[k] = posX[k].coerceIn(minX, maxX)
+        posY[k] = posY[k].coerceIn(minY, maxY)
+    }
+}
+
 /** 2D scattered anchors with min spacing, then relaxed so centers never start overlapping. */
 private fun generateBalloonAnchors(
     count: Int,
@@ -582,95 +645,206 @@ internal fun PopBalloonsOptions(
                 )
             }
 
-        val aliveMask = BooleanArray(options.size) { i -> i < alive.size && alive[i] }
-        val xBuf = FloatArray(options.size)
-        val yBuf = FloatArray(options.size)
-        val rawX = FloatArray(options.size)
-        val rawY = FloatArray(options.size)
-        options.forEachIndexed { idx, _ ->
-            if (!aliveMask[idx]) return@forEachIndexed
-            val (baseXPx, baseYPx) = anchors.getOrElse(idx) { minX to minY }
-            val ph = phases.getOrElse(idx) { 0f }
-            // Every balloon uses its own phase/frequency so they never share one synchronized "line" of motion.
-            val f = 0.71f + (idx % 6) * 0.051f + (idx % 3) * 0.019f
-            val base = (timeSec / 18f) * 2f * PI.toFloat() // one “lap” ~18s
-            val t = base * f + ph * 1.4f + idx * 0.31f
-            val slowFreq = 0.17f + (idx % 7) * 0.056f + (idx % 4) * 0.013f
-            val tSlow = base * slowFreq + ph * 2.3f + idx * 0.71f
+        val n = options.size
+        val aliveMask = remember(options, correctAnswer, correctLetterSet, visualRoundSeed, maxVisible) { BooleanArray(n) }
+        for (i in 0 until n) {
+            aliveMask[i] = i < alive.size && alive[i]
+        }
+        val posX =
+            remember(
+                options,
+                correctAnswer,
+                correctLetterSet,
+                visualRoundSeed,
+                maxVisible,
+                wPx.roundToInt(),
+                hPx.roundToInt(),
+                balloonWPx.roundToInt(),
+                balloonHPx.roundToInt(),
+            ) {
+                FloatArray(n) { i -> anchors.getOrElse(i) { minX to minY }.first }
+            }
+        val posY =
+            remember(
+                options,
+                correctAnswer,
+                correctLetterSet,
+                visualRoundSeed,
+                maxVisible,
+                wPx.roundToInt(),
+                hPx.roundToInt(),
+                balloonWPx.roundToInt(),
+                balloonHPx.roundToInt(),
+            ) {
+                FloatArray(n) { i -> anchors.getOrElse(i) { minX to minY }.second }
+            }
+        val velX =
+            remember(
+                options,
+                correctAnswer,
+                correctLetterSet,
+                visualRoundSeed,
+                maxVisible,
+                wPx.roundToInt(),
+                hPx.roundToInt(),
+                balloonWPx.roundToInt(),
+                balloonHPx.roundToInt(),
+            ) { FloatArray(n) }
+        val velY =
+            remember(
+                options,
+                correctAnswer,
+                correctLetterSet,
+                visualRoundSeed,
+                maxVisible,
+                wPx.roundToInt(),
+                hPx.roundToInt(),
+                balloonWPx.roundToInt(),
+                balloonHPx.roundToInt(),
+            ) { FloatArray(n) }
+        val rawX =
+            remember(
+                options,
+                correctAnswer,
+                correctLetterSet,
+                visualRoundSeed,
+                maxVisible,
+                wPx.roundToInt(),
+                hPx.roundToInt(),
+                balloonWPx.roundToInt(),
+                balloonHPx.roundToInt(),
+            ) { FloatArray(n) }
+        val rawY =
+            remember(
+                options,
+                correctAnswer,
+                correctLetterSet,
+                visualRoundSeed,
+                maxVisible,
+                wPx.roundToInt(),
+                hPx.roundToInt(),
+                balloonWPx.roundToInt(),
+                balloonHPx.roundToInt(),
+            ) { FloatArray(n) }
+        val lastSimTimeSec = remember(options, correctAnswer, correctLetterSet, visualRoundSeed, maxVisible) { mutableFloatStateOf(0f) }
+        val dt =
+            run {
+                val prev = lastSimTimeSec.floatValue
+                if (prev <= 0f) {
+                    lastSimTimeSec.floatValue = timeSec
+                    0f
+                } else {
+                    val d = (timeSec - prev).coerceIn(1f / 240f, 1f / 24f)
+                    lastSimTimeSec.floatValue = timeSec
+                    d
+                }
+            }
+        val halfW = balloonWPx * 0.5f
+        val halfH = balloonHPx * 0.5f
+        val radius = (balloonWPx * 0.48f).coerceAtLeast(12f)
+
+        for (i in 0 until n) {
+            if (!aliveMask[i]) continue
+            val (baseXPx, baseYPx) = anchors.getOrElse(i) { minX to minY }
+            val ph = phases.getOrElse(i) { 0f }
+            val f = 0.71f + (i % 6) * 0.051f + (i % 3) * 0.019f
+            val base = (timeSec / 18f) * 2f * PI.toFloat()
+            val t = base * f + ph * 1.4f + i * 0.31f
+            val slowFreq = 0.17f + (i % 7) * 0.056f + (i % 4) * 0.013f
+            val tSlow = base * slowFreq + ph * 2.3f + i * 0.71f
             val usableW = (maxX - minX).coerceAtLeast(1f)
             val usableH = (maxY - minY).coerceAtLeast(1f)
             val ampX =
                 usableW *
                     if (freeFlight) {
-                        0.30f + (idx % 5) * 0.040f
+                        0.30f + (i % 5) * 0.040f
                     } else {
-                        0.13f + (idx % 5) * 0.026f
+                        0.13f + (i % 5) * 0.026f
                     }
             val ampY =
                 usableH *
                     when {
-                        freeFlight -> 0.34f + (idx % 4) * 0.045f
-                        isCompactLandscapePhone && maxVisible != null -> 0.18f + (idx % 4) * 0.028f
-                        else -> 0.11f + (idx % 4) * 0.024f
+                        freeFlight -> 0.34f + (i % 4) * 0.045f
+                        isCompactLandscapePhone && maxVisible != null -> 0.18f + (i % 4) * 0.028f
+                        else -> 0.11f + (i % 4) * 0.024f
                     }
             val ox =
                 if (freeFlight) {
                     sin(t.toDouble()).toFloat() * ampX +
-                        cos((tSlow * 0.9f + idx * 0.19f).toDouble()).toFloat() * ampX * 0.72f +
-                        sin((t * 0.37f + idx * 0.83f).toDouble()).toFloat() * ampX * 0.48f
+                        cos((tSlow * 0.9f + i * 0.19f).toDouble()).toFloat() * ampX * 0.72f +
+                        sin((t * 0.37f + i * 0.83f).toDouble()).toFloat() * ampX * 0.48f
                 } else {
-                    (if (idx % 2 == 0) 1f else -1f) *
+                    (if (i % 2 == 0) 1f else -1f) *
                         (
                             sin(t.toDouble()).toFloat() * ampX +
-                                sin((t * 0.41f + idx * 0.7f).toDouble()).toFloat() * ampX * 0.55f +
-                                cos((t * 0.23f + idx * 0.17f).toDouble()).toFloat() * ampX * 0.38f
+                                sin((t * 0.41f + i * 0.7f).toDouble()).toFloat() * ampX * 0.55f +
+                                cos((t * 0.23f + i * 0.17f).toDouble()).toFloat() * ampX * 0.38f
                         )
                 }
             val oy =
                 if (freeFlight) {
-                    cos((t * 0.88f + idx * 0.11f).toDouble()).toFloat() * ampY +
-                        sin((t * 0.53f + idx * 0.47f).toDouble()).toFloat() * ampY * 0.86f +
-                        cos((tSlow * 1.08f + idx * 0.37f).toDouble()).toFloat() * ampY * 0.60f
+                    cos((t * 0.88f + i * 0.11f).toDouble()).toFloat() * ampY +
+                        sin((t * 0.53f + i * 0.47f).toDouble()).toFloat() * ampY * 0.86f +
+                        cos((tSlow * 1.08f + i * 0.37f).toDouble()).toFloat() * ampY * 0.60f
                 } else {
-                    val dir = if (idx % 2 == 0) 1f else -1f
-                    -dir * cos((t * 0.88f + idx * 0.09f).toDouble()).toFloat() * ampY +
-                        sin((t * 0.57f + idx * 0.4f).toDouble()).toFloat() * ampY * 0.9f +
+                    val dir = if (i % 2 == 0) 1f else -1f
+                    -dir * cos((t * 0.88f + i * 0.09f).toDouble()).toFloat() * ampY +
+                        sin((t * 0.57f + i * 0.4f).toDouble()).toFloat() * ampY * 0.9f +
                         sin(tSlow.toDouble()).toFloat() * usableH *
                         if (isCompactLandscapePhone && maxVisible != null) 0.38f else 0.26f
                 }
-            val rx = (baseXPx + ox).coerceIn(minX, maxX)
-            val ry = (baseYPx + oy).coerceIn(minY, maxY)
-            xBuf[idx] = rx
-            yBuf[idx] = ry
-            rawX[idx] = rx
-            rawY[idx] = ry
+            rawX[i] = (baseXPx + ox).coerceIn(minX, maxX)
+            rawY[i] = (baseYPx + oy).coerceIn(minY, maxY)
         }
-        separateBalloonCentersJacobi(
-            x = xBuf,
-            y = yBuf,
-            alive = aliveMask,
-            minDist = minCenterDist,
-            minX = minX,
-            maxX = maxX,
-            minY = minY,
-            maxY = maxY,
-            iterations = if (freeFlight) 7 else 5,
-            damping = if (freeFlight) 0.32f else 0.38f,
-            rawX = rawX,
-            rawY = rawY,
-            maxDeltaFromRaw =
-                when {
-                    freeFlight -> minCenterDist * 1.1f
-                    isCompactLandscapePhone && maxVisible != null -> minCenterDist * 0.48f
-                    else -> minCenterDist * 0.36f
-                },
-        )
+
+        if (dt > 0f) {
+            val followK = if (freeFlight) 12f else 18f
+            val damping = if (freeFlight) 2.2f else 2.8f
+            val dampingMul = 1f / (1f + damping * dt)
+            val maxSpeed = if (freeFlight) (minCenterDist * 1.25f) else (minCenterDist * 0.95f)
+            for (i in 0 until n) {
+                if (!aliveMask[i]) continue
+                val ax = (rawX[i] - posX[i]) * followK
+                val ay = (rawY[i] - posY[i]) * followK
+                velX[i] = (velX[i] + ax * dt) * dampingMul
+                velY[i] = (velY[i] + ay * dt) * dampingMul
+                val sp = hypot(velX[i], velY[i])
+                if (sp > maxSpeed) {
+                    val s = maxSpeed / sp
+                    velX[i] *= s
+                    velY[i] *= s
+                }
+                posX[i] = (posX[i] + velX[i] * dt).coerceIn(minX, maxX)
+                posY[i] = (posY[i] + velY[i] * dt).coerceIn(minY, maxY)
+            }
+            resolveBalloonElasticOverlaps(
+                posX = posX,
+                posY = posY,
+                velX = velX,
+                velY = velY,
+                alive = aliveMask,
+                halfW = halfW,
+                halfH = halfH,
+                radius = radius,
+                minX = minX,
+                maxX = maxX,
+                minY = minY,
+                maxY = maxY,
+                restitution = 0.62f,
+            )
+        } else {
+            for (i in 0 until n) {
+                if (!aliveMask[i]) continue
+                posX[i] = rawX[i]
+                posY[i] = rawY[i]
+            }
+        }
 
         options.forEachIndexed { idx, letter ->
             if (idx >= alive.size || !alive[idx]) return@forEachIndexed
             val color = balloonColors.getOrElse(idx) { Color(0xFFFF6B6B) }
-            val xPx = xBuf[idx]
-            val yPx = yBuf[idx]
+            val xPx = posX[idx]
+            val yPx = posY[idx]
             val aliveCorrectBeforeTap =
                 if (correctLetterSet != null) {
                     options.indices.count { i -> i < alive.size && alive[i] && options[i] in correctLetterSet }

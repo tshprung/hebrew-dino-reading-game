@@ -1,11 +1,13 @@
 package com.tal.hebrewdino.ui.screens
 
+import android.os.SystemClock
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.AnimationVector1D
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import com.tal.hebrewdino.ui.audio.AudioClips
 import com.tal.hebrewdino.ui.audio.VoicePlayer
+import com.tal.hebrewdino.ui.AppAnalytics
 import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
 import com.tal.hebrewdino.ui.domain.LevelSession
 import com.tal.hebrewdino.ui.feedback.GameFeedback
@@ -167,6 +169,14 @@ internal object AdvanceAfterRoundActions {
         session.nextQuestion()
         if (session.currentQuestion == null && !gameViewModel.completionCallbackFired) {
             gameViewModel.completionCallbackFired = true
+            val timeTakenSeconds =
+                ((SystemClock.elapsedRealtime() - gameViewModel.stationStartMs) / 1000L)
+                    .coerceAtLeast(0L)
+            AppAnalytics.logLevelComplete(
+                chapterId = chapterId,
+                stationId = stationId,
+                timeTakenSeconds = timeTakenSeconds,
+            )
             onComplete(stationId, session.correctCount, session.mistakeCount)
         }
         contentAlpha.animateTo(1f, tween(BetweenQuestionFadeMs))
