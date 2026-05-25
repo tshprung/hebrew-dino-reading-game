@@ -18,8 +18,23 @@ internal class GameViewModel(
     plan: StationQuizPlan,
     letterPoolSpec: LetterPoolSpec,
 ) : ViewModel() {
+    private val useSystemClock: Boolean =
+        try {
+            SystemClock.elapsedRealtime()
+            true
+        } catch (_: Throwable) {
+            false
+        }
+
+    private fun nowMs(): Long =
+        if (useSystemClock) {
+            SystemClock.elapsedRealtime()
+        } else {
+            System.currentTimeMillis()
+        }
+
     val session: LevelSession = LevelSession(plan = plan, letterPoolSpec = letterPoolSpec)
-    val stationStartMs: Long = SystemClock.elapsedRealtime()
+    val stationStartMs: Long = nowMs()
 
     private var lastTapMs: Long by mutableLongStateOf(0L)
 
@@ -67,7 +82,7 @@ internal class GameViewModel(
     }
 
     fun consumeTapCooldown(minIntervalMs: Long = 130L): Boolean {
-        val now = SystemClock.elapsedRealtime()
+        val now = nowMs()
         if (now - lastTapMs < minIntervalMs) return false
         lastTapMs = now
         return true
