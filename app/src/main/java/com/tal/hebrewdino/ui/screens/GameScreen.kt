@@ -38,6 +38,7 @@ import com.tal.hebrewdino.ui.audio.AudioClips
 import com.tal.hebrewdino.ui.audio.GameAudioEngine
 import com.tal.hebrewdino.ui.audio.SoundPoolPlayer
 import com.tal.hebrewdino.ui.audio.VoicePlayer
+import com.tal.hebrewdino.ui.AppAnalytics
 import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
 import com.tal.hebrewdino.ui.domain.Episode4Help
 import com.tal.hebrewdino.ui.domain.LetterPoolSpec
@@ -365,6 +366,10 @@ fun GameScreen(
             plan.mode == StationQuizMode.PopBalloons &&
             plan.popAllLettersInWord
 
+    LaunchedEffect(chapterId, stationId) {
+        AppAnalytics.logLevelStart(chapterId = chapterId, stationId = stationId)
+    }
+
     if (chapterId == TrainingV1Config.CHAPTER_ID) {
         topChromeProgressOverride?.first
     } else {
@@ -565,6 +570,17 @@ fun GameScreen(
         wrongPickedLetterAlreadySpoken: Boolean = false,
         wrongWordAlreadySpoken: Boolean = false,
     ) {
+        val mistakeType =
+            when {
+                wrongWordCatalogId != null -> "wrong_word"
+                wrongPickedLetter != null -> "wrong_letter"
+                else -> "wrong_choice"
+            }
+        AppAnalytics.logLevelRetry(
+            chapterId = chapterId,
+            stationId = stationId,
+            mistakeType = mistakeType,
+        )
         WrongFeedbackActions.trigger(
             scope = scope,
             gameViewModel = gameViewModel,

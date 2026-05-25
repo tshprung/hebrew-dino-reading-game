@@ -19,6 +19,7 @@ internal class GameViewModel(
     letterPoolSpec: LetterPoolSpec,
 ) : ViewModel() {
     val session: LevelSession = LevelSession(plan = plan, letterPoolSpec = letterPoolSpec)
+    val stationStartMs: Long = SystemClock.elapsedRealtime()
 
     private var lastTapMs: Long by mutableLongStateOf(0L)
 
