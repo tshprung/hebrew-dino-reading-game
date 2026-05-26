@@ -8,6 +8,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import kotlinx.coroutines.delay
@@ -19,6 +20,7 @@ fun AnimatedTalkingCharacter(
     talkFrameResIds: List<Int>,
     isTalking: Boolean,
     modifier: Modifier = Modifier,
+    colorFilter: ColorFilter? = null,
     frameMillis: Long = 220,
     contentDescription: String? = null,
 ) {
@@ -47,5 +49,6 @@ fun AnimatedTalkingCharacter(
         contentDescription = contentDescription,
         modifier = modifier,
         contentScale = ContentScale.Fit,
+        colorFilter = colorFilter,
     )
 }

@@ -10,7 +10,6 @@ import com.tal.hebrewdino.ui.data.CharacterRepository
 import com.tal.hebrewdino.ui.data.DinoCharacter
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -26,9 +25,16 @@ class DinoHomeViewModelTest {
     val mainDispatcherRule: MainDispatcherRule = MainDispatcherRule()
 
     @Test
-    fun feeding_decrements_food_increments_progress_and_advances_growth_stage() = runTest {
+    fun feeding_decrements_food_and_keeps_growth_stage_when_not_crossing_threshold() = runTest {
         val oldFactory = CharacterRepository.storeFactory
-        val store = FakeStore(character = DinoCharacter.Dino, foodCount = 10, growthStage = "EGG", initialized = true)
+        val store =
+            FakeStore(
+                character = DinoCharacter.DINO_GREEN,
+                foodCount = 6,
+                totalFoodEarned = 10,
+                growthStage = "BABY",
+                initialized = true,
+            )
         CharacterRepository.storeFactory =
             {
                 store
@@ -37,60 +43,29 @@ class DinoHomeViewModelTest {
         try {
             val vm = DinoHomeViewModel(TestContext())
             advanceUntilIdle()
-            setFloatState(vm, "growthProgress01", 0f)
-            setState(vm, "isHungry", true)
 
             vm.feedOnce()
             advanceUntilIdle()
-            assertEquals(9, vm.foodCount)
-            assertFalse(vm.isHungry)
-            assertEquals(0.34f, vm.growthProgress01, 0.001f)
-            assertEquals(GrowthStage.EGG, vm.growthStage)
-            assertEquals(9, store.foodCountFlow.value)
-            assertEquals("EGG", store.growthStageFlow.value)
-
-            vm.feedOnce()
-            advanceUntilIdle()
-            assertEquals(8, vm.foodCount)
-            assertEquals(0.68f, vm.growthProgress01, 0.001f)
-            assertEquals(GrowthStage.EGG, vm.growthStage)
-            assertEquals(8, store.foodCountFlow.value)
-
-            vm.feedOnce()
-            advanceUntilIdle()
-            assertEquals(7, vm.foodCount)
-            assertEquals(0f, vm.growthProgress01, 0.001f)
+            assertEquals(5, vm.foodCount)
             assertEquals(GrowthStage.BABY, vm.growthStage)
-            assertTrue(vm.isHungry)
-            assertEquals(7, store.foodCountFlow.value)
+            assertEquals(5, store.foodCountFlow.value)
             assertEquals("BABY", store.growthStageFlow.value)
-
-            vm.feedOnce()
-            vm.feedOnce()
-            vm.feedOnce()
-            advanceUntilIdle()
-            assertEquals(4, vm.foodCount)
-            assertEquals(GrowthStage.ADULT, vm.growthStage)
-            assertEquals(0f, vm.growthProgress01, 0.001f)
-            assertEquals(4, store.foodCountFlow.value)
-            assertEquals("ADULT", store.growthStageFlow.value)
-
-            val foodBefore = vm.foodCount
-            vm.feedOnce()
-            advanceUntilIdle()
-            assertEquals(foodBefore - 1, vm.foodCount)
-            assertEquals(GrowthStage.ADULT, vm.growthStage)
-            assertEquals(0f, vm.growthProgress01, 0.001f)
-            assertEquals(foodBefore - 1, store.foodCountFlow.value)
         } finally {
             CharacterRepository.storeFactory = oldFactory
         }
     }
 
     @Test
-    fun feeding_with_zero_food_does_not_change_state_or_crash() = runTest {
+    fun egg_stage_can_hatch_by_feeding_to_three_fed_apples() = runTest {
         val oldFactory = CharacterRepository.storeFactory
-        val store = FakeStore(character = DinoCharacter.Dino, foodCount = 0, growthStage = "BABY", initialized = true)
+        val store =
+            FakeStore(
+                character = DinoCharacter.DINO_GREEN,
+                foodCount = 1,
+                totalFoodEarned = 3,
+                growthStage = "EGG",
+                initialized = true,
+            )
         CharacterRepository.storeFactory =
             {
                 store
@@ -99,16 +74,12 @@ class DinoHomeViewModelTest {
         try {
             val vm = DinoHomeViewModel(TestContext())
             advanceUntilIdle()
-            setFloatState(vm, "growthProgress01", 0.5f)
-            setState(vm, "isHungry", true)
 
             vm.feedOnce()
             advanceUntilIdle()
 
             assertEquals(0, vm.foodCount)
             assertEquals(GrowthStage.BABY, vm.growthStage)
-            assertEquals(0.5f, vm.growthProgress01, 0.001f)
-            assertTrue(vm.isHungry)
             assertEquals(0, store.foodCountFlow.value)
             assertEquals("BABY", store.growthStageFlow.value)
         } finally {
@@ -117,9 +88,16 @@ class DinoHomeViewModelTest {
     }
 
     @Test
-    fun character_flow_emits_dina_and_dino_from_repository() = runTest {
+    fun growth_stage_updates_from_total_food_earned_thresholds() = runTest {
         val oldFactory = CharacterRepository.storeFactory
-        val store = FakeStore(character = DinoCharacter.Dina, foodCount = 3, growthStage = "EGG", initialized = true)
+        val store =
+            FakeStore(
+                character = DinoCharacter.DINO_GREEN,
+                foodCount = 0,
+                totalFoodEarned = 2,
+                growthStage = "EGG",
+                initialized = true,
+            )
         CharacterRepository.storeFactory =
             {
                 store
@@ -127,12 +105,47 @@ class DinoHomeViewModelTest {
 
         try {
             val vm = DinoHomeViewModel(TestContext())
-            val first = vm.character.filterNotNull().first { it == DinoCharacter.Dina }
-            assertEquals(DinoCharacter.Dina, first)
+            advanceUntilIdle()
+            assertEquals(GrowthStage.EGG, vm.growthStage)
 
-            store.characterFlow.value = DinoCharacter.Dino
-            val second = vm.character.filterNotNull().first { it == DinoCharacter.Dino }
-            assertEquals(DinoCharacter.Dino, second)
+            store.totalFoodEarnedFlow.value = 3
+            advanceUntilIdle()
+            assertEquals(GrowthStage.BABY, vm.growthStage)
+            assertEquals("BABY", store.growthStageFlow.value)
+
+            store.totalFoodEarnedFlow.value = 11
+            advanceUntilIdle()
+            assertEquals(GrowthStage.ADULT, vm.growthStage)
+            assertEquals("ADULT", store.growthStageFlow.value)
+        } finally {
+            CharacterRepository.storeFactory = oldFactory
+        }
+    }
+
+    @Test
+    fun character_flow_emits_dina_and_dino_from_repository() = runTest {
+        val oldFactory = CharacterRepository.storeFactory
+        val store =
+            FakeStore(
+                character = DinoCharacter.DINA_PINK,
+                foodCount = 0,
+                totalFoodEarned = 0,
+                growthStage = "EGG",
+                initialized = true,
+            )
+        CharacterRepository.storeFactory =
+            {
+                store
+            }
+
+        try {
+            val vm = DinoHomeViewModel(TestContext())
+            val first = vm.character.first { it == DinoCharacter.DINA_PINK }
+            assertEquals(DinoCharacter.DINA_PINK, first)
+
+            store.characterFlow.value = DinoCharacter.DINO_GREEN
+            val second = vm.character.first { it == DinoCharacter.DINO_GREEN }
+            assertEquals(DinoCharacter.DINO_GREEN, second)
         } finally {
             CharacterRepository.storeFactory = oldFactory
         }
@@ -159,13 +172,18 @@ class DinoHomeViewModelTest {
     private class FakeStore(
         character: DinoCharacter,
         foodCount: Int,
+        totalFoodEarned: Int,
         growthStage: String,
+        fullUntilAtMs: Long = 0L,
         private var initialized: Boolean,
     ) : CharacterRepository.CharacterStore {
-        override val characterFlow: MutableStateFlow<DinoCharacter?> = MutableStateFlow(character)
+        override val characterFlow: MutableStateFlow<DinoCharacter> = MutableStateFlow(character)
         override val foodCountFlow: MutableStateFlow<Int> = MutableStateFlow(foodCount)
+        override val totalFoodEarnedFlow: MutableStateFlow<Int> = MutableStateFlow(totalFoodEarned)
         override val growthStageFlow: MutableStateFlow<String> = MutableStateFlow(growthStage)
         override val pendingRewardFoodDeltaFlow: MutableStateFlow<Int> = MutableStateFlow(0)
+        override val fullUntilAtMsFlow: MutableStateFlow<Long> = MutableStateFlow(fullUntilAtMs.coerceAtLeast(0L))
+        override val chapter1MaxCompletedStationFlow: MutableStateFlow<Int> = MutableStateFlow(0)
 
         override suspend fun setCharacter(character: DinoCharacter) {
             characterFlow.value = character
@@ -177,6 +195,9 @@ class DinoHomeViewModelTest {
 
         override suspend fun addFood(delta: Int) {
             foodCountFlow.value = (foodCountFlow.value + delta).coerceAtLeast(0)
+            if (delta > 0) {
+                totalFoodEarnedFlow.value = (totalFoodEarnedFlow.value + delta).coerceAtLeast(0)
+            }
         }
 
         override suspend fun setGrowthStage(stageName: String) {
@@ -187,11 +208,35 @@ class DinoHomeViewModelTest {
             pendingRewardFoodDeltaFlow.value = delta
         }
 
+        override suspend fun setFullUntilAtMs(fullUntilAtMs: Long) {
+            fullUntilAtMsFlow.value = fullUntilAtMs.coerceAtLeast(0L)
+        }
+
+        override suspend fun markChapter1StationCompleted(stationId: Int) {
+            chapter1MaxCompletedStationFlow.value =
+                maxOf(
+                    chapter1MaxCompletedStationFlow.value.coerceIn(0, 3),
+                    stationId.coerceIn(0, 3),
+                )
+        }
+
         override suspend fun ensureTamagotchiInitialized() {
             if (initialized) return
             val current = foodCountFlow.value.coerceAtLeast(0)
-            foodCountFlow.value = maxOf(current, 3)
+            foodCountFlow.value = maxOf(current, 0)
             if (growthStageFlow.value.isBlank()) growthStageFlow.value = "EGG"
+            fullUntilAtMsFlow.value = fullUntilAtMsFlow.value.coerceAtLeast(0L)
+            chapter1MaxCompletedStationFlow.value = chapter1MaxCompletedStationFlow.value.coerceIn(0, 3)
+            initialized = true
+        }
+
+        override suspend fun resetForNewGame() {
+            foodCountFlow.value = 0
+            totalFoodEarnedFlow.value = 0
+            growthStageFlow.value = "EGG"
+            pendingRewardFoodDeltaFlow.value = 0
+            fullUntilAtMsFlow.value = 0L
+            chapter1MaxCompletedStationFlow.value = 0
             initialized = true
         }
     }

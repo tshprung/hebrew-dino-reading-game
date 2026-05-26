@@ -43,7 +43,7 @@ data class MainUiState(
     val chapter6Completed: Boolean = false,
     val unlockedLevel: Int = 1,
     val completedLevels: Set<Int> = emptySet(),
-    val character: DinoCharacter? = null,
+    val character: DinoCharacter = DinoCharacter.DINO_GREEN,
 )
 
 private data class Chapter1ProgressState(

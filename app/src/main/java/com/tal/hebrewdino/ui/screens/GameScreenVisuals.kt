@@ -40,6 +40,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
@@ -190,6 +191,8 @@ internal fun GameScreenDinoLayer(
     dinoSlip: Animatable<Float, AnimationVector1D>,
     dinoTilt: Animatable<Float, AnimationVector1D>,
     dinoScale: Animatable<Float, AnimationVector1D>,
+    dinoColorFilter: ColorFilter? = null,
+    dinoContentDescription: String = "דינו",
     modifier: Modifier = Modifier,
 ) {
     AnimatedTalkingCharacter(
@@ -204,7 +207,8 @@ internal fun GameScreenDinoLayer(
                 .size(88.dp)
                 .scale(dinoScale.value),
             ),
-        contentDescription = "דינו",
+        colorFilter = dinoColorFilter,
+        contentDescription = dinoContentDescription,
     )
 }
 

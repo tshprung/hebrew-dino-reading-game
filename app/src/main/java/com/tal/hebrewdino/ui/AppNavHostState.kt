@@ -21,7 +21,7 @@ internal data class AppNavHostState(
     val context: Context,
     val progress: ProgressPrefs,
     val prefs: CharacterPrefs,
-    val character: DinoCharacter?,
+    val character: DinoCharacter,
     val beachOutroSeen: Boolean,
     val chapter1MidBoostSeen: Boolean,
     val chapter2MidBoostSeen: Boolean,

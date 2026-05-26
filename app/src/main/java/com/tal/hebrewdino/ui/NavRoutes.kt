@@ -13,6 +13,8 @@ object NavRoutes {
     const val WordChallenge = "word_challenge?$WordChallengeTypeArg={$WordChallengeTypeArg}"
     fun wordChallengeRoute(type: ChallengeType): String = "word_challenge?$WordChallengeTypeArg=${type.name}"
     const val ChallengeSummary = "challenge_summary"
+    const val FallingLetters = "falling_letters"
+    const val ParentalGate = "parental_gate"
     const val StoryIntro = "story_intro"
     const val ChapterLettersIntro = "chapter_letters_intro"
     const val Journey = "journey"

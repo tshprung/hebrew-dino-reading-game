@@ -24,6 +24,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -36,6 +37,7 @@ import com.tal.hebrewdino.R
 import com.tal.hebrewdino.ui.audio.AudioClips
 import com.tal.hebrewdino.ui.audio.VoicePlayer
 import com.tal.hebrewdino.ui.data.CharacterRepository
+import com.tal.hebrewdino.ui.data.DinoCharacter
 import com.tal.hebrewdino.ui.layout.ScreenFit
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
@@ -75,6 +77,15 @@ fun RewardScreen(
     val voice = remember { VoicePlayer(context = context) }
     var navigatedAway by remember(levelId) { mutableStateOf(false) }
     val rewardRepo = remember(context) { CharacterRepository(context.applicationContext) }
+    val selectedCharacter by rewardRepo.characterFlow.collectAsState(initial = DinoCharacter.DINO_GREEN)
+    val dinoColorFilter =
+        remember(selectedCharacter) {
+            if (selectedCharacter == DinoCharacter.DINA_PINK) {
+                ColorFilter.tint(Color(0xFFFF4FB3).copy(alpha = 0.55f))
+            } else {
+                null
+            }
+        }
     val pendingRewardDelta by rewardRepo.pendingRewardFoodDeltaFlow.collectAsState(initial = 0)
     var showRewardDelta by remember(levelId) { mutableStateOf(0) }
     val isCompactLandscapePhone = ScreenFit.isCompactLandscapePhone()
@@ -150,6 +161,7 @@ fun RewardScreen(
                     contentDescription = null,
                     modifier = Modifier.width(160.dp).height(160.dp),
                     contentScale = ContentScale.Fit,
+                    colorFilter = dinoColorFilter,
                 )
                 Column(
                     modifier = Modifier.weight(1f, fill = true),
@@ -216,6 +228,7 @@ fun RewardScreen(
                             .height(168.dp)
                             .fillMaxWidth(),
                     contentScale = ContentScale.Fit,
+                    colorFilter = dinoColorFilter,
                 )
                 Spacer(modifier = Modifier.height(6.dp))
 

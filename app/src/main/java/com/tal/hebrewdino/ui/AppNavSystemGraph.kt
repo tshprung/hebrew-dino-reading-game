@@ -1,5 +1,6 @@
 package com.tal.hebrewdino.ui
 
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -9,6 +10,7 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavType
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+import com.tal.hebrewdino.ui.audio.TextToSpeechManager
 import com.tal.hebrewdino.ui.data.AudioPrefs
 import com.tal.hebrewdino.ui.data.DinoCharacter
 import com.tal.hebrewdino.ui.domain.ChallengeType
@@ -17,7 +19,9 @@ import com.tal.hebrewdino.ui.screens.ChallengeSummaryScreen
 import com.tal.hebrewdino.ui.screens.DinoHomeScreen
 import com.tal.hebrewdino.ui.screens.DinoHomeViewModel
 import com.tal.hebrewdino.ui.screens.ChaptersScreen
+import com.tal.hebrewdino.ui.screens.FallingLettersScreen
 import com.tal.hebrewdino.ui.screens.OpeningScreen
+import com.tal.hebrewdino.ui.screens.ParentalGateScreen
 import com.tal.hebrewdino.ui.screens.SeasonsScreen
 import com.tal.hebrewdino.ui.screens.SettingsScreen
 import com.tal.hebrewdino.ui.screens.TrainingV1CompleteScreen
@@ -33,7 +37,7 @@ internal fun NavGraphBuilder.systemAndTrainingGraph(host: AppNavHostState) {
         CharacterSelectionScreen(
             onSelect = { character ->
                 host.scope.launch { host.prefs.setCharacter(character) }
-                host.navController.navigate(NavRoutes.Opening) {
+                host.navController.navigate(NavRoutes.Chapters) {
                     popUpTo(NavRoutes.CharacterSelection) { inclusive = true }
                     launchSingleTop = true
                 }
@@ -61,7 +65,7 @@ internal fun NavGraphBuilder.systemAndTrainingGraph(host: AppNavHostState) {
         WordChallengeScreen(
             onExitToHome = {
                 host.navController.navigate(NavRoutes.Chapters) {
-                    popUpTo(NavRoutes.WordChallenge) { inclusive = true }
+                    popUpTo(NavRoutes.Chapters) { inclusive = true }
                     launchSingleTop = true
                 }
             },
@@ -82,7 +86,24 @@ internal fun NavGraphBuilder.systemAndTrainingGraph(host: AppNavHostState) {
             repo = repo,
             onBackToDinoHome = {
                 host.navController.navigate(NavRoutes.Chapters) {
-                    popUpTo(NavRoutes.ChallengeSummary) { inclusive = true }
+                    popUpTo(NavRoutes.Chapters) { inclusive = true }
+                    launchSingleTop = true
+                }
+            },
+        )
+    }
+
+    composable(NavRoutes.FallingLetters) {
+        FallingLettersScreen(
+            onExitToHome = {
+                host.navController.navigate(NavRoutes.Chapters) {
+                    popUpTo(NavRoutes.Chapters) { inclusive = true }
+                    launchSingleTop = true
+                }
+            },
+            onRoundCompleteToSummary = {
+                host.navController.navigate(NavRoutes.ChallengeSummary) {
+                    popUpTo(NavRoutes.FallingLetters) { inclusive = true }
                     launchSingleTop = true
                 }
             },
@@ -127,10 +148,17 @@ internal fun NavGraphBuilder.systemAndTrainingGraph(host: AppNavHostState) {
             onGoOnMission = {
                 host.navController.navigate(NavRoutes.ChapterSelect) { launchSingleTop = true }
             },
+            onBackToMap = {
+                host.navController.navigate(NavRoutes.ChapterSelect) { launchSingleTop = true }
+            },
         )
     }
 
     composable(NavRoutes.ChapterSelect) {
+        val context = LocalContext.current
+        LaunchedEffect(Unit) {
+            TextToSpeechManager.get(context.applicationContext).warmUp()
+        }
         ChaptersScreen(
             unlockedChapter = host.unlockedChapter,
             chapter4ComingSoon = host.chapter4ComingSoon,
@@ -145,6 +173,7 @@ internal fun NavGraphBuilder.systemAndTrainingGraph(host: AppNavHostState) {
                 }
             },
             onOpenSettings = { host.navController.navigate(NavRoutes.Settings) },
+            onOpenParents = { host.navController.navigate(NavRoutes.ParentalGate) { launchSingleTop = true } },
             onOpenWordChallengeStation = { stationId ->
                 val type =
                     when (stationId) {
@@ -152,6 +181,9 @@ internal fun NavGraphBuilder.systemAndTrainingGraph(host: AppNavHostState) {
                         else -> ChallengeType.ODD_ONE_OUT
                     }
                 host.navController.navigate(NavRoutes.wordChallengeRoute(type)) { launchSingleTop = true }
+            },
+            onOpenFallingLettersStation3 = {
+                host.navController.navigate(NavRoutes.FallingLetters) { launchSingleTop = true }
             },
             onOpenChapter = { chapterId ->
                 when (chapterId) {
@@ -198,6 +230,17 @@ internal fun NavGraphBuilder.systemAndTrainingGraph(host: AppNavHostState) {
                     }
                     in 8..10 -> Unit
                 }
+            },
+        )
+    }
+
+    composable(NavRoutes.ParentalGate) {
+        val context = LocalContext.current
+        ParentalGateScreen(
+            onBack = { host.navController.popBackStack() },
+            onResetProgress = {
+                host.progress.resetAll()
+                CharacterRepository(context.applicationContext).resetForNewGame()
             },
         )
     }
@@ -259,7 +302,7 @@ internal fun NavGraphBuilder.systemAndTrainingGraph(host: AppNavHostState) {
             onResetAll = {
                 host.scope.launch {
                     host.progress.resetAll()
-                    host.prefs.setCharacter(DinoCharacter.Dino)
+                    host.prefs.setCharacter(DinoCharacter.DINO_GREEN)
                     host.navController.navigate(NavRoutes.Chapters) {
                         popUpTo(NavRoutes.Settings) { inclusive = true }
                     }

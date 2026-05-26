@@ -40,6 +40,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -52,6 +53,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.StrokeCap
@@ -73,6 +75,8 @@ import com.tal.hebrewdino.R
 import com.tal.hebrewdino.ui.components.ChapterNavChipStyles
 import com.tal.hebrewdino.ui.components.learning.DinoNestMark
 import com.tal.hebrewdino.ui.components.learning.StoryEggStrip
+import com.tal.hebrewdino.ui.data.CharacterPrefs
+import com.tal.hebrewdino.ui.data.DinoCharacter
 import com.tal.hebrewdino.ui.domain.Chapter1Config
 import com.tal.hebrewdino.ui.domain.DevTools
 import com.tal.hebrewdino.ui.domain.JourneyEndMarkerIdle
@@ -198,7 +202,18 @@ fun JourneyScreen(
     collectedEggStripCount: Int = 0,
     modifier: Modifier = Modifier,
 ) {
-    val devToolsEnabled = DevTools.enabled(LocalContext.current)
+    val context = LocalContext.current
+    val devToolsEnabled = DevTools.enabled(context)
+    val charPrefs = remember(context) { CharacterPrefs(context.applicationContext) }
+    val selectedCharacter by charPrefs.characterFlow.collectAsState(initial = DinoCharacter.DINO_GREEN)
+    val dinoColorFilter =
+        remember(selectedCharacter) {
+            if (selectedCharacter == DinoCharacter.DINA_PINK) {
+                ColorFilter.tint(Color(0xFFFF4FB3).copy(alpha = 0.55f))
+            } else {
+                null
+            }
+        }
     val nextPlayableSuggested =
         (1..playableLevels).firstOrNull { !completedLevels.contains(it) } ?: (playableLevels + 1)
     val allPlayableComplete = (1..playableLevels).all { level -> completedLevels.contains(level) }
@@ -465,6 +480,7 @@ fun JourneyScreen(
                         navigationLocked = journeyNavigationLocked,
                         dinoProgress = dinoProgress.value,
                         walkDrawable = walkFrames[walkFrame],
+                        dinoColorFilter = dinoColorFilter,
                         companionImageRes = companionImageRes,
                         endMarker = endMarker,
                         roadHeight = roadH,
@@ -512,6 +528,7 @@ private fun JourneyRoadStrip(
     navigationLocked: Boolean = false,
     dinoProgress: Float,
     walkDrawable: Int,
+    dinoColorFilter: ColorFilter?,
     companionImageRes: Int?,
     endMarker: JourneyEndMarker,
     roadHeight: Dp = 300.dp,
@@ -839,6 +856,7 @@ private fun JourneyRoadStrip(
                         .size(88.dp)
                         .offset { IntOffset(dinoX, dinoY) },
                 contentScale = ContentScale.Fit,
+                colorFilter = dinoColorFilter,
             )
         }
     }

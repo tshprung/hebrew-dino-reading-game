@@ -31,6 +31,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -47,6 +48,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.Outline
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.Shape
@@ -56,6 +58,7 @@ import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
@@ -78,6 +81,8 @@ import androidx.compose.animation.core.tween
 import androidx.compose.ui.draw.scale
 import com.tal.hebrewdino.R
 import com.tal.hebrewdino.ui.components.ChapterNavChipStyles
+import com.tal.hebrewdino.ui.data.CharacterPrefs
+import com.tal.hebrewdino.ui.data.DinoCharacter
 import com.tal.hebrewdino.ui.components.learning.DinoNestMark
 import com.tal.hebrewdino.ui.domain.ChaptersPathLayout
 import com.tal.hebrewdino.ui.domain.TrainingV1Config
@@ -172,11 +177,24 @@ fun ChaptersScreen(
     chaptersProgress: ChaptersProgress,
     onBackToSeasons: () -> Unit,
     onOpenSettings: () -> Unit,
+    onOpenParents: () -> Unit,
     onOpenWordChallengeStation: (Int) -> Unit,
+    onOpenFallingLettersStation3: () -> Unit,
     onOpenChapter: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val scroll = rememberScrollState()
+    val context = LocalContext.current
+    val charPrefs = remember(context) { CharacterPrefs(context.applicationContext) }
+    val selectedCharacter by charPrefs.characterFlow.collectAsState(initial = DinoCharacter.DINO_GREEN)
+    val dinoColorFilter =
+        remember(selectedCharacter) {
+            if (selectedCharacter == DinoCharacter.DINA_PINK) {
+                ColorFilter.tint(Color(0xFFFF4FB3).copy(alpha = 0.55f))
+            } else {
+                null
+            }
+        }
 
     val chapters =
         listOf(
@@ -244,6 +262,18 @@ fun ChaptersScreen(
                         .align(Alignment.CenterHorizontally),
             )
             Spacer(modifier = Modifier.height(10.dp))
+            TrainingComingSoonCard(
+                title = "אתגר האותיות — תחנה 3",
+                subtitle = "תפסו את האות הנכונה",
+                statusText = "התחל",
+                enabled = true,
+                onClick = onOpenFallingLettersStation3,
+                modifier =
+                    Modifier
+                        .fillMaxWidth(0.80f)
+                        .align(Alignment.CenterHorizontally),
+            )
+            Spacer(modifier = Modifier.height(10.dp))
             ChaptersHexHoneycomb(
                 chapters = chapters,
                 unlockedChapter = unlockedChapter,
@@ -290,11 +320,19 @@ fun ChaptersScreen(
                     .padding(top = 4.dp, end = 8.dp)
                     .zIndex(1f),
         ) {
-            OutlinedButton(
-                onClick = onOpenSettings,
-                colors = ChapterNavChipStyles.outlinedButtonColors(),
-            ) {
-                Text("הגדרות", style = ChapterNavChipStyles.labelTextStyle())
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedButton(
+                    onClick = onOpenParents,
+                    colors = ChapterNavChipStyles.outlinedButtonColors(),
+                ) {
+                    Text("הורים", style = ChapterNavChipStyles.labelTextStyle())
+                }
+                OutlinedButton(
+                    onClick = onOpenSettings,
+                    colors = ChapterNavChipStyles.outlinedButtonColors(),
+                ) {
+                    Text("הגדרות", style = ChapterNavChipStyles.labelTextStyle())
+                }
             }
         }
 
@@ -597,6 +635,17 @@ private fun ChapterVerticalPath(
 ) {
     val density = LocalDensity.current
     val layoutDirection = LocalLayoutDirection.current
+    val context = LocalContext.current
+    val charPrefs = remember(context) { CharacterPrefs(context.applicationContext) }
+    val selectedCharacter by charPrefs.characterFlow.collectAsState(initial = DinoCharacter.DINO_GREEN)
+    val dinoColorFilter =
+        remember(selectedCharacter) {
+            if (selectedCharacter == DinoCharacter.DINA_PINK) {
+                ColorFilter.tint(Color(0xFFFF4FB3).copy(alpha = 0.55f))
+            } else {
+                null
+            }
+        }
 
     var prevProgress by remember { mutableStateOf(chaptersProgress) }
     val bump1 = remember { mutableIntStateOf(0) }
@@ -818,6 +867,7 @@ private fun ChapterVerticalPath(
                                     .size(dinoMapSize)
                                     .scale(breath),
                             contentScale = ContentScale.Fit,
+                            colorFilter = dinoColorFilter,
                         )
                     }
                 }

@@ -1,6 +1,78 @@
 package com.tal.hebrewdino.ui.domain
 
 object WordChallengeRepository {
+    val letterRecognitionHebrewChapter1: List<WordChallenge> =
+        listOf(
+            WordChallenge(
+                id = "ltr_001",
+                questionText = "א",
+                options = listOf("א", "מ", "ל", "ס"),
+                correctOption = "א",
+                challengeType = ChallengeType.LETTER_RECOGNITION,
+                category = "זיהוי אות",
+            ),
+            WordChallenge(
+                id = "ltr_002",
+                questionText = "מ",
+                options = listOf("א", "מ", "ל", "ס"),
+                correctOption = "מ",
+                challengeType = ChallengeType.LETTER_RECOGNITION,
+                category = "זיהוי אות",
+            ),
+            WordChallenge(
+                id = "ltr_003",
+                questionText = "ל",
+                options = listOf("א", "מ", "ל", "ס"),
+                correctOption = "ל",
+                challengeType = ChallengeType.LETTER_RECOGNITION,
+                category = "זיהוי אות",
+            ),
+            WordChallenge(
+                id = "ltr_004",
+                questionText = "ס",
+                options = listOf("א", "מ", "ל", "ס"),
+                correctOption = "ס",
+                challengeType = ChallengeType.LETTER_RECOGNITION,
+                category = "זיהוי אות",
+            ),
+        )
+
+    val phonemicIsolationHebrewChapter1Station2: List<WordChallenge> =
+        listOf(
+            WordChallenge(
+                id = "ph_001",
+                questionText = "א",
+                options = listOf("א", "מ", "ל", "ס"),
+                correctOption = "א",
+                challengeType = ChallengeType.PHONEMIC_ISOLATION,
+                category = "בידוד צליל",
+            ),
+            WordChallenge(
+                id = "ph_002",
+                questionText = "מ",
+                options = listOf("א", "מ", "ל", "ס"),
+                correctOption = "מ",
+                challengeType = ChallengeType.PHONEMIC_ISOLATION,
+                category = "בידוד צליל",
+            ),
+            WordChallenge(
+                id = "ph_003",
+                questionText = "ל",
+                options = listOf("א", "מ", "ל", "ס"),
+                correctOption = "ל",
+                challengeType = ChallengeType.PHONEMIC_ISOLATION,
+                category = "בידוד צליל",
+            ),
+            WordChallenge(
+                id = "ph_004",
+                questionText = "ס",
+                options = listOf("א", "מ", "ל", "ס"),
+                correctOption = "ס",
+                challengeType = ChallengeType.PHONEMIC_ISOLATION,
+                category = "בידוד צליל",
+            ),
+        )
+
     val oddOneOutHebrew: List<WordChallenge> =
         listOf(
             WordChallenge(
@@ -153,17 +225,17 @@ object WordChallengeRepository {
             ),
             WordChallenge(
                 id = "rhyme_004",
-                questionText = "סוס",
-                options = listOf("כוס", "גדר", "תפוח", "כיסא"),
-                correctOption = "כוס",
+                questionText = "חתול",
+                options = listOf("כחול", "בלון", "כיסא", "דג"),
+                correctOption = "כחול",
                 challengeType = ChallengeType.RHYME,
                 category = "חריזה",
             ),
             WordChallenge(
                 id = "rhyme_005",
-                questionText = "פרח",
-                options = listOf("ירח", "כדור", "חלון", "סנדל"),
-                correctOption = "ירח",
+                questionText = "ציפור",
+                options = listOf("סיפור", "חתול", "דבש", "חלון"),
+                correctOption = "סיפור",
                 challengeType = ChallengeType.RHYME,
                 category = "חריזה",
             ),
@@ -177,9 +249,9 @@ object WordChallengeRepository {
             ),
             WordChallenge(
                 id = "rhyme_007",
-                questionText = "לחם",
-                options = listOf("ים", "ספר", "דג", "לימון"),
-                correctOption = "ים",
+                questionText = "דוב",
+                options = listOf("טוב", "חלון", "כדור", "תפוח"),
+                correctOption = "טוב",
                 challengeType = ChallengeType.RHYME,
                 category = "חריזה",
             ),
@@ -201,9 +273,9 @@ object WordChallengeRepository {
             ),
             WordChallenge(
                 id = "rhyme_010",
-                questionText = "קוף",
-                options = listOf("סוף", "דג", "חלון", "סוס"),
-                correctOption = "סוף",
+                questionText = "שמש",
+                options = listOf("חמש", "כדור", "בלון", "כיסא"),
+                correctOption = "חמש",
                 challengeType = ChallengeType.RHYME,
                 category = "חריזה",
             ),
@@ -217,9 +289,9 @@ object WordChallengeRepository {
             ),
             WordChallenge(
                 id = "rhyme_012",
-                questionText = "פרפר",
-                options = listOf("ספר", "חלב", "חדר", "נעל"),
-                correctOption = "ספר",
+                questionText = "מיטה",
+                options = listOf("חיטה", "חלון", "כדור", "כיסא"),
+                correctOption = "חיטה",
                 challengeType = ChallengeType.RHYME,
                 category = "חריזה",
             ),
@@ -233,9 +305,9 @@ object WordChallengeRepository {
             ),
             WordChallenge(
                 id = "rhyme_014",
-                questionText = "תינוק",
-                options = listOf("חילוק", "חלב", "קופסה", "דג"),
-                correctOption = "חילוק",
+                questionText = "עכבר",
+                options = listOf("מדבר", "בלון", "חלב", "ספר"),
+                correctOption = "מדבר",
                 challengeType = ChallengeType.RHYME,
                 category = "חריזה",
             ),

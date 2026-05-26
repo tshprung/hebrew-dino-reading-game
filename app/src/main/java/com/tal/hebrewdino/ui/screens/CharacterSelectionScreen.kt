@@ -1,6 +1,9 @@
 package com.tal.hebrewdino.ui.screens
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -35,11 +38,22 @@ fun CharacterSelectionScreen(
     onSelect: (DinoCharacter) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val onSelectDino = remember(onSelect) { { onSelect(DinoCharacter.Dino) } }
-    val onSelectDina = remember(onSelect) { { onSelect(DinoCharacter.Dina) } }
+    val onSelectDino = remember(onSelect) { { onSelect(DinoCharacter.DINO_GREEN) } }
+    val onSelectDina = remember(onSelect) { { onSelect(DinoCharacter.DINA_PINK) } }
 
     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
-        Box(modifier = modifier.fillMaxSize()) {
+        val blockerInteraction = remember { MutableInteractionSource() }
+        Box(
+            modifier =
+                modifier
+                    .fillMaxSize()
+                    .background(Color(0xFFF7F8FA))
+                    .clickable(
+                        interactionSource = blockerInteraction,
+                        indication = null,
+                        onClick = {},
+                    ),
+        ) {
             Column(
                 modifier =
                     Modifier
@@ -126,4 +140,3 @@ private fun CharacterCard(
         }
     }
 }
-

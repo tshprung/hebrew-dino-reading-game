@@ -27,6 +27,8 @@ data class WordChallengeUiState(
     val wrongAttemptToken: Int,
     val lastWrongOption: String?,
     val isRoundComplete: Boolean,
+    val isInputLocked: Boolean,
+    val pendingCorrectToken: Int,
 ) {
     val current: WordChallenge? get() = challenges.getOrNull(index)
     val total: Int get() = challenges.size
@@ -39,6 +41,8 @@ class WordChallengeViewModel(
 ) : ViewModel() {
     private val challenges: List<WordChallenge> =
         when (challengeType) {
+            ChallengeType.LETTER_RECOGNITION -> WordChallengeRepository.letterRecognitionHebrewChapter1
+            ChallengeType.PHONEMIC_ISOLATION -> WordChallengeRepository.phonemicIsolationHebrewChapter1Station2
             ChallengeType.ODD_ONE_OUT -> WordChallengeRepository.oddOneOutHebrew
             ChallengeType.RHYME -> WordChallengeRepository.rhymesHebrew
             ChallengeType.WORD_MATCH -> emptyList()
@@ -51,8 +55,25 @@ class WordChallengeViewModel(
                 val seeded = Random(challenge.id.hashCode())
                 challenge.copy(options = challenge.options.shuffled(seeded))
             }
-            .take(5)
             .toList()
+            .let { base ->
+                if (base.isEmpty()) return@let emptyList()
+                val desired =
+                    when (challengeType) {
+                        ChallengeType.LETTER_RECOGNITION,
+                        ChallengeType.PHONEMIC_ISOLATION,
+                        -> 8
+                        else -> 5
+                    }
+                if (base.size >= desired) {
+                    base.take(desired)
+                } else {
+                    List(desired) { i ->
+                        val src = base[i % base.size]
+                        src.copy(id = "${src.id}_r$i")
+                    }
+                }
+            }
 
     private val _uiState =
         MutableStateFlow(
@@ -64,6 +85,8 @@ class WordChallengeViewModel(
                 wrongAttemptToken = 0,
                 lastWrongOption = null,
                 isRoundComplete = challenges.isEmpty(),
+                isInputLocked = false,
+                pendingCorrectToken = 0,
             ),
         )
     val uiState: StateFlow<WordChallengeUiState> = _uiState.asStateFlow()
@@ -71,48 +94,76 @@ class WordChallengeViewModel(
     private val _finishEvents: MutableSharedFlow<Unit> = MutableSharedFlow(extraBufferCapacity = 1)
     val finishEvents: SharedFlow<Unit> = _finishEvents.asSharedFlow()
 
-    private var advanceJob: Job? = null
+    private var unlockJob: Job? = null
 
     fun onOptionSelected(option: String) {
         val state = _uiState.value
         if (state.isRoundComplete) return
+        if (state.isInputLocked) return
         val current = state.current ?: return
         if (state.selectedCorrectOption != null) return
 
+        unlockJob?.cancel()
+        _uiState.update { it.copy(isInputLocked = true) }
+
         if (option == current.correctOption) {
-            _uiState.update { it.copy(selectedCorrectOption = option, lastWrongOption = null) }
-            advanceJob?.cancel()
-            advanceJob =
-                viewModelScope.launch {
-                    delay(1000L)
-                    _uiState.update { s ->
-                        val nextIndex = s.index + 1
-                        if (nextIndex >= s.challenges.size) {
-                            s.copy(
-                                index = nextIndex,
-                                selectedCorrectOption = null,
-                                lastWrongOption = null,
-                                isRoundComplete = true,
-                            )
-                        } else {
-                            s.copy(
-                                index = nextIndex,
-                                selectedCorrectOption = null,
-                                lastWrongOption = null,
-                            )
-                        }
-                    }
-                    val finalState = _uiState.value
-                    if (finalState.isRoundComplete) {
-                        rewardHandler.onRoundComplete()
-                        _finishEvents.tryEmit(Unit)
-                    }
-                }
+            _uiState.update {
+                it.copy(
+                    selectedCorrectOption = option,
+                    lastWrongOption = null,
+                    pendingCorrectToken = it.pendingCorrectToken + 1,
+                )
+            }
         } else {
             _uiState.update {
                 it.copy(
                     wrongAttemptToken = it.wrongAttemptToken + 1,
                     lastWrongOption = option,
+                )
+            }
+            val token = state.wrongAttemptToken + 1
+            val idx = state.index
+            unlockJob =
+                viewModelScope.launch {
+                    delay(420L)
+                    _uiState.update { s ->
+                        if (s.isRoundComplete) return@update s
+                        if (s.index != idx) return@update s
+                        if (s.selectedCorrectOption != null) return@update s
+                        if (s.wrongAttemptToken != token) return@update s
+                        s.copy(isInputLocked = false)
+                    }
+                }
+        }
+    }
+
+    fun confirmAdvanceAfterCorrect(expectedToken: Int) {
+        val state = _uiState.value
+        if (state.isRoundComplete) return
+        if (state.pendingCorrectToken != expectedToken) return
+        if (state.selectedCorrectOption.isNullOrBlank()) return
+
+        val isLast = state.index >= state.challenges.lastIndex
+        if (isLast) {
+            _uiState.update { s ->
+                s.copy(
+                    selectedCorrectOption = null,
+                    lastWrongOption = null,
+                    isRoundComplete = true,
+                    isInputLocked = true,
+                )
+            }
+            viewModelScope.launch {
+                rewardHandler.onRoundComplete()
+                _finishEvents.tryEmit(Unit)
+            }
+        } else {
+            _uiState.update { s ->
+                s.copy(
+                    index = s.index + 1,
+                    selectedCorrectOption = null,
+                    lastWrongOption = null,
+                    isInputLocked = false,
                 )
             }
         }

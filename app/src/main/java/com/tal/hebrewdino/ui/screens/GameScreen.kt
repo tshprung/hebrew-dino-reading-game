@@ -13,6 +13,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -22,6 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalView
@@ -40,6 +42,7 @@ import com.tal.hebrewdino.ui.audio.SoundPoolPlayer
 import com.tal.hebrewdino.ui.audio.VoicePlayer
 import com.tal.hebrewdino.ui.AppAnalytics
 import com.tal.hebrewdino.ui.data.CharacterRepository
+import com.tal.hebrewdino.ui.data.DinoCharacter
 import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
 import com.tal.hebrewdino.ui.domain.Episode4Help
 import com.tal.hebrewdino.ui.domain.LetterPoolSpec
@@ -380,6 +383,17 @@ fun GameScreen(
     val context = LocalContext.current
     val view = LocalView.current
     val lifecycleOwner = LocalLifecycleOwner.current
+    val characterRepo = remember(context) { CharacterRepository(context.applicationContext) }
+    val selectedCharacter by characterRepo.characterFlow.collectAsState(initial = DinoCharacter.DINO_GREEN)
+    val dinoColorFilter =
+        remember(selectedCharacter) {
+            if (selectedCharacter == DinoCharacter.DINA_PINK) {
+                ColorFilter.tint(Color(0xFFFF4FB3).copy(alpha = 0.55f))
+            } else {
+                null
+            }
+        }
+    val dinoContentDescription = if (selectedCharacter == DinoCharacter.DINA_PINK) "דינה" else "דינו"
     val rewardRepo = remember(context) { CharacterRepository(context.applicationContext) }
     val audio = remember { GameAudioEngine(context = context) }
     val voice = audio.voice
@@ -669,6 +683,8 @@ fun GameScreen(
                         dinoSlip = dinoSlip,
                         dinoTilt = dinoTilt,
                         dinoScale = dinoScale,
+                        dinoColorFilter = dinoColorFilter,
+                        dinoContentDescription = dinoContentDescription,
                         modifier =
                             Modifier
                                 .align(Alignment.BottomEnd)
@@ -1045,6 +1061,8 @@ fun GameScreen(
                     dinoSlip = dinoSlip,
                     dinoTilt = dinoTilt,
                     dinoScale = dinoScale,
+                    dinoColorFilter = dinoColorFilter,
+                    dinoContentDescription = dinoContentDescription,
                 )
             }
         }

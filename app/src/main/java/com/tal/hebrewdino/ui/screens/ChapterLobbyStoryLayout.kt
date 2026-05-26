@@ -28,10 +28,12 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.ContentScale
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
@@ -48,6 +50,8 @@ import com.tal.hebrewdino.ui.components.AnimatedTalkingCharacter
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.tal.hebrewdino.ui.layout.ScreenFit
+import com.tal.hebrewdino.ui.data.CharacterPrefs
+import com.tal.hebrewdino.ui.data.DinoCharacter
 
 enum class ChapterLobbyCompanion {
     DinoOnly,
@@ -82,12 +86,22 @@ fun ChapterLobbyStoryLayout(
     voiceAssetPath: String? = null,
     bodyLineHeightOverride: TextUnit? = null,
     dinoContentDescription: String,
+    dinoColorFilter: ColorFilter? = null,
     onContinue: () -> Unit,
     /** Optional content between title and body (e.g. Episode 4 clue row). */
     betweenTitleAndBody: (@Composable () -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
+    val charPrefs = remember(context) { CharacterPrefs(context.applicationContext) }
+    val selectedCharacter by charPrefs.characterFlow.collectAsState(initial = DinoCharacter.DINO_GREEN)
+    val resolvedDinoColorFilter =
+        dinoColorFilter
+            ?: if (selectedCharacter == DinoCharacter.DINA_PINK) {
+                ColorFilter.tint(Color(0xFFFF4FB3).copy(alpha = 0.55f))
+            } else {
+                null
+            }
     val lifecycleOwner = LocalLifecycleOwner.current
     val voicePlayer = remember(voiceAssetPath) { voiceAssetPath?.let { VoicePlayer(context = context) } }
     var autoNarrationPlaying by remember(voiceAssetPath) { mutableStateOf(false) }
@@ -206,6 +220,7 @@ fun ChapterLobbyStoryLayout(
                                         talkFrameResIds = dinoTalkFrames,
                                         isTalking = talking,
                                         modifier = Modifier.size(characterSize),
+                                        colorFilter = resolvedDinoColorFilter,
                                         contentDescription = dinoContentDescription,
                                     )
                                     if (companion == ChapterLobbyCompanion.DinoAndMom) {
@@ -250,6 +265,7 @@ fun ChapterLobbyStoryLayout(
                                         talkFrameResIds = dinoTalkFrames,
                                         isTalking = talking,
                                         modifier = Modifier.size(92.dp),
+                                        colorFilter = resolvedDinoColorFilter,
                                         contentDescription = dinoContentDescription,
                                     )
                                     if (companion == ChapterLobbyCompanion.DinoAndMom) {

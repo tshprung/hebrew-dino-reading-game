@@ -90,6 +90,7 @@ object AudioClips {
     }
     const val SfxCorrect = "audio/sfx_correct.wav"
     const val SfxWrong = "audio/sfx_wrong.wav"
+    const val SfxFanfare = "audio/sfx_fanfare.wav"
 
     // Story narration (optional).
     // Episode 1 (forest)

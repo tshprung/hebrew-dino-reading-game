@@ -38,17 +38,18 @@ class WordChallengeViewModelTest {
     }
 
     @Test
-    fun correct_selection_sets_success_then_advances_after_delay() = runTest {
+    fun correct_selection_sets_success_then_advances_after_confirm() = runTest {
         val vm = WordChallengeViewModel(challengeType = ChallengeType.ODD_ONE_OUT)
         val first = vm.uiState.value.current
         assertNotNull(first)
         val correct = first!!.correctOption
 
+        val expectedToken = vm.uiState.value.pendingCorrectToken + 1
         vm.onOptionSelected(correct)
         assertEquals(correct, vm.uiState.value.selectedCorrectOption)
         assertEquals(0, vm.uiState.value.index)
 
-        advanceTimeBy(1000L)
+        vm.confirmAdvanceAfterCorrect(expectedToken)
         advanceUntilIdle()
 
         assertEquals(1, vm.uiState.value.index)
@@ -92,8 +93,9 @@ class WordChallengeViewModelTest {
 
         repeat(5) {
             val current = vm.uiState.value.current ?: return@repeat
+            val expectedToken = vm.uiState.value.pendingCorrectToken + 1
             vm.onOptionSelected(current.correctOption)
-            advanceTimeBy(1000L)
+            vm.confirmAdvanceAfterCorrect(expectedToken)
             advanceUntilIdle()
         }
 
@@ -104,4 +106,3 @@ class WordChallengeViewModelTest {
         collectJob.cancel()
     }
 }
-

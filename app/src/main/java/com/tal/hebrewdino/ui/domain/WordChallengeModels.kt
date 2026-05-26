@@ -1,6 +1,8 @@
 package com.tal.hebrewdino.ui.domain
 
 enum class ChallengeType {
+    LETTER_RECOGNITION,
+    PHONEMIC_ISOLATION,
     ODD_ONE_OUT,
     RHYME,
     WORD_MATCH,
@@ -15,4 +17,3 @@ data class WordChallenge(
     val challengeType: ChallengeType,
     val category: String,
 )
-
