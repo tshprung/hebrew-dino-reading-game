@@ -22,9 +22,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -41,18 +39,16 @@ import com.tal.hebrewdino.R
 import com.tal.hebrewdino.ui.data.CharacterRepository
 import com.tal.hebrewdino.ui.domain.ChallengeType
 import com.tal.hebrewdino.ui.layout.topChromeInsetsPadding
-import kotlinx.coroutines.delay
 
 @Composable
 fun WordChallengeScreen(
     onExitToHome: () -> Unit,
-    onRoundCompleteToHome: () -> Unit,
+    onRoundCompleteToSummary: () -> Unit,
     challengeType: ChallengeType = ChallengeType.ODD_ONE_OUT,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
     val repo = remember(context) { CharacterRepository(context.applicationContext) }
-    var showEarned by remember { mutableStateOf(false) }
 
     val viewModel: WordChallengeViewModel =
         viewModel(
@@ -71,9 +67,7 @@ fun WordChallengeScreen(
 
     LaunchedEffect(viewModel) {
         viewModel.finishEvents.collect {
-            showEarned = true
-            delay(900L)
-            onRoundCompleteToHome()
+            onRoundCompleteToSummary()
         }
     }
 
@@ -87,7 +81,7 @@ fun WordChallengeScreen(
         lastWrongOption = state.lastWrongOption,
         questionNumber = state.questionNumber,
         totalQuestions = state.total.coerceAtLeast(5),
-        showEarnedReward = showEarned,
+        showEarnedReward = false,
         onExit = onExitToHome,
         onOptionSelected = viewModel::onOptionSelected,
         modifier = modifier,

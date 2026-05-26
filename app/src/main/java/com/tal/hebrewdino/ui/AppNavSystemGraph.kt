@@ -13,6 +13,7 @@ import com.tal.hebrewdino.ui.data.AudioPrefs
 import com.tal.hebrewdino.ui.data.DinoCharacter
 import com.tal.hebrewdino.ui.domain.ChallengeType
 import com.tal.hebrewdino.ui.screens.CharacterSelectionScreen
+import com.tal.hebrewdino.ui.screens.ChallengeSummaryScreen
 import com.tal.hebrewdino.ui.screens.DinoHomeScreen
 import com.tal.hebrewdino.ui.screens.DinoHomeViewModel
 import com.tal.hebrewdino.ui.screens.ChaptersScreen
@@ -24,6 +25,7 @@ import com.tal.hebrewdino.ui.screens.TrainingV1IntroScreen
 import com.tal.hebrewdino.ui.screens.TrainingV1RoundScreen
 import com.tal.hebrewdino.ui.screens.WordChallengeScreen
 import com.tal.hebrewdino.ui.domain.TrainingV1Config
+import com.tal.hebrewdino.ui.data.CharacterRepository
 import kotlinx.coroutines.launch
 
 internal fun NavGraphBuilder.systemAndTrainingGraph(host: AppNavHostState) {
@@ -63,13 +65,27 @@ internal fun NavGraphBuilder.systemAndTrainingGraph(host: AppNavHostState) {
                     launchSingleTop = true
                 }
             },
-            onRoundCompleteToHome = {
-                host.navController.navigate(NavRoutes.Chapters) {
+            onRoundCompleteToSummary = {
+                host.navController.navigate(NavRoutes.ChallengeSummary) {
                     popUpTo(NavRoutes.WordChallenge) { inclusive = true }
                     launchSingleTop = true
                 }
             },
             challengeType = challengeType,
+        )
+    }
+
+    composable(NavRoutes.ChallengeSummary) {
+        val context = LocalContext.current
+        val repo = remember(context) { CharacterRepository(context.applicationContext) }
+        ChallengeSummaryScreen(
+            repo = repo,
+            onBackToDinoHome = {
+                host.navController.navigate(NavRoutes.Chapters) {
+                    popUpTo(NavRoutes.ChallengeSummary) { inclusive = true }
+                    launchSingleTop = true
+                }
+            },
         )
     }
 
