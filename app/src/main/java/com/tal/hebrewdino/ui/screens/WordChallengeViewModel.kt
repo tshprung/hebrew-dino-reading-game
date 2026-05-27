@@ -4,8 +4,11 @@ import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.tal.hebrewdino.ui.domain.ChallengeType
+import com.tal.hebrewdino.ui.domain.HebrewSyllabus
 import com.tal.hebrewdino.ui.domain.WordChallenge
 import com.tal.hebrewdino.ui.domain.WordChallengeRepository
+import com.tal.hebrewdino.ui.domain.economy.StationRoundCompleted
+import com.tal.hebrewdino.ui.economy.RewardEngine
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -22,6 +25,7 @@ import kotlin.random.Random
 data class WordChallengeUiState(
     val challenges: List<WordChallenge>,
     val challengeType: ChallengeType,
+    val chapterIndex: Int,
     val index: Int,
     val selectedCorrectOption: String?,
     val wrongAttemptToken: Int,
@@ -37,12 +41,20 @@ data class WordChallengeUiState(
 
 class WordChallengeViewModel(
     private val challengeType: ChallengeType = ChallengeType.ODD_ONE_OUT,
-    private val rewardHandler: RewardHandler = RewardHandler { },
+    private val chapterIndex: Int = 0,
+    private val rewardEngine: RewardEngine,
+    private val stationRoundCompleted: StationRoundCompleted?,
 ) : ViewModel() {
+    private val chapterLetters: List<String> =
+        HebrewSyllabus.chapterOrNull(chapterIndex)?.letters
+            ?: HebrewSyllabus.chapters.first().letters
+
     private val challenges: List<WordChallenge> =
         when (challengeType) {
-            ChallengeType.LETTER_RECOGNITION -> WordChallengeRepository.letterRecognitionHebrewChapter1
-            ChallengeType.PHONEMIC_ISOLATION -> WordChallengeRepository.phonemicIsolationHebrewChapter1Station2
+            ChallengeType.LETTER_RECOGNITION ->
+                WordChallengeRepository.letterRecognitionForChapter(chapterLetters)
+            ChallengeType.PHONEMIC_ISOLATION ->
+                WordChallengeRepository.phonemicIsolationForChapter(chapterLetters)
             ChallengeType.ODD_ONE_OUT -> WordChallengeRepository.oddOneOutHebrew
             ChallengeType.RHYME -> WordChallengeRepository.rhymesHebrew
             ChallengeType.WORD_MATCH -> emptyList()
@@ -50,10 +62,30 @@ class WordChallengeViewModel(
         }
             .asSequence()
             .filter { it.challengeType == challengeType }
-            .filter { it.options.size == 4 && it.options.contains(it.correctOption) }
+            .filter {
+                when (challengeType) {
+                    ChallengeType.LETTER_RECOGNITION,
+                    ChallengeType.PHONEMIC_ISOLATION,
+                    -> it.options.size >= 3 && it.options.contains(it.correctOption)
+                    else -> it.options.size == 4 && it.options.contains(it.correctOption)
+                }
+            }
             .map { challenge ->
                 val seeded = Random(challenge.id.hashCode())
-                challenge.copy(options = challenge.options.shuffled(seeded))
+                when (challengeType) {
+                    ChallengeType.LETTER_RECOGNITION,
+                    ChallengeType.PHONEMIC_ISOLATION,
+                    ->
+                        challenge.copy(
+                            options =
+                                pickThreeShuffledOptions(
+                                    allOptions = challenge.options,
+                                    correctOption = challenge.correctOption,
+                                    rng = seeded,
+                                ),
+                        )
+                    else -> challenge.copy(options = challenge.options.shuffled(seeded))
+                }
             }
             .toList()
             .let { base ->
@@ -62,7 +94,7 @@ class WordChallengeViewModel(
                     when (challengeType) {
                         ChallengeType.LETTER_RECOGNITION,
                         ChallengeType.PHONEMIC_ISOLATION,
-                        -> 8
+                        -> WordChallengeRepository.LETTER_STATION_ROUNDS
                         else -> 5
                     }
                 if (base.size >= desired) {
@@ -80,6 +112,7 @@ class WordChallengeViewModel(
             WordChallengeUiState(
                 challenges = challenges,
                 challengeType = challengeType,
+                chapterIndex = chapterIndex,
                 index = 0,
                 selectedCorrectOption = null,
                 wrongAttemptToken = 0,
@@ -154,7 +187,7 @@ class WordChallengeViewModel(
                 )
             }
             viewModelScope.launch {
-                rewardHandler.onRoundComplete()
+                stationRoundCompleted?.let { rewardEngine.grantStationRoundCompleted(it) }
                 _finishEvents.tryEmit(Unit)
             }
         } else {
@@ -169,18 +202,53 @@ class WordChallengeViewModel(
         }
     }
 
-    fun interface RewardHandler {
-        suspend fun onRoundComplete()
+    private companion object {
+        fun pickThreeShuffledOptions(
+            allOptions: List<String>,
+            correctOption: String,
+            rng: Random,
+        ): List<String> {
+            val wrong = allOptions.filter { it != correctOption }.distinct()
+            val distractors = wrong.shuffled(rng).take(2)
+            val picked =
+                if (distractors.size >= 2) {
+                    distractors
+                } else {
+                    (distractors + wrong).distinct().take(2)
+                }
+            return (listOf(correctOption) + picked).shuffled(rng)
+        }
     }
 
     class Factory(
         private val challengeType: ChallengeType,
-        private val rewardHandler: RewardHandler = RewardHandler { },
+        private val chapterIndex: Int = 0,
+        private val rewardEngine: RewardEngine,
     ) : androidx.lifecycle.ViewModelProvider.Factory {
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             if (modelClass.isAssignableFrom(WordChallengeViewModel::class.java)) {
+                val stationId =
+                    when (challengeType) {
+                        ChallengeType.LETTER_RECOGNITION -> 1
+                        ChallengeType.PHONEMIC_ISOLATION -> 2
+                        else -> 0
+                    }
+                val completed =
+                    if (stationId > 0) {
+                        StationRoundCompleted(
+                            chapterIndex = chapterIndex,
+                            stationId = stationId,
+                        )
+                    } else {
+                        null
+                    }
                 @Suppress("UNCHECKED_CAST")
-                return WordChallengeViewModel(challengeType = challengeType, rewardHandler = rewardHandler) as T
+                return WordChallengeViewModel(
+                    challengeType = challengeType,
+                    chapterIndex = chapterIndex,
+                    rewardEngine = rewardEngine,
+                    stationRoundCompleted = completed,
+                ) as T
             }
             error("Unknown ViewModel class: $modelClass")
         }

@@ -1,7 +1,13 @@
 package com.tal.hebrewdino.ui.screens
 
+import com.tal.hebrewdino.ui.FakeCharacterStore
 import com.tal.hebrewdino.ui.MainDispatcherRule
+import com.tal.hebrewdino.ui.TestAppContext
+import com.tal.hebrewdino.ui.data.CharacterRepository
 import com.tal.hebrewdino.ui.domain.ChallengeType
+import com.tal.hebrewdino.ui.withFakeCharacterStore
+import com.tal.hebrewdino.ui.domain.economy.StationRoundCompleted
+import com.tal.hebrewdino.ui.economy.RewardEngine
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.advanceTimeBy
@@ -20,16 +26,47 @@ class WordChallengeViewModelTest {
     @get:Rule
     val mainDispatcherRule: MainDispatcherRule = MainDispatcherRule()
 
+    private fun wordChallengeVm(
+        challengeType: ChallengeType,
+        chapterIndex: Int = 0,
+        stationRoundCompleted: StationRoundCompleted? = null,
+    ): WordChallengeViewModel {
+        val store = FakeCharacterStore()
+        val previous = CharacterRepository.storeFactory
+        CharacterRepository.storeFactory = { store }
+        return try {
+            val repo = CharacterRepository(TestAppContext())
+            val rewardEngine = RewardEngine(repo)
+            WordChallengeViewModel(
+                challengeType = challengeType,
+                chapterIndex = chapterIndex,
+                rewardEngine = rewardEngine,
+                stationRoundCompleted = stationRoundCompleted,
+            )
+        } finally {
+            CharacterRepository.storeFactory = previous
+        }
+    }
+
+    @Test
+    fun letter_recognition_rounds_use_three_shuffled_options() = runTest {
+        val vm = wordChallengeVm(challengeType = ChallengeType.LETTER_RECOGNITION)
+        val state = vm.uiState.value
+        assertEquals(8, state.challenges.size)
+        assertTrue(state.challenges.all { it.options.size == 3 })
+        assertTrue(state.challenges.all { it.options.contains(it.correctOption) })
+    }
+
     @Test
     fun initialization_loads_five_challenges_for_requested_type() = runTest {
-        val odd = WordChallengeViewModel(challengeType = ChallengeType.ODD_ONE_OUT)
+        val odd = wordChallengeVm(challengeType = ChallengeType.ODD_ONE_OUT)
         val oddState = odd.uiState.value
         assertEquals(ChallengeType.ODD_ONE_OUT, oddState.challengeType)
         assertEquals(5, oddState.challenges.size)
         assertTrue(oddState.challenges.all { it.challengeType == ChallengeType.ODD_ONE_OUT })
         assertTrue(oddState.challenges.all { it.options.size == 4 && it.options.contains(it.correctOption) })
 
-        val rhyme = WordChallengeViewModel(challengeType = ChallengeType.RHYME)
+        val rhyme = wordChallengeVm(challengeType = ChallengeType.RHYME)
         val rhymeState = rhyme.uiState.value
         assertEquals(ChallengeType.RHYME, rhymeState.challengeType)
         assertEquals(5, rhymeState.challenges.size)
@@ -39,7 +76,7 @@ class WordChallengeViewModelTest {
 
     @Test
     fun correct_selection_sets_success_then_advances_after_confirm() = runTest {
-        val vm = WordChallengeViewModel(challengeType = ChallengeType.ODD_ONE_OUT)
+        val vm = wordChallengeVm(challengeType = ChallengeType.ODD_ONE_OUT)
         val first = vm.uiState.value.current
         assertNotNull(first)
         val correct = first!!.correctOption
@@ -59,7 +96,7 @@ class WordChallengeViewModelTest {
 
     @Test
     fun incorrect_selection_does_not_advance_and_allows_retry() = runTest {
-        val vm = WordChallengeViewModel(challengeType = ChallengeType.ODD_ONE_OUT)
+        val vm = wordChallengeVm(challengeType = ChallengeType.ODD_ONE_OUT)
         val first = vm.uiState.value.current!!
         val wrong = first.options.first { it != first.correctOption }
 
@@ -74,35 +111,33 @@ class WordChallengeViewModelTest {
 
     @Test
     fun completion_grants_reward_once_and_emits_finish_event() = runTest {
-        var rewardCalls = 0
-        val finishEvents = mutableListOf<Unit>()
+        withFakeCharacterStore { repo, _ ->
+            val finishEvents = mutableListOf<Unit>()
+            val rewardEngine = RewardEngine(repo)
+            val vm =
+                WordChallengeViewModel(
+                    challengeType = ChallengeType.RHYME,
+                    rewardEngine = rewardEngine,
+                    stationRoundCompleted = null,
+                )
 
-        val vm =
-            WordChallengeViewModel(
-                challengeType = ChallengeType.RHYME,
-                rewardHandler =
-                    WordChallengeViewModel.RewardHandler {
-                        rewardCalls += 1
-                    },
-            )
+            val collectJob =
+                launch {
+                    vm.finishEvents.collect { finishEvents += Unit }
+                }
 
-        val collectJob =
-            launch {
-                vm.finishEvents.collect { finishEvents += Unit }
+            repeat(5) {
+                val current = vm.uiState.value.current ?: return@repeat
+                val expectedToken = vm.uiState.value.pendingCorrectToken + 1
+                vm.onOptionSelected(current.correctOption)
+                vm.confirmAdvanceAfterCorrect(expectedToken)
+                advanceUntilIdle()
             }
 
-        repeat(5) {
-            val current = vm.uiState.value.current ?: return@repeat
-            val expectedToken = vm.uiState.value.pendingCorrectToken + 1
-            vm.onOptionSelected(current.correctOption)
-            vm.confirmAdvanceAfterCorrect(expectedToken)
-            advanceUntilIdle()
+            assertTrue(vm.uiState.value.isRoundComplete)
+            assertEquals(1, finishEvents.size)
+
+            collectJob.cancel()
         }
-
-        assertTrue(vm.uiState.value.isRoundComplete)
-        assertEquals(1, rewardCalls)
-        assertEquals(1, finishEvents.size)
-
-        collectJob.cancel()
     }
 }

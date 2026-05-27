@@ -1,77 +1,57 @@
 package com.tal.hebrewdino.ui.domain
 
 object WordChallengeRepository {
-    val letterRecognitionHebrewChapter1: List<WordChallenge> =
-        listOf(
-            WordChallenge(
-                id = "ltr_001",
-                questionText = "א",
-                options = listOf("א", "מ", "ל", "ס"),
-                correctOption = "א",
-                challengeType = ChallengeType.LETTER_RECOGNITION,
-                category = "זיהוי אות",
-            ),
-            WordChallenge(
-                id = "ltr_002",
-                questionText = "מ",
-                options = listOf("א", "מ", "ל", "ס"),
-                correctOption = "מ",
-                challengeType = ChallengeType.LETTER_RECOGNITION,
-                category = "זיהוי אות",
-            ),
-            WordChallenge(
-                id = "ltr_003",
-                questionText = "ל",
-                options = listOf("א", "מ", "ל", "ס"),
-                correctOption = "ל",
-                challengeType = ChallengeType.LETTER_RECOGNITION,
-                category = "זיהוי אות",
-            ),
-            WordChallenge(
-                id = "ltr_004",
-                questionText = "ס",
-                options = listOf("א", "מ", "ל", "ס"),
-                correctOption = "ס",
-                challengeType = ChallengeType.LETTER_RECOGNITION,
-                category = "זיהוי אות",
-            ),
+    const val LETTER_STATION_ROUNDS: Int = 8
+
+    fun letterRecognitionForChapter(letters: List<String>): List<WordChallenge> =
+        buildLetterChallenges(
+            letters = letters,
+            idPrefix = "ltr",
+            challengeType = ChallengeType.LETTER_RECOGNITION,
+            category = "זיהוי אות",
         )
 
-    val phonemicIsolationHebrewChapter1Station2: List<WordChallenge> =
-        listOf(
-            WordChallenge(
-                id = "ph_001",
-                questionText = "א",
-                options = listOf("א", "מ", "ל", "ס"),
-                correctOption = "א",
-                challengeType = ChallengeType.PHONEMIC_ISOLATION,
-                category = "בידוד צליל",
-            ),
-            WordChallenge(
-                id = "ph_002",
-                questionText = "מ",
-                options = listOf("א", "מ", "ל", "ס"),
-                correctOption = "מ",
-                challengeType = ChallengeType.PHONEMIC_ISOLATION,
-                category = "בידוד צליל",
-            ),
-            WordChallenge(
-                id = "ph_003",
-                questionText = "ל",
-                options = listOf("א", "מ", "ל", "ס"),
-                correctOption = "ל",
-                challengeType = ChallengeType.PHONEMIC_ISOLATION,
-                category = "בידוד צליל",
-            ),
-            WordChallenge(
-                id = "ph_004",
-                questionText = "ס",
-                options = listOf("א", "מ", "ל", "ס"),
-                correctOption = "ס",
-                challengeType = ChallengeType.PHONEMIC_ISOLATION,
-                category = "בידוד צליל",
-            ),
+    fun phonemicIsolationForChapter(letters: List<String>): List<WordChallenge> =
+        buildLetterChallenges(
+            letters = letters,
+            idPrefix = "ph",
+            challengeType = ChallengeType.PHONEMIC_ISOLATION,
+            category = "בידוד צליל",
         )
+
+    private fun buildLetterChallenges(
+        letters: List<String>,
+        idPrefix: String,
+        challengeType: ChallengeType,
+        category: String,
+    ): List<WordChallenge> {
+        val pool = letters.distinct().filter { it.isNotBlank() }
+        if (pool.isEmpty()) return emptyList()
+        val roundLetters =
+            buildList {
+                var i = 0
+                while (size < LETTER_STATION_ROUNDS) {
+                    add(pool[i % pool.size])
+                    i += 1
+                }
+            }.shuffled()
+        return roundLetters.mapIndexed { idx, letter ->
+            WordChallenge(
+                id = "${idPrefix}_ch_${pool.hashCode()}_$idx",
+                questionText = letter,
+                options = pool,
+                correctOption = letter,
+                challengeType = challengeType,
+                category = category,
+            )
+        }
+    }
+
+    val letterRecognitionHebrewChapter1: List<WordChallenge> =
+        letterRecognitionForChapter(HebrewSyllabus.chapters[0].letters)
+
+    val phonemicIsolationHebrewChapter1Station2: List<WordChallenge> =
+        phonemicIsolationForChapter(HebrewSyllabus.chapters[0].letters)
 
     val oddOneOutHebrew: List<WordChallenge> =
         listOf(

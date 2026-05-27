@@ -36,11 +36,12 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.tal.hebrewdino.R
 import com.tal.hebrewdino.ui.audio.AudioClips
 import com.tal.hebrewdino.ui.audio.VoicePlayer
-import com.tal.hebrewdino.ui.data.CharacterRepository
+import com.tal.hebrewdino.ui.economy.RewardEngine
 import com.tal.hebrewdino.ui.data.DinoCharacter
 import com.tal.hebrewdino.ui.layout.ScreenFit
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
+import androidx.compose.runtime.rememberCoroutineScope
 import kotlin.random.Random
 
 /** Random celebratory dino pose on the stage-complete screen (not a single static "nice" moment). */
@@ -76,7 +77,8 @@ fun RewardScreen(
     val lifecycleOwner = LocalLifecycleOwner.current
     val voice = remember { VoicePlayer(context = context) }
     var navigatedAway by remember(levelId) { mutableStateOf(false) }
-    val rewardRepo = remember(context) { CharacterRepository(context.applicationContext) }
+    val rewardEngine = remember(context) { RewardEngine.get(context.applicationContext) }
+    val rewardRepo = remember(context) { com.tal.hebrewdino.ui.data.CharacterRepository(context.applicationContext) }
     val selectedCharacter by rewardRepo.characterFlow.collectAsState(initial = DinoCharacter.DINO_GREEN)
     val dinoColorFilter =
         remember(selectedCharacter) {
@@ -86,7 +88,8 @@ fun RewardScreen(
                 null
             }
         }
-    val pendingRewardDelta by rewardRepo.pendingRewardFoodDeltaFlow.collectAsState(initial = 0)
+    val scope = rememberCoroutineScope()
+    val pendingEvent by rewardEngine.pendingRewardEvent.collectAsState(initial = null)
     var showRewardDelta by remember(levelId) { mutableStateOf(0) }
     val isCompactLandscapePhone = ScreenFit.isCompactLandscapePhone()
     val mascotRes =
@@ -128,10 +131,11 @@ fun RewardScreen(
         }
     }
 
-    LaunchedEffect(pendingRewardDelta, levelId) {
-        if (pendingRewardDelta > 0) {
-            showRewardDelta = pendingRewardDelta
-            rewardRepo.clearPendingRewardFoodDelta()
+    LaunchedEffect(pendingEvent?.eventId, levelId) {
+        val event = pendingEvent ?: return@LaunchedEffect
+        if (event.applesCount > 0) {
+            showRewardDelta = event.applesCount
+            rewardEngine.markPresented(event.eventId)
         }
     }
 

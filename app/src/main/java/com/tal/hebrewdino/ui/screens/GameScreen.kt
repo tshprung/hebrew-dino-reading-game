@@ -578,8 +578,12 @@ fun GameScreen(
             onComplete = onComplete,
             onLevelCompleteHook = { ChildGameAudioHooks.onLevelComplete() },
             grantFoodReward = { delta ->
-                rewardRepo.addFood(delta)
-                rewardRepo.setPendingRewardFoodDelta(delta)
+                com.tal.hebrewdino.ui.economy.RewardEngine.get(context).grant(
+                    com.tal.hebrewdino.ui.domain.economy.LegacyLevelFood(
+                        applesReward = delta,
+                        resetHunger = false,
+                    ),
+                )
             },
         )
     }

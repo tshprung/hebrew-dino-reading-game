@@ -6,14 +6,21 @@ import com.tal.hebrewdino.ui.domain.ChallengeType
 object NavRoutes {
     const val CharacterSelection = "character_selection"
     const val Opening = "opening"
+    const val IntroInstruction = "intro_instruction"
     const val Seasons = "seasons"
     const val Chapters = "chapters"
     const val ChapterSelect = "chapter_select"
+    const val ChapterIndexArg = "chapter"
     const val WordChallengeTypeArg = "type"
-    const val WordChallenge = "word_challenge?$WordChallengeTypeArg={$WordChallengeTypeArg}"
-    fun wordChallengeRoute(type: ChallengeType): String = "word_challenge?$WordChallengeTypeArg=${type.name}"
+    const val WordChallenge =
+        "word_challenge?$WordChallengeTypeArg={$WordChallengeTypeArg}&$ChapterIndexArg={$ChapterIndexArg}"
+    fun wordChallengeRoute(
+        type: ChallengeType,
+        chapterIndex: Int,
+    ): String = "word_challenge?$WordChallengeTypeArg=${type.name}&$ChapterIndexArg=$chapterIndex"
     const val ChallengeSummary = "challenge_summary"
-    const val FallingLetters = "falling_letters"
+    const val FallingLetters = "falling_letters?$ChapterIndexArg={$ChapterIndexArg}"
+    fun fallingLettersRoute(chapterIndex: Int): String = "falling_letters?$ChapterIndexArg=$chapterIndex"
     const val ParentalGate = "parental_gate"
     const val StoryIntro = "story_intro"
     const val ChapterLettersIntro = "chapter_letters_intro"

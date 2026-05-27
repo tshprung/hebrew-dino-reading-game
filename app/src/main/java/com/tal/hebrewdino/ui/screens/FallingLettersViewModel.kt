@@ -3,6 +3,9 @@ package com.tal.hebrewdino.ui.screens
 import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.tal.hebrewdino.ui.domain.HebrewSyllabus
+import com.tal.hebrewdino.ui.domain.economy.StationRoundCompleted
+import com.tal.hebrewdino.ui.economy.RewardEngine
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -37,20 +40,20 @@ data class FallingLettersUiState(
     val shakeToken: Int,
     val isComplete: Boolean,
     val inputsLocked: Boolean,
+    val roundBreakToken: Int,
 )
 
 class FallingLettersViewModel(
+    chapterLetters: List<String> = HebrewSyllabus.chapters[0].letters,
     private val rng: Random = Random.Default,
-    private val rewardHandler: RewardHandler = RewardHandler { },
+    private val rewardEngine: RewardEngine,
+    private val stationRoundCompleted: StationRoundCompleted,
     private val targetsPerRound: Int = 5,
 ) : ViewModel() {
     private val alphabet: List<String> =
-        listOf(
-            "א",
-            "ל",
-            "מ",
-            "ס",
-        )
+        chapterLetters.distinct().filter { it.isNotBlank() }.ifEmpty {
+            HebrewSyllabus.chapters[0].letters
+        }
     private val roundsTotal: Int = 3
     private val roundTargets: List<String> = alphabet.shuffled(rng).distinct().take(roundsTotal)
 
@@ -96,6 +99,7 @@ class FallingLettersViewModel(
             shakeToken = 0,
             isComplete = false,
             inputsLocked = false,
+            roundBreakToken = 0,
         )
     }
 
@@ -153,8 +157,8 @@ class FallingLettersViewModel(
                     afterCatch.copy(
                         letters = emptyList(),
                         inputsLocked = true,
+                        roundBreakToken = token,
                     )
-                _roundBreakEvents.tryEmit(token)
             } else {
                 viewModelScope.launch {
                     delay(160L)
@@ -165,6 +169,7 @@ class FallingLettersViewModel(
                             feedbackLetterId = null,
                             feedbackIsCorrect = null,
                             inputsLocked = false,
+                            roundBreakToken = 0,
                         )
                 }
             }
@@ -178,6 +183,7 @@ class FallingLettersViewModel(
                         feedbackLetterId = null,
                         feedbackIsCorrect = null,
                         inputsLocked = false,
+                        roundBreakToken = 0,
                     )
             }
         }
@@ -194,7 +200,7 @@ class FallingLettersViewModel(
             _uiState.value = state.copy(isComplete = true, inputsLocked = true)
             stopTicker()
             viewModelScope.launch {
-                rewardHandler.onRoundComplete()
+                rewardEngine.grantStationRoundCompleted(stationRoundCompleted)
                 _finishEvents.tryEmit(Unit)
             }
             return
@@ -213,6 +219,7 @@ class FallingLettersViewModel(
                 feedbackLetterId = null,
                 feedbackIsCorrect = null,
                 inputsLocked = false,
+                roundBreakToken = 0,
             )
     }
 
@@ -312,27 +319,11 @@ class FallingLettersViewModel(
     }
 
     private fun randomDistractorFor(targetLetter: String): String {
-        val pool =
-            when (targetLetter) {
-                "א" -> DistractorsAlef
-                "מ" -> DistractorsMem
-                "ל" -> DistractorsLamed
-                "ס" -> DistractorsSamekh
-                else -> alphabet.filter { it != targetLetter }.toTypedArray()
-            }
+        val pool = alphabet.filter { it != targetLetter }
+        if (pool.isEmpty()) return alphabet.firstOrNull() ?: targetLetter
         return pool[rng.nextInt(pool.size)]
     }
 
     private fun randomSpawnDelayMs(): Long = 220L + rng.nextInt(220)
 
-    fun interface RewardHandler {
-        suspend fun onRoundComplete()
-    }
-
-    private companion object {
-        private val DistractorsAlef: Array<String> = arrayOf("מ", "ל", "ס")
-        private val DistractorsMem: Array<String> = arrayOf("א", "ל", "ס")
-        private val DistractorsLamed: Array<String> = arrayOf("א", "מ", "ס")
-        private val DistractorsSamekh: Array<String> = arrayOf("א", "מ", "ל")
-    }
 }

@@ -14,9 +14,11 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.border
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -52,22 +54,28 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.tal.hebrewdino.R
 import com.tal.hebrewdino.ui.audio.SfxManager
 import com.tal.hebrewdino.ui.audio.TextToSpeechManager
-import com.tal.hebrewdino.ui.data.CharacterRepository
+import com.tal.hebrewdino.ui.economy.RewardEngine
 import com.tal.hebrewdino.ui.domain.ChallengeType
+import com.tal.hebrewdino.ui.domain.hebrewLetterNameForSpeech
+import com.tal.hebrewdino.ui.domain.letterNameSpokenForTts
+import com.tal.hebrewdino.ui.domain.phonemeForDisplay
+import com.tal.hebrewdino.ui.domain.phonemeSpokenForTts
+import com.tal.hebrewdino.ui.domain.requireHebrewLetterNameForTts
+import com.tal.hebrewdino.ui.domain.targetSuccessSpeech
 import com.tal.hebrewdino.ui.layout.topChromeInsetsPadding
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlin.random.Random
 
 @Composable
 fun WordChallengeScreen(
     onExitToHome: () -> Unit,
     onRoundCompleteToSummary: () -> Unit,
     challengeType: ChallengeType = ChallengeType.ODD_ONE_OUT,
+    chapterIndex: Int = 0,
+    rewardEngine: RewardEngine,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
-    val repo = remember(context) { CharacterRepository(context.applicationContext) }
     val sfx = remember(context) { SfxManager(context.applicationContext) }
     val tts = remember(context) { TextToSpeechManager.get(context.applicationContext) }
     val scope = rememberCoroutineScope()
@@ -77,29 +85,14 @@ fun WordChallengeScreen(
             sfx.release()
         }
     }
-    DisposableEffect(tts) {
-        onDispose {
-            tts.stop()
-        }
-    }
-
     val viewModel: WordChallengeViewModel =
         viewModel(
             factory =
-                remember(challengeType, repo) {
+                remember(challengeType, chapterIndex, rewardEngine) {
                     WordChallengeViewModel.Factory(
                         challengeType = challengeType,
-                        rewardHandler = WordChallengeViewModel.RewardHandler {
-                            if (challengeType == ChallengeType.LETTER_RECOGNITION) {
-                                repo.markChapter1StationCompleted(1)
-                            }
-                            if (challengeType == ChallengeType.PHONEMIC_ISOLATION) {
-                                repo.markChapter1StationCompleted(2)
-                            }
-                            repo.setFullUntilAtMs(0L)
-                            repo.addFood(3)
-                            repo.setPendingRewardFoodDelta(3)
-                        },
+                        chapterIndex = chapterIndex,
+                        rewardEngine = rewardEngine,
                     )
                 },
         )
@@ -107,7 +100,6 @@ fun WordChallengeScreen(
 
     LaunchedEffect(viewModel) {
         viewModel.finishEvents.collect {
-            tts.stop()
             onRoundCompleteToSummary()
         }
     }
@@ -129,54 +121,82 @@ fun WordChallengeScreen(
 
     val targetLetterSymbol = current?.questionText.orEmpty().trim().firstOrNull()?.toString().orEmpty()
 
-    val voiceInstructionText =
-        when (state.challengeType) {
-            ChallengeType.LETTER_RECOGNITION -> {
-                val name = hebrewLetterNameForSpeech(targetLetterSymbol) ?: targetLetterSymbol
-                if (name.isBlank()) "איפה האות?" else "איפה האות $name?"
-            }
-            ChallengeType.PHONEMIC_ISOLATION -> {
-                val name = hebrewLetterNameForSpeech(targetLetterSymbol) ?: targetLetterSymbol
-                if (name.isBlank()) "איפה האות?" else "איפה האות $name?"
-            }
-            ChallengeType.RHYME ->
-                "מצאו את המילה המתחרזת עם: ${current?.questionText.orEmpty()}".trim()
-            ChallengeType.ODD_ONE_OUT ->
-                buildOddOneOutInstruction(
-                    options = options,
-                    correctOption = correctOption,
-                )
-            else -> current?.questionText.orEmpty().trim()
-        }
-
     val topInstructionText =
         when (state.challengeType) {
-            ChallengeType.LETTER_RECOGNITION,
-            ChallengeType.PHONEMIC_ISOLATION,
-            -> "איפה האות?"
-            else -> voiceInstructionText
+            ChallengeType.LETTER_RECOGNITION -> "איפה האות?"
+            ChallengeType.PHONEMIC_ISOLATION -> "חַפְּשׂוּ אֶת הַצְּלִיל..."
+            else -> ""
         }
 
-    var lastSpokenQuestionNumber by remember { mutableIntStateOf(0) }
-    LaunchedEffect(state.questionNumber, current?.questionText) {
-        if (current == null) return@LaunchedEffect
-        if (state.questionNumber == lastSpokenQuestionNumber) return@LaunchedEffect
-        lastSpokenQuestionNumber = state.questionNumber
-        val txt = voiceInstructionText
-        if (txt.isNotBlank()) tts.speak(txt)
+    val targetBadgeText =
+        when (state.challengeType) {
+            ChallengeType.PHONEMIC_ISOLATION -> phonemeForDisplay(targetLetterSymbol).ifBlank { targetLetterSymbol }
+            ChallengeType.LETTER_RECOGNITION -> targetLetterSymbol
+            else -> null
+        }
+
+    var replayInstructionEpoch by remember { mutableIntStateOf(0) }
+    val requestInstructionReplay = {
+        if (interactionEnabled) replayInstructionEpoch += 1
+    }
+    val bumpInstructionActivity =
+        rememberInstructionIdleReplay(
+            enabled = interactionEnabled,
+            resetKey = state.index,
+            onReplay = requestInstructionReplay,
+        )
+    val currentQuestionIndex = state.index
+    LaunchedEffect(currentQuestionIndex, state.challengeType) {
+        bumpInstructionActivity()
+        val question = state.challenges.getOrNull(currentQuestionIndex) ?: return@LaunchedEffect
+        val letter = question.questionText.trim().firstOrNull()?.toString().orEmpty()
+        val txt = voiceInstructionForQuestion(state.challengeType, question, letter)
+        if (txt.isNotBlank()) tts.speakFully(txt)
+    }
+
+    LaunchedEffect(replayInstructionEpoch) {
+        if (replayInstructionEpoch == 0) return@LaunchedEffect
+        val question = state.challenges.getOrNull(currentQuestionIndex) ?: return@LaunchedEffect
+        val letter = question.questionText.trim().firstOrNull()?.toString().orEmpty()
+        val txt = voiceInstructionForQuestion(state.challengeType, question, letter)
+        if (txt.isNotBlank()) tts.speakFully(txt, navigationSettleMs = 80L)
+    }
+
+    LaunchedEffect(state.wrongAttemptToken, state.lastWrongOption) {
+        val wrong = state.lastWrongOption?.trim().orEmpty()
+        if (wrong.isBlank() || state.wrongAttemptToken == 0) return@LaunchedEffect
+        if (state.challengeType != ChallengeType.LETTER_RECOGNITION &&
+            state.challengeType != ChallengeType.PHONEMIC_ISOLATION
+        ) {
+            return@LaunchedEffect
+        }
+        val spoken =
+            when (state.challengeType) {
+                ChallengeType.PHONEMIC_ISOLATION ->
+                    phonemeSpokenForTts(wrong).ifBlank { wrong }
+                else -> letterNameSpokenForTts(wrong).ifBlank { wrong }
+            }
+        tts.interruptAndSpeak(spoken)
+    }
+
+    LaunchedEffect(state.pendingCorrectToken, state.selectedCorrectOption) {
+        val selected = state.selectedCorrectOption?.takeIf { it.isNotBlank() } ?: return@LaunchedEffect
+        if (state.isRoundComplete || state.pendingCorrectToken == 0) return@LaunchedEffect
+        val question = state.challenges.getOrNull(state.index) ?: return@LaunchedEffect
+        val targetLetter = question.questionText.trim().firstOrNull()?.toString().orEmpty()
+        val expectedToken = state.pendingCorrectToken
+        val reinforcement = targetSuccessSpeech(state.challengeType, targetLetter)
+        tts.speakFullyThen(reinforcement, navigationSettleMs = 80L) {
+            scope.launch {
+                viewModel.confirmAdvanceAfterCorrect(expectedToken)
+            }
+        }
     }
 
     WordChallengeContent(
         challengeType = state.challengeType,
         instructionText = topInstructionText,
-        targetLetterSymbol =
-            if (state.challengeType == ChallengeType.LETTER_RECOGNITION ||
-                state.challengeType == ChallengeType.PHONEMIC_ISOLATION
-            ) {
-                targetLetterSymbol
-            } else {
-                null
-            },
+        targetBadgeText = targetBadgeText,
         options = options,
         correctOption = correctOption,
         selectedCorrectOption = state.selectedCorrectOption,
@@ -185,40 +205,23 @@ fun WordChallengeScreen(
         questionNumber = state.questionNumber,
         totalQuestions = state.total,
         showEarnedReward = false,
-        onExit = {
-            tts.stop()
-            onExitToHome()
+        onExit = onExitToHome,
+        onReplayInstruction = {
+            bumpInstructionActivity()
+            requestInstructionReplay()
         },
-        onReplayInstruction = { if (interactionEnabled) tts.speak(voiceInstructionText) },
         onOptionSelected = { option ->
             if (!interactionEnabled) return@WordChallengeContent
+            bumpInstructionActivity()
             localTapLocked = true
             val correct = correctOption
             val isCorrectNow = !correct.isNullOrBlank() && option.isNotBlank() && option == correct
-            val expectedToken = if (isCorrectNow) state.pendingCorrectToken + 1 else null
             if (state.selectedCorrectOption == null && option.isNotBlank() && !correct.isNullOrBlank()) {
                 scope.launch {
                     if (option == correct) sfx.playCorrect() else sfx.playWrong()
                 }
             }
             viewModel.onOptionSelected(option)
-            if (isCorrectNow && expectedToken != null && state.selectedCorrectOption == null) {
-                scope.launch {
-                    val praise = PraisePhrases[Random.nextInt(PraisePhrases.size)]
-                    tts.speakAndWait(praise)
-                    viewModel.confirmAdvanceAfterCorrect(expectedToken)
-                }
-            } else if (option.isNotBlank() && !correct.isNullOrBlank() && state.selectedCorrectOption == null) {
-                val spoken =
-                    if (state.challengeType == ChallengeType.LETTER_RECOGNITION ||
-                        state.challengeType == ChallengeType.PHONEMIC_ISOLATION
-                    ) {
-                        hebrewLetterNameForSpeech(option.trim()) ?: option
-                    } else {
-                        option
-                    }
-                tts.speak(spoken)
-            }
         },
         interactionEnabled = interactionEnabled,
         modifier = modifier,
@@ -256,38 +259,39 @@ private fun firstLetterOrNull(word: String): String? {
     return trimmed.first().toString()
 }
 
-private fun hebrewLetterNameForSpeech(letter: String): String? =
-    when (letter) {
-        "א" -> "אָלֶף"
-        "ב" -> "בֵּית"
-        "ג" -> "גִּימֶל"
-        "ד" -> "דָּלֶת"
-        "ה" -> "הֵא"
-        "ו" -> "וָו"
-        "ז" -> "זַיִן"
-        "ח" -> "חֵית"
-        "ט" -> "טֵית"
-        "י" -> "יוֹד"
-        "כ", "ך" -> "כָּף"
-        "ל" -> "לָמֶד"
-        "מ", "ם" -> "מֵם"
-        "נ", "ן" -> "נוּן"
-        "ס" -> "סָמֶךְ"
-        "ע" -> "עַיִן"
-        "פ", "ף" -> "פֵּא"
-        "צ", "ץ" -> "צַדִּי"
-        "ק" -> "קוּף"
-        "ר" -> "רֵישׁ"
-        "ש" -> "שִׁין"
-        "ת" -> "תָּו"
-        else -> null
+private fun voiceInstructionForQuestion(
+    challengeType: ChallengeType,
+    question: com.tal.hebrewdino.ui.domain.WordChallenge,
+    letter: String,
+): String =
+    when (challengeType) {
+        ChallengeType.LETTER_RECOGNITION -> {
+            val name = requireHebrewLetterNameForTts(letter)
+            "איפה האות $name?"
+        }
+        ChallengeType.PHONEMIC_ISOLATION -> {
+            val phoneme = phonemeSpokenForTts(letter)
+            if (phoneme.isBlank()) {
+                "חַפְּשׂוּ אֶת הַצְּלִיל"
+            } else {
+                "חַפְּשׂוּ אֶת הַצְּלִיל, $phoneme"
+            }
+        }
+        ChallengeType.RHYME ->
+            "מצאו את המילה המתחרזת עם: ${question.questionText}".trim()
+        ChallengeType.ODD_ONE_OUT ->
+            buildOddOneOutInstruction(
+                options = question.options,
+                correctOption = question.correctOption,
+            )
+        else -> question.questionText.trim()
     }
 
 @Composable
 private fun WordChallengeContent(
     challengeType: ChallengeType,
     instructionText: String,
-    targetLetterSymbol: String?,
+    targetBadgeText: String?,
     options: List<String>,
     correctOption: String?,
     selectedCorrectOption: String?,
@@ -320,96 +324,175 @@ private fun WordChallengeContent(
                     .padding(top = 10.dp, start = 12.dp, end = 12.dp),
         )
 
-        Column(
+        BoxWithConstraints(
             modifier =
                 Modifier
                     .fillMaxSize()
                     .padding(horizontal = 18.dp, vertical = 16.dp),
-            verticalArrangement = Arrangement.SpaceBetween,
-            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Spacer(modifier = Modifier.height(56.dp))
+            val topReserved = 44.dp
+            val safeH = (maxHeight - topReserved).coerceAtLeast(220.dp)
+            val headerH = (safeH * 0.30f).coerceAtLeast(100.dp).coerceAtMost(132.dp)
+            val gridH = (safeH - headerH).coerceAtLeast(safeH * 0.70f)
+            val compactHeader =
+                challengeType == ChallengeType.LETTER_RECOGNITION ||
+                    challengeType == ChallengeType.PHONEMIC_ISOLATION
 
-            Surface(
-                shape = RoundedCornerShape(18.dp),
-                color = Color.Black.copy(alpha = 0.22f),
-                tonalElevation = 0.dp,
-                shadowElevation = 0.dp,
-                modifier = Modifier.fillMaxWidth(),
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                    verticalAlignment = Alignment.CenterVertically,
+                Spacer(modifier = Modifier.height(topReserved))
+
+                Surface(
+                    shape = RoundedCornerShape(16.dp),
+                    color = Color.Black.copy(alpha = 0.22f),
+                    tonalElevation = 0.dp,
+                    shadowElevation = 0.dp,
+                    modifier = Modifier.fillMaxWidth().height(headerH),
                 ) {
-                    Text(
-                        text = rtl(instructionText),
-                        style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Black),
-                        color = Color.White,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.weight(1f),
-                    )
-                    Surface(
-                        onClick = onReplayInstruction,
-                        shape = RoundedCornerShape(999.dp),
-                        color = Color.White.copy(alpha = 0.14f),
-                        tonalElevation = 0.dp,
-                        shadowElevation = 0.dp,
-                        modifier = Modifier.height(44.dp),
-                    ) {
-                        Box(
-                            modifier = Modifier.padding(horizontal = 14.dp),
-                            contentAlignment = Alignment.Center,
-                        ) {
+                    Box(modifier = Modifier.fillMaxSize().padding(horizontal = 10.dp, vertical = 6.dp)) {
+                        if (compactHeader) {
+                            Column(
+                                modifier =
+                                    Modifier
+                                        .fillMaxSize()
+                                        .padding(end = 40.dp)
+                                        .clickable(onClick = onReplayInstruction),
+                                verticalArrangement = Arrangement.Center,
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                            ) {
+                                Text(
+                                    text = rtl(instructionText),
+                                    style =
+                                        MaterialTheme.typography.titleMedium.copy(
+                                            fontWeight = FontWeight.Black,
+                                            fontSize = 17.sp,
+                                        ),
+                                    color = Color.White,
+                                    textAlign = TextAlign.Center,
+                                    maxLines = 2,
+                                )
+                                if (!targetBadgeText.isNullOrBlank()) {
+                                    Spacer(modifier = Modifier.height(6.dp))
+                                    Box(
+                                        modifier =
+                                            Modifier
+                                                .size(76.dp)
+                                                .background(
+                                                    brush =
+                                                        Brush.radialGradient(
+                                                            colors =
+                                                                listOf(
+                                                                    Color(0xFFFFE27A),
+                                                                    Color(0xFFFFB82E),
+                                                                    Color(0xFFFF9A1A),
+                                                                ),
+                                                        ),
+                                                    shape = CircleShape,
+                                                )
+                                                .border(3.dp, Color.White.copy(alpha = 0.9f), CircleShape),
+                                        contentAlignment = Alignment.Center,
+                                    ) {
+                                        Text(
+                                            text = rtl(targetBadgeText),
+                                            style =
+                                                MaterialTheme.typography.displaySmall.copy(
+                                                    fontWeight = FontWeight.Black,
+                                                    fontSize =
+                                                        if (challengeType == ChallengeType.PHONEMIC_ISOLATION) {
+                                                            40.sp
+                                                        } else {
+                                                            44.sp
+                                                        },
+                                                ),
+                                            color = Color(0xFF0B2B3D),
+                                            textAlign = TextAlign.Center,
+                                        )
+                                    }
+                                }
+                            }
+                        } else {
                             Text(
-                                text = "🔊",
-                                style = MaterialTheme.typography.titleLarge,
+                                text = rtl(instructionText),
+                                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black),
                                 color = Color.White,
                                 textAlign = TextAlign.Center,
+                                modifier =
+                                    Modifier
+                                        .align(Alignment.Center)
+                                        .clickable(onClick = onReplayInstruction)
+                                        .padding(horizontal = 8.dp, vertical = 4.dp),
                             )
+                        }
+                        Surface(
+                            onClick = onReplayInstruction,
+                            shape = RoundedCornerShape(999.dp),
+                            color = Color.White.copy(alpha = 0.14f),
+                            tonalElevation = 0.dp,
+                            shadowElevation = 0.dp,
+                            modifier =
+                                Modifier
+                                    .align(Alignment.CenterEnd)
+                                    .height(34.dp),
+                        ) {
+                            Box(
+                                modifier = Modifier.padding(horizontal = 10.dp),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Text(
+                                    text = "🔊",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = Color.White,
+                                    textAlign = TextAlign.Center,
+                                )
+                            }
                         }
                     }
                 }
-            }
 
-            if (!targetLetterSymbol.isNullOrBlank()) {
-                Surface(
-                    shape = RoundedCornerShape(24.dp),
-                    color = Color.White.copy(alpha = 0.92f),
-                    border = BorderStroke(4.dp, Color(0xFF0B2B3D).copy(alpha = 0.22f)),
-                    tonalElevation = 0.dp,
-                    shadowElevation = 0.dp,
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .heightIn(min = 104.dp, max = 168.dp)
-                            .padding(top = 10.dp),
-                ) {
-                    Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                        Text(
-                            text = rtl(targetLetterSymbol),
-                            style = MaterialTheme.typography.displayLarge.copy(
-                                fontWeight = FontWeight.Black,
-                                fontSize = 96.sp,
-                            ),
-                            color = Color(0xFF0B2B3D),
-                            textAlign = TextAlign.Center,
+                val gridModifier = Modifier.fillMaxWidth().height(gridH)
+                when (challengeType) {
+                    ChallengeType.LETTER_RECOGNITION -> {
+                        Station1ThreeCards(
+                            options = options,
+                            correctOption = correctOption,
+                            selectedCorrectOption = selectedCorrectOption,
+                            wrongAttemptToken = wrongAttemptToken,
+                            lastWrongOption = lastWrongOption,
+                            onOptionSelected = onOptionSelected,
+                            interactionEnabled = interactionEnabled,
+                            modifier = gridModifier,
+                        )
+                    }
+                    ChallengeType.PHONEMIC_ISOLATION -> {
+                        Station2Bubbles(
+                            options = options,
+                            correctOption = correctOption,
+                            selectedCorrectOption = selectedCorrectOption,
+                            wrongAttemptToken = wrongAttemptToken,
+                            lastWrongOption = lastWrongOption,
+                            onOptionSelected = onOptionSelected,
+                            interactionEnabled = interactionEnabled,
+                            modifier = gridModifier,
+                        )
+                    }
+                    else -> {
+                        OptionsGrid(
+                            challengeType = challengeType,
+                            options = options,
+                            correctOption = correctOption,
+                            selectedCorrectOption = selectedCorrectOption,
+                            wrongAttemptToken = wrongAttemptToken,
+                            lastWrongOption = lastWrongOption,
+                            onOptionSelected = onOptionSelected,
+                            interactionEnabled = interactionEnabled,
+                            modifier = Modifier.fillMaxSize(),
                         )
                     }
                 }
             }
-
-            OptionsGrid(
-                challengeType = challengeType,
-                options = options,
-                correctOption = correctOption,
-                selectedCorrectOption = selectedCorrectOption,
-                wrongAttemptToken = wrongAttemptToken,
-                lastWrongOption = lastWrongOption,
-                onOptionSelected = onOptionSelected,
-                interactionEnabled = interactionEnabled,
-                modifier = Modifier.fillMaxWidth(),
-            )
         }
 
         if (showEarnedReward) {
@@ -431,6 +514,169 @@ private fun WordChallengeContent(
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
                 )
             }
+        }
+    }
+}
+
+private fun padOptionsToThree(options: List<String>): List<String> =
+    options + List((3 - options.size).coerceAtLeast(0)) { "" }
+
+@Composable
+private fun Station1ThreeCards(
+    options: List<String>,
+    correctOption: String?,
+    selectedCorrectOption: String?,
+    wrongAttemptToken: Int,
+    lastWrongOption: String?,
+    onOptionSelected: (String) -> Unit,
+    interactionEnabled: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    val three = padOptionsToThree(options)
+    val globalEnabled = interactionEnabled && selectedCorrectOption == null
+    BoxWithConstraints(modifier = modifier) {
+        val cardH = minOf(maxHeight, 156.dp)
+        Row(
+            modifier = Modifier.fillMaxSize(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            for (i in 0..2) {
+                val text = three[i]
+                OptionCard(
+                    challengeType = ChallengeType.LETTER_RECOGNITION,
+                    text = text,
+                    isCorrect = text.isNotEmpty() && text == correctOption,
+                    isSelectedCorrect = text.isNotEmpty() && text == selectedCorrectOption,
+                    shouldShake = text.isNotEmpty() && text == lastWrongOption,
+                    wrongAttemptToken = wrongAttemptToken,
+                    enabled = text.isNotEmpty() && globalEnabled,
+                    onClick = { onOptionSelected(text) },
+                    modifier = Modifier.weight(1f).height(cardH),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun Station2Bubbles(
+    options: List<String>,
+    correctOption: String?,
+    selectedCorrectOption: String?,
+    wrongAttemptToken: Int,
+    lastWrongOption: String?,
+    onOptionSelected: (String) -> Unit,
+    interactionEnabled: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    val three = padOptionsToThree(options)
+    val globalEnabled = interactionEnabled && selectedCorrectOption == null
+    BoxWithConstraints(modifier = modifier) {
+        val size = minOf(maxHeight, (maxWidth - 16.dp) / 3f).coerceAtLeast(72.dp).coerceAtMost(120.dp)
+        Row(
+            modifier = Modifier.fillMaxSize(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            for (i in 0..2) {
+                val text = three[i]
+                BubbleOption(
+                    text = text,
+                    index = i,
+                    isCorrect = text.isNotEmpty() && text == correctOption,
+                    isSelectedCorrect = text.isNotEmpty() && text == selectedCorrectOption,
+                    shouldShake = text.isNotEmpty() && text == lastWrongOption,
+                    wrongAttemptToken = wrongAttemptToken,
+                    enabled = text.isNotEmpty() && globalEnabled,
+                    onClick = { onOptionSelected(text) },
+                    modifier = Modifier.size(size),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun BubbleOption(
+    text: String,
+    index: Int,
+    isCorrect: Boolean,
+    isSelectedCorrect: Boolean,
+    shouldShake: Boolean,
+    wrongAttemptToken: Int,
+    enabled: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val shakeX = remember { Animatable(0f) }
+    val successScale = remember { Animatable(1f) }
+    LaunchedEffect(shouldShake, wrongAttemptToken) {
+        if (!shouldShake) return@LaunchedEffect
+        shakeX.snapTo(0f)
+        shakeX.animateTo(-10f, tween(40))
+        shakeX.animateTo(10f, tween(70))
+        shakeX.animateTo(-7f, tween(60))
+        shakeX.animateTo(7f, tween(60))
+        shakeX.animateTo(0f, tween(50))
+    }
+    LaunchedEffect(isSelectedCorrect) {
+        if (!isSelectedCorrect) return@LaunchedEffect
+        successScale.snapTo(1f)
+        successScale.animateTo(1.12f, tween(130))
+        successScale.animateTo(1.04f, tween(120))
+    }
+
+    val colors =
+        remember(index, isSelectedCorrect) {
+            val base =
+                when (index % 3) {
+                    0 -> listOf(Color(0xFF7EE7FF), Color(0xFF3DBBFF))
+                    1 -> listOf(Color(0xFFFFC46B), Color(0xFFFF7AA5))
+                    else -> listOf(Color(0xFFA8FFB9), Color(0xFF4CE8A6))
+                }
+            if (isSelectedCorrect) {
+                listOf(Color(0xFFB6F2C1), Color(0xFF2DB86E))
+            } else {
+                base
+            }
+        }
+
+    Surface(
+        shape = CircleShape,
+        color = Color.Transparent,
+        tonalElevation = 0.dp,
+        shadowElevation = 0.dp,
+        modifier =
+            modifier
+                .graphicsLayer {
+                    translationX = shakeX.value
+                    scaleX = successScale.value
+                    scaleY = successScale.value
+                },
+    ) {
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .then(
+                        if (isSelectedCorrect) {
+                            Modifier.border(4.dp, Color(0xFF2DB86E), CircleShape)
+                        } else {
+                            Modifier
+                        },
+                    )
+                    .background(brush = Brush.radialGradient(colors = colors), shape = CircleShape)
+                    .then(if (enabled) Modifier.clickable(onClick = onClick) else Modifier)
+                    .padding(8.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text = rtl(text),
+                style = MaterialTheme.typography.displaySmall.copy(fontWeight = FontWeight.Black, fontSize = 48.sp),
+                color = Color(0xFF0B2B3D),
+                textAlign = TextAlign.Center,
+            )
         }
     }
 }
@@ -606,11 +852,15 @@ private fun OptionCard(
     }
 
     val flashAlpha = remember { Animatable(0f) }
+    val successScale = remember { Animatable(1f) }
     LaunchedEffect(isSelectedCorrect) {
         if (!isSelectedCorrect) return@LaunchedEffect
         flashAlpha.snapTo(0.0f)
+        successScale.snapTo(1f)
+        successScale.animateTo(1.1f, tween(120))
         flashAlpha.animateTo(0.55f, tween(90))
         flashAlpha.animateTo(0.0f, tween(190))
+        successScale.animateTo(1.04f, tween(140))
     }
 
     val baseColors =
@@ -628,24 +878,31 @@ private fun OptionCard(
         }
 
     Surface(
-        shape = RoundedCornerShape(18.dp),
+        shape = RoundedCornerShape(14.dp),
         color = Color.Transparent,
         tonalElevation = 0.dp,
         shadowElevation = 0.dp,
         modifier =
             modifier
                 .graphicsLayer { translationX = shakeX.value }
-                .scale(if (isSelectedCorrect) 1.02f else 1f),
+                .scale(successScale.value),
     ) {
         Box(
             modifier =
                 Modifier
                     .fillMaxSize()
+                    .then(
+                        if (isSelectedCorrect) {
+                            Modifier.border(4.dp, Color(0xFF2DB86E), RoundedCornerShape(14.dp))
+                        } else {
+                            Modifier
+                        },
+                    )
                     .background(
                         brush = Brush.verticalGradient(colors = baseColors),
-                        shape = RoundedCornerShape(18.dp),
+                        shape = RoundedCornerShape(14.dp),
                     )
-                    .background(Color.Black.copy(alpha = 0.06f), shape = RoundedCornerShape(18.dp))
+                    .background(Color.Black.copy(alpha = 0.04f), shape = RoundedCornerShape(14.dp))
                     .then(
                         if (enabled) {
                             Modifier.clickable(onClick = onClick)
@@ -654,14 +911,14 @@ private fun OptionCard(
                         },
                     )
                     .padding(
-                        horizontal = 12.dp,
+                        horizontal = 8.dp,
                         vertical =
                             if (challengeType == ChallengeType.LETTER_RECOGNITION ||
                                 challengeType == ChallengeType.PHONEMIC_ISOLATION
                             ) {
-                                6.dp
+                                4.dp
                             } else {
-                                10.dp
+                                8.dp
                             },
                     ),
             contentAlignment = Alignment.Center,
@@ -670,7 +927,7 @@ private fun OptionCard(
                 if (challengeType == ChallengeType.LETTER_RECOGNITION || challengeType == ChallengeType.PHONEMIC_ISOLATION) {
                     MaterialTheme.typography.displaySmall.copy(
                         fontWeight = FontWeight.Black,
-                        fontSize = 56.sp,
+                        fontSize = 52.sp,
                     )
                 } else {
                     MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black)
@@ -695,9 +952,3 @@ private fun OptionCard(
 
 private fun rtl(text: String): String = "\u200F$text"
 
-private val PraisePhrases: Array<String> =
-    arrayOf(
-        "כל הכבוד!",
-        "יפה מאוד!",
-        "הצלחת!",
-    )

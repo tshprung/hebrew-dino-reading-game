@@ -26,19 +26,22 @@ import com.tal.hebrewdino.ui.audio.SoundPoolPlayer
 import com.tal.hebrewdino.ui.audio.VoicePlayer
 import com.tal.hebrewdino.ui.data.AudioPrefs
 import com.tal.hebrewdino.ui.data.CharacterRepository
+import com.tal.hebrewdino.ui.data.StoryNarrationPrefs
+import com.tal.hebrewdino.ui.economy.RewardEngine
 import com.tal.hebrewdino.ui.data.CharacterPrefs
 import com.tal.hebrewdino.ui.domain.ChallengeType
+import com.tal.hebrewdino.ui.domain.HebrewSyllabus
 import com.tal.hebrewdino.ui.screens.CharacterSelectionScreen
 import com.tal.hebrewdino.ui.screens.ChallengeSummaryScreen
 import com.tal.hebrewdino.ui.screens.DinoHomeScreen
 import com.tal.hebrewdino.ui.screens.DinoHomeViewModel
 import com.tal.hebrewdino.ui.screens.FallingLettersScreen
+import com.tal.hebrewdino.ui.screens.IntroInstructionScreen
+import com.tal.hebrewdino.ui.screens.OpeningScreen
 import com.tal.hebrewdino.ui.screens.ParentalGateScreen
-import com.tal.hebrewdino.ui.screens.SeasonsScreen
 import com.tal.hebrewdino.ui.screens.StationSelectScreen
 import com.tal.hebrewdino.ui.screens.WordChallengeScreen
 import com.tal.hebrewdino.ui.audio.TextToSpeechManager
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 internal object AppAnalytics {
@@ -92,18 +95,19 @@ internal object AppAnalytics {
 
 private val BackgroundMusicEligibleRoutes: Set<String> =
     setOf(
-        NavRoutes.Seasons,
+        NavRoutes.Opening,
+        NavRoutes.IntroInstruction,
         NavRoutes.Chapters,
         NavRoutes.ChapterSelect,
     )
 
 private const val BgmMenuAssetPath: String = "audio/bgm_menu.mp3"
 private const val BgmSeason1AssetPath: String = "audio/bgm_season1.mp3"
-private const val BgmSeason2AssetPath: String = "audio/bgm_season2.mp3"
 
 private fun bgmAssetPathForRoute(route: String?): String =
     when (route) {
-        NavRoutes.Seasons,
+        NavRoutes.Opening,
+        NavRoutes.IntroInstruction,
         NavRoutes.Chapters,
         NavRoutes.ChapterSelect,
         -> BgmMenuAssetPath
@@ -117,24 +121,28 @@ fun AppNav() {
     val lifecycleOwner = LocalLifecycleOwner.current
     val scope = rememberCoroutineScope()
     val characterRepo = remember(context) { CharacterRepository(context.applicationContext) }
+    val rewardEngine = remember(context) { RewardEngine.get(context.applicationContext) }
     val progressPrefs = remember(context) { com.tal.hebrewdino.ui.data.ProgressPrefs(context.applicationContext) }
     val characterPrefs = remember(context) { CharacterPrefs(context.applicationContext) }
     val characterChosen by characterPrefs.characterSelectedOnceFlow.collectAsState(initial = false)
     val audioPrefs = remember(context) { AudioPrefs(context.applicationContext) }
     val backgroundMusicEnabled by audioPrefs.backgroundMusicEnabledFlow.collectAsState(initial = true)
     val bgMusic = remember { BackgroundMusicPlayer(context.applicationContext) }
+    val tts = remember(context) { TextToSpeechManager.get(context.applicationContext) }
+    val isTtsSpeaking by tts.isSpeaking.collectAsState(initial = false)
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
 
     val bgMusicEligible = currentRoute != null && currentRoute in BackgroundMusicEligibleRoutes
 
-    LaunchedEffect(currentRoute, backgroundMusicEnabled) {
+    LaunchedEffect(currentRoute, backgroundMusicEnabled, isTtsSpeaking) {
         if (!backgroundMusicEnabled) {
             bgMusic.stop()
             return@LaunchedEffect
         }
         bgMusic.playLoopFromAssets(assetPath = bgmAssetPathForRoute(currentRoute))
         bgMusic.setMuted(!bgMusicEligible)
+        bgMusic.setDucked(isTtsSpeaking && bgMusicEligible)
     }
 
     DisposableEffect(lifecycleOwner) {
@@ -144,6 +152,7 @@ fun AppNav() {
                     bgMusic.stop()
                     VoicePlayer.stopAllNow()
                     SoundPoolPlayer.stopAllNow()
+                    TextToSpeechManager.get(context.applicationContext).stop()
                 }
             }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -153,32 +162,51 @@ fun AppNav() {
         }
     }
 
-    LaunchedEffect(characterChosen, currentRoute) {
-        if (characterChosen && currentRoute == NavRoutes.Seasons) {
-            navController.navigate(NavRoutes.Chapters) {
-                popUpTo(NavRoutes.Seasons) { inclusive = true }
-                launchSingleTop = true
-            }
+    NavHost(navController = navController, startDestination = NavRoutes.Opening) {
+        composable(NavRoutes.Opening) {
+            OpeningScreen(
+                onPlay = {
+                    if (characterChosen) {
+                        navController.navigate(NavRoutes.IntroInstruction) { launchSingleTop = true }
+                    }
+                },
+                onOpenSettings = { navController.navigate(NavRoutes.ParentalGate) { launchSingleTop = true } },
+                onExit = { (context as? ComponentActivity)?.finish() },
+            )
         }
-    }
 
-    NavHost(navController = navController, startDestination = NavRoutes.Seasons) {
-        composable(NavRoutes.Seasons) {
-            SeasonsScreen(
-                onOpenSeason1 = { navController.navigate(NavRoutes.Chapters) { launchSingleTop = true } },
-                onBackToOpening = { (context as? ComponentActivity)?.finish() },
+        composable(NavRoutes.IntroInstruction) {
+            IntroInstructionScreen(
+                onContinue = {
+                    navController.navigate(NavRoutes.Chapters) {
+                        popUpTo(NavRoutes.IntroInstruction) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                },
+                onBack = { navController.popBackStack() },
             )
         }
 
         composable(NavRoutes.Chapters) {
             val vm: DinoHomeViewModel =
                 androidx.lifecycle.viewmodel.compose.viewModel(
-                    factory = remember(context) { DinoHomeViewModel.Factory(context) },
+                    factory =
+                        remember(characterRepo, context) {
+                            DinoHomeViewModel.Factory(
+                                characterRepo,
+                                StoryNarrationPrefs(context.applicationContext),
+                            )
+                        },
                 )
             DinoHomeScreen(
                 viewModel = vm,
                 onGoOnMission = { navController.navigate(NavRoutes.ChapterSelect) { launchSingleTop = true } },
-                onBackToMap = { navController.navigate(NavRoutes.ChapterSelect) { launchSingleTop = true } },
+                onBackToIntro = {
+                    navController.navigate(NavRoutes.IntroInstruction) {
+                        popUpTo(NavRoutes.Chapters) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                },
             )
         }
 
@@ -186,13 +214,9 @@ fun AppNav() {
             LaunchedEffect(Unit) {
                 TextToSpeechManager.get(context.applicationContext).warmUp()
             }
+            val activeChapter by characterRepo.activeChapterIndexFlow.collectAsState(initial = 0)
             StationSelectScreen(
-                onBackToDinoHome = {
-                    navController.navigate(NavRoutes.Chapters) {
-                        popUpTo(NavRoutes.Chapters) { inclusive = true }
-                        launchSingleTop = true
-                    }
-                },
+                onBackToDinoHome = { navController.popBackStack() },
                 onOpenParents = { navController.navigate(NavRoutes.ParentalGate) { launchSingleTop = true } },
                 onOpenWordChallengeStation = { stationId ->
                     val type =
@@ -201,9 +225,11 @@ fun AppNav() {
                             2 -> ChallengeType.PHONEMIC_ISOLATION
                             else -> ChallengeType.ODD_ONE_OUT
                         }
-                    navController.navigate(NavRoutes.wordChallengeRoute(type)) { launchSingleTop = true }
+                    navController.navigate(NavRoutes.wordChallengeRoute(type, activeChapter)) { launchSingleTop = true }
                 },
-                onOpenFallingLettersStation3 = { navController.navigate(NavRoutes.FallingLetters) { launchSingleTop = true } },
+                onOpenFallingLettersStation3 = {
+                    navController.navigate(NavRoutes.fallingLettersRoute(activeChapter)) { launchSingleTop = true }
+                },
             )
         }
 
@@ -215,9 +241,14 @@ fun AppNav() {
                         type = NavType.StringType
                         defaultValue = ChallengeType.ODD_ONE_OUT.name
                     },
+                    navArgument(NavRoutes.ChapterIndexArg) {
+                        type = NavType.IntType
+                        defaultValue = 0
+                    },
                 ),
         ) { backStackEntry ->
             val rawType = backStackEntry.arguments?.getString(NavRoutes.WordChallengeTypeArg) ?: ChallengeType.ODD_ONE_OUT.name
+            val chapterIndex = backStackEntry.arguments?.getInt(NavRoutes.ChapterIndexArg) ?: 0
             val challengeType =
                 try {
                     ChallengeType.valueOf(rawType)
@@ -238,11 +269,24 @@ fun AppNav() {
                     }
                 },
                 challengeType = challengeType,
+                chapterIndex = chapterIndex.coerceIn(0, HebrewSyllabus.chapterCount - 1),
+                rewardEngine = rewardEngine,
             )
         }
 
-        composable(NavRoutes.FallingLetters) {
+        composable(
+            route = NavRoutes.FallingLetters,
+            arguments =
+                listOf(
+                    navArgument(NavRoutes.ChapterIndexArg) {
+                        type = NavType.IntType
+                        defaultValue = 0
+                    },
+                ),
+        ) { backStackEntry ->
+            val chapterIndex = backStackEntry.arguments?.getInt(NavRoutes.ChapterIndexArg) ?: 0
             FallingLettersScreen(
+                chapterIndex = chapterIndex.coerceIn(0, HebrewSyllabus.chapterCount - 1),
                 onExitToHome = {
                     navController.navigate(NavRoutes.Chapters) {
                         popUpTo(NavRoutes.Chapters) { inclusive = true }
@@ -255,12 +299,13 @@ fun AppNav() {
                         launchSingleTop = true
                     }
                 },
+                rewardEngine = rewardEngine,
             )
         }
 
         composable(NavRoutes.ChallengeSummary) {
             ChallengeSummaryScreen(
-                repo = characterRepo,
+                rewardEngine = rewardEngine,
                 onBackToDinoHome = {
                     navController.navigate(NavRoutes.Chapters) {
                         popUpTo(NavRoutes.Chapters) { inclusive = true }
@@ -275,7 +320,11 @@ fun AppNav() {
                 onBack = { navController.popBackStack() },
                 onResetProgress = {
                     progressPrefs.resetAll()
-                    characterRepo.resetForNewGame()
+                    scope.launch {
+                        characterRepo.resetForNewGame()
+                        rewardEngine.resetAll()
+                        StoryNarrationPrefs(context.applicationContext).reset()
+                    }
                     characterPrefs.resetCharacterSelection()
                 },
             )
@@ -287,8 +336,8 @@ fun AppNav() {
             onSelect = { chosen ->
                 scope.launch {
                     characterPrefs.setCharacter(chosen)
-                    navController.navigate(NavRoutes.Chapters) {
-                        popUpTo(NavRoutes.Seasons) { inclusive = true }
+                    navController.navigate(NavRoutes.IntroInstruction) {
+                        popUpTo(NavRoutes.Opening) { inclusive = false }
                         launchSingleTop = true
                     }
                 }

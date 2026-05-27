@@ -20,6 +20,7 @@ import com.tal.hebrewdino.ui.screens.DinoHomeScreen
 import com.tal.hebrewdino.ui.screens.DinoHomeViewModel
 import com.tal.hebrewdino.ui.screens.ChaptersScreen
 import com.tal.hebrewdino.ui.screens.FallingLettersScreen
+import com.tal.hebrewdino.ui.screens.IntroInstructionScreen
 import com.tal.hebrewdino.ui.screens.OpeningScreen
 import com.tal.hebrewdino.ui.screens.ParentalGateScreen
 import com.tal.hebrewdino.ui.screens.SeasonsScreen
@@ -30,6 +31,7 @@ import com.tal.hebrewdino.ui.screens.TrainingV1RoundScreen
 import com.tal.hebrewdino.ui.screens.WordChallengeScreen
 import com.tal.hebrewdino.ui.domain.TrainingV1Config
 import com.tal.hebrewdino.ui.data.CharacterRepository
+import com.tal.hebrewdino.ui.economy.RewardEngine
 import kotlinx.coroutines.launch
 
 internal fun NavGraphBuilder.systemAndTrainingGraph(host: AppNavHostState) {
@@ -37,7 +39,7 @@ internal fun NavGraphBuilder.systemAndTrainingGraph(host: AppNavHostState) {
         CharacterSelectionScreen(
             onSelect = { character ->
                 host.scope.launch { host.prefs.setCharacter(character) }
-                host.navController.navigate(NavRoutes.Chapters) {
+                host.navController.navigate(NavRoutes.IntroInstruction) {
                     popUpTo(NavRoutes.CharacterSelection) { inclusive = true }
                     launchSingleTop = true
                 }
@@ -62,6 +64,7 @@ internal fun NavGraphBuilder.systemAndTrainingGraph(host: AppNavHostState) {
             } catch (_: Throwable) {
                 ChallengeType.ODD_ONE_OUT
             }
+        val rewardEngine = remember(host.context) { RewardEngine.get(host.context.applicationContext) }
         WordChallengeScreen(
             onExitToHome = {
                 host.navController.navigate(NavRoutes.Chapters) {
@@ -76,14 +79,14 @@ internal fun NavGraphBuilder.systemAndTrainingGraph(host: AppNavHostState) {
                 }
             },
             challengeType = challengeType,
+            rewardEngine = rewardEngine,
         )
     }
 
     composable(NavRoutes.ChallengeSummary) {
-        val context = LocalContext.current
-        val repo = remember(context) { CharacterRepository(context.applicationContext) }
+        val rewardEngine = remember(host.context) { RewardEngine.get(host.context.applicationContext) }
         ChallengeSummaryScreen(
-            repo = repo,
+            rewardEngine = rewardEngine,
             onBackToDinoHome = {
                 host.navController.navigate(NavRoutes.Chapters) {
                     popUpTo(NavRoutes.Chapters) { inclusive = true }
@@ -94,6 +97,7 @@ internal fun NavGraphBuilder.systemAndTrainingGraph(host: AppNavHostState) {
     }
 
     composable(NavRoutes.FallingLetters) {
+        val rewardEngine = remember(host.context) { RewardEngine.get(host.context.applicationContext) }
         FallingLettersScreen(
             onExitToHome = {
                 host.navController.navigate(NavRoutes.Chapters) {
@@ -107,6 +111,7 @@ internal fun NavGraphBuilder.systemAndTrainingGraph(host: AppNavHostState) {
                     launchSingleTop = true
                 }
             },
+            rewardEngine = rewardEngine,
         )
     }
 
@@ -114,12 +119,24 @@ internal fun NavGraphBuilder.systemAndTrainingGraph(host: AppNavHostState) {
         val context = LocalContext.current
         OpeningScreen(
             onPlay = {
-                host.navController.navigate(NavRoutes.Seasons) {
+                host.navController.navigate(NavRoutes.IntroInstruction) {
                     launchSingleTop = true
                 }
             },
             onOpenSettings = { host.navController.navigate(NavRoutes.Settings) },
             onExit = { (context as? android.app.Activity)?.finish() },
+        )
+    }
+
+    composable(NavRoutes.IntroInstruction) {
+        IntroInstructionScreen(
+            onContinue = {
+                host.navController.navigate(NavRoutes.Chapters) {
+                    popUpTo(NavRoutes.IntroInstruction) { inclusive = true }
+                    launchSingleTop = true
+                }
+            },
+            onBack = { host.navController.popBackStack() },
         )
     }
 
@@ -148,8 +165,11 @@ internal fun NavGraphBuilder.systemAndTrainingGraph(host: AppNavHostState) {
             onGoOnMission = {
                 host.navController.navigate(NavRoutes.ChapterSelect) { launchSingleTop = true }
             },
-            onBackToMap = {
-                host.navController.navigate(NavRoutes.ChapterSelect) { launchSingleTop = true }
+            onBackToIntro = {
+                host.navController.navigate(NavRoutes.IntroInstruction) {
+                    popUpTo(NavRoutes.Chapters) { inclusive = true }
+                    launchSingleTop = true
+                }
             },
         )
     }
@@ -180,7 +200,7 @@ internal fun NavGraphBuilder.systemAndTrainingGraph(host: AppNavHostState) {
                         2 -> ChallengeType.RHYME
                         else -> ChallengeType.ODD_ONE_OUT
                     }
-                host.navController.navigate(NavRoutes.wordChallengeRoute(type)) { launchSingleTop = true }
+                host.navController.navigate(NavRoutes.wordChallengeRoute(type, chapterIndex = 0)) { launchSingleTop = true }
             },
             onOpenFallingLettersStation3 = {
                 host.navController.navigate(NavRoutes.FallingLetters) { launchSingleTop = true }
@@ -236,11 +256,15 @@ internal fun NavGraphBuilder.systemAndTrainingGraph(host: AppNavHostState) {
 
     composable(NavRoutes.ParentalGate) {
         val context = LocalContext.current
+        val rewardEngine = remember(context) { RewardEngine.get(context.applicationContext) }
         ParentalGateScreen(
             onBack = { host.navController.popBackStack() },
             onResetProgress = {
                 host.progress.resetAll()
-                CharacterRepository(context.applicationContext).resetForNewGame()
+                host.scope.launch {
+                    CharacterRepository(context.applicationContext).resetForNewGame()
+                    rewardEngine.resetAll()
+                }
             },
         )
     }

@@ -27,8 +27,10 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.Modifier
@@ -44,11 +46,20 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.tal.hebrewdino.R
 import com.tal.hebrewdino.ui.audio.SfxManager
 import com.tal.hebrewdino.ui.audio.TextToSpeechManager
-import com.tal.hebrewdino.ui.data.CharacterRepository
+import com.tal.hebrewdino.ui.domain.economy.StationRoundCompleted
+import com.tal.hebrewdino.ui.economy.RewardEngine
+import com.tal.hebrewdino.ui.domain.HebrewSyllabus
+import com.tal.hebrewdino.ui.domain.letterNameSpokenForTts
+import com.tal.hebrewdino.ui.domain.letterSymbolForDisplay
+import com.tal.hebrewdino.ui.layout.ScreenFit
+import com.tal.hebrewdino.ui.domain.targetSuccessSpeech
+import com.tal.hebrewdino.ui.domain.wrongLetterFeedbackSpeech
+import com.tal.hebrewdino.ui.domain.ChallengeType
 import com.tal.hebrewdino.ui.layout.topChromeInsetsPadding
 import kotlinx.coroutines.launch
 
@@ -56,37 +67,39 @@ import kotlinx.coroutines.launch
 fun FallingLettersScreen(
     onExitToHome: () -> Unit,
     onRoundCompleteToSummary: () -> Unit,
+    chapterIndex: Int = 0,
+    rewardEngine: RewardEngine,
     modifier: Modifier = Modifier,
 ) {
     androidx.compose.runtime.CompositionLocalProvider(
         LocalLayoutDirection provides androidx.compose.ui.unit.LayoutDirection.Ltr,
     ) {
         val context = LocalContext.current
-        val repo = remember(context) { CharacterRepository(context.applicationContext) }
         val tts = remember(context) { TextToSpeechManager.get(context.applicationContext) }
         val sfx = remember(context) { SfxManager(context.applicationContext) }
+        val scope = rememberCoroutineScope()
         DisposableEffect(sfx) {
             onDispose { sfx.release() }
         }
-        DisposableEffect(tts) {
-            onDispose { tts.stop() }
-        }
+        val chapterLetters =
+            HebrewSyllabus.chapterOrNull(chapterIndex)?.letters
+                ?: HebrewSyllabus.chapters.first().letters
         val vm: FallingLettersViewModel =
             viewModel(
                 factory =
-                    remember(repo) {
+                    remember(rewardEngine, chapterIndex, chapterLetters) {
                         object : androidx.lifecycle.ViewModelProvider.Factory {
                             override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
                                 if (modelClass.isAssignableFrom(FallingLettersViewModel::class.java)) {
                                     @Suppress("UNCHECKED_CAST")
                                     return FallingLettersViewModel(
-                                        rewardHandler =
-                                            FallingLettersViewModel.RewardHandler {
-                                                repo.markChapter1StationCompleted(3)
-                                                repo.setFullUntilAtMs(0L)
-                                                repo.addFood(3)
-                                                repo.setPendingRewardFoodDelta(3)
-                                            },
+                                        chapterLetters = chapterLetters,
+                                        rewardEngine = rewardEngine,
+                                        stationRoundCompleted =
+                                            StationRoundCompleted(
+                                                chapterIndex = chapterIndex,
+                                                stationId = 3,
+                                            ),
                                     ) as T
                                 }
                                 error("Unknown ViewModel class: $modelClass")
@@ -97,28 +110,75 @@ fun FallingLettersScreen(
 
         val state by vm.uiState.collectAsState()
 
-        LaunchedEffect(vm) {
-            vm.finishEvents.collect {
-                tts.stop()
-                vm.stopTicker()
-                onRoundCompleteToSummary()
+        var replayInstructionEpoch by remember { mutableIntStateOf(0) }
+        val instructionInteractionEnabled = !state.isComplete && !state.inputsLocked
+        val requestInstructionReplay = {
+            if (instructionInteractionEnabled) replayInstructionEpoch += 1
+        }
+        val bumpInstructionActivity =
+            rememberInstructionIdleReplay(
+                enabled = instructionInteractionEnabled,
+                resetKey = state.roundIndex,
+                onReplay = requestInstructionReplay,
+            )
+
+        LaunchedEffect(state.roundIndex) {
+            bumpInstructionActivity()
+            tts.speakFully(fallingLettersInstructionSpeech(state.targetLetter))
+        }
+
+        LaunchedEffect(replayInstructionEpoch, state.roundIndex) {
+            if (replayInstructionEpoch == 0) return@LaunchedEffect
+            tts.speakFully(
+                fallingLettersInstructionSpeech(state.targetLetter),
+                navigationSettleMs = 80L,
+            )
+        }
+
+        LaunchedEffect(state.feedbackToken, state.feedbackIsCorrect) {
+            if (state.feedbackIsCorrect != false || state.feedbackToken == 0) return@LaunchedEffect
+            val letterId = state.feedbackLetterId ?: return@LaunchedEffect
+            val clicked = state.letters.firstOrNull { it.id == letterId } ?: return@LaunchedEffect
+            scope.launch { sfx.playWrong() }
+            tts.interruptAndSpeak(wrongLetterFeedbackSpeech(clicked.text))
+        }
+
+        LaunchedEffect(state.feedbackToken, state.feedbackIsCorrect, state.roundBreakToken) {
+            if (state.feedbackIsCorrect != true || state.feedbackToken == 0) return@LaunchedEffect
+            val reinforcement =
+                targetSuccessSpeech(ChallengeType.LETTER_RECOGNITION, state.targetLetter)
+            val breakToken = state.roundBreakToken
+            if (breakToken > 0) {
+                tts.interruptAndSpeakFully(reinforcement)
+                val praise = RoundPraisePhrases[(0 until RoundPraisePhrases.size).random()]
+                tts.interruptAndSpeakFully(praise)
+                vm.onRoundBreakFinished(breakToken)
+            } else {
+                tts.interruptAndSpeak(reinforcement)
             }
         }
+
         LaunchedEffect(vm) {
-            vm.roundBreakEvents.collect { token ->
-                tts.speakAndWait(RoundPraisePhrases[(0 until RoundPraisePhrases.size).random()])
-                vm.onRoundBreakFinished(token)
+            vm.finishEvents.collect {
+                vm.stopTicker()
+                onRoundCompleteToSummary()
             }
         }
 
         FallingLettersContent(
             state = state,
             onExit = {
-                tts.stop()
                 vm.stopTicker()
                 onExitToHome()
             },
-            onLetterClicked = vm::onLetterClicked,
+            onLetterClicked = { letterId ->
+                bumpInstructionActivity()
+                vm.onLetterClicked(letterId)
+            },
+            onReplayInstruction = {
+                bumpInstructionActivity()
+                requestInstructionReplay()
+            },
             onViewport = vm::setViewport,
             sfx = sfx,
             modifier = modifier,
@@ -126,17 +186,22 @@ fun FallingLettersScreen(
     }
 }
 
+private fun fallingLettersInstructionSpeech(targetLetter: String): String {
+    val name = letterNameSpokenForTts(targetLetter)
+    return "תפסו את האות $name"
+}
+
 @Composable
 private fun FallingLettersContent(
     state: FallingLettersUiState,
     onExit: () -> Unit,
     onLetterClicked: (Int) -> Unit,
+    onReplayInstruction: () -> Unit,
     onViewport: (Float, Float) -> Unit,
     sfx: SfxManager,
     modifier: Modifier = Modifier,
 ) {
     val density = LocalDensity.current
-    val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
     Box(modifier = modifier.fillMaxSize()) {
@@ -151,12 +216,13 @@ private fun FallingLettersContent(
             targetLetter = state.targetLetter,
             progressText =
                 rtl("סיבוב ${state.roundIndex + 1} מתוך ${state.roundsTotal} · תפסת ${state.caughtInRound} מתוך ${state.quotaInRound}"),
-            onExit = {
-                onExit()
-            },
+            onExit = onExit,
+            onReplayInstruction = onReplayInstruction,
+            instructionReplayEnabled = !state.isComplete && !state.inputsLocked,
             modifier =
                 Modifier
                     .fillMaxWidth()
+                    .zIndex(10f)
                     .topChromeInsetsPadding()
                     .padding(top = 10.dp, start = 12.dp, end = 12.dp),
         )
@@ -165,7 +231,7 @@ private fun FallingLettersContent(
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .padding(top = 86.dp, bottom = 26.dp, start = 18.dp, end = 18.dp)
+                    .padding(top = 118.dp, bottom = 26.dp, start = 18.dp, end = 18.dp)
                     .clipToBounds(),
         ) {
             val heightDp = maxHeight
@@ -234,54 +300,78 @@ private fun TopBarFallingLetters(
     targetLetter: String,
     progressText: String,
     onExit: () -> Unit,
+    onReplayInstruction: () -> Unit,
+    instructionReplayEnabled: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    Row(
-        modifier = modifier,
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Surface(
-            shape = RoundedCornerShape(999.dp),
-            color = Color.Black.copy(alpha = 0.28f),
-            tonalElevation = 0.dp,
-            shadowElevation = 0.dp,
+    val targetDisplay = letterSymbolForDisplay(targetLetter)
+    val instructionText =
+        ScreenFit.rtlUnicodeWrap("תפסו את האות $targetDisplay!")
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(
-                text = progressText,
-                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black),
-                color = Color.White,
-                modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
-            )
+            Surface(
+                shape = RoundedCornerShape(999.dp),
+                color = Color.Black.copy(alpha = 0.45f),
+                tonalElevation = 0.dp,
+                shadowElevation = 0.dp,
+            ) {
+                Text(
+                    text = progressText,
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black),
+                    color = Color.White,
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                )
+            }
+
+            Surface(
+                onClick = onExit,
+                shape = RoundedCornerShape(999.dp),
+                color = Color.Black.copy(alpha = 0.45f),
+                tonalElevation = 0.dp,
+                shadowElevation = 0.dp,
+            ) {
+                Text(
+                    text = rtl("יציאה"),
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black),
+                    color = Color.White,
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                )
+            }
         }
 
-        Surface(
-            shape = RoundedCornerShape(999.dp),
-            color = Color.Black.copy(alpha = 0.28f),
-            tonalElevation = 0.dp,
-            shadowElevation = 0.dp,
-        ) {
-            Text(
-                text = rtl("תפסו את האות: ${targetLetter}׳"),
-                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black),
-                color = Color.White,
-                modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
-            )
-        }
-
-        Surface(
-            onClick = onExit,
-            shape = RoundedCornerShape(999.dp),
-            color = Color.Black.copy(alpha = 0.28f),
-            tonalElevation = 0.dp,
-            shadowElevation = 0.dp,
-        ) {
-            Text(
-                text = rtl("יציאה"),
-                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black),
-                color = Color.White,
-                modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
-            )
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
+            Surface(
+                onClick = { if (instructionReplayEnabled) onReplayInstruction() },
+                shape = RoundedCornerShape(16.dp),
+                color = Color(0xFF0B2B3D).copy(alpha = 0.82f),
+                border = androidx.compose.foundation.BorderStroke(2.dp, Color.White.copy(alpha = 0.35f)),
+                tonalElevation = 0.dp,
+                shadowElevation = 0.dp,
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    Text(
+                        text = instructionText,
+                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black, fontSize = 26.sp),
+                        color = Color.White,
+                        textAlign = TextAlign.Center,
+                    )
+                    if (instructionReplayEnabled) {
+                        Text(
+                            text = "🔊",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = Color.White.copy(alpha = 0.9f),
+                        )
+                    }
+                }
+            }
         }
     }
 }
@@ -298,66 +388,67 @@ private fun LetterChip(
     val shakeX = remember { Animatable(0f) }
     val starAlpha = remember { Animatable(0f) }
     val starScale = remember { Animatable(0.7f) }
-    LaunchedEffect(feedback?.token) {
-        val f = feedback ?: return@LaunchedEffect
-        if (f.correct) {
-            starAlpha.snapTo(0f)
+    LaunchedEffect(feedback?.token, feedback?.correct) {
+        val fb = feedback ?: return@LaunchedEffect
+        if (fb.correct) {
+            starAlpha.snapTo(1f)
             starScale.snapTo(0.7f)
-            starAlpha.animateTo(1f, tween(70))
-            starScale.animateTo(1f, tween(120))
-            starAlpha.animateTo(0f, tween(260))
+            starScale.animateTo(1.15f, tween(120))
+            starScale.animateTo(1f, tween(90))
+            starAlpha.animateTo(0f, tween(220))
         } else {
             shakeX.snapTo(0f)
-            shakeX.animateTo(-9f, tween(40))
-            shakeX.animateTo(9f, tween(70))
-            shakeX.animateTo(-6f, tween(60))
-            shakeX.animateTo(6f, tween(60))
-            shakeX.animateTo(0f, tween(50))
+            shakeX.animateTo(-10f, tween(45))
+            shakeX.animateTo(10f, tween(80))
+            shakeX.animateTo(-7f, tween(70))
+            shakeX.animateTo(7f, tween(70))
+            shakeX.animateTo(0f, tween(55))
         }
     }
 
-    val borderColor =
-        when (feedback?.correct) {
-            true -> Color(0xFF2DB86E)
-            false -> Color(0xFFFF6B6B)
-            null -> Color.Transparent
-        }
-
-    Surface(
-        shape = shape,
-        color = Color.Transparent,
-        tonalElevation = 0.dp,
-        shadowElevation = 0.dp,
+    val bg =
+        Brush.verticalGradient(
+            colors =
+                listOf(
+                    Color.White.copy(alpha = 0.96f),
+                    Color(0xFFE8F4FF).copy(alpha = 0.92f),
+                ),
+        )
+    Box(
         modifier =
             modifier
-                .border(width = 3.dp, color = borderColor, shape = shape)
-                .graphicsLayer { translationX = shakeX.value },
+                .graphicsLayer {
+                    translationX = shakeX.value
+                    alpha = if (enabled) 1f else 0.72f
+                }
+                .clickable(enabled = enabled, onClick = onClick),
     ) {
-        Box(
+        Surface(
+            shape = shape,
+            color = Color.Transparent,
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .background(Color.White.copy(alpha = 0.92f), shape = shape)
-                    .clickable(enabled = enabled, onClick = onClick),
-            contentAlignment = Alignment.Center,
+                    .background(bg, shape),
+            border = androidx.compose.foundation.BorderStroke(2.dp, Color(0xFF0B2B3D).copy(alpha = 0.22f)),
         ) {
-            Text(
-                text = rtl(text),
-                style = MaterialTheme.typography.displaySmall.copy(fontWeight = FontWeight.Black, fontSize = 48.sp),
-                color = Color(0xFF0B2B3D),
-                textAlign = TextAlign.Center,
-            )
-            if (feedback?.correct == true && starAlpha.value > 0f) {
+            Box(contentAlignment = Alignment.Center) {
                 Text(
-                    text = "✨",
-                    style = MaterialTheme.typography.titleLarge,
-                    modifier =
-                        Modifier
-                            .align(Alignment.TopCenter)
-                            .offset(y = (-10).dp)
-                            .alpha(starAlpha.value)
-                            .scale(starScale.value),
+                    text = rtl(text),
+                    style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Black, fontSize = 34.sp),
+                    color = Color(0xFF0B2B3D),
                 )
+                if (feedback?.correct == true && starAlpha.value > 0.01f) {
+                    Text(
+                        text = "⭐",
+                        modifier =
+                            Modifier
+                                .align(Alignment.TopEnd)
+                                .padding(4.dp)
+                                .scale(starScale.value)
+                                .alpha(starAlpha.value),
+                    )
+                }
             }
         }
     }
@@ -369,33 +460,6 @@ private data class LetterFeedback(
     val correct: Boolean,
     val token: Int,
 )
-
-private fun hebrewLetterNameForSpeech(letter: String): String? =
-    when (letter) {
-        "א" -> "אָלֶף"
-        "ב" -> "בֵּית"
-        "ג" -> "גִּימֶל"
-        "ד" -> "דָּלֶת"
-        "ה" -> "הֵא"
-        "ו" -> "וָו"
-        "ז" -> "זַיִן"
-        "ח" -> "חֵית"
-        "ט" -> "טֵית"
-        "י" -> "יוֹד"
-        "כ", "ך" -> "כָּף"
-        "ל" -> "לָמֶד"
-        "מ", "ם" -> "מֵם"
-        "נ", "ן" -> "נוּן"
-        "ס" -> "סָמֶךְ"
-        "ע" -> "עַיִן"
-        "פ", "ף" -> "פֵּא"
-        "צ", "ץ" -> "צַדִּי"
-        "ק" -> "קוּף"
-        "ר" -> "רֵישׁ"
-        "ש" -> "שִׁין"
-        "ת" -> "תָּו"
-        else -> null
-    }
 
 private val RoundPraisePhrases: Array<String> =
     arrayOf(

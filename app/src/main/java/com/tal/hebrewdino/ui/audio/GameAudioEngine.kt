@@ -31,6 +31,8 @@ class BackgroundMusicPlayer(
     private val positionMsByAssetPath: HashMap<String, Int> = hashMapOf()
     private var targetVolume: Float = 0.28f
     private var muted: Boolean = false
+    private var ducked: Boolean = false
+    private var duckFactor: Float = 0.38f
 
     fun playLoopFromAssets(
         assetPath: String,
@@ -89,9 +91,24 @@ class BackgroundMusicPlayer(
         applyVolume()
     }
 
+    fun setDucked(
+        ducked: Boolean,
+        factor: Float = 0.38f,
+    ) {
+        this.ducked = ducked
+        duckFactor = factor.coerceIn(0.05f, 1f)
+        applyVolume()
+    }
+
     private fun applyVolume() {
         val p = player ?: return
-        val v = if (muted) 0f else targetVolume.coerceIn(0f, 1f)
+        val base = targetVolume.coerceIn(0f, 1f)
+        val v =
+            when {
+                muted -> 0f
+                ducked -> base * duckFactor
+                else -> base
+            }
         try {
             p.setVolume(v, v)
         } catch (_: Throwable) {
