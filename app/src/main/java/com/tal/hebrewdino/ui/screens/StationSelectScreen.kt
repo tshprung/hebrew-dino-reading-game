@@ -43,6 +43,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.tal.hebrewdino.R
+import com.tal.hebrewdino.ui.audio.InteractionAudio
 import com.tal.hebrewdino.ui.audio.TextToSpeechManager
 import com.tal.hebrewdino.ui.components.ChapterNavChipStyles
 import com.tal.hebrewdino.ui.data.CharacterRepository
@@ -59,21 +60,25 @@ fun StationSelectScreen(
     modifier: Modifier = Modifier,
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
-    val repo = androidx.compose.runtime.remember(context) { CharacterRepository(context.applicationContext) }
+    val appContext = androidx.compose.runtime.remember(context) { context.applicationContext }
+    val stopInteractionAudio =
+        androidx.compose.runtime.remember(appContext) { { InteractionAudio.stopAllNow(appContext) } }
+    val repo = androidx.compose.runtime.remember(appContext) { CharacterRepository(appContext) }
     val scope = rememberCoroutineScope()
     val activeChapter by repo.activeChapterIndexFlow.collectAsState(initial = 0)
     val highestUnlocked by repo.highestUnlockedChapterIndexFlow.collectAsState(initial = 0)
     val maxCompletedStation by repo.chapterMaxCompletedStationFlow(activeChapter).collectAsState(initial = 0)
-    val tts = androidx.compose.runtime.remember(context) { TextToSpeechManager.get(context.applicationContext) }
+    val tts = androidx.compose.runtime.remember(appContext) { TextToSpeechManager.get(appContext) }
 
     val chapter = HebrewSyllabus.chapterOrNull(activeChapter) ?: HebrewSyllabus.chapters.first()
+    val chapterFullyComplete = maxCompletedStation >= 3
     val station2Unlocked = maxCompletedStation >= 1
     val station3Unlocked = maxCompletedStation >= 2
     val nextStationId =
         when {
+            chapterFullyComplete && activeChapter < HebrewSyllabus.chapterCount - 1 -> 1
             maxCompletedStation < 1 -> 1
             maxCompletedStation < 2 -> 2
-            maxCompletedStation < 3 -> 3
             else -> 3
         }
 
@@ -106,6 +111,7 @@ fun StationSelectScreen(
                         selected = selected,
                         locked = locked,
                         onClick = {
+                            stopInteractionAudio()
                             if (locked) {
                                 scope.launch {
                                     tts.speak("קודם צריך לסיים את הפרק הקודם!")
@@ -158,7 +164,10 @@ fun StationSelectScreen(
                     buttonText = rtl("התחל"),
                     locked = false,
                     highlighted = nextStationId == 1,
-                    onClick = { onOpenWordChallengeStation(1) },
+                    onClick = {
+                        stopInteractionAudio()
+                        onOpenWordChallengeStation(1)
+                    },
                     onLockedAttempt = { },
                     modifier = Modifier.weight(1f).aspectRatio(1f),
                 )
@@ -168,8 +177,12 @@ fun StationSelectScreen(
                     buttonText = rtl("התחל"),
                     locked = !station2Unlocked,
                     highlighted = nextStationId == 2 && station2Unlocked,
-                    onClick = { onOpenWordChallengeStation(2) },
+                    onClick = {
+                        stopInteractionAudio()
+                        onOpenWordChallengeStation(2)
+                    },
                     onLockedAttempt = {
+                        stopInteractionAudio()
                         scope.launch {
                             tts.speak("קודם צריך לסיים את התחנה הקודמת!")
                         }
@@ -182,8 +195,12 @@ fun StationSelectScreen(
                     buttonText = rtl("התחל"),
                     locked = !station3Unlocked,
                     highlighted = nextStationId == 3 && station3Unlocked,
-                    onClick = onOpenFallingLettersStation3,
+                    onClick = {
+                        stopInteractionAudio()
+                        onOpenFallingLettersStation3()
+                    },
                     onLockedAttempt = {
+                        stopInteractionAudio()
                         scope.launch {
                             tts.speak("קודם צריך לסיים את התחנה הקודמת!")
                         }
@@ -201,7 +218,10 @@ fun StationSelectScreen(
                     .padding(top = 4.dp, start = 8.dp),
         ) {
             OutlinedButton(
-                onClick = onBackToDinoHome,
+                onClick = {
+                    stopInteractionAudio()
+                    onBackToDinoHome()
+                },
                 colors = ChapterNavChipStyles.outlinedButtonColors(),
             ) {
                 Text("חזור", style = ChapterNavChipStyles.labelTextStyle())
@@ -216,7 +236,10 @@ fun StationSelectScreen(
                     .padding(top = 4.dp, end = 8.dp),
         ) {
             OutlinedButton(
-                onClick = onOpenParents,
+                onClick = {
+                    stopInteractionAudio()
+                    onOpenParents()
+                },
                 colors = ChapterNavChipStyles.outlinedButtonColors(),
             ) {
                 Text("הורים", style = ChapterNavChipStyles.labelTextStyle())
@@ -246,16 +269,16 @@ private fun ChapterTab(
         onClick = onClick,
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp),
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             if (locked) {
-                Text(text = "🔒", style = MaterialTheme.typography.labelSmall)
+                Text(text = "🔒", style = MaterialTheme.typography.titleSmall)
             }
             Text(
                 text = rtl(label),
-                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Black),
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black),
                 color = if (selected) Color.White else Color.White.copy(alpha = 0.88f),
             )
         }

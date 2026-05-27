@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.border
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -49,14 +50,15 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.tal.hebrewdino.R
+import com.tal.hebrewdino.ui.audio.InteractionAudio
 import com.tal.hebrewdino.ui.audio.SfxManager
 import com.tal.hebrewdino.ui.audio.TextToSpeechManager
 import com.tal.hebrewdino.ui.domain.economy.StationRoundCompleted
 import com.tal.hebrewdino.ui.economy.RewardEngine
 import com.tal.hebrewdino.ui.domain.HebrewSyllabus
+import com.tal.hebrewdino.ui.domain.hebrewLetterBase
 import com.tal.hebrewdino.ui.domain.letterNameSpokenForTts
 import com.tal.hebrewdino.ui.domain.letterSymbolForDisplay
-import com.tal.hebrewdino.ui.layout.ScreenFit
 import com.tal.hebrewdino.ui.domain.targetSuccessSpeech
 import com.tal.hebrewdino.ui.domain.wrongLetterFeedbackSpeech
 import com.tal.hebrewdino.ui.domain.ChallengeType
@@ -75,7 +77,9 @@ fun FallingLettersScreen(
         LocalLayoutDirection provides androidx.compose.ui.unit.LayoutDirection.Ltr,
     ) {
         val context = LocalContext.current
-        val tts = remember(context) { TextToSpeechManager.get(context.applicationContext) }
+        val appContext = remember(context) { context.applicationContext }
+        val stopInteractionAudio = remember(appContext) { { InteractionAudio.stopAllNow(appContext) } }
+        val tts = remember(appContext) { TextToSpeechManager.get(appContext) }
         val sfx = remember(context) { SfxManager(context.applicationContext) }
         val scope = rememberCoroutineScope()
         DisposableEffect(sfx) {
@@ -129,10 +133,7 @@ fun FallingLettersScreen(
 
         LaunchedEffect(replayInstructionEpoch, state.roundIndex) {
             if (replayInstructionEpoch == 0) return@LaunchedEffect
-            tts.speakFully(
-                fallingLettersInstructionSpeech(state.targetLetter),
-                navigationSettleMs = 80L,
-            )
+            tts.interruptAndSpeak(fallingLettersInstructionSpeech(state.targetLetter))
         }
 
         LaunchedEffect(state.feedbackToken, state.feedbackIsCorrect) {
@@ -168,14 +169,17 @@ fun FallingLettersScreen(
         FallingLettersContent(
             state = state,
             onExit = {
+                stopInteractionAudio()
                 vm.stopTicker()
                 onExitToHome()
             },
             onLetterClicked = { letterId ->
+                stopInteractionAudio()
                 bumpInstructionActivity()
                 vm.onLetterClicked(letterId)
             },
             onReplayInstruction = {
+                stopInteractionAudio()
                 bumpInstructionActivity()
                 requestInstructionReplay()
             },
@@ -268,7 +272,9 @@ private fun FallingLettersContent(
                                     text = letter.text,
                                     onClick = {
                                         if (state.inputsLocked) return@LetterChip
-                                        val correct = letter.text == state.targetLetter
+                                        val correct =
+                                            hebrewLetterBase(letter.text) ==
+                                                hebrewLetterBase(state.targetLetter)
                                         if (correct) {
                                             scope.launch { sfx.playCorrect() }
                                         }
@@ -305,9 +311,7 @@ private fun TopBarFallingLetters(
     modifier: Modifier = Modifier,
 ) {
     val targetDisplay = letterSymbolForDisplay(targetLetter)
-    val instructionText =
-        ScreenFit.rtlUnicodeWrap("תפסו את האות $targetDisplay!")
-    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -343,7 +347,11 @@ private fun TopBarFallingLetters(
             }
         }
 
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
             Surface(
                 onClick = { if (instructionReplayEnabled) onReplayInstruction() },
                 shape = RoundedCornerShape(16.dp),
@@ -358,7 +366,7 @@ private fun TopBarFallingLetters(
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
                     Text(
-                        text = instructionText,
+                        text = rtl("תפסו את האות"),
                         style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black, fontSize = 26.sp),
                         color = Color.White,
                         textAlign = TextAlign.Center,
@@ -371,6 +379,33 @@ private fun TopBarFallingLetters(
                         )
                     }
                 }
+            }
+
+            Box(
+                modifier =
+                    Modifier
+                        .size(84.dp)
+                        .background(
+                            brush =
+                                Brush.radialGradient(
+                                    colors =
+                                        listOf(
+                                            Color(0xFFFFE27A),
+                                            Color(0xFFFFB82E),
+                                            Color(0xFFFF9A1A),
+                                        ),
+                                ),
+                            shape = CircleShape,
+                        )
+                        .border(3.dp, Color.White.copy(alpha = 0.9f), CircleShape),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = rtl(targetDisplay),
+                    style = MaterialTheme.typography.displaySmall.copy(fontWeight = FontWeight.Black, fontSize = 48.sp),
+                    color = Color(0xFF0B2B3D),
+                    textAlign = TextAlign.Center,
+                )
             }
         }
     }

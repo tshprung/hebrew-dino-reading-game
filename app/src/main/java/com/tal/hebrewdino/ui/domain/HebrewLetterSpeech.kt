@@ -43,7 +43,33 @@ fun letterNameSpokenForTts(letterSymbol: String): String {
 
 /** Bare Hebrew letter shown in UI (e.g. falling-letters target chip). */
 fun letterSymbolForDisplay(letterSymbol: String): String =
-    letterSymbol.trim().firstOrNull()?.toString().orEmpty()
+    hebrewLetterBase(letterSymbol)
+
+/** Base consonant without niqqud (for matching and display). */
+fun hebrewLetterBase(text: String): String {
+    for (ch in text.trim()) {
+        if (ch in '\u05D0'..'\u05EA') return ch.toString()
+    }
+    return text.trim().firstOrNull()?.toString().orEmpty()
+}
+
+private fun isHebrewNiqqudChar(ch: Char): Boolean =
+    ch.code in 0x05B0..0x05BD || ch.code in 0x05BF..0x05C7
+
+/** Random kamatz / patach / hiriq on falling letters; identification uses [hebrewLetterBase]. */
+fun letterWithRandomNiqqudForFalling(
+    baseLetter: String,
+    rng: kotlin.random.Random = kotlin.random.Random.Default,
+): String {
+    val base = hebrewLetterBase(baseLetter).ifBlank { baseLetter.trim().first().toString() }
+    val mark =
+        when (rng.nextInt(3)) {
+            0 -> '\u05B8'
+            1 -> '\u05B7'
+            else -> '\u05B4'
+        }
+    return base + mark
+}
 
 /** Dino name for TTS — hyphenated syllables read as "di-no". */
 fun dinoNameSpokenForTts(): String = DinoStoryScripts.dinoNameSpoken()
@@ -121,7 +147,7 @@ fun phonemeSpokenForTts(letterSymbol: String): String {
     }
 }
 
-private fun isHebrewNiqqudMark(ch: Char): Boolean = ch.code in 0x05B0..0x05BD || ch.code in 0x05BF..0x05C7
+private fun isHebrewNiqqudMark(ch: Char): Boolean = isHebrewNiqqudChar(ch)
 
 private fun ttsSyllableForDisplayedPhoneme(display: String): String {
     if (display.isBlank()) return ""

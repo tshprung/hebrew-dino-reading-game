@@ -5,6 +5,7 @@ import com.tal.hebrewdino.ui.MainDispatcherRule
 import com.tal.hebrewdino.ui.data.DinoCharacter
 import com.tal.hebrewdino.ui.data.InMemoryStoryNarrationGate
 import com.tal.hebrewdino.ui.domain.DinoStoryScripts
+import com.tal.hebrewdino.ui.domain.economy.FoodInventoryCodec
 import com.tal.hebrewdino.ui.domain.economy.GrowthStage
 import com.tal.hebrewdino.ui.withFakeCharacterStore
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -27,6 +28,68 @@ class DinoHomeViewModelTest {
     ): DinoHomeViewModel = DinoHomeViewModel(repo, story)
 
     @Test
+    fun apple_count_masculine_phrase_uses_shelosha_for_three() {
+        assertEquals("שלושה תפוחים", appleCountMasculinePhrase(3))
+    }
+
+    @Test
+    fun apple_count_masculine_phrase_uses_chamisha_for_five() {
+        assertEquals("חמישה תפוחים", appleCountMasculinePhrase(5))
+    }
+
+    @Test
+    fun food_inventory_lists_each_earned_fruit_separately() = runTest {
+        val store =
+            FakeCharacterStore(
+                character = DinoCharacter.DINO_GREEN,
+                foodCount = 0,
+                initialFoodInventory = emptyMap(),
+                initialized = true,
+            )
+        withFakeCharacterStore(store) { repo, _ ->
+            val vm = viewModel(repo)
+            advanceUntilIdle()
+            repo.addFood(2, "🍎")
+            repo.addFood(3, "🍑")
+            advanceUntilIdle()
+            val items = vm.foodInventory.value
+            assertEquals(2, items.size)
+            assertEquals("🍎", items[0].emoji)
+            assertEquals(2, items[0].count)
+            assertEquals("🍑", items[1].emoji)
+            assertEquals(3, items[1].count)
+        }
+    }
+
+    @Test
+    fun periodic_home_reminder_switches_on_apple_inventory() = runTest {
+        val store =
+            FakeCharacterStore(
+                character = DinoCharacter.DINO_GREEN,
+                foodCount = 0,
+                totalFoodEarned = 3,
+                growthStage = "BABY",
+                initialized = true,
+            )
+        withFakeCharacterStore(store) { repo, _ ->
+            val vm = viewModel(repo)
+            advanceUntilIdle()
+            val wallet = vm.wallet.value ?: error("wallet")
+            assertEquals(
+                "צאו למשימה כדי לקבל אוכל בשביל דינו!",
+                vm.periodicHomeReminderText(wallet),
+            )
+            store.foodInventoryState.value = mapOf("🍎" to 2)
+            advanceUntilIdle()
+            val withFood = vm.wallet.value ?: error("wallet")
+            assertEquals(
+                "לחצו על האוכל כדי להאכיל את דינו!",
+                vm.periodicHomeReminderText(withFood),
+            )
+        }
+    }
+
+    @Test
     fun feeding_decrements_food_and_keeps_growth_stage_when_not_crossing_threshold() = runTest {
         val store =
             FakeCharacterStore(
@@ -40,36 +103,35 @@ class DinoHomeViewModelTest {
             val vm = viewModel(repo)
             advanceUntilIdle()
 
-            vm.feedOnce()
+            vm.feedOnce("🍎")
             advanceUntilIdle()
             assertEquals(5, vm.wallet.value?.applesCount)
             assertEquals(GrowthStage.BABY, vm.wallet.value?.growthStage)
-            assertEquals(5, fake.foodCountFlow.value)
+            assertEquals(5, FoodInventoryCodec.totalCount(fake.foodInventoryState.value))
             assertEquals("BABY", fake.growthStageFlow.value)
         }
     }
 
     @Test
-    fun egg_stage_can_hatch_by_feeding_to_three_fed_apples() = runTest {
+    fun egg_hatches_after_three_taps_not_from_feeding() = runTest {
         val store =
             FakeCharacterStore(
                 character = DinoCharacter.DINO_GREEN,
-                foodCount = 1,
-                totalFoodEarned = 3,
+                foodCount = 3,
+                totalFoodEarned = 0,
                 growthStage = "EGG",
                 initialized = true,
             )
-        withFakeCharacterStore(store) { repo, fake ->
-            val vm = viewModel(repo)
+        withFakeCharacterStore(store) { repo, _ ->
+            val vm = viewModel(repo, InMemoryStoryNarrationGate())
+            advanceUntilIdle()
+            assertEquals(GrowthStage.EGG, vm.wallet.value?.growthStage)
+
+            repeat(3) { vm.onEggTapped() }
             advanceUntilIdle()
 
-            vm.feedOnce()
-            advanceUntilIdle()
-
-            assertEquals(0, vm.wallet.value?.applesCount)
             assertEquals(GrowthStage.BABY, vm.wallet.value?.growthStage)
-            assertEquals(0, fake.foodCountFlow.value)
-            assertEquals("BABY", fake.growthStageFlow.value)
+            assertEquals(3, vm.eggTapCount.value)
         }
     }
 
@@ -90,6 +152,10 @@ class DinoHomeViewModelTest {
 
             fake.totalFoodEarnedFlow.value = 3
             advanceUntilIdle()
+            assertEquals(GrowthStage.EGG, vm.wallet.value?.growthStage)
+
+            fake.setEggHatched()
+            advanceUntilIdle()
             assertEquals(GrowthStage.BABY, vm.wallet.value?.growthStage)
             assertEquals("BABY", fake.growthStageFlow.value)
 
@@ -101,12 +167,11 @@ class DinoHomeViewModelTest {
     }
 
     @Test
-    fun hatching_queues_part2_baby_story_for_tts() = runTest {
+    fun hatching_queues_post_hatch_story_for_tts() = runTest {
         val store =
             FakeCharacterStore(
                 character = DinoCharacter.DINO_GREEN,
-                foodCount = 1,
-                totalFoodEarned = 3,
+                foodCount = 0,
                 growthStage = "EGG",
                 initialized = true,
             )
@@ -114,13 +179,13 @@ class DinoHomeViewModelTest {
             val vm = viewModel(repo, InMemoryStoryNarrationGate())
             advanceUntilIdle()
 
-            vm.feedOnce()
+            repeat(3) { vm.onEggTapped() }
             advanceUntilIdle()
 
             val wallet = vm.wallet.value!!
             assertEquals(GrowthStage.BABY, wallet.growthStage)
             assertTrue(vm.homeSpeechEpoch >= 1)
-            assertEquals(DinoStoryScripts.part2BabyHatchSpokenForTts(), vm.homePromptSpokenForTts(wallet))
+            assertEquals(DinoStoryScripts.postHatchIntroSpokenForTts(), vm.entryHomeSpokenForTts(wallet))
         }
     }
 

@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.tal.hebrewdino.R
+import com.tal.hebrewdino.ui.audio.InteractionAudio
 import com.tal.hebrewdino.ui.audio.SfxManager
 import com.tal.hebrewdino.ui.audio.TextToSpeechManager
 import com.tal.hebrewdino.ui.components.particles.ConfettiBurstOverlay
@@ -56,14 +57,18 @@ fun ChallengeSummaryScreen(
     val uiState by vm.uiState.collectAsState()
     var confettiTrigger by remember { mutableIntStateOf(0) }
     var navigated by remember { mutableStateOf(false) }
+    var skipPresentation by remember { mutableStateOf(false) }
+
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val appContext = remember(context) { context.applicationContext }
 
     fun goHome() {
         if (navigated) return
+        skipPresentation = true
+        InteractionAudio.stopAllNow(appContext)
         navigated = true
         onBackToDinoHome()
     }
-
-    val context = androidx.compose.ui.platform.LocalContext.current
     val localSfx = remember(context) { SfxManager(context.applicationContext) }
     val tts = remember(context) { TextToSpeechManager.get(context.applicationContext) }
     DisposableEffect(localSfx) {
@@ -72,18 +77,27 @@ fun ChallengeSummaryScreen(
 
     LaunchedEffect(uiState.event?.eventId) {
         val event = uiState.event ?: return@LaunchedEffect
-        if (uiState.presentationStarted) return@LaunchedEffect
+        if (uiState.presentationStarted || skipPresentation) return@LaunchedEffect
         vm.onPresentationStarted()
         if (shouldShowConfettiForCue(event.visualCue)) {
             confettiTrigger += 1
         }
         withFrameNanos { }
         withFrameNanos { }
-        tts.speakFully(event.fanfareText)
-        localSfx.playFanfare()
+        if (skipPresentation) return@LaunchedEffect
+        val accessorySpeech = uiState.accessoryCelebrationSpeech
+        if (accessorySpeech.isNotBlank()) {
+            tts.speakFully(accessorySpeech, navigationSettleMs = 0L)
+        }
+        if (skipPresentation) return@LaunchedEffect
+        if (event.applesCount > 0) {
+            tts.speakFully(event.fanfareText, navigationSettleMs = 0L)
+            localSfx.playFanfare()
+        }
+        if (skipPresentation) return@LaunchedEffect
         vm.onPresentationFinished()
         delay(POST_FANFARE_AUTO_ADVANCE_MS)
-        goHome()
+        if (!skipPresentation) goHome()
     }
 
     val displayText = uiState.displayText

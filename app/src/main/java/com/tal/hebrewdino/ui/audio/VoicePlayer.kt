@@ -96,30 +96,33 @@ class VoicePlayer(context: Context) {
             val success = withContext(Dispatchers.IO) { prepareLocked(assetPath) }
             if (!success) {
                 stopLocked()
-                return
+                return@withLock
             }
 
-            val mp = player ?: return
-            suspendCancellableCoroutine { cont ->
-                activeWaiter = cont
-                // IMPORTANT: attach listeners BEFORE starting playback.
-                mp.setOnCompletionListener {
-                    if (activeWaiter === cont) activeWaiter = null
-                    if (cont.isActive) cont.resume(Unit)
+            val mp = player ?: return@withLock
+            SpeechFocusGate.begin()
+            try {
+                suspendCancellableCoroutine { cont ->
+                    activeWaiter = cont
+                    mp.setOnCompletionListener {
+                        if (activeWaiter === cont) activeWaiter = null
+                        if (cont.isActive) cont.resume(Unit)
+                    }
+                    mp.setOnErrorListener { _, _, _ ->
+                        if (activeWaiter === cont) activeWaiter = null
+                        if (cont.isActive) cont.resume(Unit)
+                        true
+                    }
+                    cont.invokeOnCancellation {
+                        if (activeWaiter === cont) activeWaiter = null
+                        stopLocked()
+                    }
+                    mp.start()
                 }
-                mp.setOnErrorListener { _, _, _ ->
-                    if (activeWaiter === cont) activeWaiter = null
-                    if (cont.isActive) cont.resume(Unit)
-                    true
-                }
-                cont.invokeOnCancellation {
-                    if (activeWaiter === cont) activeWaiter = null
-                    stopLocked()
-                }
-                mp.start()
+            } finally {
+                stopLocked()
+                SpeechFocusGate.end()
             }
-
-            stopLocked()
         }
     }
 

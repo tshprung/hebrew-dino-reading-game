@@ -21,7 +21,7 @@ class DinoStoryScriptsTest {
 
     @Test
     fun part2_and_part3_reference_dino_name() {
-        assertTrue(DinoStoryScripts.part2BabyHatchSpokenForTts().contains("דִּי-נוֹ"))
+        assertTrue(DinoStoryScripts.postHatchIntroSpokenForTts().contains("הנה הוא"))
         assertTrue(DinoStoryScripts.part3FirstAccessorySpokenForTts().contains("כובע"))
     }
 }

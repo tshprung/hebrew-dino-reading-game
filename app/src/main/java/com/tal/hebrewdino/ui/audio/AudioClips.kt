@@ -91,6 +91,11 @@ object AudioClips {
     const val SfxCorrect = "audio/sfx_correct.wav"
     const val SfxWrong = "audio/sfx_wrong.wav"
     const val SfxFanfare = "audio/sfx_fanfare.wav"
+    /** Cute chew / yum when feeding Dino (optional; falls back to soft pop). */
+    const val SfxChew = "audio/sfx_chew.wav"
+    const val SfxEggCrack = "audio/sfx_egg_crack.wav"
+    const val SfxBabyChirp = "audio/sfx_baby_chirp.wav"
+    const val SfxHungryWhimper = "audio/sfx_hungry_whimper.wav"
 
     // Story narration (optional).
     // Episode 1 (forest)

@@ -7,9 +7,11 @@ import kotlinx.coroutines.flow.MutableStateFlow
 class InMemoryInventoryStore : InventoryStoreOperations {
     private val owned = MutableStateFlow<Set<String>>(emptySet())
     private val equipped = MutableStateFlow<String?>(null)
+    private val pendingEquip = MutableStateFlow<String?>(null)
 
     override val ownedAccessoriesFlow: Flow<Set<String>> = owned
     override val equippedAccessoryFlow: Flow<String?> = equipped
+    override val pendingAccessoryEquipFlow: Flow<String?> = pendingEquip
 
     override suspend fun addOwned(itemId: String) {
         owned.value = owned.value + itemId
@@ -19,8 +21,13 @@ class InMemoryInventoryStore : InventoryStoreOperations {
         equipped.value = itemId?.takeIf { it.isNotBlank() }
     }
 
+    override suspend fun setPendingAccessoryEquip(itemId: String?) {
+        pendingEquip.value = itemId?.takeIf { it.isNotBlank() }
+    }
+
     override suspend fun clearAll() {
         owned.value = emptySet()
         equipped.value = null
+        pendingEquip.value = null
     }
 }

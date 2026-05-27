@@ -15,6 +15,7 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import java.util.Locale
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.coroutines.resume
 import kotlin.math.max
@@ -50,6 +51,7 @@ class TextToSpeechManager(context: Context) {
     private val preReadyQueue: ConcurrentLinkedQueue<QueuedSpeech> = ConcurrentLinkedQueue()
     private val waiters: ConcurrentHashMap<String, () -> Unit> = ConcurrentHashMap()
     private val speakMutex = Mutex()
+    private val speakGeneration = AtomicInteger(0)
     private val _isSpeaking = MutableStateFlow(false)
 
     val isReady: Boolean get() = ready.get()
@@ -67,16 +69,19 @@ class TextToSpeechManager(context: Context) {
                     object : UtteranceProgressListener() {
                         override fun onStart(utteranceId: String) {
                             _isSpeaking.value = true
+                            SpeechFocusGate.begin()
                         }
 
                         override fun onDone(utteranceId: String) {
                             _isSpeaking.value = false
+                            SpeechFocusGate.end()
                             waiters.remove(utteranceId)?.invoke()
                         }
 
                         @Deprecated("Deprecated in Java")
                         override fun onError(utteranceId: String) {
                             _isSpeaking.value = false
+                            SpeechFocusGate.end()
                             waiters.remove(utteranceId)?.invoke()
                         }
 
@@ -85,6 +90,7 @@ class TextToSpeechManager(context: Context) {
                             errorCode: Int,
                         ) {
                             _isSpeaking.value = false
+                            SpeechFocusGate.end()
                             waiters.remove(utteranceId)?.invoke()
                         }
                     },
@@ -112,12 +118,22 @@ class TextToSpeechManager(context: Context) {
         navigationSettleMs: Long = 350L,
     ) {
         if (text.isBlank()) return
+        val generation = speakGeneration.incrementAndGet()
         speakMutex.withLock {
+            stopPlaybackUnlocked()
             awaitReady()
-            delay(navigationSettleMs)
+            if (generation != speakGeneration.get()) return@withLock
+            if (navigationSettleMs > 0L) delay(navigationSettleMs)
+            if (generation != speakGeneration.get()) return@withLock
             val timeoutMs = estimateTimeoutMs(text)
             speakAndWaitUnlocked(text, timeoutMs)
         }
+    }
+
+    /** Stops TTS and cancels any in-flight [speakFully] delay/wait. */
+    fun cancelActiveSpeech() {
+        speakGeneration.incrementAndGet()
+        stopPlaybackUnlocked()
     }
 
     suspend fun speakFullyThen(
@@ -126,9 +142,13 @@ class TextToSpeechManager(context: Context) {
         onDone: () -> Unit,
     ) {
         if (text.isBlank()) return
+        val generation = speakGeneration.incrementAndGet()
         speakMutex.withLock {
+            stopPlaybackUnlocked()
             awaitReady()
-            delay(navigationSettleMs)
+            if (generation != speakGeneration.get()) return@withLock
+            if (navigationSettleMs > 0L) delay(navigationSettleMs)
+            if (generation != speakGeneration.get()) return@withLock
             val utteranceId = "tts_${System.currentTimeMillis()}"
             val engine = tts ?: return@withLock
             suspendCancellableCoroutine<Unit> { cont ->
@@ -149,24 +169,28 @@ class TextToSpeechManager(context: Context) {
 
     fun interruptAndSpeak(text: String) {
         if (text.isBlank()) return
-        waiters.clear()
-        _isSpeaking.value = false
-        tts?.stop()
+        speakGeneration.incrementAndGet()
+        stopPlaybackUnlocked()
+        SoundPoolPlayer.stopAllNow()
+        VoicePlayer.stopAllNow()
         schedule(text, TextToSpeech.QUEUE_FLUSH, null)
     }
 
     suspend fun interruptAndSpeakFully(text: String) {
         if (text.isBlank()) return
         speakMutex.withLock {
-            waiters.clear()
-            _isSpeaking.value = false
-            tts?.stop()
+            stopPlaybackUnlocked()
+            SoundPoolPlayer.stopAllNow()
+            VoicePlayer.stopAllNow()
             awaitReady()
             speakAndWaitUnlocked(text, estimateTimeoutMs(text))
         }
     }
 
     fun speak(text: String) {
+        if (text.isBlank()) return
+        speakGeneration.incrementAndGet()
+        stopPlaybackUnlocked()
         schedule(text, TextToSpeech.QUEUE_FLUSH, null)
     }
 
@@ -175,6 +199,7 @@ class TextToSpeechManager(context: Context) {
         onDone: () -> Unit,
     ) {
         if (text.isBlank()) return
+        stopPlaybackUnlocked()
         schedule(text, TextToSpeech.QUEUE_FLUSH, onDone)
     }
 
@@ -272,10 +297,16 @@ class TextToSpeechManager(context: Context) {
 
     /** Call only from app lifecycle (ON_STOP), not from Compose screen dispose. */
     fun stop() {
-        waiters.clear()
+        cancelActiveSpeech()
         preReadyQueue.clear()
+    }
+
+    private fun stopPlaybackUnlocked() {
+        val pending = waiters.values.toList()
+        waiters.clear()
         _isSpeaking.value = false
         tts?.stop()
+        pending.forEach { it.invoke() }
     }
 
     fun shutdown() {

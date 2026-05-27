@@ -45,4 +45,25 @@ class HebrewLetterSpeechTest {
         assertTrue(spoken.contains(dinoNameSpokenForTts()))
         assertTrue(!spoken.contains("דינו"))
     }
+
+    @Test
+    fun intro_instruction_spoken_uses_vowelized_play_together_phrase() {
+        val spoken = introInstructionSpokenForTts()
+        assertTrue(spoken.contains(DinoStoryScripts.playTogetherSpokenForTts()))
+        assertTrue(!spoken.contains("בואו נשחק"))
+    }
+
+    @Test
+    fun hebrew_letter_base_strips_niqqud_for_matching() {
+        assertEquals("ד", hebrewLetterBase("דָ"))
+        assertEquals("ד", hebrewLetterBase("דַ"))
+        assertEquals("ד", hebrewLetterBase("דִ"))
+    }
+
+    @Test
+    fun falling_letter_niqqud_keeps_same_base_letter() {
+        val withMark = letterWithRandomNiqqudForFalling("מ")
+        assertEquals("מ", hebrewLetterBase(withMark))
+        assertNotEquals("מ", withMark)
+    }
 }

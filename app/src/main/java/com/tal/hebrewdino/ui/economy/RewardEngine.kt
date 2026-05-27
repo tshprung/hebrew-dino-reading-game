@@ -5,7 +5,9 @@ import com.tal.hebrewdino.ui.data.CharacterRepository
 import com.tal.hebrewdino.ui.domain.economy.PendingRewardEvent
 import com.tal.hebrewdino.ui.domain.economy.RewardGrantRequest
 import com.tal.hebrewdino.ui.domain.economy.StationRoundCompleted
-import com.tal.hebrewdino.ui.domain.economy.fanfareTextForApples
+import com.tal.hebrewdino.ui.domain.economy.FoodRewards
+import com.tal.hebrewdino.ui.domain.economy.GrowthStage
+import com.tal.hebrewdino.ui.domain.economy.fanfareTextForFood
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -46,31 +48,48 @@ class RewardEngine(
 
     suspend fun grant(request: RewardGrantRequest) {
         mutex.withLock {
+            var accessoryUnlockId: String? = null
+            val wallet = characterRepository.playerWalletFlow.first()
+            val accessoriesAllowed = wallet.growthStage == GrowthStage.ADULT
             request.markChapterProgress?.let { progress ->
                 if (progress.stationId > 0) {
                     characterRepository.markChapterStationCompleted(
                         chapterIndex = progress.chapterIndex,
                         stationId = progress.stationId,
                     )
-                    characterRepository.grantAccessoryForStationCompleted(
-                        chapterIndex = progress.chapterIndex,
-                        stationId = progress.stationId,
-                    )
+                    if (accessoriesAllowed) {
+                        accessoryUnlockId =
+                            characterRepository.grantAccessoryForStationCompleted(
+                                chapterIndex = progress.chapterIndex,
+                                stationId = progress.stationId,
+                            )
+                    }
                 }
             }
             if (request.resetHunger) {
                 characterRepository.setFullUntilAtMs(0L)
             }
-            if (request.applesReward > 0) {
-                characterRepository.addFood(request.applesReward)
+            val eventId = UUID.randomUUID().toString()
+            val food =
+                if (request.applesReward > 0) {
+                    FoodRewards.pickForSeed(eventId)
+                } else {
+                    null
+                }
+            if (request.applesReward > 0 && food != null) {
+                characterRepository.addFood(request.applesReward, food.emoji)
             }
-            if (request.emitPresentation && request.applesReward > 0) {
+            if (request.emitPresentation && request.applesReward > 0 && food != null) {
                 val event =
                     PendingRewardEvent(
-                        eventId = UUID.randomUUID().toString(),
+                        eventId = eventId,
                         applesCount = request.applesReward,
-                        fanfareText = fanfareTextForApples(request.applesReward),
+                        fanfareText = fanfareTextForFood(request.applesReward, food),
                         visualCue = request.visualCue,
+                        accessoryUnlockId = accessoryUnlockId,
+                        foodEmoji = food.emoji,
+                        foodNameSingularHe = food.nameSingularHe,
+                        foodNamePluralHe = food.namePluralHe,
                     )
                 characterRepository.savePendingRewardEvent(event)
                 _pendingRewardEvent.value = event

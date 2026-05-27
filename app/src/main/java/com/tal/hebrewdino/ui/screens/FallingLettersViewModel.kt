@@ -4,6 +4,8 @@ import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.tal.hebrewdino.ui.domain.HebrewSyllabus
+import com.tal.hebrewdino.ui.domain.hebrewLetterBase
+import com.tal.hebrewdino.ui.domain.letterWithRandomNiqqudForFalling
 import com.tal.hebrewdino.ui.domain.economy.StationRoundCompleted
 import com.tal.hebrewdino.ui.economy.RewardEngine
 import kotlinx.coroutines.Job
@@ -61,7 +63,8 @@ class FallingLettersViewModel(
     private var gameHeightPx: Float = 0f
     private var chipHeightPx: Float = 60f
     private val minLaneGapFactor: Float = 1.28f
-    private var spawnsSinceLastTarget: Int = 0
+    /** Max falling distractors while the round target is already visible. */
+    private val maxDistractorsOnScreen: Int = 4
     private var spawnDelayMs: Long = 0L
     private var pendingRoundBreakToken: Int = 0
     private var pendingRoundBreakRoundIndex: Int = 0
@@ -83,8 +86,7 @@ class FallingLettersViewModel(
 
     private fun initialState(): FallingLettersUiState {
         val target = roundTargets.firstOrNull() ?: alphabet.first()
-        spawnDelayMs = randomSpawnDelayMs()
-        spawnsSinceLastTarget = 0
+        spawnDelayMs = 0L
         return FallingLettersUiState(
             targetLetter = target,
             roundIndex = 0,
@@ -131,7 +133,7 @@ class FallingLettersViewModel(
         if (state.isComplete) return
         if (state.inputsLocked) return
         val clicked = state.letters.firstOrNull { it.id == letterId } ?: return
-        val correct = clicked.text == state.targetLetter
+        val correct = hebrewLetterBase(clicked.text) == hebrewLetterBase(state.targetLetter)
         _uiState.value =
             state.copy(
                 feedbackLetterId = clicked.id,
@@ -208,8 +210,7 @@ class FallingLettersViewModel(
 
         val nextRoundIndex = state.roundIndex + 1
         val nextTarget = roundTargets.getOrNull(nextRoundIndex) ?: alphabet.first()
-        spawnsSinceLastTarget = 0
-        spawnDelayMs = randomSpawnDelayMs()
+        spawnDelayMs = 0L
         _uiState.value =
             state.copy(
                 roundIndex = nextRoundIndex,
@@ -243,16 +244,24 @@ class FallingLettersViewModel(
         if (bottomY > 0f) {
             spawnDelayMs -= tickMs
             if (spawnDelayMs <= 0L) {
-                val forceTargetNow = nextState.letters.none { it.text == nextState.targetLetter }
-                val spawned =
+                val letters = nextState.letters.toMutableList()
+                val targetBase = hebrewLetterBase(nextState.targetLetter)
+                val hasTarget =
+                    letters.any { hebrewLetterBase(it.text) == targetBase }
+                if (!hasTarget) {
                     spawnOne(
                         targetLetter = nextState.targetLetter,
-                        existing = nextState.letters,
-                        forceTarget = forceTargetNow,
-                    )
-                if (spawned != null) {
-                    nextState = nextState.copy(letters = nextState.letters + spawned)
+                        existing = letters,
+                        spawnKind = SpawnKind.TARGET,
+                    )?.let { letters += it }
+                } else {
+                    spawnOne(
+                        targetLetter = nextState.targetLetter,
+                        existing = letters,
+                        spawnKind = SpawnKind.DISTRACTOR,
+                    )?.let { letters += it }
                 }
+                nextState = nextState.copy(letters = letters)
                 spawnDelayMs = randomSpawnDelayMs()
             }
         }
@@ -260,10 +269,15 @@ class FallingLettersViewModel(
         _uiState.value = nextState
     }
 
+    private enum class SpawnKind {
+        TARGET,
+        DISTRACTOR,
+    }
+
     private fun spawnOne(
         targetLetter: String,
         existing: List<FallingLetter>,
-        forceTarget: Boolean,
+        spawnKind: SpawnKind,
     ): FallingLetter? {
         val gap = chipHeightPx * minLaneGapFactor
         val laneMinY = FloatArray(3) { 0f }
@@ -293,20 +307,22 @@ class FallingLettersViewModel(
         val minY = laneMinY[lane]
         val startY = if (minY <= 0f) (minY - gap) else -gap
 
-        val spawnTarget =
-            when {
-                forceTarget -> true
-                spawnsSinceLastTarget >= 3 -> true
-                rng.nextFloat() < 0.34f -> true
-                else -> false
-            }
+        val targetBase = hebrewLetterBase(targetLetter)
+        val targetOnScreen = existing.count { hebrewLetterBase(it.text) == targetBase }
+        val distractorOnScreen = existing.size - targetOnScreen
+
         val text =
-            if (spawnTarget) {
-                spawnsSinceLastTarget = 0
-                targetLetter
-            } else {
-                spawnsSinceLastTarget += 1
-                randomDistractorFor(targetLetter)
+            when (spawnKind) {
+                SpawnKind.TARGET -> {
+                    if (targetOnScreen >= 1) return null
+                    letterWithRandomNiqqudForFalling(targetLetter, rng)
+                }
+                SpawnKind.DISTRACTOR -> {
+                    if (targetOnScreen < 1) return null
+                    if (distractorOnScreen >= maxDistractorsOnScreen) return null
+                    if (rng.nextFloat() > 0.28f) return null
+                    letterWithRandomNiqqudForFalling(randomDistractorFor(targetLetter), rng)
+                }
             }
 
         return FallingLetter(
@@ -319,11 +335,12 @@ class FallingLettersViewModel(
     }
 
     private fun randomDistractorFor(targetLetter: String): String {
-        val pool = alphabet.filter { it != targetLetter }
+        val targetBase = hebrewLetterBase(targetLetter)
+        val pool = alphabet.filter { hebrewLetterBase(it) != targetBase }
         if (pool.isEmpty()) return alphabet.firstOrNull() ?: targetLetter
         return pool[rng.nextInt(pool.size)]
     }
 
-    private fun randomSpawnDelayMs(): Long = 220L + rng.nextInt(220)
+    private fun randomSpawnDelayMs(): Long = 130L + rng.nextInt(110)
 
 }

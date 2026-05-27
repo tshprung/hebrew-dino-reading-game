@@ -30,6 +30,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import com.tal.hebrewdino.ui.components.ChapterNavChipStyles
+import com.tal.hebrewdino.ui.audio.AppForegroundAudio
+import com.tal.hebrewdino.ui.audio.InteractionAudio
 import com.tal.hebrewdino.ui.audio.TextToSpeechManager
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -38,6 +40,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -57,12 +61,15 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.tal.hebrewdino.ui.data.DinoCharacter
+import com.tal.hebrewdino.ui.domain.economy.FoodInventoryEntry
 import com.tal.hebrewdino.ui.domain.economy.GrowthStage
 import com.tal.hebrewdino.ui.domain.economy.PlayerWallet
 import com.tal.hebrewdino.ui.domain.economy.TamagotchiRules
 import com.tal.hebrewdino.ui.audio.SfxManager
 import com.tal.hebrewdino.ui.components.particles.ConfettiBurstOverlay
 import com.tal.hebrewdino.ui.layout.topChromeInsetsPadding
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import com.tal.hebrewdino.R
 
@@ -76,6 +83,11 @@ fun DinoHomeScreen(
     val character by viewModel.character.collectAsState()
     val wallet by viewModel.wallet.collectAsState()
     val equippedAccessory by viewModel.equippedAccessory.collectAsState()
+    val pendingAccessoryEquip by viewModel.pendingAccessoryEquip.collectAsState()
+    val ownedAccessories by viewModel.ownedAccessories.collectAsState()
+    val highlightMissionButton by viewModel.highlightMissionButton.collectAsState()
+    val eggTapCount by viewModel.eggTapCount.collectAsState()
+    val foodInventory by viewModel.foodInventory.collectAsState()
     val homeSpeechEpoch = viewModel.homeSpeechEpoch
     var eatPulseEpoch by remember { mutableIntStateOf(0) }
 
@@ -85,8 +97,14 @@ fun DinoHomeScreen(
         isDataReady = viewModel.isDataReady,
         homePromptText = wallet?.let(viewModel::homePromptText).orEmpty(),
         homePromptSpeech = wallet?.let(viewModel::homePromptSpokenForTts).orEmpty(),
+        entryHomeSpeech = wallet?.let(viewModel::entryHomeSpokenForTts).orEmpty(),
+        periodicHomeReminderSpeech = wallet?.let(viewModel::periodicHomeReminderSpokenForTts).orEmpty(),
+        homeReminderEpoch = viewModel.homeReminderEpoch,
+        suppressPeriodicReminders = viewModel.suppressPeriodicReminders,
         homeSpeechEpoch = homeSpeechEpoch,
         onHomeSpeechPlayed = viewModel::onHomeSpeechPlayed,
+        playBabyChirpBeforeEntry = viewModel::shouldPlayBabyChirpBeforeEntrySpeech,
+        eggTapCount = eggTapCount,
         onGoOnMission = onGoOnMission,
         onBackToIntro = onBackToIntro,
         hatchEpoch = viewModel.hatchEpoch,
@@ -95,9 +113,15 @@ fun DinoHomeScreen(
         onEggTapped = viewModel::onEggTapped,
         eatPulseEpoch = eatPulseEpoch,
         equippedAccessoryId = equippedAccessory,
+        pendingAccessoryEquipId = pendingAccessoryEquip,
+        ownedAccessoryIds = ownedAccessories,
+        highlightMissionButton = highlightMissionButton,
+        onPendingAccessoryEquipped = viewModel::completePendingAccessoryEquip,
+        onOwnedAccessoryTap = viewModel::equipOwnedAccessory,
         confettiTrigger = viewModel.confettiTrigger,
-        onFeed = {
-            viewModel.feedOnce()
+        foodInventory = foodInventory,
+        onFeed = { foodEmoji ->
+            viewModel.feedOnce(foodEmoji)
             eatPulseEpoch += 1
         },
         modifier = modifier,
@@ -111,8 +135,14 @@ private fun DinoHomeContent(
     isDataReady: Boolean,
     homePromptText: String,
     homePromptSpeech: String,
+    entryHomeSpeech: String,
+    periodicHomeReminderSpeech: String,
+    homeReminderEpoch: Int,
+    suppressPeriodicReminders: Boolean,
     homeSpeechEpoch: Int,
     onHomeSpeechPlayed: () -> Unit,
+    playBabyChirpBeforeEntry: () -> Boolean,
+    eggTapCount: Int,
     onGoOnMission: () -> Unit,
     onBackToIntro: () -> Unit,
     hatchEpoch: Int,
@@ -121,8 +151,14 @@ private fun DinoHomeContent(
     onEggTapped: () -> Unit,
     eatPulseEpoch: Int,
     equippedAccessoryId: String?,
+    pendingAccessoryEquipId: String?,
+    ownedAccessoryIds: Set<String>,
+    highlightMissionButton: Boolean,
+    onPendingAccessoryEquipped: () -> Unit,
+    onOwnedAccessoryTap: (String) -> Unit,
     confettiTrigger: Int,
-    onFeed: () -> Unit,
+    foodInventory: List<FoodInventoryEntry>,
+    onFeed: (foodEmoji: String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val eatScale = remember { Animatable(1f) }
@@ -133,32 +169,75 @@ private fun DinoHomeContent(
     }
 
     val context = LocalContext.current
-    val sfx = remember(context) { SfxManager(context.applicationContext) }
-    val tts = remember(context) { TextToSpeechManager.get(context.applicationContext) }
+    val appContext = remember(context) { context.applicationContext }
+    val stopInteractionAudio = remember(appContext) { { InteractionAudio.stopAllNow(appContext) } }
+    val sfx = remember(appContext) { SfxManager(appContext) }
+    val tts = remember(appContext) { TextToSpeechManager.get(appContext) }
     val scope = rememberCoroutineScope()
+    val isInForeground by AppForegroundAudio.isInForeground.collectAsState()
     DisposableEffect(sfx) {
         onDispose { sfx.release() }
     }
+    DisposableEffect(Unit) {
+        onDispose { tts.stop() }
+    }
 
     val growthStage = wallet?.growthStage ?: GrowthStage.EGG
-    val foodCount = wallet?.applesCount ?: 0
     val isHungry = wallet?.isHungry ?: false
     val growthProgress01 = wallet?.growthProgress01 ?: 0f
     val fedFoodTotal = wallet?.fedTotal ?: 0
-    val canFeed = foodCount > 0
+    val canFeed = foodInventory.isNotEmpty()
 
-    LaunchedEffect(isDataReady, homePromptSpeech, homeSpeechEpoch) {
-        if (!isDataReady || homePromptSpeech.isBlank()) return@LaunchedEffect
-        tts.speakFully(homePromptSpeech)
+    LaunchedEffect(isDataReady, entryHomeSpeech, homeSpeechEpoch, isInForeground) {
+        if (!isDataReady || !isInForeground || entryHomeSpeech.isBlank()) return@LaunchedEffect
+        if (playBabyChirpBeforeEntry()) {
+            sfx.playBabyChirp()
+        }
+        tts.speakFully(entryHomeSpeech, navigationSettleMs = 0L)
         onHomeSpeechPlayed()
     }
+
+    LaunchedEffect(eggTapCount) {
+        if (eggTapCount == TamagotchiRules.EGG_TAPS_TO_HATCH) {
+            sfx.playEggCrack()
+        }
+    }
+
+    var hungryCuePlayed by remember { mutableStateOf(false) }
+    LaunchedEffect(isHungry) {
+        if (isHungry && !hungryCuePlayed) {
+            hungryCuePlayed = true
+            sfx.playHungryWhimper()
+        }
+        if (!isHungry) {
+            hungryCuePlayed = false
+        }
+    }
+
+    LaunchedEffect(
+        isDataReady,
+        foodInventory,
+        periodicHomeReminderSpeech,
+        isInForeground,
+        homeReminderEpoch,
+        homeSpeechEpoch,
+        suppressPeriodicReminders,
+    ) {
+        if (!isDataReady || periodicHomeReminderSpeech.isBlank()) return@LaunchedEffect
+        delay(DinoHomeViewModel.HOME_REMINDER_INTERVAL_MS)
+        while (isActive) {
+            if (!isInForeground || suppressPeriodicReminders) {
+                delay(500L)
+                continue
+            }
+            tts.interruptAndSpeak(periodicHomeReminderSpeech)
+            delay(DinoHomeViewModel.HOME_REMINDER_INTERVAL_MS)
+        }
+    }
     val onEggTap =
-        remember(onEggTapped, scope, sfx, homePromptSpeech) {
+        remember(onEggTapped, scope, sfx) {
             {
                 scope.launch { sfx.playEggTap() }
-                if (homePromptSpeech.isNotBlank()) {
-                    tts.interruptAndSpeak(homePromptSpeech)
-                }
                 onEggTapped()
             }
         }
@@ -176,6 +255,25 @@ private fun DinoHomeContent(
             modifier = Modifier.fillMaxSize(),
         )
 
+        OwnedAccessoriesRail(
+            ownedIds = ownedAccessoryIds,
+            equippedId = equippedAccessoryId,
+            pendingEquipId = pendingAccessoryEquipId,
+            onAccessoryTap = { id ->
+                stopInteractionAudio()
+                onOwnedAccessoryTap(id)
+            },
+            modifier = Modifier.align(Alignment.CenterStart),
+        )
+
+        pendingAccessoryEquipId?.let { giftId ->
+            PendingAccessorySideGift(
+                accessoryId = giftId,
+                onEquipAnimationFinished = onPendingAccessoryEquipped,
+                modifier = Modifier.fillMaxSize(),
+            )
+        }
+
         Box(
             modifier =
                 Modifier
@@ -184,7 +282,10 @@ private fun DinoHomeContent(
                     .padding(top = 4.dp, start = 8.dp),
         ) {
             OutlinedButton(
-                onClick = onBackToIntro,
+                onClick = {
+                    stopInteractionAudio()
+                    onBackToIntro()
+                },
                 colors = ChapterNavChipStyles.outlinedButtonColors(),
             ) {
                 Text("חזור", style = ChapterNavChipStyles.labelTextStyle())
@@ -198,10 +299,13 @@ private fun DinoHomeContent(
                     .topChromeInsetsPadding()
                     .padding(top = 10.dp, end = 12.dp),
         ) {
-            ApplesChip(
-                foodCount = foodCount,
-                enabled = canFeed,
-                onClick = onFeed,
+            FoodInventoryRail(
+                items = foodInventory,
+                pulseWhenFeedable = canFeed,
+                onFeed = { emoji ->
+                    scope.launch { sfx.playChew() }
+                    onFeed(emoji)
+                },
             )
         }
 
@@ -228,12 +332,14 @@ private fun DinoHomeContent(
             DinoCenterVisual(
                 character = character,
                 growthStage = growthStage,
+                isHungry = isHungry,
                 hatchEpoch = hatchEpoch,
                 growEpoch = growEpoch,
                 eggTapEpoch = eggTapEpoch,
                 equippedAccessoryId = equippedAccessoryId,
                 onEggTapped = onEggTap,
                 onDinoTapped = {
+                    stopInteractionAudio()
                     if (homePromptText.isNotBlank()) {
                         tts.interruptAndSpeak(homePromptSpeech)
                     }
@@ -248,6 +354,7 @@ private fun DinoHomeContent(
                 modifier =
                     Modifier
                         .clickable {
+                            stopInteractionAudio()
                             if (homePromptText.isNotBlank()) {
                                 tts.interruptAndSpeak(homePromptSpeech)
                             }
@@ -262,6 +369,7 @@ private fun DinoHomeContent(
                 modifier =
                     Modifier
                         .clickable {
+                            stopInteractionAudio()
                             if (homePromptText.isNotBlank()) {
                                 tts.interruptAndSpeak(homePromptSpeech)
                             }
@@ -272,8 +380,11 @@ private fun DinoHomeContent(
 
             ThemedActionButton(
                 text = "!צא למשימה",
-                onClick = onGoOnMission,
-                highlighted = true,
+                onClick = {
+                    stopInteractionAudio()
+                    onGoOnMission()
+                },
+                highlighted = highlightMissionButton,
                 modifier =
                     Modifier
                         .fillMaxWidth(0.96f)
@@ -349,32 +460,73 @@ private fun MapChip(
 }
 
 @Composable
-private fun ApplesChip(
-    foodCount: Int,
-    enabled: Boolean,
+private fun FoodInventoryRail(
+    items: List<FoodInventoryEntry>,
+    pulseWhenFeedable: Boolean,
+    onFeed: (foodEmoji: String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val feedPulse =
+        if (pulseWhenFeedable) {
+            rememberInfiniteTransition(label = "food_feed_pulse")
+                .animateFloat(
+                    initialValue = 1f,
+                    targetValue = 1.06f,
+                    animationSpec =
+                        infiniteRepeatable(
+                            animation = tween(durationMillis = 900, easing = LinearEasing),
+                            repeatMode = RepeatMode.Reverse,
+                        ),
+                    label = "food_scale",
+                )
+                .value
+        } else {
+            1f
+        }
+    Row(
+        modifier = modifier.scale(feedPulse),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        items.forEach { entry ->
+            FoodIconChip(
+                emoji = entry.emoji,
+                count = entry.count,
+                onClick = { onFeed(entry.emoji) },
+            )
+        }
+    }
+}
+
+@Composable
+private fun FoodIconChip(
+    emoji: String,
+    count: Int,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Surface(
         onClick = onClick,
-        enabled = enabled,
-        modifier = modifier.alpha(if (enabled) 1f else 0.72f),
+        modifier = modifier,
         shape = RoundedCornerShape(999.dp),
-        color = if (enabled) Color(0xFF2DB86E).copy(alpha = 0.42f) else Color.Black.copy(alpha = 0.28f),
+        color = Color(0xFF2DB86E).copy(alpha = 0.42f),
         tonalElevation = 0.dp,
         shadowElevation = 0.dp,
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = "תפוחים: $foodCount",
+                text = emoji,
+                style = MaterialTheme.typography.headlineMedium,
+            )
+            Text(
+                text = count.toString(),
                 style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black),
                 color = Color.White,
             )
-            Text(text = "🍎", style = MaterialTheme.typography.titleLarge)
         }
     }
 }
@@ -383,6 +535,7 @@ private fun ApplesChip(
 private fun DinoCenterVisual(
     character: DinoCharacter,
     growthStage: GrowthStage,
+    isHungry: Boolean,
     hatchEpoch: Int,
     growEpoch: Int,
     eggTapEpoch: Int,
@@ -397,10 +550,12 @@ private fun DinoCenterVisual(
         contentAlignment = Alignment.Center,
     ) {
         val dinoColorFilter =
-            if (character == DinoCharacter.DINA_PINK) {
-                ColorFilter.tint(Color(0xFFFF4FB3).copy(alpha = 0.55f))
-            } else {
-                null
+            when {
+                isHungry && growthStage != GrowthStage.EGG ->
+                    ColorFilter.tint(Color(0xFF6B8CFF).copy(alpha = 0.45f))
+                character == DinoCharacter.DINA_PINK ->
+                    ColorFilter.tint(Color(0xFFFF4FB3).copy(alpha = 0.55f))
+                else -> null
             }
 
         val eggRes =
@@ -483,6 +638,43 @@ private fun DinoCenterVisual(
             -> {
                 val base = maxWidth.coerceAtMost(280.dp)
                 val size = if (growthStage == GrowthStage.BABY) base * 0.72f else base
+                val idleBob = rememberInfiniteTransition(label = "dino_bob")
+                val bobY by idleBob.animateFloat(
+                    initialValue = -4f,
+                    targetValue = 4f,
+                    animationSpec =
+                        infiniteRepeatable(
+                            animation = tween(1400, easing = LinearEasing),
+                            repeatMode = RepeatMode.Reverse,
+                        ),
+                    label = "bob",
+                )
+                val blinkScale by idleBob.animateFloat(
+                    initialValue = 1f,
+                    targetValue = 0.96f,
+                    animationSpec =
+                        infiniteRepeatable(
+                            animation = tween(100, easing = LinearEasing),
+                            repeatMode = RepeatMode.Restart,
+                            initialStartOffset = androidx.compose.animation.core.StartOffset(2800),
+                        ),
+                    label = "blink",
+                )
+                val hungrySway =
+                    if (isHungry) {
+                        idleBob.animateFloat(
+                            initialValue = -2.5f,
+                            targetValue = 2.5f,
+                            animationSpec =
+                                infiniteRepeatable(
+                                    animation = tween(900, easing = LinearEasing),
+                                    repeatMode = RepeatMode.Reverse,
+                                ),
+                            label = "hungry_sway",
+                        ).value
+                    } else {
+                        0f
+                    }
                 val adultPulse =
                     if (growthStage == GrowthStage.ADULT) {
                         val idle = rememberInfiniteTransition(label = "adult_celebrate")
@@ -503,7 +695,16 @@ private fun DinoCenterVisual(
                     modifier =
                         Modifier
                             .size(size)
-                            .scale(scale * growScale.value * adultPulse)
+                            .graphicsLayer {
+                                translationY = bobY + if (isHungry) 6f else 0f
+                                rotationZ = hungrySway
+                                scaleX =
+                                    scale * growScale.value * adultPulse * blinkScale *
+                                        if (isHungry) 0.94f else 1f
+                                scaleY =
+                                    scale * growScale.value * adultPulse * blinkScale *
+                                        if (isHungry) 0.92f else 1f
+                            }
                             .clickable(onClick = onDinoTapped),
                     contentAlignment = Alignment.Center,
                 ) {
@@ -595,16 +796,7 @@ private fun GrowthHint(
 ) {
     val text =
         when (growthStage) {
-            GrowthStage.EGG -> {
-                val remaining = (TamagotchiRules.APPLES_TO_HATCH - fedFoodTotal).coerceAtLeast(0)
-                if (remaining <= 0) {
-                    "הביצה בוקעת!"
-                } else if (remaining == 1) {
-                    "עוד תפוח אחד והביצה בוקעת!"
-                } else {
-                    "עוד $remaining תפוחים והביצה בוקעת!"
-                }
-            }
+            GrowthStage.EGG -> "הקישו על הביצה — טוק, טוק, טוק!"
             GrowthStage.BABY -> {
                 val remaining = (TamagotchiRules.APPLES_TO_ADULT - fedFoodTotal).coerceAtLeast(0)
                 if (remaining <= 0) {
@@ -612,7 +804,7 @@ private fun GrowthHint(
                 } else if (remaining == 1) {
                     "עוד תפוח אחד ודינו גדל!"
                 } else {
-                    "עוד $remaining תפוחים ודינו גדל!"
+                    "עוד ${appleCountMasculinePhrase(remaining)} ודינו גדל!"
                 }
             }
             GrowthStage.ADULT -> "דינו בוגר! המשיכו להאכיל ולצאת למשימות!"

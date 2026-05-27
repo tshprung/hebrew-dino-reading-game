@@ -3,6 +3,7 @@ package com.tal.hebrewdino.ui.screens
 import com.tal.hebrewdino.ui.MainDispatcherRule
 import com.tal.hebrewdino.ui.withFakeCharacterStore
 import com.tal.hebrewdino.ui.domain.economy.StationRoundCompleted
+import com.tal.hebrewdino.ui.domain.hebrewLetterBase
 import com.tal.hebrewdino.ui.economy.RewardEngine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -23,6 +24,93 @@ class FallingLettersViewModelTest {
     val mainDispatcherRule: MainDispatcherRule = MainDispatcherRule()
 
     @Test
+    fun always_has_target_letter_on_screen_after_spawn_ticks() = runTest {
+        withFakeCharacterStore { repo, _ ->
+            val rewardEngine = RewardEngine(repo)
+            val vm =
+                FallingLettersViewModel(
+                    rng = Random(2),
+                    rewardEngine = rewardEngine,
+                    stationRoundCompleted = StationRoundCompleted(chapterIndex = 0, stationId = 3),
+                )
+            try {
+                vm.setViewport(heightPx = 800f, chipHeightPx = 60f)
+                repeat(8) {
+                    advanceTimeBy(100L)
+                    runCurrent()
+                    val s = vm.uiState.value
+                    if (s.letters.isNotEmpty()) {
+                        assertTrue(
+                            s.letters.any {
+                                hebrewLetterBase(it.text) == hebrewLetterBase(s.targetLetter)
+                            },
+                        )
+                    }
+                }
+                val final = vm.uiState.value
+                assertTrue(
+                    final.letters.any {
+                        hebrewLetterBase(it.text) == hebrewLetterBase(final.targetLetter)
+                    },
+                )
+            } finally {
+                vm.stopTicker()
+            }
+        }
+    }
+
+    @Test
+    fun new_round_spawns_new_target_letter_immediately() = runTest {
+        withFakeCharacterStore { repo, _ ->
+            val rewardEngine = RewardEngine(repo)
+            val vm =
+                FallingLettersViewModel(
+                    rng = Random(3),
+                    rewardEngine = rewardEngine,
+                    stationRoundCompleted = StationRoundCompleted(chapterIndex = 0, stationId = 3),
+                    targetsPerRound = 1,
+                )
+            try {
+                vm.setViewport(heightPx = 800f, chipHeightPx = 60f)
+                var s = vm.uiState.value
+                var tries = 0
+                while (
+                    s.letters.none { hebrewLetterBase(it.text) == hebrewLetterBase(s.targetLetter) } &&
+                    tries < 20
+                ) {
+                    advanceTimeBy(100L)
+                    runCurrent()
+                    s = vm.uiState.value
+                    tries += 1
+                }
+                val firstTarget = s.targetLetter
+                val correctId =
+                    s.letters.first { hebrewLetterBase(it.text) == hebrewLetterBase(firstTarget) }.id
+                vm.onLetterClicked(correctId)
+                advanceTimeBy(200L)
+                runCurrent()
+                val breakToken = vm.uiState.value.roundBreakToken
+                if (breakToken > 0) {
+                    vm.onRoundBreakFinished(breakToken)
+                    advanceTimeBy(100L)
+                    runCurrent()
+                }
+                val next = vm.uiState.value
+                if (next.roundIndex > 0) {
+                    assertTrue(next.targetLetter != firstTarget || next.roundsTotal == 1)
+                    assertTrue(
+                        next.letters.any {
+                            hebrewLetterBase(it.text) == hebrewLetterBase(next.targetLetter)
+                        },
+                    )
+                }
+            } finally {
+                vm.stopTicker()
+            }
+        }
+    }
+
+    @Test
     fun wrong_click_does_not_advance_caught_and_triggers_negative_feedback() = runTest {
         withFakeCharacterStore { repo, _ ->
             val rewardEngine = RewardEngine(repo)
@@ -34,11 +122,23 @@ class FallingLettersViewModelTest {
                 )
             try {
             vm.setViewport(heightPx = 800f, chipHeightPx = 60f)
-            advanceTimeBy(1500L)
-            runCurrent()
-
-            val before = vm.uiState.value
-            val wrong = before.letters.first { it.text != before.targetLetter }
+            var before = vm.uiState.value
+            var waitForDistractor = 0
+            while (
+                before.letters.none {
+                    hebrewLetterBase(it.text) != hebrewLetterBase(before.targetLetter)
+                } &&
+                waitForDistractor < 30
+            ) {
+                advanceTimeBy(300L)
+                runCurrent()
+                before = vm.uiState.value
+                waitForDistractor += 1
+            }
+            val wrong =
+                before.letters.first {
+                    hebrewLetterBase(it.text) != hebrewLetterBase(before.targetLetter)
+                }
 
             vm.onLetterClicked(wrong.id)
             val after = vm.uiState.value
@@ -71,13 +171,17 @@ class FallingLettersViewModelTest {
             repeat(vm.uiState.value.roundsTotal) {
                 var s = vm.uiState.value
                 var tries = 0
-                while (s.letters.none { it.text == s.targetLetter } && tries < 20) {
+                while (
+                    s.letters.none { hebrewLetterBase(it.text) == hebrewLetterBase(s.targetLetter) } &&
+                    tries < 20
+                ) {
                     advanceTimeBy(300L)
                     runCurrent()
                     s = vm.uiState.value
                     tries += 1
                 }
-                val correctId = s.letters.first { it.text == s.targetLetter }.id
+                val correctId =
+                    s.letters.first { hebrewLetterBase(it.text) == hebrewLetterBase(s.targetLetter) }.id
                 vm.onLetterClicked(correctId)
                 advanceTimeBy(300L)
                 runCurrent()

@@ -1,6 +1,10 @@
 package com.tal.hebrewdino.ui.data
 
 interface StoryNarrationGate {
+    suspend fun isEggKnockPromptSpoken(): Boolean
+
+    suspend fun setEggKnockPromptSpoken()
+
     suspend fun isPart2Spoken(): Boolean
 
     suspend fun isPart3Spoken(): Boolean

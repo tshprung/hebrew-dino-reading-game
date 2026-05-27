@@ -22,6 +22,7 @@ class InventoryStore(
 
     private val ownedKey = stringSetPreferencesKey("inventory_owned_accessories")
     private val equippedKey = stringPreferencesKey("inventory_equipped_accessory")
+    private val pendingEquipKey = stringPreferencesKey("inventory_pending_accessory_equip")
 
     override val ownedAccessoriesFlow: Flow<Set<String>> =
         appContext.dataStore.data.map { prefs ->
@@ -31,6 +32,11 @@ class InventoryStore(
     override val equippedAccessoryFlow: Flow<String?> =
         appContext.dataStore.data.map { prefs ->
             prefs[equippedKey]?.takeIf { it.isNotBlank() }
+        }
+
+    override val pendingAccessoryEquipFlow: Flow<String?> =
+        appContext.dataStore.data.map { prefs ->
+            prefs[pendingEquipKey]?.takeIf { it.isNotBlank() }
         }
 
     override suspend fun addOwned(itemId: String) {
@@ -51,10 +57,21 @@ class InventoryStore(
         }
     }
 
+    override suspend fun setPendingAccessoryEquip(itemId: String?) {
+        appContext.dataStore.edit { prefs ->
+            if (itemId.isNullOrBlank()) {
+                prefs.remove(pendingEquipKey)
+            } else {
+                prefs[pendingEquipKey] = itemId
+            }
+        }
+    }
+
     override suspend fun clearAll() {
         appContext.dataStore.edit { prefs ->
             prefs.remove(ownedKey)
             prefs.remove(equippedKey)
+            prefs.remove(pendingEquipKey)
         }
     }
 }

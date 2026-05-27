@@ -5,7 +5,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.tal.hebrewdino.ui.domain.economy.PendingRewardEvent
-import com.tal.hebrewdino.ui.domain.economy.fanfareDisplayTextForApples
+import com.tal.hebrewdino.ui.domain.cosmetics.accessoryCelebrationSpokenForTts
+import com.tal.hebrewdino.ui.domain.economy.FoodRewardKind
+import com.tal.hebrewdino.ui.domain.economy.fanfareDisplayTextForFood
 import com.tal.hebrewdino.ui.economy.RewardEngine
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -17,6 +19,7 @@ import kotlinx.coroutines.launch
 data class ChallengeSummaryUiState(
     val event: PendingRewardEvent? = null,
     val displayText: String = "",
+    val accessoryCelebrationSpeech: String = "",
     val presentationStarted: Boolean = false,
     val presentationFinished: Boolean = false,
 )
@@ -34,8 +37,18 @@ class ChallengeSummaryViewModel(
                 ChallengeSummaryUiState(
                     event = event,
                     displayText =
-                        event?.let { fanfareDisplayTextForApples(it.applesCount) }
-                            ?: "",
+                        event?.let { ev ->
+                            fanfareDisplayTextForFood(
+                                ev.applesCount,
+                                FoodRewardKind(
+                                    nameSingularHe = ev.foodNameSingularHe,
+                                    namePluralHe = ev.foodNamePluralHe,
+                                    emoji = ev.foodEmoji,
+                                ),
+                            )
+                        } ?: "",
+                    accessoryCelebrationSpeech =
+                        event?.accessoryUnlockId?.let(::accessoryCelebrationSpokenForTts).orEmpty(),
                 )
         }
     }

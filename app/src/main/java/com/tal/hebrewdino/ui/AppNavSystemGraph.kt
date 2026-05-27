@@ -130,7 +130,7 @@ internal fun NavGraphBuilder.systemAndTrainingGraph(host: AppNavHostState) {
 
     composable(NavRoutes.IntroInstruction) {
         IntroInstructionScreen(
-            onContinue = {
+            onHatchComplete = {
                 host.navController.navigate(NavRoutes.Chapters) {
                     popUpTo(NavRoutes.IntroInstruction) { inclusive = true }
                     launchSingleTop = true

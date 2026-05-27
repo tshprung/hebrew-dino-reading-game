@@ -8,6 +8,7 @@ import com.tal.hebrewdino.ui.domain.economy.PendingRewardEvent
 import com.tal.hebrewdino.ui.domain.economy.PlayerWallet
 import com.tal.hebrewdino.ui.domain.cosmetics.AccessoryCatalog
 import com.tal.hebrewdino.ui.domain.cosmetics.AccessoryProgression
+import com.tal.hebrewdino.ui.domain.economy.FoodInventoryCodec
 import com.tal.hebrewdino.ui.domain.economy.TamagotchiRules
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.booleanPreferencesKey
@@ -26,22 +27,41 @@ class CharacterRepository(context: Context) {
 
     val characterFlow: Flow<DinoCharacter> = store.characterFlow
     val foodCountFlow: Flow<Int> = store.foodCountFlow
+    val foodInventoryFlow: Flow<Map<String, Int>> = store.foodInventoryFlow
     val totalFoodEarnedFlow: Flow<Int> = store.totalFoodEarnedFlow
     val growthStageFlow: Flow<String> = store.growthStageFlow
     val fullUntilAtMsFlow: Flow<Long> = store.fullUntilAtMsFlow
 
+    val eggTapCountFlow: Flow<Int> = store.eggTapCountFlow
+
+    val eggHatchedFlow: Flow<Boolean> = store.eggHatchedFlow
+
     val playerWalletFlow: Flow<PlayerWallet> =
         combine(
-            store.foodCountFlow,
-            store.totalFoodEarnedFlow,
-            store.growthStageFlow,
-            store.fullUntilAtMsFlow,
-        ) { food, totalEarned, stageName, fullUntil ->
+            combine(
+                store.foodCountFlow,
+                store.totalFoodEarnedFlow,
+                store.growthStageFlow,
+                store.fullUntilAtMsFlow,
+                store.eggHatchedFlow,
+            ) { food, totalEarned, stageName, fullUntil, eggHatched ->
+                WalletSnapshot(
+                    food = food,
+                    totalEarned = totalEarned,
+                    stageName = stageName,
+                    fullUntil = fullUntil,
+                    eggHatched = eggHatched,
+                )
+            },
+            store.eggTapCountFlow,
+        ) { snapshot, eggTapCount ->
             TamagotchiRules.buildWallet(
-                applesCount = food,
-                totalEarned = totalEarned,
-                storedStageName = stageName,
-                fullUntilAtMs = fullUntil,
+                applesCount = snapshot.food,
+                totalEarned = snapshot.totalEarned,
+                storedStageName = snapshot.stageName,
+                fullUntilAtMs = snapshot.fullUntil,
+                eggHatched = snapshot.eggHatched,
+                eggTapCount = eggTapCount,
             )
         }
     val chapter1MaxCompletedStationFlow: Flow<Int> = store.chapter1MaxCompletedStationFlow
@@ -54,6 +74,8 @@ class CharacterRepository(context: Context) {
 
     val equippedAccessoryFlow: Flow<String?> = inventoryStore.equippedAccessoryFlow
 
+    val pendingAccessoryEquipFlow: Flow<String?> = inventoryStore.pendingAccessoryEquipFlow
+
     fun chapterMaxCompletedStationFlow(chapterIndex: Int): Flow<Int> =
         store.chapterMaxCompletedStationFlow(chapterIndex)
 
@@ -65,9 +87,12 @@ class CharacterRepository(context: Context) {
         store.setFoodCount(foodCount.coerceAtLeast(0))
     }
 
-    suspend fun addFood(delta: Int) {
+    suspend fun addFood(
+        delta: Int,
+        foodEmoji: String = FoodInventoryCodec.DEFAULT_FOOD_EMOJI,
+    ) {
         if (delta == 0) return
-        store.addFood(delta)
+        store.addFood(delta, foodEmoji)
     }
 
     suspend fun setGrowthStage(stageName: String) {
@@ -88,34 +113,48 @@ class CharacterRepository(context: Context) {
         store.clearPendingRewardEvent()
     }
 
-    suspend fun feedOneApple() {
-        val current = store.foodCountFlow.first().coerceAtLeast(0)
-        if (current <= 0) return
-        store.setFoodCount(current - 1)
+    suspend fun feedOneFood(foodEmoji: String? = null) {
+        if (!store.consumeOneFood(foodEmoji)) return
         store.setFullUntilAtMs(Long.MAX_VALUE)
         syncGrowthStageFromWallet()
     }
 
-    /** Grants a progression accessory surprise; returns true if newly unlocked. */
+    suspend fun recordEggTap(): Int = store.recordEggTap()
+
+    suspend fun hatchEggFromTaps() {
+        store.setEggHatched()
+        store.setGrowthStage(GrowthStage.BABY.name)
+    }
+
+    /** Grants a milestone accessory (owned, not auto-equipped); returns true if newly unlocked. */
     suspend fun grantProgressionAccessory(itemId: String): Boolean {
         if (AccessoryCatalog.find(itemId) == null) return false
         val owned = inventoryStore.ownedAccessoriesFlow.first()
         if (itemId in owned) return false
         inventoryStore.addOwned(itemId)
-        inventoryStore.setEquipped(itemId)
+        inventoryStore.setPendingAccessoryEquip(itemId)
         return true
     }
 
     suspend fun grantAccessoryForStationCompleted(
         chapterIndex: Int,
         stationId: Int,
-    ): Boolean {
+    ): String? {
         val itemId =
             AccessoryProgression.accessoryIdForStationCompleted(
                 chapterIndex = chapterIndex,
                 stationId = stationId,
-            ) ?: return false
-        return grantProgressionAccessory(itemId)
+            ) ?: return null
+        return if (grantProgressionAccessory(itemId)) itemId else null
+    }
+
+    /** Equips a pending gift after the child taps it on Dino Home. */
+    suspend fun completePendingAccessoryEquip() {
+        val pending = inventoryStore.pendingAccessoryEquipFlow.first() ?: return
+        val owned = inventoryStore.ownedAccessoriesFlow.first()
+        if (pending !in owned) return
+        inventoryStore.setEquipped(pending)
+        inventoryStore.setPendingAccessoryEquip(null)
     }
 
     suspend fun equipItem(itemId: String?) {
@@ -160,6 +199,9 @@ class CharacterRepository(context: Context) {
     internal interface CharacterStore {
         val characterFlow: Flow<DinoCharacter>
         val foodCountFlow: Flow<Int>
+        val foodInventoryFlow: Flow<Map<String, Int>>
+        val eggHatchedFlow: Flow<Boolean>
+        val eggTapCountFlow: Flow<Int>
         val totalFoodEarnedFlow: Flow<Int>
         val growthStageFlow: Flow<String>
         val fullUntilAtMsFlow: Flow<Long>
@@ -171,7 +213,18 @@ class CharacterRepository(context: Context) {
 
         suspend fun setCharacter(character: DinoCharacter)
         suspend fun setFoodCount(foodCount: Int)
-        suspend fun addFood(delta: Int)
+        suspend fun addFood(
+            delta: Int,
+            foodEmoji: String,
+        )
+
+        /** @return false if nothing to consume */
+        suspend fun consumeOneFood(foodEmoji: String?): Boolean
+
+        suspend fun recordEggTap(): Int
+
+        suspend fun setEggHatched()
+
         suspend fun setGrowthStage(stageName: String)
         suspend fun savePendingRewardEvent(event: PendingRewardEvent)
         suspend fun readPendingRewardEvent(): PendingRewardEvent?
@@ -187,12 +240,19 @@ class CharacterRepository(context: Context) {
     private class PrefsCharacterStore(private val appContext: Context) : CharacterStore {
         private val characterPrefs: CharacterPrefs = CharacterPrefs(appContext)
         private val foodCountKey = intPreferencesKey("tama_food_count")
+        private val foodInventoryKey = stringPreferencesKey("tama_food_inventory_v1")
+        private val eggHatchedKey = booleanPreferencesKey("tama_egg_hatched")
+        private val eggTapCountKey = intPreferencesKey("tama_egg_tap_count")
         private val totalFoodEarnedKey = intPreferencesKey("tama_total_food_earned")
         private val growthStageKey = stringPreferencesKey("tama_growth_stage")
         private val pendingRewardEventIdKey = stringPreferencesKey("tama_pending_reward_event_id")
         private val pendingRewardApplesKey = intPreferencesKey("tama_pending_reward_apples")
         private val pendingRewardFanfareKey = stringPreferencesKey("tama_pending_reward_fanfare")
         private val pendingRewardVisualCueKey = stringPreferencesKey("tama_pending_reward_visual_cue")
+        private val pendingRewardAccessoryKey = stringPreferencesKey("tama_pending_reward_accessory_id")
+        private val pendingRewardFoodEmojiKey = stringPreferencesKey("tama_pending_reward_food_emoji")
+        private val pendingRewardFoodSingularKey = stringPreferencesKey("tama_pending_reward_food_singular")
+        private val pendingRewardFoodPluralKey = stringPreferencesKey("tama_pending_reward_food_plural")
         private val initializedKey = booleanPreferencesKey("tama_initialized")
         private val fullUntilAtMsKey = longPreferencesKey("tama_full_until_at_ms")
         private val chapter1MaxCompletedStationKey = intPreferencesKey("chapter1_max_completed_station")
@@ -204,10 +264,24 @@ class CharacterRepository(context: Context) {
 
         override val characterFlow: Flow<DinoCharacter> = characterPrefs.characterFlow
 
-        override val foodCountFlow: Flow<Int> =
+        override val foodInventoryFlow: Flow<Map<String, Int>> =
             appContext.dataStore.data.map { prefs ->
-                (prefs[foodCountKey] ?: 0).coerceAtLeast(0)
+                readFoodInventory(prefs)
             }
+
+        override val eggHatchedFlow: Flow<Boolean> =
+            appContext.dataStore.data.map { prefs ->
+                prefs[eggHatchedKey] == true ||
+                    TamagotchiRules.parseGrowthStage(prefs[growthStageKey] ?: GrowthStage.EGG.name) != GrowthStage.EGG
+            }
+
+        override val eggTapCountFlow: Flow<Int> =
+            appContext.dataStore.data.map { prefs ->
+                (prefs[eggTapCountKey] ?: 0).coerceIn(0, TamagotchiRules.EGG_TAPS_TO_HATCH)
+            }
+
+        override val foodCountFlow: Flow<Int> =
+            foodInventoryFlow.map { FoodInventoryCodec.totalCount(it) }
 
         override val totalFoodEarnedFlow: Flow<Int> =
             appContext.dataStore.data.map { prefs ->
@@ -258,13 +332,28 @@ class CharacterRepository(context: Context) {
         }
 
         override suspend fun setFoodCount(foodCount: Int) {
-            appContext.dataStore.edit { it[foodCountKey] = foodCount.coerceAtLeast(0) }
+            val count = foodCount.coerceAtLeast(0)
+            appContext.dataStore.edit { prefs ->
+                if (count == 0) {
+                    prefs.remove(foodInventoryKey)
+                    prefs[foodCountKey] = 0
+                } else {
+                    prefs.writeFoodInventory(mapOf(FoodInventoryCodec.DEFAULT_FOOD_EMOJI to count))
+                }
+            }
         }
 
-        override suspend fun addFood(delta: Int) {
+        override suspend fun addFood(
+            delta: Int,
+            foodEmoji: String,
+        ) {
+            if (delta == 0) return
             appContext.dataStore.edit { prefs ->
-                val current = (prefs[foodCountKey] ?: 0).coerceAtLeast(0)
-                prefs[foodCountKey] = (current + delta).coerceAtLeast(0)
+                prefs.migrateLegacyFoodCountIfNeeded()
+                val inv = readFoodInventory(prefs).toMutableMap()
+                val emoji = foodEmoji.ifBlank { FoodInventoryCodec.DEFAULT_FOOD_EMOJI }
+                inv[emoji] = ((inv[emoji] ?: 0) + delta).coerceAtLeast(0)
+                prefs.writeFoodInventory(inv)
                 if (delta > 0) {
                     val earned = (prefs[totalFoodEarnedKey] ?: 0).coerceAtLeast(0)
                     prefs[totalFoodEarnedKey] = (earned + delta).coerceAtLeast(0)
@@ -273,9 +362,69 @@ class CharacterRepository(context: Context) {
             syncGrowthStageInStore()
         }
 
+        override suspend fun recordEggTap(): Int {
+            var count = 0
+            appContext.dataStore.edit { prefs ->
+                if (prefs[eggHatchedKey] == true) return@edit
+                count = ((prefs[eggTapCountKey] ?: 0) + 1).coerceAtMost(TamagotchiRules.EGG_TAPS_TO_HATCH)
+                prefs[eggTapCountKey] = count
+            }
+            return count
+        }
+
+        override suspend fun setEggHatched() {
+            appContext.dataStore.edit { prefs ->
+                prefs[eggHatchedKey] = true
+                prefs[eggTapCountKey] = TamagotchiRules.EGG_TAPS_TO_HATCH
+            }
+        }
+
+        override suspend fun consumeOneFood(foodEmoji: String?): Boolean {
+            var consumed = false
+            appContext.dataStore.edit { prefs ->
+                prefs.migrateLegacyFoodCountIfNeeded()
+                val inv = readFoodInventory(prefs).toMutableMap()
+                val emoji =
+                    foodEmoji?.takeIf { (inv[it] ?: 0) > 0 }
+                        ?: inv.entries.firstOrNull { it.value > 0 }?.key
+                if (emoji == null) return@edit
+                val next = (inv[emoji] ?: 0) - 1
+                if (next > 0) {
+                    inv[emoji] = next
+                } else {
+                    inv.remove(emoji)
+                }
+                prefs.writeFoodInventory(inv)
+                consumed = true
+            }
+            return consumed
+        }
+
+        private fun readFoodInventory(prefs: androidx.datastore.preferences.core.Preferences): Map<String, Int> {
+            val decoded = FoodInventoryCodec.decode(prefs[foodInventoryKey])
+            if (decoded.isNotEmpty()) return decoded
+            val legacy = (prefs[foodCountKey] ?: 0).coerceAtLeast(0)
+            return if (legacy > 0) mapOf(FoodInventoryCodec.DEFAULT_FOOD_EMOJI to legacy) else emptyMap()
+        }
+
+        private fun androidx.datastore.preferences.core.MutablePreferences.writeFoodInventory(
+            inv: Map<String, Int>,
+        ) {
+            val total = FoodInventoryCodec.totalCount(inv)
+            this[foodInventoryKey] = FoodInventoryCodec.encode(inv)
+            this[foodCountKey] = total
+        }
+
+        private fun androidx.datastore.preferences.core.MutablePreferences.migrateLegacyFoodCountIfNeeded() {
+            if (!this[foodInventoryKey].isNullOrBlank()) return
+            val legacy = (this[foodCountKey] ?: 0).coerceAtLeast(0)
+            if (legacy <= 0) return
+            writeFoodInventory(mapOf(FoodInventoryCodec.DEFAULT_FOOD_EMOJI to legacy))
+        }
+
         private suspend fun syncGrowthStageInStore() {
             val prefsSnapshot = appContext.dataStore.data.first()
-            val food = (prefsSnapshot[foodCountKey] ?: 0).coerceAtLeast(0)
+            val food = FoodInventoryCodec.totalCount(readFoodInventory(prefsSnapshot))
             val earned = (prefsSnapshot[totalFoodEarnedKey] ?: 0).coerceAtLeast(0)
             val stageName = prefsSnapshot[growthStageKey] ?: GrowthStage.EGG.name
             val wallet =
@@ -284,6 +433,9 @@ class CharacterRepository(context: Context) {
                     totalEarned = earned,
                     storedStageName = stageName,
                     fullUntilAtMs = (prefsSnapshot[fullUntilAtMsKey] ?: 0L).coerceAtLeast(0L),
+                    eggHatched = prefsSnapshot[eggHatchedKey] == true ||
+                        TamagotchiRules.parseGrowthStage(stageName) != GrowthStage.EGG,
+                    eggTapCount = (prefsSnapshot[eggTapCountKey] ?: 0).coerceAtLeast(0),
                 )
             appContext.dataStore.edit { it[growthStageKey] = wallet.growthStage.name }
         }
@@ -302,6 +454,14 @@ class CharacterRepository(context: Context) {
                 } else {
                     prefs.remove(pendingRewardVisualCueKey)
                 }
+                if (!event.accessoryUnlockId.isNullOrBlank()) {
+                    prefs[pendingRewardAccessoryKey] = event.accessoryUnlockId
+                } else {
+                    prefs.remove(pendingRewardAccessoryKey)
+                }
+                prefs[pendingRewardFoodEmojiKey] = event.foodEmoji
+                prefs[pendingRewardFoodSingularKey] = event.foodNameSingularHe
+                prefs[pendingRewardFoodPluralKey] = event.foodNamePluralHe
             }
         }
 
@@ -337,6 +497,10 @@ class CharacterRepository(context: Context) {
                 applesCount = apples,
                 fanfareText = fanfare,
                 visualCue = cue,
+                accessoryUnlockId = prefs[pendingRewardAccessoryKey]?.takeIf { it.isNotBlank() },
+                foodEmoji = prefs[pendingRewardFoodEmojiKey] ?: "🍎",
+                foodNameSingularHe = prefs[pendingRewardFoodSingularKey] ?: "תפוח",
+                foodNamePluralHe = prefs[pendingRewardFoodPluralKey] ?: "תפוחים",
             )
         }
 
@@ -346,6 +510,10 @@ class CharacterRepository(context: Context) {
                 prefs.remove(pendingRewardApplesKey)
                 prefs.remove(pendingRewardFanfareKey)
                 prefs.remove(pendingRewardVisualCueKey)
+                prefs.remove(pendingRewardAccessoryKey)
+                prefs.remove(pendingRewardFoodEmojiKey)
+                prefs.remove(pendingRewardFoodSingularKey)
+                prefs.remove(pendingRewardFoodPluralKey)
             }
         }
 
@@ -383,6 +551,9 @@ class CharacterRepository(context: Context) {
                     val unlocked = (prefs[highestUnlockedChapterIndexKey] ?: 0).coerceIn(0, HebrewSyllabus.chapterCount - 1)
                     val next = (chapter + 1).coerceAtMost(HebrewSyllabus.chapterCount - 1)
                     prefs[highestUnlockedChapterIndexKey] = maxOf(unlocked, next)
+                    if (next > chapter) {
+                        prefs[activeChapterIndexKey] = next
+                    }
                 }
             }
         }
@@ -414,12 +585,19 @@ class CharacterRepository(context: Context) {
         override suspend fun resetForNewGame() {
             appContext.dataStore.edit { prefs ->
                 prefs[foodCountKey] = 0
+                prefs.remove(foodInventoryKey)
+                prefs[eggHatchedKey] = false
+                prefs[eggTapCountKey] = 0
                 prefs[totalFoodEarnedKey] = 0
                 prefs[growthStageKey] = "EGG"
                 prefs.remove(pendingRewardEventIdKey)
                 prefs.remove(pendingRewardApplesKey)
                 prefs.remove(pendingRewardFanfareKey)
                 prefs.remove(pendingRewardVisualCueKey)
+                prefs.remove(pendingRewardAccessoryKey)
+                prefs.remove(pendingRewardFoodEmojiKey)
+                prefs.remove(pendingRewardFoodSingularKey)
+                prefs.remove(pendingRewardFoodPluralKey)
                 prefs[fullUntilAtMsKey] = 0L
                 prefs[chapter1MaxCompletedStationKey] = 0
                 prefs[activeChapterIndexKey] = 0
@@ -438,3 +616,11 @@ class CharacterRepository(context: Context) {
             { appContext -> PrefsCharacterStore(appContext) }
     }
 }
+
+private data class WalletSnapshot(
+    val food: Int,
+    val totalEarned: Int,
+    val stageName: String,
+    val fullUntil: Long,
+    val eggHatched: Boolean,
+)

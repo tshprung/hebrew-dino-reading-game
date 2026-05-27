@@ -24,6 +24,36 @@ class SfxManager(context: Context) {
         player.playFirstAvailable(*arrayOf(AudioClips.SfxBalloonPopSoft, AudioClips.SfxBalloonPop))
     }
 
+    suspend fun playEggCrack() {
+        player.playFirstAvailable(
+            AudioClips.SfxEggCrack,
+            AudioClips.SfxFanfare,
+            AudioClips.SfxCorrect,
+        )
+    }
+
+    suspend fun playChew() {
+        player.playFirstAvailable(
+            AudioClips.SfxChew,
+            AudioClips.SfxBalloonPopSoft,
+            AudioClips.SfxCorrect,
+        )
+    }
+
+    suspend fun playBabyChirp() {
+        player.playFirstAvailable(
+            AudioClips.SfxBabyChirp,
+            AudioClips.SfxCorrect,
+        )
+    }
+
+    suspend fun playHungryWhimper() {
+        player.playFirstAvailable(
+            AudioClips.SfxHungryWhimper,
+            AudioClips.SfxWrong,
+        )
+    }
+
     fun release() {
         player.release()
     }

@@ -19,8 +19,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.LayoutDirection
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.ProcessLifecycleOwner
 import com.tal.hebrewdino.ui.AppNav
 import com.tal.hebrewdino.ui.AppAnalytics
+import com.tal.hebrewdino.ui.audio.AppForegroundAudio
 import com.tal.hebrewdino.ui.audio.TextToSpeechManager
 import com.tal.hebrewdino.ui.layout.applyImmersiveSystemBarsHidden
 import com.tal.hebrewdino.ui.layout.enableImmersiveFullscreen
@@ -30,6 +34,17 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         AppAnalytics.init(applicationContext)
         TextToSpeechManager.get(applicationContext).warmUp()
+        ProcessLifecycleOwner.get().lifecycle.addObserver(
+            object : DefaultLifecycleObserver {
+                override fun onStart(owner: LifecycleOwner) {
+                    AppForegroundAudio.onForeground()
+                }
+
+                override fun onStop(owner: LifecycleOwner) {
+                    AppForegroundAudio.onBackground(applicationContext)
+                }
+            },
+        )
         enableImmersiveFullscreen()
         setContent {
             CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
@@ -66,6 +81,12 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        AppForegroundAudio.onForeground()
+        applyImmersiveSystemBarsHidden()
     }
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {

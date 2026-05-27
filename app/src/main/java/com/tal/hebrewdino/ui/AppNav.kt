@@ -11,9 +11,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.LocalContext
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.rememberNavController
@@ -21,6 +18,8 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.google.firebase.analytics.FirebaseAnalytics
+import com.tal.hebrewdino.ui.audio.AppForegroundAudio
+import com.tal.hebrewdino.ui.audio.SpeechFocusGate
 import com.tal.hebrewdino.ui.audio.BackgroundMusicPlayer
 import com.tal.hebrewdino.ui.audio.SoundPoolPlayer
 import com.tal.hebrewdino.ui.audio.VoicePlayer
@@ -96,7 +95,6 @@ internal object AppAnalytics {
 private val BackgroundMusicEligibleRoutes: Set<String> =
     setOf(
         NavRoutes.Opening,
-        NavRoutes.IntroInstruction,
         NavRoutes.Chapters,
         NavRoutes.ChapterSelect,
     )
@@ -107,7 +105,6 @@ private const val BgmSeason1AssetPath: String = "audio/bgm_season1.mp3"
 private fun bgmAssetPathForRoute(route: String?): String =
     when (route) {
         NavRoutes.Opening,
-        NavRoutes.IntroInstruction,
         NavRoutes.Chapters,
         NavRoutes.ChapterSelect,
         -> BgmMenuAssetPath
@@ -118,8 +115,8 @@ private fun bgmAssetPathForRoute(route: String?): String =
 fun AppNav() {
     val navController = rememberNavController()
     val context = LocalContext.current
-    val lifecycleOwner = LocalLifecycleOwner.current
     val scope = rememberCoroutineScope()
+    val isAppInForeground by AppForegroundAudio.isInForeground.collectAsState(initial = true)
     val characterRepo = remember(context) { CharacterRepository(context.applicationContext) }
     val rewardEngine = remember(context) { RewardEngine.get(context.applicationContext) }
     val progressPrefs = remember(context) { com.tal.hebrewdino.ui.data.ProgressPrefs(context.applicationContext) }
@@ -129,35 +126,37 @@ fun AppNav() {
     val backgroundMusicEnabled by audioPrefs.backgroundMusicEnabledFlow.collectAsState(initial = true)
     val bgMusic = remember { BackgroundMusicPlayer(context.applicationContext) }
     val tts = remember(context) { TextToSpeechManager.get(context.applicationContext) }
-    val isTtsSpeaking by tts.isSpeaking.collectAsState(initial = false)
+    val isSpeechActive by SpeechFocusGate.isSpeechActive.collectAsState(initial = false)
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
 
     val bgMusicEligible = currentRoute != null && currentRoute in BackgroundMusicEligibleRoutes
 
-    LaunchedEffect(currentRoute, backgroundMusicEnabled, isTtsSpeaking) {
-        if (!backgroundMusicEnabled) {
+    LaunchedEffect(isAppInForeground) {
+        if (!isAppInForeground) {
+            tts.stop()
+        }
+    }
+
+    LaunchedEffect(currentRoute) {
+        tts.stop()
+    }
+
+    LaunchedEffect(currentRoute, backgroundMusicEnabled, isSpeechActive, isAppInForeground) {
+        if (!isAppInForeground || !backgroundMusicEnabled) {
             bgMusic.stop()
             return@LaunchedEffect
         }
         bgMusic.playLoopFromAssets(assetPath = bgmAssetPathForRoute(currentRoute))
-        bgMusic.setMuted(!bgMusicEligible)
-        bgMusic.setDucked(isTtsSpeaking && bgMusicEligible)
+        val silenceForSpeech = isSpeechActive && bgMusicEligible
+        bgMusic.setMuted(!bgMusicEligible || silenceForSpeech)
+        bgMusic.setDucked(false)
     }
 
-    DisposableEffect(lifecycleOwner) {
-        val observer =
-            LifecycleEventObserver { _, event ->
-                if (event == Lifecycle.Event.ON_PAUSE || event == Lifecycle.Event.ON_STOP) {
-                    bgMusic.stop()
-                    VoicePlayer.stopAllNow()
-                    SoundPoolPlayer.stopAllNow()
-                    TextToSpeechManager.get(context.applicationContext).stop()
-                }
-            }
-        lifecycleOwner.lifecycle.addObserver(observer)
+    DisposableEffect(bgMusic) {
+        AppForegroundAudio.registerBackgroundMusic(bgMusic)
         onDispose {
-            lifecycleOwner.lifecycle.removeObserver(observer)
+            AppForegroundAudio.unregisterBackgroundMusic(bgMusic)
             bgMusic.release()
         }
     }
@@ -167,7 +166,14 @@ fun AppNav() {
             OpeningScreen(
                 onPlay = {
                     if (characterChosen) {
-                        navController.navigate(NavRoutes.IntroInstruction) { launchSingleTop = true }
+                        navController.navigate(NavRoutes.Chapters) {
+                            popUpTo(NavRoutes.Opening) { inclusive = false }
+                            launchSingleTop = true
+                        }
+                    } else {
+                        navController.navigate(NavRoutes.CharacterSelection) {
+                            launchSingleTop = true
+                        }
                     }
                 },
                 onOpenSettings = { navController.navigate(NavRoutes.ParentalGate) { launchSingleTop = true } },
@@ -175,9 +181,23 @@ fun AppNav() {
             )
         }
 
+        composable(NavRoutes.CharacterSelection) {
+            CharacterSelectionScreen(
+                onSelect = { chosen ->
+                    scope.launch {
+                        characterPrefs.setCharacter(chosen)
+                        navController.navigate(NavRoutes.IntroInstruction) {
+                            popUpTo(NavRoutes.CharacterSelection) { inclusive = true }
+                            launchSingleTop = true
+                        }
+                    }
+                },
+            )
+        }
+
         composable(NavRoutes.IntroInstruction) {
             IntroInstructionScreen(
-                onContinue = {
+                onHatchComplete = {
                     navController.navigate(NavRoutes.Chapters) {
                         popUpTo(NavRoutes.IntroInstruction) { inclusive = true }
                         launchSingleTop = true
@@ -331,17 +351,4 @@ fun AppNav() {
         }
     }
 
-    if (!characterChosen) {
-        CharacterSelectionScreen(
-            onSelect = { chosen ->
-                scope.launch {
-                    characterPrefs.setCharacter(chosen)
-                    navController.navigate(NavRoutes.IntroInstruction) {
-                        popUpTo(NavRoutes.Opening) { inclusive = false }
-                        launchSingleTop = true
-                    }
-                }
-            },
-        )
-    }
 }

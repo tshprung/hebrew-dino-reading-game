@@ -2,6 +2,7 @@ package com.tal.hebrewdino.ui.domain.economy
 
 object TamagotchiRules {
     const val APPLES_TO_HATCH: Int = 3
+    const val EGG_TAPS_TO_HATCH: Int = 3
     const val APPLES_TO_ADULT: Int = 11
     const val BABY_STAGE_FED_OFFSET: Int = 3
     const val BABY_STAGE_FED_SPAN: Int = 8
@@ -11,9 +12,12 @@ object TamagotchiRules {
         applesInInventory: Int,
     ): Int = (totalEarned - applesInInventory).coerceAtLeast(0)
 
-    fun growthStageFromFed(fedTotal: Int): GrowthStage =
+    fun growthStageFromFed(
+        fedTotal: Int,
+        eggHatched: Boolean,
+    ): GrowthStage =
         when {
-            fedTotal < APPLES_TO_HATCH -> GrowthStage.EGG
+            !eggHatched -> GrowthStage.EGG
             fedTotal < APPLES_TO_ADULT -> GrowthStage.BABY
             else -> GrowthStage.ADULT
         }
@@ -31,9 +35,11 @@ object TamagotchiRules {
     fun growthProgress01(
         fedTotal: Int,
         stage: GrowthStage,
+        eggTapCount: Int = 0,
     ): Float =
         when (stage) {
-            GrowthStage.EGG -> (fedTotal / APPLES_TO_HATCH.toFloat()).coerceIn(0f, 1f)
+            GrowthStage.EGG ->
+                (eggTapCount / EGG_TAPS_TO_HATCH.toFloat()).coerceIn(0f, 1f)
             GrowthStage.BABY ->
                 ((fedTotal - BABY_STAGE_FED_OFFSET) / BABY_STAGE_FED_SPAN.toFloat()).coerceIn(0f, 1f)
             GrowthStage.ADULT -> 1f
@@ -56,21 +62,28 @@ object TamagotchiRules {
         totalEarned: Int,
         storedStageName: String,
         fullUntilAtMs: Long,
+        eggHatched: Boolean,
+        eggTapCount: Int = 0,
         nowMs: Long = System.currentTimeMillis(),
     ): PlayerWallet {
         val apples = applesCount.coerceAtLeast(0)
         val earned = totalEarned.coerceAtLeast(0)
         val stored = parseGrowthStage(storedStageName)
         val fed = fedTotal(earned, apples)
-        val computed = growthStageFromFed(fed)
-        val stage = resolveGrowthStage(stored, computed)
+        val computed = growthStageFromFed(fed, eggHatched)
+        val stage =
+            if (!eggHatched) {
+                GrowthStage.EGG
+            } else {
+                resolveGrowthStage(stored, computed)
+            }
         return PlayerWallet(
             applesCount = apples,
             totalEarned = earned,
             fedTotal = fed,
             growthStage = stage,
             isHungry = isHungry(stage, fullUntilAtMs, nowMs),
-            growthProgress01 = growthProgress01(fed, stage),
+            growthProgress01 = growthProgress01(fed, stage, eggTapCount),
         )
     }
 

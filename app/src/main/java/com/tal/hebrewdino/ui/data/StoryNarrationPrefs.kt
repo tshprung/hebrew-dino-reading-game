@@ -7,8 +7,16 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
 class StoryNarrationPrefs(private val context: Context) : StoryNarrationGate {
+    private val eggKnockPromptSpokenKey = booleanPreferencesKey("story_egg_knock_prompt_spoken")
     private val part2SpokenKey = booleanPreferencesKey("story_part2_baby_hatch_spoken")
     private val part3SpokenKey = booleanPreferencesKey("story_part3_first_accessory_spoken")
+
+    override suspend fun isEggKnockPromptSpoken(): Boolean =
+        context.dataStore.data.map { it[eggKnockPromptSpokenKey] ?: false }.first()
+
+    override suspend fun setEggKnockPromptSpoken() {
+        context.dataStore.edit { it[eggKnockPromptSpokenKey] = true }
+    }
 
     override suspend fun isPart2Spoken(): Boolean =
         context.dataStore.data.map { it[part2SpokenKey] ?: false }.first()
@@ -26,6 +34,7 @@ class StoryNarrationPrefs(private val context: Context) : StoryNarrationGate {
 
     override suspend fun reset() {
         context.dataStore.edit {
+            it.remove(eggKnockPromptSpokenKey)
             it.remove(part2SpokenKey)
             it.remove(part3SpokenKey)
         }

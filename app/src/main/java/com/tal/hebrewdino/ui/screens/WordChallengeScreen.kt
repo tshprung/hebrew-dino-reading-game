@@ -46,12 +46,15 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.PlatformTextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.tal.hebrewdino.R
+import com.tal.hebrewdino.ui.audio.InteractionAudio
 import com.tal.hebrewdino.ui.audio.SfxManager
 import com.tal.hebrewdino.ui.audio.TextToSpeechManager
 import com.tal.hebrewdino.ui.economy.RewardEngine
@@ -61,6 +64,7 @@ import com.tal.hebrewdino.ui.domain.letterNameSpokenForTts
 import com.tal.hebrewdino.ui.domain.phonemeForDisplay
 import com.tal.hebrewdino.ui.domain.phonemeSpokenForTts
 import com.tal.hebrewdino.ui.domain.requireHebrewLetterNameForTts
+import com.tal.hebrewdino.ui.domain.applyChildFriendlyTtsWorkarounds
 import com.tal.hebrewdino.ui.domain.targetSuccessSpeech
 import com.tal.hebrewdino.ui.layout.topChromeInsetsPadding
 import kotlinx.coroutines.delay
@@ -76,8 +80,10 @@ fun WordChallengeScreen(
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
-    val sfx = remember(context) { SfxManager(context.applicationContext) }
-    val tts = remember(context) { TextToSpeechManager.get(context.applicationContext) }
+    val appContext = remember(context) { context.applicationContext }
+    val stopInteractionAudio = remember(appContext) { { InteractionAudio.stopAllNow(appContext) } }
+    val sfx = remember(appContext) { SfxManager(appContext) }
+    val tts = remember(appContext) { TextToSpeechManager.get(appContext) }
     val scope = rememberCoroutineScope()
 
     DisposableEffect(sfx) {
@@ -151,7 +157,7 @@ fun WordChallengeScreen(
         val question = state.challenges.getOrNull(currentQuestionIndex) ?: return@LaunchedEffect
         val letter = question.questionText.trim().firstOrNull()?.toString().orEmpty()
         val txt = voiceInstructionForQuestion(state.challengeType, question, letter)
-        if (txt.isNotBlank()) tts.speakFully(txt)
+        if (txt.isNotBlank()) tts.speakFully(txt, navigationSettleMs = 0L)
     }
 
     LaunchedEffect(replayInstructionEpoch) {
@@ -159,24 +165,9 @@ fun WordChallengeScreen(
         val question = state.challenges.getOrNull(currentQuestionIndex) ?: return@LaunchedEffect
         val letter = question.questionText.trim().firstOrNull()?.toString().orEmpty()
         val txt = voiceInstructionForQuestion(state.challengeType, question, letter)
-        if (txt.isNotBlank()) tts.speakFully(txt, navigationSettleMs = 80L)
-    }
-
-    LaunchedEffect(state.wrongAttemptToken, state.lastWrongOption) {
-        val wrong = state.lastWrongOption?.trim().orEmpty()
-        if (wrong.isBlank() || state.wrongAttemptToken == 0) return@LaunchedEffect
-        if (state.challengeType != ChallengeType.LETTER_RECOGNITION &&
-            state.challengeType != ChallengeType.PHONEMIC_ISOLATION
-        ) {
-            return@LaunchedEffect
+        if (txt.isNotBlank()) {
+            tts.interruptAndSpeak(applyChildFriendlyTtsWorkarounds(txt))
         }
-        val spoken =
-            when (state.challengeType) {
-                ChallengeType.PHONEMIC_ISOLATION ->
-                    phonemeSpokenForTts(wrong).ifBlank { wrong }
-                else -> letterNameSpokenForTts(wrong).ifBlank { wrong }
-            }
-        tts.interruptAndSpeak(spoken)
     }
 
     LaunchedEffect(state.pendingCorrectToken, state.selectedCorrectOption) {
@@ -205,8 +196,12 @@ fun WordChallengeScreen(
         questionNumber = state.questionNumber,
         totalQuestions = state.total,
         showEarnedReward = false,
-        onExit = onExitToHome,
+        onExit = {
+            stopInteractionAudio()
+            onExitToHome()
+        },
         onReplayInstruction = {
+            stopInteractionAudio()
             bumpInstructionActivity()
             requestInstructionReplay()
         },
@@ -215,7 +210,25 @@ fun WordChallengeScreen(
             bumpInstructionActivity()
             localTapLocked = true
             val correct = correctOption
-            val isCorrectNow = !correct.isNullOrBlank() && option.isNotBlank() && option == correct
+            val isLetterStation =
+                state.challengeType == ChallengeType.LETTER_RECOGNITION ||
+                    state.challengeType == ChallengeType.PHONEMIC_ISOLATION
+            val isWrongTap =
+                state.selectedCorrectOption == null &&
+                    option.isNotBlank() &&
+                    !correct.isNullOrBlank() &&
+                    option != correct
+            if (isLetterStation && isWrongTap) {
+                val spoken =
+                    when (state.challengeType) {
+                        ChallengeType.PHONEMIC_ISOLATION ->
+                            phonemeSpokenForTts(option).ifBlank { option }
+                        else -> letterNameSpokenForTts(option).ifBlank { option }
+                    }
+                tts.interruptAndSpeak(applyChildFriendlyTtsWorkarounds(spoken))
+            } else {
+                stopInteractionAudio()
+            }
             if (state.selectedCorrectOption == null && option.isNotBlank() && !correct.isNullOrBlank()) {
                 scope.launch {
                     if (option == correct) sfx.playCorrect() else sfx.playWrong()
@@ -332,11 +345,16 @@ private fun WordChallengeContent(
         ) {
             val topReserved = 44.dp
             val safeH = (maxHeight - topReserved).coerceAtLeast(220.dp)
-            val headerH = (safeH * 0.30f).coerceAtLeast(100.dp).coerceAtMost(132.dp)
-            val gridH = (safeH - headerH).coerceAtLeast(safeH * 0.70f)
             val compactHeader =
                 challengeType == ChallengeType.LETTER_RECOGNITION ||
                     challengeType == ChallengeType.PHONEMIC_ISOLATION
+            val headerH =
+                if (compactHeader) {
+                    (safeH * 0.34f).coerceAtLeast(118.dp).coerceAtMost(148.dp)
+                } else {
+                    (safeH * 0.30f).coerceAtLeast(100.dp).coerceAtMost(132.dp)
+                }
+            val gridH = (safeH - headerH).coerceAtLeast(safeH * 0.66f)
 
             Column(
                 modifier = Modifier.fillMaxSize(),
@@ -360,7 +378,6 @@ private fun WordChallengeContent(
                                         .fillMaxSize()
                                         .padding(end = 40.dp)
                                         .clickable(onClick = onReplayInstruction),
-                                verticalArrangement = Arrangement.Center,
                                 horizontalAlignment = Alignment.CenterHorizontally,
                             ) {
                                 Text(
@@ -368,47 +385,28 @@ private fun WordChallengeContent(
                                     style =
                                         MaterialTheme.typography.titleMedium.copy(
                                             fontWeight = FontWeight.Black,
-                                            fontSize = 17.sp,
+                                            fontSize =
+                                                if (challengeType == ChallengeType.LETTER_RECOGNITION) {
+                                                    26.sp
+                                                } else {
+                                                    17.sp
+                                                },
                                         ),
                                     color = Color.White,
                                     textAlign = TextAlign.Center,
                                     maxLines = 2,
                                 )
                                 if (!targetBadgeText.isNullOrBlank()) {
-                                    Spacer(modifier = Modifier.height(6.dp))
                                     Box(
                                         modifier =
                                             Modifier
-                                                .size(76.dp)
-                                                .background(
-                                                    brush =
-                                                        Brush.radialGradient(
-                                                            colors =
-                                                                listOf(
-                                                                    Color(0xFFFFE27A),
-                                                                    Color(0xFFFFB82E),
-                                                                    Color(0xFFFF9A1A),
-                                                                ),
-                                                        ),
-                                                    shape = CircleShape,
-                                                )
-                                                .border(3.dp, Color.White.copy(alpha = 0.9f), CircleShape),
+                                                .weight(1f)
+                                                .fillMaxWidth(),
                                         contentAlignment = Alignment.Center,
                                     ) {
-                                        Text(
-                                            text = rtl(targetBadgeText),
-                                            style =
-                                                MaterialTheme.typography.displaySmall.copy(
-                                                    fontWeight = FontWeight.Black,
-                                                    fontSize =
-                                                        if (challengeType == ChallengeType.PHONEMIC_ISOLATION) {
-                                                            40.sp
-                                                        } else {
-                                                            44.sp
-                                                        },
-                                                ),
-                                            color = Color(0xFF0B2B3D),
-                                            textAlign = TextAlign.Center,
+                                        StationTargetLetterBadge(
+                                            text = targetBadgeText,
+                                            challengeType = challengeType,
                                         )
                                     }
                                 }
@@ -576,7 +574,7 @@ private fun Station2Bubbles(
         val size = minOf(maxHeight, (maxWidth - 16.dp) / 3f).coerceAtLeast(72.dp).coerceAtMost(120.dp)
         Row(
             modifier = Modifier.fillMaxSize(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically,
         ) {
             for (i in 0..2) {
@@ -628,17 +626,11 @@ private fun BubbleOption(
     }
 
     val colors =
-        remember(index, isSelectedCorrect) {
-            val base =
-                when (index % 3) {
-                    0 -> listOf(Color(0xFF7EE7FF), Color(0xFF3DBBFF))
-                    1 -> listOf(Color(0xFFFFC46B), Color(0xFFFF7AA5))
-                    else -> listOf(Color(0xFFA8FFB9), Color(0xFF4CE8A6))
-                }
+        remember(isSelectedCorrect) {
             if (isSelectedCorrect) {
                 listOf(Color(0xFFB6F2C1), Color(0xFF2DB86E))
             } else {
-                base
+                listOf(Color(0xFFE8F4FC), Color(0xFFD4E8F7))
             }
         }
 
@@ -947,6 +939,57 @@ private fun OptionCard(
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun StationTargetLetterBadge(
+    text: String,
+    challengeType: ChallengeType,
+    modifier: Modifier = Modifier,
+) {
+    val letterSize =
+        if (challengeType == ChallengeType.PHONEMIC_ISOLATION) {
+            40.sp
+        } else {
+            44.sp
+        }
+    Box(
+        modifier =
+            modifier
+                .size(88.dp)
+                .background(
+                    brush =
+                        Brush.radialGradient(
+                            colors =
+                                listOf(
+                                    Color(0xFFFFE27A),
+                                    Color(0xFFFFB82E),
+                                    Color(0xFFFF9A1A),
+                                ),
+                        ),
+                    shape = CircleShape,
+                )
+                .border(3.dp, Color.White.copy(alpha = 0.9f), CircleShape),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = rtl(text),
+            style =
+                MaterialTheme.typography.displaySmall.copy(
+                    fontWeight = FontWeight.Black,
+                    fontSize = letterSize,
+                    lineHeight = letterSize,
+                    platformStyle = PlatformTextStyle(includeFontPadding = false),
+                    lineHeightStyle =
+                        LineHeightStyle(
+                            alignment = LineHeightStyle.Alignment.Center,
+                            trim = LineHeightStyle.Trim.Both,
+                        ),
+                ),
+            color = Color(0xFF0B2B3D),
+            textAlign = TextAlign.Center,
+        )
     }
 }
 
