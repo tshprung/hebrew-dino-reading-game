@@ -1,5 +1,6 @@
 package com.tal.hebrewdino.ui
 
+import androidx.navigation.NavController
 import com.tal.hebrewdino.ui.domain.ChallengeType
 
 /** Central route strings for navigation (used from screens and [AppNav]). */
@@ -70,4 +71,22 @@ object NavRoutes {
     const val TrainingComplete = "training_complete"
     const val StoryOutro = "story_outro"
     const val Settings = "settings"
+
+    /** Stations 1–2 (word challenge) and 3 (falling letters): no ambient BGM. */
+    fun isGameplayStationRoute(route: String?): Boolean {
+        if (route.isNullOrBlank()) return false
+        return route.startsWith("word_challenge") ||
+            route.startsWith("falling_letters") ||
+            route == ChallengeSummary
+    }
+}
+
+/** Returns from a gameplay station to the chapter/station picker. */
+fun NavController.backToStationSelect() {
+    if (!popBackStack()) {
+        navigate(NavRoutes.ChapterSelect) {
+            popUpTo(NavRoutes.Chapters) { inclusive = false }
+            launchSingleTop = true
+        }
+    }
 }

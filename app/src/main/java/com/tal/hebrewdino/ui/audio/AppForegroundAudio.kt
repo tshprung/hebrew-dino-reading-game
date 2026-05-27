@@ -32,13 +32,22 @@ object AppForegroundAudio {
 
     fun onBackground(context: Context) {
         _isInForeground.value = false
-        pauseAll(context)
+        pauseAll(context, stopBackgroundMusic = true)
     }
 
-    fun pauseAll(context: Context) {
+    fun onActivityPause(context: Context) {
+        pauseAll(context, stopBackgroundMusic = true)
+    }
+
+    fun pauseAll(
+        context: Context,
+        stopBackgroundMusic: Boolean = true,
+    ) {
         val appContext = context.applicationContext
         SpeechFocusGate.reset()
-        backgroundMusic?.stop()
+        if (stopBackgroundMusic) {
+            backgroundMusic?.stop()
+        }
         TextToSpeechManager.get(appContext).stop()
         VoicePlayer.stopAllNow()
         RawVoicePlayer.stopAllNow()

@@ -51,23 +51,23 @@ import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.tal.hebrewdino.R
 import com.tal.hebrewdino.ui.audio.InteractionAudio
+import com.tal.hebrewdino.ui.audio.RawVoicePlayer
 import com.tal.hebrewdino.ui.audio.SfxManager
+import com.tal.hebrewdino.ui.audio.StationAudio
+import com.tal.hebrewdino.ui.audio.StationVoiceGuide
 import com.tal.hebrewdino.ui.audio.TextToSpeechManager
+import com.tal.hebrewdino.ui.audio.VoicePlayer
 import com.tal.hebrewdino.ui.domain.economy.StationRoundCompleted
 import com.tal.hebrewdino.ui.economy.RewardEngine
 import com.tal.hebrewdino.ui.domain.HebrewSyllabus
 import com.tal.hebrewdino.ui.domain.hebrewLetterBase
-import com.tal.hebrewdino.ui.domain.letterNameSpokenForTts
 import com.tal.hebrewdino.ui.domain.letterSymbolForDisplay
-import com.tal.hebrewdino.ui.domain.targetSuccessSpeech
-import com.tal.hebrewdino.ui.domain.wrongLetterFeedbackSpeech
-import com.tal.hebrewdino.ui.domain.ChallengeType
 import com.tal.hebrewdino.ui.layout.topChromeInsetsPadding
 import kotlinx.coroutines.launch
 
 @Composable
 fun FallingLettersScreen(
-    onExitToHome: () -> Unit,
+    onBackToStationSelect: () -> Unit,
     onRoundCompleteToSummary: () -> Unit,
     chapterIndex: Int = 0,
     rewardEngine: RewardEngine,
@@ -79,11 +79,17 @@ fun FallingLettersScreen(
         val context = LocalContext.current
         val appContext = remember(context) { context.applicationContext }
         val stopInteractionAudio = remember(appContext) { { InteractionAudio.stopAllNow(appContext) } }
+        val rawVoice = remember(appContext) { RawVoicePlayer(appContext) }
+        val voice = remember(appContext) { VoicePlayer(appContext) }
         val tts = remember(appContext) { TextToSpeechManager.get(appContext) }
         val sfx = remember(context) { SfxManager(context.applicationContext) }
         val scope = rememberCoroutineScope()
-        DisposableEffect(sfx) {
-            onDispose { sfx.release() }
+        DisposableEffect(sfx, rawVoice, voice) {
+            onDispose {
+                sfx.release()
+                rawVoice.release()
+                voice.release()
+            }
         }
         val chapterLetters =
             HebrewSyllabus.chapterOrNull(chapterIndex)?.letters
@@ -126,36 +132,54 @@ fun FallingLettersScreen(
                 onReplay = requestInstructionReplay,
             )
 
-        LaunchedEffect(state.roundIndex) {
+        LaunchedEffect(state.roundIndex, state.targetLetter) {
             bumpInstructionActivity()
-            tts.speakFully(fallingLettersInstructionSpeech(state.targetLetter))
+            val target = letterSymbolForDisplay(state.targetLetter)
+            val ttsInstruction = "לַחֲצוּ עַל הָאוֹת $target"
+            StationVoiceGuide.playStation3Instructions(
+                rawVoice = rawVoice,
+                voice = voice,
+                tts = tts,
+                targetLetter = state.targetLetter,
+                ttsInstruction = ttsInstruction,
+            )
         }
 
         LaunchedEffect(replayInstructionEpoch, state.roundIndex) {
             if (replayInstructionEpoch == 0) return@LaunchedEffect
-            tts.interruptAndSpeak(fallingLettersInstructionSpeech(state.targetLetter))
+            rawVoice.stopNow()
+            voice.stopNow()
+            tts.stop()
+            val target = letterSymbolForDisplay(state.targetLetter)
+            val ttsInstruction = "לַחֲצוּ עַל הָאוֹת $target"
+            StationVoiceGuide.playStation3Instructions(
+                rawVoice = rawVoice,
+                voice = voice,
+                tts = tts,
+                targetLetter = state.targetLetter,
+                ttsInstruction = ttsInstruction,
+            )
         }
 
-        LaunchedEffect(state.feedbackToken, state.feedbackIsCorrect) {
+        LaunchedEffect(state.feedbackToken, state.feedbackIsCorrect, state.feedbackLetterId) {
             if (state.feedbackIsCorrect != false || state.feedbackToken == 0) return@LaunchedEffect
             val letterId = state.feedbackLetterId ?: return@LaunchedEffect
-            val clicked = state.letters.firstOrNull { it.id == letterId } ?: return@LaunchedEffect
-            scope.launch { sfx.playWrong() }
-            tts.interruptAndSpeak(wrongLetterFeedbackSpeech(clicked.text))
+            val letterText = state.letters.firstOrNull { it.id == letterId }?.text ?: return@LaunchedEffect
+            scope.launch {
+                rawVoice.stopNow()
+                voice.stopNow()
+                StationVoiceGuide.playFallingLetterTap(voice, tts, letterText, sfx)
+            }
         }
 
         LaunchedEffect(state.feedbackToken, state.feedbackIsCorrect, state.roundBreakToken) {
             if (state.feedbackIsCorrect != true || state.feedbackToken == 0) return@LaunchedEffect
-            val reinforcement =
-                targetSuccessSpeech(ChallengeType.LETTER_RECOGNITION, state.targetLetter)
             val breakToken = state.roundBreakToken
-            if (breakToken > 0) {
-                tts.interruptAndSpeakFully(reinforcement)
-                val praise = RoundPraisePhrases[(0 until RoundPraisePhrases.size).random()]
-                tts.interruptAndSpeakFully(praise)
-                vm.onRoundBreakFinished(breakToken)
-            } else {
-                tts.interruptAndSpeak(reinforcement)
+            scope.launch {
+                StationAudio.playSuccess(rawVoice, sfx)
+                if (breakToken > 0) {
+                    vm.onRoundBreakFinished(breakToken)
+                }
             }
         }
 
@@ -168,18 +192,21 @@ fun FallingLettersScreen(
 
         FallingLettersContent(
             state = state,
-            onExit = {
+            onBack = {
                 stopInteractionAudio()
                 vm.stopTicker()
-                onExitToHome()
+                onBackToStationSelect()
             },
             onLetterClicked = { letterId ->
-                stopInteractionAudio()
+                rawVoice.stopNow()
+                voice.stopNow()
                 bumpInstructionActivity()
                 vm.onLetterClicked(letterId)
             },
             onReplayInstruction = {
-                stopInteractionAudio()
+                rawVoice.stopNow()
+                voice.stopNow()
+                tts.stop()
                 bumpInstructionActivity()
                 requestInstructionReplay()
             },
@@ -190,15 +217,10 @@ fun FallingLettersScreen(
     }
 }
 
-private fun fallingLettersInstructionSpeech(targetLetter: String): String {
-    val name = letterNameSpokenForTts(targetLetter)
-    return "תפסו את האות $name"
-}
-
 @Composable
 private fun FallingLettersContent(
     state: FallingLettersUiState,
-    onExit: () -> Unit,
+    onBack: () -> Unit,
     onLetterClicked: (Int) -> Unit,
     onReplayInstruction: () -> Unit,
     onViewport: (Float, Float) -> Unit,
@@ -220,7 +242,7 @@ private fun FallingLettersContent(
             targetLetter = state.targetLetter,
             progressText =
                 rtl("סיבוב ${state.roundIndex + 1} מתוך ${state.roundsTotal} · תפסת ${state.caughtInRound} מתוך ${state.quotaInRound}"),
-            onExit = onExit,
+            onBack = onBack,
             onReplayInstruction = onReplayInstruction,
             instructionReplayEnabled = !state.isComplete && !state.inputsLocked,
             modifier =
@@ -305,7 +327,7 @@ private fun FallingLettersContent(
 private fun TopBarFallingLetters(
     targetLetter: String,
     progressText: String,
-    onExit: () -> Unit,
+    onBack: () -> Unit,
     onReplayInstruction: () -> Unit,
     instructionReplayEnabled: Boolean,
     modifier: Modifier = Modifier,
@@ -332,14 +354,14 @@ private fun TopBarFallingLetters(
             }
 
             Surface(
-                onClick = onExit,
+                onClick = onBack,
                 shape = RoundedCornerShape(999.dp),
                 color = Color.Black.copy(alpha = 0.45f),
                 tonalElevation = 0.dp,
                 shadowElevation = 0.dp,
             ) {
                 Text(
-                    text = rtl("יציאה"),
+                    text = rtl("חזור"),
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black),
                     color = Color.White,
                     modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
@@ -496,8 +518,3 @@ private data class LetterFeedback(
     val token: Int,
 )
 
-private val RoundPraisePhrases: Array<String> =
-    arrayOf(
-        "כל הכבוד!",
-        "יופי!",
-    )

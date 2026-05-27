@@ -18,13 +18,12 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.Dp
 import com.airbnb.lottie.compose.LottieAnimation
-import com.airbnb.lottie.compose.LottieCompositionSpec
 import com.airbnb.lottie.compose.LottieConstants
 import com.airbnb.lottie.compose.animateLottieCompositionAsState
-import com.airbnb.lottie.compose.rememberLottieComposition
 import com.tal.hebrewdino.R
 import com.tal.hebrewdino.ui.audio.IntroMediaClips
 import com.tal.hebrewdino.ui.data.DinoCharacter
+import kotlinx.coroutines.delay
 
 enum class EggLottiePhase {
     IDLE_WIGGLE,
@@ -48,12 +47,8 @@ fun EggLottieVisual(
             R.drawable.egg_white
         }
 
-    val idleComposition by rememberLottieComposition(
-        LottieCompositionSpec.Asset(IntroMediaClips.LOTTIE_EGG_IDLE_WIGGLE),
-    )
-    val crackComposition by rememberLottieComposition(
-        LottieCompositionSpec.Asset(IntroMediaClips.LOTTIE_EGG_CRACK),
-    )
+    val idleComposition = rememberSafeLottieComposition(IntroMediaClips.LOTTIE_EGG_IDLE_WIGGLE)
+    val crackComposition = rememberSafeLottieComposition(IntroMediaClips.LOTTIE_EGG_CRACK)
 
     val tapScale = remember { Animatable(1f) }
     LaunchedEffect(tapImpulseEpoch) {
@@ -78,21 +73,21 @@ fun EggLottieVisual(
         restartOnPlay = true,
     )
 
-    var crackEndReported by remember { mutableStateOf(false) }
-    LaunchedEffect(phase, crackProgress, crackComposition) {
+    var crackEndEmitted by remember { mutableStateOf(false) }
+    LaunchedEffect(phase) {
         if (phase != EggLottiePhase.CRACK) {
-            crackEndReported = false
+            crackEndEmitted = false
             return@LaunchedEffect
         }
+        if (crackEndEmitted) return@LaunchedEffect
         if (crackComposition == null) {
-            if (!crackEndReported) {
-                crackEndReported = true
-                onCrackAnimationEnd()
-            }
+            crackEndEmitted = true
+            onCrackAnimationEnd()
             return@LaunchedEffect
         }
-        if (!crackEndReported && crackProgress >= 0.98f) {
-            crackEndReported = true
+        delay(crackComposition.durationMsOr())
+        if (!crackEndEmitted) {
+            crackEndEmitted = true
             onCrackAnimationEnd()
         }
     }
@@ -140,12 +135,6 @@ fun EggLottieVisual(
                         modifier = Modifier.size(size),
                         contentScale = ContentScale.Fit,
                     )
-                    LaunchedEffect(Unit) {
-                        if (!crackEndReported) {
-                            crackEndReported = true
-                            onCrackAnimationEnd()
-                        }
-                    }
                 }
             }
         }

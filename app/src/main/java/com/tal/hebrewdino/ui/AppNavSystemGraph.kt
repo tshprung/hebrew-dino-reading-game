@@ -66,12 +66,7 @@ internal fun NavGraphBuilder.systemAndTrainingGraph(host: AppNavHostState) {
             }
         val rewardEngine = remember(host.context) { RewardEngine.get(host.context.applicationContext) }
         WordChallengeScreen(
-            onExitToHome = {
-                host.navController.navigate(NavRoutes.Chapters) {
-                    popUpTo(NavRoutes.Chapters) { inclusive = true }
-                    launchSingleTop = true
-                }
-            },
+            onBackToStationSelect = { host.navController.backToStationSelect() },
             onRoundCompleteToSummary = {
                 host.navController.navigate(NavRoutes.ChallengeSummary) {
                     popUpTo(NavRoutes.WordChallenge) { inclusive = true }
@@ -99,12 +94,7 @@ internal fun NavGraphBuilder.systemAndTrainingGraph(host: AppNavHostState) {
     composable(NavRoutes.FallingLetters) {
         val rewardEngine = remember(host.context) { RewardEngine.get(host.context.applicationContext) }
         FallingLettersScreen(
-            onExitToHome = {
-                host.navController.navigate(NavRoutes.Chapters) {
-                    popUpTo(NavRoutes.Chapters) { inclusive = true }
-                    launchSingleTop = true
-                }
-            },
+            onBackToStationSelect = { host.navController.backToStationSelect() },
             onRoundCompleteToSummary = {
                 host.navController.navigate(NavRoutes.ChallengeSummary) {
                     popUpTo(NavRoutes.FallingLetters) { inclusive = true }

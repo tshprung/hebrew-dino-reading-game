@@ -1,6 +1,5 @@
-package com.tal.hebrewdino.ui.screens
+﻿package com.tal.hebrewdino.ui.screens
 
-import android.content.Context
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.LinearEasing
@@ -42,8 +41,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -53,8 +50,6 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -65,7 +60,12 @@ import com.tal.hebrewdino.ui.domain.economy.FoodInventoryEntry
 import com.tal.hebrewdino.ui.domain.economy.GrowthStage
 import com.tal.hebrewdino.ui.domain.economy.PlayerWallet
 import com.tal.hebrewdino.ui.domain.economy.TamagotchiRules
+import com.tal.hebrewdino.ui.audio.DinoMediaClips
+import com.tal.hebrewdino.ui.audio.RawVoicePlayer
 import com.tal.hebrewdino.ui.audio.SfxManager
+import com.tal.hebrewdino.ui.components.lottie.DinoLottieVisual
+import com.tal.hebrewdino.ui.components.lottie.EggLottiePhase
+import com.tal.hebrewdino.ui.components.lottie.EggLottieVisual
 import com.tal.hebrewdino.ui.components.particles.ConfettiBurstOverlay
 import com.tal.hebrewdino.ui.layout.topChromeInsetsPadding
 import kotlinx.coroutines.delay
@@ -161,22 +161,19 @@ private fun DinoHomeContent(
     onFeed: (foodEmoji: String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val eatScale = remember { Animatable(1f) }
-    LaunchedEffect(eatPulseEpoch) {
-        if (eatPulseEpoch == 0) return@LaunchedEffect
-        eatScale.animateTo(1.08f, tween(durationMillis = 110))
-        eatScale.animateTo(1f, tween(durationMillis = 140))
-    }
-
     val context = LocalContext.current
     val appContext = remember(context) { context.applicationContext }
     val stopInteractionAudio = remember(appContext) { { InteractionAudio.stopAllNow(appContext) } }
     val sfx = remember(appContext) { SfxManager(appContext) }
+    val rawVoice = remember(appContext) { RawVoicePlayer(appContext) }
     val tts = remember(appContext) { TextToSpeechManager.get(appContext) }
     val scope = rememberCoroutineScope()
     val isInForeground by AppForegroundAudio.isInForeground.collectAsState()
-    DisposableEffect(sfx) {
-        onDispose { sfx.release() }
+    DisposableEffect(sfx, rawVoice) {
+        onDispose {
+            sfx.release()
+            rawVoice.release()
+        }
     }
     DisposableEffect(Unit) {
         onDispose { tts.stop() }
@@ -204,10 +201,15 @@ private fun DinoHomeContent(
     }
 
     var hungryCuePlayed by remember { mutableStateOf(false) }
-    LaunchedEffect(isHungry) {
+    LaunchedEffect(isHungry, growthStage) {
+        if (growthStage == GrowthStage.EGG) return@LaunchedEffect
         if (isHungry && !hungryCuePlayed) {
             hungryCuePlayed = true
-            sfx.playHungryWhimper()
+            if (rawVoice.isPlayable(DinoMediaClips.whimperResId)) {
+                rawVoice.playBlocking(DinoMediaClips.whimperResId)
+            } else {
+                sfx.playHungryWhimper()
+            }
         }
         if (!isHungry) {
             hungryCuePlayed = false
@@ -336,6 +338,7 @@ private fun DinoHomeContent(
                 hatchEpoch = hatchEpoch,
                 growEpoch = growEpoch,
                 eggTapEpoch = eggTapEpoch,
+                eatPulseEpoch = eatPulseEpoch,
                 equippedAccessoryId = equippedAccessoryId,
                 onEggTapped = onEggTap,
                 onDinoTapped = {
@@ -344,7 +347,6 @@ private fun DinoHomeContent(
                         tts.interruptAndSpeak(homePromptSpeech)
                     }
                 },
-                scale = eatScale.value,
                 modifier = Modifier.weight(1f, fill = true),
             )
 
@@ -379,7 +381,7 @@ private fun DinoHomeContent(
             )
 
             ThemedActionButton(
-                text = "!צא למשימה",
+                text = "צא למשימה",
                 onClick = {
                     stopInteractionAudio()
                     onGoOnMission()
@@ -539,42 +541,22 @@ private fun DinoCenterVisual(
     hatchEpoch: Int,
     growEpoch: Int,
     eggTapEpoch: Int,
+    eatPulseEpoch: Int,
     equippedAccessoryId: String?,
     onEggTapped: () -> Unit,
     onDinoTapped: () -> Unit,
-    scale: Float,
     modifier: Modifier = Modifier,
 ) {
     BoxWithConstraints(
         modifier = modifier.fillMaxWidth(),
         contentAlignment = Alignment.Center,
     ) {
-        val dinoColorFilter =
-            when {
-                isHungry && growthStage != GrowthStage.EGG ->
-                    ColorFilter.tint(Color(0xFF6B8CFF).copy(alpha = 0.45f))
-                character == DinoCharacter.DINA_PINK ->
-                    ColorFilter.tint(Color(0xFFFF4FB3).copy(alpha = 0.55f))
-                else -> null
-            }
-
         val eggRes =
             if (character == DinoCharacter.DINA_PINK) {
                 R.drawable.egg_pink
             } else {
                 R.drawable.egg_white
             }
-
-        val eggShake = remember { Animatable(0f) }
-        LaunchedEffect(eggTapEpoch) {
-            if (eggTapEpoch == 0) return@LaunchedEffect
-            eggShake.snapTo(0f)
-            eggShake.animateTo(-7f, tween(40))
-            eggShake.animateTo(7f, tween(70))
-            eggShake.animateTo(-5f, tween(60))
-            eggShake.animateTo(5f, tween(60))
-            eggShake.animateTo(0f, tween(50))
-        }
 
         var hatchVisible by remember { mutableStateOf(false) }
         val hatchAlpha = remember { Animatable(0f) }
@@ -586,50 +568,16 @@ private fun DinoCenterVisual(
             hatchVisible = false
         }
 
-        val growScale = remember { Animatable(1f) }
-        LaunchedEffect(growEpoch) {
-            if (growEpoch == 0) return@LaunchedEffect
-            growScale.snapTo(0.86f)
-            growScale.animateTo(1f, tween(260))
-        }
-
         when (growthStage) {
             GrowthStage.EGG -> {
                 val eggSize = maxWidth.coerceAtMost(280.dp)
-                val idle = rememberInfiniteTransition(label = "egg_idle")
-                val idleRot by idle.animateFloat(
-                    initialValue = -1.6f,
-                    targetValue = 1.6f,
-                    animationSpec =
-                        infiniteRepeatable(
-                            animation = tween(durationMillis = 1200, easing = LinearEasing),
-                            repeatMode = RepeatMode.Reverse,
-                        ),
-                    label = "rot",
-                )
-                val idleScale by idle.animateFloat(
-                    initialValue = 0.985f,
-                    targetValue = 1.015f,
-                    animationSpec =
-                        infiniteRepeatable(
-                            animation = tween(durationMillis = 980, easing = LinearEasing),
-                            repeatMode = RepeatMode.Reverse,
-                        ),
-                    label = "scale",
-                )
-                Image(
-                    painter = androidx.compose.ui.res.painterResource(id = eggRes),
-                    contentDescription = "ביצה",
-                    modifier =
-                        Modifier
-                            .size(eggSize)
-                            .graphicsLayer {
-                                rotationZ = idleRot + eggShake.value
-                                scaleX = idleScale
-                                scaleY = idleScale
-                            }
-                            .clickable(onClick = onEggTapped),
-                    contentScale = androidx.compose.ui.layout.ContentScale.Fit,
+                EggLottieVisual(
+                    character = character,
+                    phase = EggLottiePhase.IDLE_WIGGLE,
+                    tapImpulseEpoch = eggTapEpoch,
+                    onEggTapped = onEggTapped,
+                    onCrackAnimationEnd = {},
+                    size = eggSize,
                 )
             }
 
@@ -638,88 +586,15 @@ private fun DinoCenterVisual(
             -> {
                 val base = maxWidth.coerceAtMost(280.dp)
                 val size = if (growthStage == GrowthStage.BABY) base * 0.72f else base
-                val idleBob = rememberInfiniteTransition(label = "dino_bob")
-                val bobY by idleBob.animateFloat(
-                    initialValue = -4f,
-                    targetValue = 4f,
-                    animationSpec =
-                        infiniteRepeatable(
-                            animation = tween(1400, easing = LinearEasing),
-                            repeatMode = RepeatMode.Reverse,
-                        ),
-                    label = "bob",
+                DinoLottieVisual(
+                    character = character,
+                    isHungry = isHungry,
+                    eatPulseEpoch = eatPulseEpoch,
+                    growEpoch = growEpoch,
+                    equippedAccessoryId = equippedAccessoryId,
+                    onDinoTapped = onDinoTapped,
+                    size = size,
                 )
-                val blinkScale by idleBob.animateFloat(
-                    initialValue = 1f,
-                    targetValue = 0.96f,
-                    animationSpec =
-                        infiniteRepeatable(
-                            animation = tween(100, easing = LinearEasing),
-                            repeatMode = RepeatMode.Restart,
-                            initialStartOffset = androidx.compose.animation.core.StartOffset(2800),
-                        ),
-                    label = "blink",
-                )
-                val hungrySway =
-                    if (isHungry) {
-                        idleBob.animateFloat(
-                            initialValue = -2.5f,
-                            targetValue = 2.5f,
-                            animationSpec =
-                                infiniteRepeatable(
-                                    animation = tween(900, easing = LinearEasing),
-                                    repeatMode = RepeatMode.Reverse,
-                                ),
-                            label = "hungry_sway",
-                        ).value
-                    } else {
-                        0f
-                    }
-                val adultPulse =
-                    if (growthStage == GrowthStage.ADULT) {
-                        val idle = rememberInfiniteTransition(label = "adult_celebrate")
-                        idle.animateFloat(
-                            initialValue = 0.98f,
-                            targetValue = 1.04f,
-                            animationSpec =
-                                infiniteRepeatable(
-                                    animation = tween(durationMillis = 1100, easing = LinearEasing),
-                                    repeatMode = RepeatMode.Reverse,
-                                ),
-                            label = "adult_scale",
-                        ).value
-                    } else {
-                        1f
-                    }
-                Box(
-                    modifier =
-                        Modifier
-                            .size(size)
-                            .graphicsLayer {
-                                translationY = bobY + if (isHungry) 6f else 0f
-                                rotationZ = hungrySway
-                                scaleX =
-                                    scale * growScale.value * adultPulse * blinkScale *
-                                        if (isHungry) 0.94f else 1f
-                                scaleY =
-                                    scale * growScale.value * adultPulse * blinkScale *
-                                        if (isHungry) 0.92f else 1f
-                            }
-                            .clickable(onClick = onDinoTapped),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Image(
-                        painter = androidx.compose.ui.res.painterResource(id = R.drawable.dino_idle),
-                        contentDescription = if (character == DinoCharacter.DINA_PINK) "דינה" else "דינו",
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = androidx.compose.ui.layout.ContentScale.Fit,
-                        colorFilter = dinoColorFilter,
-                    )
-                    DinoAccessoryOverlay(
-                        equippedAccessoryId = equippedAccessoryId,
-                        dinoSize = size,
-                    )
-                }
                 if (hatchVisible && hatchAlpha.value > 0f) {
                     Image(
                         painter = androidx.compose.ui.res.painterResource(id = eggRes),
@@ -727,8 +602,7 @@ private fun DinoCenterVisual(
                         modifier =
                             Modifier
                                 .size(base)
-                                .alpha(hatchAlpha.value)
-                                .graphicsLayer { rotationZ = eggShake.value * 0.6f },
+                                .alpha(hatchAlpha.value),
                         contentScale = androidx.compose.ui.layout.ContentScale.Fit,
                     )
                 }
@@ -796,15 +670,15 @@ private fun GrowthHint(
 ) {
     val text =
         when (growthStage) {
-            GrowthStage.EGG -> "הקישו על הביצה — טוק, טוק, טוק!"
+            GrowthStage.EGG -> "הקישו על הביצה - טוק, טוק, טוק!"
             GrowthStage.BABY -> {
                 val remaining = (TamagotchiRules.APPLES_TO_ADULT - fedFoodTotal).coerceAtLeast(0)
                 if (remaining <= 0) {
                     "דינו גדל!"
                 } else if (remaining == 1) {
-                    "עוד תפוח אחד ודינו גדל!"
+                    "עוד תפוח אחד ודינו יגדל!"
                 } else {
-                    "עוד ${appleCountMasculinePhrase(remaining)} ודינו גדל!"
+                    "עוד ${appleCountMasculinePhrase(remaining)} ודינו יגדל!"
                 }
             }
             GrowthStage.ADULT -> "דינו בוגר! המשיכו להאכיל ולצאת למשימות!"

@@ -188,7 +188,7 @@ fun IntroInstructionScreen(
             }
 
             Text(
-                text = rtl("הקישו על הביצה — טוק, טוק, טוק!"),
+                text = rtl("הקישו על הביצה - טוק, טוק, טוק!"),
                 style =
                     MaterialTheme.typography.titleMedium.copy(
                         fontWeight = FontWeight.Bold,

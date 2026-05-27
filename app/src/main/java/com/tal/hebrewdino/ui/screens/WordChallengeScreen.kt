@@ -55,8 +55,13 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.tal.hebrewdino.R
 import com.tal.hebrewdino.ui.audio.InteractionAudio
+import com.tal.hebrewdino.ui.audio.RawVoicePlayer
 import com.tal.hebrewdino.ui.audio.SfxManager
+import com.tal.hebrewdino.ui.audio.StationAudio
+import com.tal.hebrewdino.ui.audio.StationMediaClips
+import com.tal.hebrewdino.ui.audio.StationVoiceGuide
 import com.tal.hebrewdino.ui.audio.TextToSpeechManager
+import com.tal.hebrewdino.ui.audio.VoicePlayer
 import com.tal.hebrewdino.ui.economy.RewardEngine
 import com.tal.hebrewdino.ui.domain.ChallengeType
 import com.tal.hebrewdino.ui.domain.hebrewLetterNameForSpeech
@@ -72,7 +77,7 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun WordChallengeScreen(
-    onExitToHome: () -> Unit,
+    onBackToStationSelect: () -> Unit,
     onRoundCompleteToSummary: () -> Unit,
     challengeType: ChallengeType = ChallengeType.ODD_ONE_OUT,
     chapterIndex: Int = 0,
@@ -83,12 +88,24 @@ fun WordChallengeScreen(
     val appContext = remember(context) { context.applicationContext }
     val stopInteractionAudio = remember(appContext) { { InteractionAudio.stopAllNow(appContext) } }
     val sfx = remember(appContext) { SfxManager(appContext) }
+    val rawVoice = remember(appContext) { RawVoicePlayer(appContext) }
+    val voice = remember(appContext) { VoicePlayer(appContext) }
     val tts = remember(appContext) { TextToSpeechManager.get(appContext) }
     val scope = rememberCoroutineScope()
+    val usesNativeStationAudio = StationMediaClips.isNativeAudioStation(challengeType)
 
-    DisposableEffect(sfx) {
+    DisposableEffect(sfx, rawVoice, voice) {
         onDispose {
             sfx.release()
+            rawVoice.release()
+            voice.release()
+        }
+    }
+    DisposableEffect(usesNativeStationAudio) {
+        onDispose {
+            if (!usesNativeStationAudio) {
+                tts.stop()
+            }
         }
     }
     val viewModel: WordChallengeViewModel =
@@ -154,6 +171,20 @@ fun WordChallengeScreen(
     val currentQuestionIndex = state.index
     LaunchedEffect(currentQuestionIndex, state.challengeType) {
         bumpInstructionActivity()
+        if (usesNativeStationAudio) {
+            val question = state.challenges.getOrNull(currentQuestionIndex) ?: return@LaunchedEffect
+            val letter = question.questionText.trim().firstOrNull()?.toString().orEmpty()
+            val txt = voiceInstructionForQuestion(state.challengeType, question, letter)
+            StationVoiceGuide.playWordChallengeInstructions(
+                rawVoice = rawVoice,
+                voice = voice,
+                tts = tts,
+                challengeType = state.challengeType,
+                targetLetter = letter,
+                ttsInstruction = txt,
+            )
+            return@LaunchedEffect
+        }
         val question = state.challenges.getOrNull(currentQuestionIndex) ?: return@LaunchedEffect
         val letter = question.questionText.trim().firstOrNull()?.toString().orEmpty()
         val txt = voiceInstructionForQuestion(state.challengeType, question, letter)
@@ -162,6 +193,23 @@ fun WordChallengeScreen(
 
     LaunchedEffect(replayInstructionEpoch) {
         if (replayInstructionEpoch == 0) return@LaunchedEffect
+        if (usesNativeStationAudio) {
+            rawVoice.stopNow()
+            voice.stopNow()
+            tts.stop()
+            val question = state.challenges.getOrNull(currentQuestionIndex) ?: return@LaunchedEffect
+            val letter = question.questionText.trim().firstOrNull()?.toString().orEmpty()
+            val txt = voiceInstructionForQuestion(state.challengeType, question, letter)
+            StationVoiceGuide.playWordChallengeInstructions(
+                rawVoice = rawVoice,
+                voice = voice,
+                tts = tts,
+                challengeType = state.challengeType,
+                targetLetter = letter,
+                ttsInstruction = txt,
+            )
+            return@LaunchedEffect
+        }
         val question = state.challenges.getOrNull(currentQuestionIndex) ?: return@LaunchedEffect
         val letter = question.questionText.trim().firstOrNull()?.toString().orEmpty()
         val txt = voiceInstructionForQuestion(state.challengeType, question, letter)
@@ -173,9 +221,16 @@ fun WordChallengeScreen(
     LaunchedEffect(state.pendingCorrectToken, state.selectedCorrectOption) {
         val selected = state.selectedCorrectOption?.takeIf { it.isNotBlank() } ?: return@LaunchedEffect
         if (state.isRoundComplete || state.pendingCorrectToken == 0) return@LaunchedEffect
+        val expectedToken = state.pendingCorrectToken
+        if (usesNativeStationAudio) {
+            scope.launch {
+                StationAudio.playSuccess(rawVoice, sfx)
+                viewModel.confirmAdvanceAfterCorrect(expectedToken)
+            }
+            return@LaunchedEffect
+        }
         val question = state.challenges.getOrNull(state.index) ?: return@LaunchedEffect
         val targetLetter = question.questionText.trim().firstOrNull()?.toString().orEmpty()
-        val expectedToken = state.pendingCorrectToken
         val reinforcement = targetSuccessSpeech(state.challengeType, targetLetter)
         tts.speakFullyThen(reinforcement, navigationSettleMs = 80L) {
             scope.launch {
@@ -196,12 +251,16 @@ fun WordChallengeScreen(
         questionNumber = state.questionNumber,
         totalQuestions = state.total,
         showEarnedReward = false,
-        onExit = {
+        onBack = {
             stopInteractionAudio()
-            onExitToHome()
+            onBackToStationSelect()
         },
         onReplayInstruction = {
-            stopInteractionAudio()
+            if (!usesNativeStationAudio) {
+                stopInteractionAudio()
+            } else {
+                rawVoice.stopNow()
+            }
             bumpInstructionActivity()
             requestInstructionReplay()
         },
@@ -210,26 +269,33 @@ fun WordChallengeScreen(
             bumpInstructionActivity()
             localTapLocked = true
             val correct = correctOption
-            val isLetterStation =
-                state.challengeType == ChallengeType.LETTER_RECOGNITION ||
-                    state.challengeType == ChallengeType.PHONEMIC_ISOLATION
+            val isLetterStation = usesNativeStationAudio
             val isWrongTap =
                 state.selectedCorrectOption == null &&
                     option.isNotBlank() &&
                     !correct.isNullOrBlank() &&
                     option != correct
             if (isLetterStation && isWrongTap) {
-                val spoken =
-                    when (state.challengeType) {
-                        ChallengeType.PHONEMIC_ISOLATION ->
-                            phonemeSpokenForTts(option).ifBlank { option }
-                        else -> letterNameSpokenForTts(option).ifBlank { option }
-                    }
-                tts.interruptAndSpeak(applyChildFriendlyTtsWorkarounds(spoken))
-            } else {
+                scope.launch {
+                    rawVoice.stopNow()
+                    voice.stopNow()
+                    StationVoiceGuide.playOptionTapFeedback(
+                        voice = voice,
+                        tts = tts,
+                        challengeType = state.challengeType,
+                        optionLetter = option,
+                        sfx = sfx,
+                    )
+                }
+            } else if (!isLetterStation) {
                 stopInteractionAudio()
             }
-            if (state.selectedCorrectOption == null && option.isNotBlank() && !correct.isNullOrBlank()) {
+            if (
+                !isLetterStation &&
+                state.selectedCorrectOption == null &&
+                option.isNotBlank() &&
+                !correct.isNullOrBlank()
+            ) {
                 scope.launch {
                     if (option == correct) sfx.playCorrect() else sfx.playWrong()
                 }
@@ -313,7 +379,7 @@ private fun WordChallengeContent(
     questionNumber: Int,
     totalQuestions: Int,
     showEarnedReward: Boolean,
-    onExit: () -> Unit,
+    onBack: () -> Unit,
     onReplayInstruction: () -> Unit,
     onOptionSelected: (String) -> Unit,
     interactionEnabled: Boolean,
@@ -329,7 +395,7 @@ private fun WordChallengeContent(
 
         TopBar(
             progressText = rtl("שאלה $questionNumber מתוך $totalQuestions"),
-            onExit = onExit,
+            onBack = onBack,
             modifier =
                 Modifier
                     .fillMaxWidth()
@@ -676,7 +742,7 @@ private fun BubbleOption(
 @Composable
 private fun TopBar(
     progressText: String,
-    onExit: () -> Unit,
+    onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Row(
@@ -699,14 +765,14 @@ private fun TopBar(
         }
 
         Surface(
-            onClick = onExit,
+            onClick = onBack,
             shape = RoundedCornerShape(999.dp),
             color = Color.Black.copy(alpha = 0.28f),
             tonalElevation = 0.dp,
             shadowElevation = 0.dp,
         ) {
             Text(
-                text = rtl("יציאה"),
+                text = rtl("חזור"),
                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black),
                 color = Color.White,
                 modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),

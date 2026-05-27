@@ -48,12 +48,18 @@ class RawVoicePlayer(context: Context) {
         @RawRes resId: Int,
     ): Boolean {
         if (resId == 0) return false
+        val length = rawResourceLength(resId) ?: return false
+        return length >= MIN_PLAYABLE_BYTES
+    }
+
+    fun rawResourceLength(
+        @RawRes resId: Int,
+    ): Long? {
+        if (resId == 0) return null
         return try {
-            appContext.resources.openRawResourceFd(resId).use { fd ->
-                fd.length >= MIN_PLAYABLE_BYTES
-            }
+            appContext.resources.openRawResourceFd(resId).use { it.length }
         } catch (_: Throwable) {
-            false
+            null
         }
     }
 
@@ -72,6 +78,53 @@ class RawVoicePlayer(context: Context) {
         } catch (_: Throwable) {
         }
         player = null
+    }
+
+    /**
+     * Short feedback cue without [SpeechFocusGate] so background music stays audible.
+     */
+    suspend fun playSoftFeedback(
+        @RawRes resId: Int,
+        volume: Float = 0.42f,
+    ) {
+        if (!isPlayable(resId)) {
+            Log.w(TAG, "Skipping missing or empty soft feedback: resId=$resId")
+            return
+        }
+        mutex.withLock {
+            stopLocked()
+            val mp =
+                withContext(Dispatchers.IO) {
+                    runCatching { MediaPlayer.create(appContext, resId) }.getOrNull()
+                } ?: return@withLock
+            player = mp
+            val vol = volume.coerceIn(0.05f, 1f)
+            mp.setVolume(vol, vol)
+            mp.setAudioAttributes(
+                AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_GAME)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                    .build(),
+            )
+            suspendCancellableCoroutine { cont ->
+                activeWaiter = cont
+                mp.setOnCompletionListener {
+                    if (activeWaiter === cont) activeWaiter = null
+                    if (cont.isActive) cont.resume(Unit)
+                }
+                mp.setOnErrorListener { _, _, _ ->
+                    if (activeWaiter === cont) activeWaiter = null
+                    if (cont.isActive) cont.resume(Unit)
+                    true
+                }
+                cont.invokeOnCancellation {
+                    if (activeWaiter === cont) activeWaiter = null
+                    stopLocked()
+                }
+                mp.start()
+            }
+            stopLocked()
+        }
     }
 
     suspend fun playBlocking(

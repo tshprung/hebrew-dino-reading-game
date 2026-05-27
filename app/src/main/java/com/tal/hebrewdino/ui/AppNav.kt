@@ -147,9 +147,16 @@ fun AppNav() {
             bgMusic.stop()
             return@LaunchedEffect
         }
+        if (NavRoutes.isGameplayStationRoute(currentRoute)) {
+            bgMusic.stop()
+            return@LaunchedEffect
+        }
+        if (!bgMusicEligible) {
+            bgMusic.stop()
+            return@LaunchedEffect
+        }
         bgMusic.playLoopFromAssets(assetPath = bgmAssetPathForRoute(currentRoute))
-        val silenceForSpeech = isSpeechActive && bgMusicEligible
-        bgMusic.setMuted(!bgMusicEligible || silenceForSpeech)
+        bgMusic.setMuted(isSpeechActive)
         bgMusic.setDucked(false)
     }
 
@@ -276,12 +283,7 @@ fun AppNav() {
                     ChallengeType.ODD_ONE_OUT
                 }
             WordChallengeScreen(
-                onExitToHome = {
-                    navController.navigate(NavRoutes.Chapters) {
-                        popUpTo(NavRoutes.Chapters) { inclusive = true }
-                        launchSingleTop = true
-                    }
-                },
+                onBackToStationSelect = { navController.backToStationSelect() },
                 onRoundCompleteToSummary = {
                     navController.navigate(NavRoutes.ChallengeSummary) {
                         popUpTo(NavRoutes.WordChallenge) { inclusive = true }
@@ -307,12 +309,7 @@ fun AppNav() {
             val chapterIndex = backStackEntry.arguments?.getInt(NavRoutes.ChapterIndexArg) ?: 0
             FallingLettersScreen(
                 chapterIndex = chapterIndex.coerceIn(0, HebrewSyllabus.chapterCount - 1),
-                onExitToHome = {
-                    navController.navigate(NavRoutes.Chapters) {
-                        popUpTo(NavRoutes.Chapters) { inclusive = true }
-                        launchSingleTop = true
-                    }
-                },
+                onBackToStationSelect = { navController.backToStationSelect() },
                 onRoundCompleteToSummary = {
                     navController.navigate(NavRoutes.ChallengeSummary) {
                         popUpTo(NavRoutes.FallingLetters) { inclusive = true }

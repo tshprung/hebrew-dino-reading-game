@@ -45,6 +45,17 @@ class MainActivity : ComponentActivity() {
                 }
             },
         )
+        lifecycle.addObserver(
+            object : DefaultLifecycleObserver {
+                override fun onPause(owner: LifecycleOwner) {
+                    AppForegroundAudio.onActivityPause(applicationContext)
+                }
+
+                override fun onStop(owner: LifecycleOwner) {
+                    AppForegroundAudio.onBackground(applicationContext)
+                }
+            },
+        )
         enableImmersiveFullscreen()
         setContent {
             CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
@@ -87,6 +98,11 @@ class MainActivity : ComponentActivity() {
         super.onResume()
         AppForegroundAudio.onForeground()
         applyImmersiveSystemBarsHidden()
+    }
+
+    override fun onPause() {
+        AppForegroundAudio.onActivityPause(applicationContext)
+        super.onPause()
     }
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
