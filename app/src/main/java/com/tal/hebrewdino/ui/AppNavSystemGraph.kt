@@ -8,6 +8,7 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavType
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+import com.tal.hebrewdino.BuildConfig
 import com.tal.hebrewdino.ui.data.AudioPrefs
 import com.tal.hebrewdino.ui.data.DinoCharacter
 import com.tal.hebrewdino.ui.data.Season2ProgressPrefs
@@ -42,11 +43,16 @@ internal fun NavGraphBuilder.systemAndTrainingGraph(host: AppNavHostState) {
             onOpenSeason1 = {
                 host.navController.navigate(NavRoutes.Chapters) { launchSingleTop = true }
             },
-            onOpenSeason2 = {
-                host.navController.navigate(NavRoutes.Season2ChapterSelect) {
-                    launchSingleTop = true
-                }
-            },
+            onOpenSeason2 =
+                if (BuildConfig.DEBUG) {
+                    {
+                        host.navController.navigate(NavRoutes.Season2ChapterSelect) {
+                            launchSingleTop = true
+                        }
+                    }
+                } else {
+                    {}
+                },
             onBackToOpening = {
                 host.navController.navigate(NavRoutes.Opening) {
                     popUpTo(NavRoutes.Opening) { inclusive = false }

@@ -39,6 +39,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.tal.hebrewdino.R
+import com.tal.hebrewdino.BuildConfig
 
 private data class SeasonCardConfig(
     val seasonId: Int,
@@ -56,6 +57,7 @@ fun SeasonsScreen(
     modifier: Modifier = Modifier,
 ) {
     val scroll = rememberScrollState()
+    val season2Enabled = BuildConfig.DEBUG
     val seasons =
         listOf(
             SeasonCardConfig(
@@ -68,8 +70,8 @@ fun SeasonsScreen(
                 seasonId = 2,
                 title = "עונה 2: דינוזאורים",
                 subtitle = "פרוטוטיפ — לוח פאזל T-Rex",
-                status = "פרוטוטיפ",
-                enabled = true,
+                status = if (season2Enabled) "פרוטוטיפ (Debug)" else "בקרוב",
+                enabled = season2Enabled,
             ),
             SeasonCardConfig(
                 seasonId = 3,
