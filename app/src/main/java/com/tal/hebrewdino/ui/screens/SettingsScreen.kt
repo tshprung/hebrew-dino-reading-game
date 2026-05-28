@@ -54,11 +54,13 @@ fun SettingsScreen(
     onBackgroundMusicEnabledChange: (Boolean) -> Unit,
     onResetAll: () -> Unit,
     onResetChapters: (Set<Int>) -> Unit,
+    onResetSeason2: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var showResetAllDialog by remember { mutableStateOf(false) }
     var showResetChaptersDialog by remember { mutableStateOf(false) }
+    var showResetSeason2Dialog by remember { mutableStateOf(false) }
     var selectedChapters by remember { mutableStateOf(setOf<Int>()) }
 
     Column(
@@ -202,6 +204,28 @@ fun SettingsScreen(
         }
 
         Spacer(modifier = Modifier.height(14.dp))
+
+        Text(
+            text = "עונה 2",
+            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+            color = Color(0xFF0B2B3D),
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Text(
+            text = "מאפס רק את ההתקדמות של עונה 2 (בחירת דינוזאורים/פרקים).",
+            style = MaterialTheme.typography.bodyMedium,
+            color = Color(0xFF0B2B3D).copy(alpha = 0.88f),
+            modifier = Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 8.dp),
+            textAlign = TextAlign.Start,
+        )
+        OutlinedButton(
+            onClick = { showResetSeason2Dialog = true },
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text("איפוס עונה 2")
+        }
+
+        Spacer(modifier = Modifier.height(14.dp))
         OutlinedButton(onClick = onBack, modifier = Modifier.fillMaxWidth()) {
             Text("חזרה")
         }
@@ -262,6 +286,34 @@ fun SettingsScreen(
             },
             dismissButton = {
                 TextButton(onClick = { }) {
+                    Text("ביטול")
+                }
+            },
+        )
+    }
+
+    if (showResetSeason2Dialog) {
+        AlertDialog(
+            onDismissRequest = { },
+            title = { Text(text = "איפוס עונה 2") },
+            text = {
+                Text(
+                    text = "לאפס את ההתקדמות של עונה 2 בלבד?\n\nפעולה זו לא משפיעה על עונה 1.",
+                    textAlign = TextAlign.Start,
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showResetSeason2Dialog = false
+                        onResetSeason2()
+                    },
+                ) {
+                    Text("כן, לאפס עונה 2")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showResetSeason2Dialog = false }) {
                     Text("ביטול")
                 }
             },

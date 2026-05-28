@@ -51,6 +51,7 @@ private data class SeasonCardConfig(
 @Composable
 fun SeasonsScreen(
     onOpenSeason1: () -> Unit,
+    onOpenSeason2: () -> Unit = {},
     onBackToOpening: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -65,10 +66,10 @@ fun SeasonsScreen(
             ),
             SeasonCardConfig(
                 seasonId = 2,
-                title = "עונה 2: מילים חדשות",
-                subtitle = "עוד אותיות, עוד מילים, ועוד משחקים",
-                status = "בפיתוח",
-                enabled = false,
+                title = "עונה 2: דינוזאורים",
+                subtitle = "פרוטוטיפ — לוח פאזל T-Rex",
+                status = "פרוטוטיפ",
+                enabled = true,
             ),
             SeasonCardConfig(
                 seasonId = 3,
@@ -125,6 +126,7 @@ fun SeasonsScreen(
                         onClick =
                             when {
                                 season.seasonId == 1 -> onOpenSeason1
+                                season.seasonId == 2 -> onOpenSeason2
                                 else -> null
                             },
                     )

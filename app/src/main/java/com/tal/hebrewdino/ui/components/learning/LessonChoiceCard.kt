@@ -32,6 +32,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.PlatformTextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
@@ -50,7 +51,7 @@ import com.tal.hebrewdino.ui.domain.LessonWordIllustrations
  */
 const val LessonChoiceCardPictureAspect: Float = 121f / 160f // +~10% taller than the old 110/160
 // Taller reserved band so Hebrew glyphs never clip on small devices.
-val LessonChoiceCardCaptionAreaHeight: Dp = 66.dp
+val LessonChoiceCardCaptionAreaHeight: Dp = 76.dp
 val LessonChoiceCardCaptionSpacerHeight: Dp = 8.dp
 
 @SuppressLint("UnusedBoxWithConstraintsScope")
@@ -258,24 +259,30 @@ fun LessonChoiceCard(
                         .width(cardWidth + 8.dp)
                         .height(LessonChoiceCardCaptionAreaHeight),
                 // Keep the caption slightly higher so descenders don't get clipped on small devices.
-                contentAlignment = captionContentAlignment,
+                contentAlignment = Alignment.Center,
             ) {
+                val captionHPad = 6.dp
+                val captionVPad = 2.dp
+                // Important: AutoFit must measure against the same inner space we actually render into.
+                // Otherwise (measure full width, then add padding) long words can still overflow.
+                val innerMaxWidth = (maxWidth - captionHPad * 2).coerceAtLeast(1.dp)
+                val innerMaxHeight = (maxHeight - captionVPad * 2).coerceAtLeast(1.dp)
                 AutoFitSingleLineText(
                     text = choice.word,
-                    maxWidth = maxWidth,
+                    maxWidth = innerMaxWidth,
+                    maxHeight = innerMaxHeight,
                     targetFontSize = targetCaptionSize,
                     style =
                         MaterialTheme.typography.titleLarge.copy(
                             fontWeight = FontWeight.Bold,
                             color = Color(0xFF0B2B3D),
+                            platformStyle = PlatformTextStyle(includeFontPadding = false),
                         ),
                     // Fill the reserved area so layout is stable; AutoFit handles font shrink.
                     modifier =
                         Modifier
                             .fillMaxWidth()
-                            // Picture-card captions: lift baseline ~20% within the reserved caption band
-                            // so text stays visible and readable under the picture frame on small devices.
-                            .offset(y = if (isPictureWord) (pictureCaptionOffsetFraction * maxHeight.value).dp else 0.dp),
+                            .padding(horizontal = captionHPad, vertical = captionVPad),
                     minFontSize = 10.sp,
                 )
             }

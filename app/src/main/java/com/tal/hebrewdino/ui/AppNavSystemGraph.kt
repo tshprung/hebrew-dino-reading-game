@@ -10,8 +10,11 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.tal.hebrewdino.ui.data.AudioPrefs
 import com.tal.hebrewdino.ui.data.DinoCharacter
+import com.tal.hebrewdino.ui.data.Season2ProgressPrefs
 import com.tal.hebrewdino.ui.screens.ChaptersScreen
 import com.tal.hebrewdino.ui.screens.OpeningScreen
+import com.tal.hebrewdino.ui.screens.Season2ChapterSelectScreen
+import com.tal.hebrewdino.ui.screens.Season2PuzzleMapPrototypeScreen
 import com.tal.hebrewdino.ui.screens.SeasonsScreen
 import com.tal.hebrewdino.ui.screens.SettingsScreen
 import com.tal.hebrewdino.ui.screens.TrainingV1CompleteScreen
@@ -39,12 +42,39 @@ internal fun NavGraphBuilder.systemAndTrainingGraph(host: AppNavHostState) {
             onOpenSeason1 = {
                 host.navController.navigate(NavRoutes.Chapters) { launchSingleTop = true }
             },
+            onOpenSeason2 = {
+                host.navController.navigate(NavRoutes.Season2ChapterSelect) {
+                    launchSingleTop = true
+                }
+            },
             onBackToOpening = {
                 host.navController.navigate(NavRoutes.Opening) {
                     popUpTo(NavRoutes.Opening) { inclusive = false }
                     launchSingleTop = true
                 }
             },
+        )
+    }
+
+    composable(NavRoutes.Season2ChapterSelect) {
+        Season2ChapterSelectScreen(
+            onBack = { host.navController.popBackStack() },
+            onOpenChapter = { chapterId ->
+                host.navController.navigate(NavRoutes.season2PuzzleMapPrototype(chapterId)) {
+                    launchSingleTop = true
+                }
+            },
+        )
+    }
+
+    composable(
+        route = NavRoutes.Season2PuzzleMapPrototype,
+        arguments = listOf(navArgument("chapterId") { type = NavType.IntType }),
+    ) { backStackEntry ->
+        val chapterId = backStackEntry.arguments?.getInt("chapterId") ?: 1
+        Season2PuzzleMapPrototypeScreen(
+            chapterId = chapterId,
+            onBack = { host.navController.popBackStack() },
         )
     }
 
@@ -158,6 +188,7 @@ internal fun NavGraphBuilder.systemAndTrainingGraph(host: AppNavHostState) {
     composable(NavRoutes.Settings) {
         val context = LocalContext.current
         val audioPrefs = remember(context) { AudioPrefs(context.applicationContext) }
+        val season2Progress = remember(context) { Season2ProgressPrefs(context.applicationContext) }
         val backgroundMusicEnabled by audioPrefs.backgroundMusicEnabledFlow.collectAsState(initial = true)
         SettingsScreen(
             backgroundMusicEnabled = backgroundMusicEnabled,
@@ -181,6 +212,11 @@ internal fun NavGraphBuilder.systemAndTrainingGraph(host: AppNavHostState) {
                     host.navController.navigate(NavRoutes.Chapters) {
                         popUpTo(NavRoutes.Settings) { inclusive = true }
                     }
+                }
+            },
+            onResetSeason2 = {
+                host.scope.launch {
+                    season2Progress.resetSeason2()
                 }
             },
             onBack = { host.navController.popBackStack() },

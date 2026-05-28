@@ -4,6 +4,11 @@ package com.tal.hebrewdino.ui
 object NavRoutes {
     const val Opening = "opening"
     const val Seasons = "seasons"
+    /** Season 2: select a dinosaur chapter (6 chapters). */
+    const val Season2ChapterSelect = "season2_chapter_select"
+    /** UX prototype: Season 2 T-Rex puzzle chapter map. */
+    const val Season2PuzzleMapPrototype = "season2_puzzle_map_prototype/{chapterId}"
+    fun season2PuzzleMapPrototype(chapterId: Int): String = "season2_puzzle_map_prototype/$chapterId"
     const val Chapters = "chapters"
     const val StoryIntro = "story_intro"
     const val ChapterLettersIntro = "chapter_letters_intro"
