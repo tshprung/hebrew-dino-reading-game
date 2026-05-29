@@ -113,7 +113,7 @@ fun Chapter1DinoCompanionIntroScreen(
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "\u200Fהיי! אני צריך עזרה…",
+                    text = "\u200Fהיי! בואו נעזור לי למצוא רמזים לביצים האבודות",
                     style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                     color = Color(0xFF0B2B3D),
                     textAlign = TextAlign.Center,

@@ -9,13 +9,17 @@ class Chapter1Station5And6ImageMatchInnerScaleTest {
     fun medusa() {
         assertEquals(0.8f, Chapter1Station5And6ImageMatchInnerScale.innerScale(LessonChoice("x", "מ", "מדוזה", 0)), 0f)
         assertEquals(0.8f, Chapter1Station5And6ImageMatchInnerScale.innerScale(LessonChoice("w_מ_3", "מ", "x", 0)), 0f)
-        assertEquals(0.8f, Chapter1Station5And6ImageMatchInnerScale.innerScale(LessonChoice("x", "מ", "x", 0, R.drawable.lesson_pic_medusa)), 0f)
+        assertEquals(
+            1.05f,
+            Chapter1Station5And6ImageMatchInnerScale.innerScale(LessonChoice("x", "מ", "x", 0, R.drawable.lesson_pic_medusa)),
+            0f,
+        )
     }
 
     @Test
     fun pictureStartsWith_delegatesToInnerScale() {
         assertEquals(
-            0.72f,
+            1.05f,
             Chapter1Station5And6ImageMatchInnerScale.innerScalePictureStartsWith(
                 catalogEntryId = "w_מ_4",
                 letter = "מ",
@@ -40,7 +44,7 @@ class Chapter1Station5And6ImageMatchInnerScaleTest {
 
     @Test
     fun honeyDvashInnerScale() {
-        assertEquals(1.08f, Chapter1Station5And6ImageMatchInnerScale.innerScale(LessonChoice("w_ד_4", "ד", "דבש", 0, R.drawable.lesson_pic_dvash)), 0f)
+        assertEquals(1.05f, Chapter1Station5And6ImageMatchInnerScale.innerScale(LessonChoice("w_ד_4", "ד", "דבש", 0, R.drawable.lesson_pic_dvash)), 0f)
     }
 
     @Test

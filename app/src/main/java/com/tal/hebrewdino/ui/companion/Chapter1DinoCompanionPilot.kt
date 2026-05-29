@@ -3,13 +3,17 @@ package com.tal.hebrewdino.ui.companion
 import androidx.annotation.DrawableRes
 import androidx.annotation.RawRes
 import com.tal.hebrewdino.R
-import kotlin.random.Random
+import com.tal.hebrewdino.ui.domain.Chapter1Config
 
 /**
  * Season 1 Chapter 1 only — companion Dino art + raw voice (not station instructions).
  */
 object Chapter1DinoCompanionPilot {
-    const val REWARD_VISIBLE_MS: Long = 1500L
+    /** Brief beat after success audio ends before returning to the journey map. */
+    const val REWARD_POST_AUDIO_MS: Long = 350L
+
+    /** Safety ceiling if a raw clip fails to complete (normal path uses full playback). */
+    const val REWARD_AUDIO_MAX_WAIT_MS: Long = 15_000L
 
     /** Fixed slot size for all companion poses (prevents layout jump between frames). */
     val portraitWidthDp = 200
@@ -29,16 +33,19 @@ object Chapter1DinoCompanionPilot {
             R.drawable.companion_dino_talk_2,
         )
 
-    @RawRes val introHelpFindEggs: Int = R.raw.dino_intro_help_find_eggs
+    @RawRes val introHelpFindEggs: Int = R.raw.dino_intro_help_find_eggs_v2
 
     @RawRes val chapterComplete: Int = R.raw.dino_chapter1_complete
 
-    private val successClips: IntArray =
-        intArrayOf(
-            R.raw.dino_success_1,
-            R.raw.dino_success_2,
-            R.raw.dino_success_3,
-        )
-
-    fun randomSuccessClip(): Int = successClips[Random.nextInt(successClips.size)]
+    @RawRes
+    fun successClipForStation(stationId: Int): Int =
+        when (stationId.coerceIn(1, Chapter1Config.STATION_COUNT)) {
+            1 -> R.raw.dino_success_station_1
+            2 -> R.raw.dino_success_station_2
+            3 -> R.raw.dino_success_station_3
+            4 -> R.raw.dino_success_station_4
+            5 -> R.raw.dino_success_station_5
+            6 -> R.raw.dino_success_station_6
+            else -> R.raw.dino_success_station_1
+        }
 }

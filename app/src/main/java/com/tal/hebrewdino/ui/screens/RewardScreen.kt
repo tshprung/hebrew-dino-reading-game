@@ -40,8 +40,8 @@ import com.tal.hebrewdino.ui.companion.Chapter1DinoCompanionPilot
 import com.tal.hebrewdino.ui.companion.CompanionDinoPortrait
 import com.tal.hebrewdino.ui.layout.ScreenFit
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.random.Random
 
 /** Random celebratory dino pose on the stage-complete screen (not a single static "nice" moment). */
@@ -113,11 +113,9 @@ fun RewardScreen(
             val voiceJob =
                 launch {
                     if (chapter1DinoCompanionPilot) {
-                        val clip = Chapter1DinoCompanionPilot.randomSuccessClip()
-                        withTimeoutOrNull(Chapter1DinoCompanionPilot.REWARD_VISIBLE_MS) {
-                            rawVoice?.playRawBlocking(clip)
-                        }
-                        rawVoice?.stopNow()
+                        val clip = Chapter1DinoCompanionPilot.successClipForStation(levelId)
+                        rawVoice?.playRawBlocking(clip)
+                        delay(Chapter1DinoCompanionPilot.REWARD_POST_AUDIO_MS)
                     } else {
                         // Level complete: say "finished level" then one random short praise (not only "יפה").
                         val praisePool = AudioClips.rewardStagePraiseTailCandidates()
@@ -126,13 +124,11 @@ fun RewardScreen(
                         voice.playFirstAvailableBlockingRandomized(praisePool)
                     }
                 }
-            val maxWaitMs =
-                if (chapter1DinoCompanionPilot) {
-                    Chapter1DinoCompanionPilot.REWARD_VISIBLE_MS + 200L
-                } else {
-                    9000L
-                }
-            GameAudioActions.await(voiceJob, maxWaitMs)
+            if (chapter1DinoCompanionPilot) {
+                GameAudioActions.await(voiceJob, Chapter1DinoCompanionPilot.REWARD_AUDIO_MAX_WAIT_MS)
+            } else {
+                GameAudioActions.await(voiceJob, 9000L)
+            }
             if (!navigatedAway) {
                 navigatedAway = true
                 onBackToMap()
