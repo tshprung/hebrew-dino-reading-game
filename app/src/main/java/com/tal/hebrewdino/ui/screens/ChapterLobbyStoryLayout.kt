@@ -44,8 +44,12 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import com.tal.hebrewdino.R
+import androidx.annotation.RawRes
+import com.tal.hebrewdino.ui.audio.RawVoicePlayer
 import com.tal.hebrewdino.ui.audio.VoicePlayer
 import com.tal.hebrewdino.ui.companion.Chapter1DinoCompanionPilot
+import com.tal.hebrewdino.ui.companion.CompanionAssets
+import com.tal.hebrewdino.ui.data.DinoCharacter
 import com.tal.hebrewdino.ui.companion.Chapter1ForestStoryCharacters
 import com.tal.hebrewdino.ui.companion.CompanionGentleIdleMotion
 import com.tal.hebrewdino.ui.companion.MotherLostEggsCue
@@ -85,10 +89,13 @@ fun ChapterLobbyStoryLayout(
     narrationPlaying: Boolean = false,
     /** Optional narration WAV in assets (e.g. `audio/story_*.wav`). */
     voiceAssetPath: String? = null,
+    /** Optional narration MP3 in `res/raw` (Season 1 Ch.1 companion story clips). */
+    @RawRes voiceRawResId: Int? = null,
     bodyLineHeightOverride: TextUnit? = null,
     dinoContentDescription: String,
-    /** Season 1 Ch.1: companion Dino art only. */
+    /** Season 1 Ch.1: companion Dino/Dina art only. */
     useCompanionDinoArt: Boolean = false,
+    companionCharacter: DinoCharacter = DinoCharacter.Dino,
     /** Season 1 Ch.1: companion mom art (static idle; no talk frames yet). */
     useCompanionMomArt: Boolean = false,
     /** Season 1 Ch.1: warm readable story card (matches Dino intro bubble). */
@@ -103,13 +110,15 @@ fun ChapterLobbyStoryLayout(
     val context = androidx.compose.ui.platform.LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val voicePlayer = remember(voiceAssetPath) { voiceAssetPath?.let { VoicePlayer(context = context) } }
-    var autoNarrationPlaying by remember(voiceAssetPath) { mutableStateOf(false) }
+    val rawVoice = remember(voiceRawResId) { if (voiceRawResId != null) RawVoicePlayer(context = context) else null }
+    var autoNarrationPlaying by remember(voiceAssetPath, voiceRawResId) { mutableStateOf(false) }
 
-    DisposableEffect(lifecycleOwner, voicePlayer) {
+    DisposableEffect(lifecycleOwner, voicePlayer, rawVoice) {
         val observer =
             LifecycleEventObserver { _, event ->
                 if (event == Lifecycle.Event.ON_PAUSE || event == Lifecycle.Event.ON_STOP) {
                     voicePlayer?.stopNow()
+                    rawVoice?.stopNow()
                 }
             }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -117,29 +126,47 @@ fun ChapterLobbyStoryLayout(
             lifecycleOwner.lifecycle.removeObserver(observer)
             voicePlayer?.stopNow()
             voicePlayer?.release()
+            rawVoice?.stopNow()
+            rawVoice?.release()
         }
     }
 
-    LaunchedEffect(voiceAssetPath) {
-        if (voicePlayer == null || voiceAssetPath.isNullOrBlank()) return@LaunchedEffect
-        autoNarrationPlaying = true
-        if (voicePlayer.hasAsset(voiceAssetPath)) {
-            voicePlayer.playBlocking(voiceAssetPath)
+    LaunchedEffect(voiceAssetPath, voiceRawResId) {
+        when {
+            voiceRawResId != null && voiceRawResId != 0 -> {
+                autoNarrationPlaying = true
+                rawVoice?.playRawBlocking(voiceRawResId)
+                autoNarrationPlaying = false
+            }
+            voicePlayer != null && !voiceAssetPath.isNullOrBlank() -> {
+                autoNarrationPlaying = true
+                if (voicePlayer.hasAsset(voiceAssetPath)) {
+                    voicePlayer.playBlocking(voiceAssetPath)
+                }
+                autoNarrationPlaying = false
+            }
         }
-        autoNarrationPlaying = false
     }
 
-    val talking = if (voiceAssetPath != null) autoNarrationPlaying else narrationPlaying
+    val talking =
+        when {
+            voiceRawResId != null || voiceAssetPath != null -> autoNarrationPlaying
+            else -> narrationPlaying
+        }
     val isCompactLandscapePhone = ScreenFit.isCompactLandscapePhone()
+    val companionAssets =
+        remember(companionCharacter) {
+            CompanionAssets.forCharacter(companionCharacter)
+        }
     val dinoIdleRes =
         if (useCompanionDinoArt) {
-            Chapter1DinoCompanionPilot.poseIdle
+            companionAssets.poseIdle
         } else {
             R.drawable.dino_idle
         }
     val dinoTalkResIds =
         if (useCompanionDinoArt) {
-            Chapter1DinoCompanionPilot.talkFrameResIds
+            companionAssets.talkFrameResIds
         } else {
             dinoTalkFrames
         }
@@ -365,7 +392,8 @@ fun ChapterLobbyStoryLayout(
 
             Button(
                 onClick = {
-                    // UX: stop intro immediately when continuing (don't wait for dispose/navigation).
+                    // UX: stop narration immediately when continuing (don't wait for dispose/navigation).
+                    rawVoice?.stopNow()
                     voicePlayer?.stopNow()
                     onContinue()
                 },
@@ -394,7 +422,7 @@ private fun ChapterLobbyMomCharacter(
                 talkFrameResIds = momTalkResIds,
                 isTalking = false,
                 modifier = Modifier.size(characterSize),
-                contentDescription = "אמא דינוזאור",
+                contentDescription = "אמא דינוזאורית",
             )
         }
     } else {
@@ -403,7 +431,7 @@ private fun ChapterLobbyMomCharacter(
             talkFrameResIds = momTalkResIds,
             isTalking = talking,
             modifier = Modifier.size(characterSize),
-            contentDescription = "אמא דינוזאור",
+            contentDescription = "אמא דינוזאורית",
         )
     }
 }

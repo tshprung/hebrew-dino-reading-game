@@ -71,6 +71,8 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import com.tal.hebrewdino.R
 import com.tal.hebrewdino.ui.companion.Chapter1DinoCompanionPilot
+import com.tal.hebrewdino.ui.companion.CompanionAssets
+import com.tal.hebrewdino.ui.data.DinoCharacter
 import com.tal.hebrewdino.ui.components.ChapterNavChipStyles
 import com.tal.hebrewdino.ui.components.learning.DinoNestMark
 import com.tal.hebrewdino.ui.components.learning.StoryEggStrip
@@ -195,6 +197,8 @@ fun JourneyScreen(
     companionImageRes: Int? = null,
     /** Season 1 Ch.1: companion Dino on the road (no legacy walk sprites). */
     useCompanionDinoOnMap: Boolean = false,
+    /** Selected companion when [useCompanionDinoOnMap] (Season 1 Ch.1). */
+    companionCharacter: DinoCharacter = DinoCharacter.Dino,
     endMarker: JourneyEndMarker = JourneyEndMarker.Egg,
     backgroundRes: Int = R.drawable.forest_bg_journey_road,
     /** Eggs already collected in prior chapter finales (shown under the top bar). */
@@ -202,15 +206,19 @@ fun JourneyScreen(
     modifier: Modifier = Modifier,
 ) {
     val devToolsEnabled = DevTools.enabled(LocalContext.current)
+    val chapter1CompanionAssets =
+        remember(companionCharacter) {
+            CompanionAssets.forCharacter(companionCharacter)
+        }
     val mapWalkFrameResIds =
         if (useCompanionDinoOnMap) {
-            Chapter1DinoCompanionPilot.talkFrameResIds
+            chapter1CompanionAssets.talkFrameResIds
         } else {
             walkFrames
         }
     val mapDinoIdleRes =
         if (useCompanionDinoOnMap) {
-            Chapter1DinoCompanionPilot.poseIdle
+            chapter1CompanionAssets.poseIdle
         } else {
             R.drawable.dino_idle
         }

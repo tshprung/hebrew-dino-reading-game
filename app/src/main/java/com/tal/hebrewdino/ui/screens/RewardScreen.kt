@@ -37,6 +37,7 @@ import com.tal.hebrewdino.ui.audio.AudioClips
 import com.tal.hebrewdino.ui.audio.RawVoicePlayer
 import com.tal.hebrewdino.ui.audio.VoicePlayer
 import com.tal.hebrewdino.ui.companion.Chapter1DinoCompanionPilot
+import com.tal.hebrewdino.ui.data.DinoCharacter
 import com.tal.hebrewdino.ui.companion.CompanionDinoRewardCelebration
 import com.tal.hebrewdino.ui.companion.CompanionRewardCelebrationStyle
 import com.tal.hebrewdino.ui.companion.StoryReadablePanel
@@ -73,6 +74,7 @@ fun RewardScreen(
     backgroundRes: Int = R.drawable.forest_bg_reward,
     /** Season 1 Chapter 1 pilot: happy Dino + short raw success clip (no station VO). */
     chapter1DinoCompanionPilot: Boolean = false,
+    chapter1CompanionCharacter: DinoCharacter = DinoCharacter.Dino,
     modifier: Modifier = Modifier,
 ) {
     fun rtl(text: String): String = "\u200F$text"
@@ -197,6 +199,7 @@ fun RewardScreen(
                     CompanionDinoRewardCelebration(
                         style = companionRewardStyle,
                         isTalking = companionVoicePlaying,
+                        companionCharacter = chapter1CompanionCharacter,
                         modifier = Modifier.size(width = companionPortraitW, height = companionPortraitH),
                     )
                 } else {
@@ -310,6 +313,7 @@ fun RewardScreen(
                     CompanionDinoRewardCelebration(
                         style = companionRewardStyle,
                         isTalking = companionVoicePlaying,
+                        companionCharacter = chapter1CompanionCharacter,
                         modifier = Modifier.size(width = companionPortraitW, height = companionPortraitH),
                     )
                 } else {

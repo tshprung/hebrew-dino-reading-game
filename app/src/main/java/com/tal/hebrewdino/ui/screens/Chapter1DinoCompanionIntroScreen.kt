@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Button
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -24,6 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -33,10 +35,15 @@ import com.tal.hebrewdino.ui.audio.RawVoicePlayer
 import com.tal.hebrewdino.ui.companion.Chapter1DinoCompanionPilot
 import com.tal.hebrewdino.ui.companion.CompanionDinoPortrait
 import com.tal.hebrewdino.ui.companion.CompanionDinoSpeechBubble
+import com.tal.hebrewdino.ui.companion.displayNameHebrew
+import com.tal.hebrewdino.ui.data.DinoCharacter
+import com.tal.hebrewdino.ui.data.PlayerAddress
 import com.tal.hebrewdino.ui.layout.ScreenFit
 
 @Composable
 fun Chapter1DinoCompanionIntroScreen(
+    companionCharacter: DinoCharacter,
+    playerAddress: PlayerAddress,
     onContinue: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -44,9 +51,17 @@ fun Chapter1DinoCompanionIntroScreen(
     val lifecycleOwner = LocalLifecycleOwner.current
     val rawVoice = remember { RawVoicePlayer(context = context) }
     var introPlaying by remember { mutableStateOf(false) }
-    var introFinished by remember { mutableStateOf(false) }
     val isCompactLandscapePhone = ScreenFit.isCompactLandscapePhone()
     val (portraitW, portraitH) = Chapter1DinoCompanionPilot.introPortraitSize(isCompactLandscapePhone)
+    val assets = remember(companionCharacter) { Chapter1DinoCompanionPilot.assets(companionCharacter) }
+    val introClip =
+        remember(companionCharacter, playerAddress) {
+            Chapter1DinoCompanionPilot.introRawRes(companionCharacter, playerAddress)
+        }
+    val introText =
+        remember(companionCharacter, playerAddress) {
+            Chapter1DinoCompanionPilot.introSpeechText(companionCharacter, playerAddress)
+        }
 
     DisposableEffect(lifecycleOwner) {
         val observer =
@@ -63,19 +78,23 @@ fun Chapter1DinoCompanionIntroScreen(
         }
     }
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(introClip) {
         introPlaying = true
-        rawVoice.playRawBlocking(Chapter1DinoCompanionPilot.introHelpFindEggs)
+        rawVoice.playRawBlocking(introClip)
         introPlaying = false
-        introFinished = true
     }
 
     val poseRes =
         when {
-            introPlaying -> Chapter1DinoCompanionPilot.poseHelp
-            introFinished -> Chapter1DinoCompanionPilot.poseIdle
-            else -> Chapter1DinoCompanionPilot.poseHelp
+            introPlaying -> assets.poseHelp
+            else -> assets.poseIdle
         }
+
+    fun continueFromIntro() {
+        rawVoice.stopNow()
+        introPlaying = false
+        onContinue()
+    }
 
     Box(modifier = modifier.fillMaxSize()) {
         Image(
@@ -101,31 +120,33 @@ fun Chapter1DinoCompanionIntroScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 CompanionDinoSpeechBubble(
-                    text = Chapter1DinoCompanionPilot.INTRO_SPEECH_TEXT,
-                    modifier =
-                        Modifier
-                            .fillMaxWidth(0.92f),
+                    text = introText,
+                    modifier = Modifier.fillMaxWidth(0.92f),
                 )
 
                 Spacer(modifier = Modifier.height(if (isCompactLandscapePhone) 10.dp else 14.dp))
 
                 CompanionDinoPortrait(
                     poseRes = poseRes,
-                    talkFrameResIds = Chapter1DinoCompanionPilot.talkFrameResIds,
+                    talkFrameResIds = assets.talkFrameResIds,
                     isTalking = introPlaying,
                     modifier = Modifier.size(width = portraitW.dp, height = portraitH.dp),
-                    contentDescription = "דינו",
+                    contentDescription = companionCharacter.displayNameHebrew(),
                 )
             }
 
             Button(
-                onClick = onContinue,
-                enabled = introFinished,
-                modifier = Modifier.fillMaxWidth(0.85f),
+                onClick = { continueFromIntro() },
+                modifier =
+                    Modifier
+                        .fillMaxWidth(0.85f)
+                        .height(52.dp),
             ) {
-                Text(text = "\u200Fבואו נתחיל!")
+                Text(
+                    text = if (introPlaying) "\u200Fהמשך" else "\u200Fבואו נתחיל!",
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                )
             }
         }
     }
 }
-

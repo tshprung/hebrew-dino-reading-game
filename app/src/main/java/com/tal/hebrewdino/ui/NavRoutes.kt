@@ -3,6 +3,8 @@ package com.tal.hebrewdino.ui
 /** Central route strings for navigation (used from screens and [AppNav]). */
 object NavRoutes {
     const val Opening = "opening"
+    const val OnboardingCompanion = "onboarding_companion"
+    const val OnboardingPlayerAddress = "onboarding_player_address"
     const val Seasons = "seasons"
     /** Season 2: select a dinosaur chapter (6 chapters). */
     const val Season2ChapterSelect = "season2_chapter_select"

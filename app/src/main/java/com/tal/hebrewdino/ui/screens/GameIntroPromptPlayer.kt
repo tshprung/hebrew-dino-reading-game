@@ -1,8 +1,10 @@
 package com.tal.hebrewdino.ui.screens
 
 import com.tal.hebrewdino.ui.audio.AudioClips
+import com.tal.hebrewdino.ui.audio.RawVoicePlayer
 import com.tal.hebrewdino.ui.audio.SoundPoolPlayer
 import com.tal.hebrewdino.ui.audio.VoicePlayer
+import com.tal.hebrewdino.ui.data.PlayerAddress
 import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
 import com.tal.hebrewdino.ui.domain.LevelSession
 import com.tal.hebrewdino.ui.domain.Question
@@ -37,8 +39,41 @@ internal suspend fun playIntroPrompt(
     station4IntroToWordLeadScale: Float,
     station4IntroToWordGapBoost: Float,
     station4IntroToWordExtraPauseMs: Long,
+    chapter1PlayerAddress: PlayerAddress? = null,
+    rawVoice: RawVoicePlayer? = null,
 ) {
     if (!audioEnabled) return
+
+    if (chapterId == 1 && chapter1PlayerAddress != null && rawVoice != null) {
+        if (
+            playChapter1AddressAwareIntro(
+                chapterId = chapterId,
+                stationId = stationId,
+                stationTemplateId = stationTemplateId,
+                playerAddress = chapter1PlayerAddress,
+                sagaUsesPickLetterAudioStaging = sagaUsesPickLetterAudioStaging,
+                sagaUsesFindGridAudioStaging = sagaUsesFindGridAudioStaging,
+                sagaUsesPopBalloonsAudioStaging = sagaUsesPopBalloonsAudioStaging,
+                isSagaEpisode = isSagaEpisode,
+                q = q,
+                rawVoice = rawVoice,
+                voice = voice,
+                sfx = sfx,
+                station1IntroLetterLeadFraction = station1IntroLetterLeadFraction,
+                station1IntroToLetterLeadScale = station1IntroToLetterLeadScale,
+                station2BalloonIntroLetterLeadFraction = station2BalloonIntroLetterLeadFraction,
+                station2IntroToLetterLeadScale = station2IntroToLetterLeadScale,
+                station2BalloonIntroToLetterGapBoost = station2BalloonIntroToLetterGapBoost,
+                station2BalloonIntroToLetterExtraPauseMs = station2BalloonIntroToLetterExtraPauseMs,
+                station4IntroWordLeadFraction = station4IntroWordLeadFraction,
+                station4IntroToWordLeadScale = station4IntroToWordLeadScale,
+                station4IntroToWordGapBoost = station4IntroToWordGapBoost,
+                station4IntroToWordExtraPauseMs = station4IntroToWordExtraPauseMs,
+            )
+        ) {
+            return
+        }
+    }
 
     if (isChapter3HighlightedLetterInWordStation && q is Question.PopBalloonsQuestion) {
         val round = session.highlightedLetterInWordRound() ?: return

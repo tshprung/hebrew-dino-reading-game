@@ -3,25 +3,30 @@ package com.tal.hebrewdino.ui.screens
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.tal.hebrewdino.R
+import com.tal.hebrewdino.ui.companion.Chapter1AddressAwareAudio
+import com.tal.hebrewdino.ui.companion.Chapter1CompanionCopy
 import com.tal.hebrewdino.ui.audio.AudioClips
+import com.tal.hebrewdino.ui.companion.displayNameHebrew
+import com.tal.hebrewdino.ui.data.DinoCharacter
+import com.tal.hebrewdino.ui.data.PlayerAddress
 
 @Composable
 fun Chapter1MidBoostScreen(
+    companionCharacter: DinoCharacter,
+    playerAddress: PlayerAddress,
     onContinue: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     ChapterLobbyStoryLayout(
         backgroundRes = R.drawable.forest_bg_story_intro,
         title = "ממשיכים!",
-        body =
-            "יופי! פתרת את החידות כמו בלש/ית אמיתי/ת.\n" +
-                "יש כאן סימנים שמובילים קדימה…\n" +
-                "בואו נמשיך ונראה אם נגיע לביצה.",
+        body = Chapter1CompanionCopy.chapter1MidBoostBody(companionCharacter, playerAddress),
         companion = ChapterLobbyCompanion.DinoOnly,
         useCompanionDinoArt = true,
+        companionCharacter = companionCharacter,
         useWarmReadableStoryPanel = true,
-        voiceAssetPath = AudioClips.StoryCh1MidBoost,
-        dinoContentDescription = "דינו",
+        voiceRawResId = Chapter1AddressAwareAudio.storyMidRawRes(companionCharacter),
+        dinoContentDescription = companionCharacter.displayNameHebrew(),
         onContinue = onContinue,
         modifier = modifier,
     )
@@ -96,7 +101,7 @@ fun Chapter5MidBoostScreen(
         backgroundRes = R.drawable.forest_bg_journey_road,
         title = "ממשיכים!",
         body =
-            "אתם כבר מקשיבים וקוראים כמו בלשים אמיתיים.\n" +
+            "אתם כבר מקשיבים וקוראים מצוין.\n" +
                 "עוד קצת — ואולי נגיע לביצה השלישית.\n" +
                 "בואו נסיים את המסע!",
         companion = ChapterLobbyCompanion.DinoOnly,
@@ -126,4 +131,3 @@ fun Chapter6MidBoostScreen(
         modifier = modifier,
     )
 }
-

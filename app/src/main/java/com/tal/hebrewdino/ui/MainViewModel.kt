@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.tal.hebrewdino.ui.data.CharacterPrefs
 import com.tal.hebrewdino.ui.data.DinoCharacter
+import com.tal.hebrewdino.ui.data.PlayerAddress
 import com.tal.hebrewdino.ui.data.ProgressPrefs
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -44,6 +45,7 @@ data class MainUiState(
     val unlockedLevel: Int = 1,
     val completedLevels: Set<Int> = emptySet(),
     val character: DinoCharacter? = null,
+    val playerAddress: PlayerAddress? = null,
 )
 
 private data class Chapter1ProgressState(
@@ -319,7 +321,8 @@ class MainViewModel(context: Context) : ViewModel() {
             chapters2To5State,
             chapter6State,
             prefs.characterFlow,
-        ) { chapter1, chapters2To5, chapter6, character ->
+            prefs.playerAddressFlow,
+        ) { chapter1, chapters2To5, chapter6, character, playerAddress ->
             MainUiState(
                 beachOutroSeen = chapter1.beachOutroSeen,
                 chapter1MidBoostSeen = chapter1.chapter1MidBoostSeen,
@@ -352,6 +355,7 @@ class MainViewModel(context: Context) : ViewModel() {
                 chapter6CompletedStations = chapter6.chapter6CompletedStations,
                 chapter6Completed = chapter6.chapter6Completed,
                 character = character,
+                playerAddress = playerAddress,
             )
         }.stateIn(
             scope = viewModelScope,

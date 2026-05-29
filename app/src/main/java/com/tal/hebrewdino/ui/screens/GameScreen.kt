@@ -35,8 +35,12 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.tal.hebrewdino.R
 import com.tal.hebrewdino.ui.companion.Chapter1DinoCompanionPilot
+import com.tal.hebrewdino.ui.companion.CompanionAssets
+import com.tal.hebrewdino.ui.data.DinoCharacter
+import com.tal.hebrewdino.ui.data.PlayerAddress
 import com.tal.hebrewdino.ui.audio.AudioClips
 import com.tal.hebrewdino.ui.audio.GameAudioEngine
+import com.tal.hebrewdino.ui.audio.RawVoicePlayer
 import com.tal.hebrewdino.ui.audio.SoundPoolPlayer
 import com.tal.hebrewdino.ui.audio.VoicePlayer
 import com.tal.hebrewdino.ui.AppAnalytics
@@ -324,6 +328,8 @@ fun GameScreen(
     onComplete: (stationId: Int, correctCount: Int, mistakeCount: Int) -> Unit,
     /** Replay of an already-completed station: no extra in-game dino motion after correct answers. */
     suppressInGameDinoProgress: Boolean = false,
+    chapter1CompanionCharacter: DinoCharacter? = null,
+    chapter1PlayerAddress: PlayerAddress? = null,
     modifier: Modifier = Modifier,
 ) {
     // UX: no audio for now (per request).
@@ -383,6 +389,7 @@ fun GameScreen(
     val audio = remember { GameAudioEngine(context = context) }
     val voice = audio.voice
     val sfx = audio.sfx
+    val rawVoice = remember { RawVoicePlayer(context = context) }
     val gameFeedback = remember(stationId, sfx, view) { GameFeedback(scope, sfx, view) }
 
     val audioRuntime = remember(stationId) { GameAudioRuntimeState() }
@@ -412,6 +419,7 @@ fun GameScreen(
             sfx = sfx,
             audioRuntime = audioRuntime,
         )
+        rawVoice.stopNow()
     }
 
     val devToolsEnabled = DevTools.enabled(context)
@@ -432,7 +440,10 @@ fun GameScreen(
         lifecycleOwner = lifecycleOwner,
         stationId = stationId,
         cancelFeedbackVoice = { cancelFeedbackVoice() },
-        releaseAudio = { audio.release() },
+        releaseAudio = {
+            audio.release()
+            rawVoice.release()
+        },
     )
 
     val performSideHelpReplay: () -> Unit = {
@@ -468,16 +479,20 @@ fun GameScreen(
             scope = scope,
         )
     }
-    val useChapter1CompanionDino = chapterId == 1
+    val useChapter1CompanionDino = chapterId == 1 && chapter1CompanionCharacter != null
+    val chapter1CompanionAssets =
+        remember(chapter1CompanionCharacter) {
+            chapter1CompanionCharacter?.let { CompanionAssets.forCharacter(it) }
+        }
     val jumpFrames =
-        remember(stationId, useChapter1CompanionDino) {
-            if (useChapter1CompanionDino) {
-                Chapter1DinoCompanionPilot.talkFrameResIds
+        remember(stationId, useChapter1CompanionDino, chapter1CompanionAssets) {
+            if (useChapter1CompanionDino && chapter1CompanionAssets != null) {
+                chapter1CompanionAssets.talkFrameResIds
             } else {
                 listOf(R.drawable.dino_jump_0, R.drawable.dino_jump_1, R.drawable.dino_jump_2)
             }
         }
-    val companionTalkFrames = Chapter1DinoCompanionPilot.talkFrameResIds
+    val companionTalkFrames = chapter1CompanionAssets?.talkFrameResIds.orEmpty()
     val legacyTalkFrames =
         listOf(R.drawable.dino_talk_0, R.drawable.dino_talk_1, R.drawable.dino_talk_2, R.drawable.dino_talk_3)
     val forwardDir = if (LocalLayoutDirection.current == LayoutDirection.Rtl) -1f else 1f
@@ -538,6 +553,8 @@ fun GameScreen(
             station4IntroToWordExtraPauseMs = Station4IntroToWordExtraPauseMs,
             cancelFeedbackVoice = { cancelFeedbackVoice() },
             audioRuntime = audioRuntime,
+            chapter1PlayerAddress = chapter1PlayerAddress,
+            rawVoice = rawVoice,
         )
     }
 
@@ -627,6 +644,8 @@ fun GameScreen(
             wrongWordCatalogId = wrongWordCatalogId,
             wrongPickedLetterAlreadySpoken = wrongPickedLetterAlreadySpoken,
             wrongWordAlreadySpoken = wrongWordAlreadySpoken,
+            chapter1PlayerAddress = chapter1PlayerAddress,
+            rawVoice = rawVoice,
         )
     }
 
@@ -669,8 +688,8 @@ fun GameScreen(
             val dinoDrawable =
                 if (useChapter1CompanionDino) {
                     when (gameViewModel.dinoVisual) {
-                        DinoVisual.Idle -> Chapter1DinoCompanionPilot.poseIdle
-                        DinoVisual.TryAgain -> Chapter1DinoCompanionPilot.poseEncourage
+                        DinoVisual.Idle -> chapter1CompanionAssets!!.poseIdle
+                        DinoVisual.TryAgain -> chapter1CompanionAssets!!.poseEncourage
                         DinoVisual.Jump ->
                             jumpFrames[gameViewModel.jumpFrameIndex.coerceIn(0, jumpFrames.lastIndex.coerceAtLeast(0))]
                     }
@@ -1053,8 +1072,8 @@ fun GameScreen(
             val dinoDrawable =
                 if (useChapter1CompanionDino) {
                     when (gameViewModel.dinoVisual) {
-                        DinoVisual.Idle -> Chapter1DinoCompanionPilot.poseIdle
-                        DinoVisual.TryAgain -> Chapter1DinoCompanionPilot.poseEncourage
+                        DinoVisual.Idle -> chapter1CompanionAssets!!.poseIdle
+                        DinoVisual.TryAgain -> chapter1CompanionAssets!!.poseEncourage
                         DinoVisual.Jump ->
                             jumpFrames[gameViewModel.jumpFrameIndex.coerceIn(0, jumpFrames.lastIndex.coerceAtLeast(0))]
                     }

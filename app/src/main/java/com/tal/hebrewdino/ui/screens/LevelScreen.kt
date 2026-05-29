@@ -70,6 +70,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.TextUnit
 import com.tal.hebrewdino.R
+import com.tal.hebrewdino.ui.data.DinoCharacter
+import com.tal.hebrewdino.ui.data.PlayerAddress
 import com.tal.hebrewdino.ui.domain.Chapter1Config
 import com.tal.hebrewdino.ui.domain.Chapter1LetterPoolSpec
 import com.tal.hebrewdino.ui.domain.StationQuizPlans
@@ -91,6 +93,8 @@ fun LevelScreen(
     onComplete: (levelId: Int, correctCount: Int, mistakeCount: Int) -> Unit,
     /** When replaying a station already marked complete, skip the in-game dino “step forward” after each round. */
     suppressInGameDinoProgress: Boolean = false,
+    chapter1CompanionCharacter: DinoCharacter? = null,
+    chapter1PlayerAddress: PlayerAddress? = null,
     modifier: Modifier = Modifier,
 ) {
     val chapterLevel = levelId.coerceIn(1, Chapter1Config.STATION_COUNT)
@@ -105,6 +109,8 @@ fun LevelScreen(
         onBack = onBack,
         onComplete = onComplete,
         suppressInGameDinoProgress = suppressInGameDinoProgress,
+        chapter1CompanionCharacter = chapter1CompanionCharacter,
+        chapter1PlayerAddress = chapter1PlayerAddress,
         modifier = modifier,
     )
 }

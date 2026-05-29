@@ -17,6 +17,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
+import com.tal.hebrewdino.ui.data.DinoCharacter
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
@@ -25,9 +26,12 @@ import kotlin.math.sin
 fun CompanionDinoRewardCelebration(
     style: CompanionRewardCelebrationStyle,
     isTalking: Boolean,
+    companionCharacter: DinoCharacter,
     modifier: Modifier = Modifier,
-    contentDescription: String? = "דינו",
+    contentDescription: String? = null,
 ) {
+    val assets = CompanionAssets.forCharacter(companionCharacter)
+    val resolvedContentDescription = contentDescription ?: companionCharacter.displayNameHebrew()
     val transition = rememberInfiniteTransition(label = "ch1Reward")
     val bounceY by transition.animateFloat(
         initialValue = 0f,
@@ -67,8 +71,8 @@ fun CompanionDinoRewardCelebration(
             CompanionRewardCelebrationStyle.Wiggle,
             CompanionRewardCelebrationStyle.Sparkle,
             CompanionRewardCelebrationStyle.GrandFinale,
-            -> Chapter1DinoCompanionPilot.poseHappy
-            CompanionRewardCelebrationStyle.Talk -> Chapter1DinoCompanionPilot.poseHappy
+            -> assets.poseHappy
+            CompanionRewardCelebrationStyle.Talk -> assets.poseHappy
         }
     val talkDuringVoice =
         style == CompanionRewardCelebrationStyle.Talk && isTalking
@@ -106,7 +110,7 @@ fun CompanionDinoRewardCelebration(
         }
         CompanionDinoPortrait(
             poseRes = poseRes,
-            talkFrameResIds = Chapter1DinoCompanionPilot.talkFrameResIds,
+            talkFrameResIds = assets.talkFrameResIds,
             isTalking = talkDuringVoice,
             modifier =
                 Modifier
@@ -117,7 +121,7 @@ fun CompanionDinoRewardCelebration(
                         scaleY = celebrationScale
                         if (wiggleRotation != 0f) rotationZ = wiggleRotation
                     },
-            contentDescription = contentDescription,
+            contentDescription = resolvedContentDescription,
         )
     }
 }

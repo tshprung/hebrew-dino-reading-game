@@ -2,6 +2,8 @@ package com.tal.hebrewdino.ui.screens
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import com.tal.hebrewdino.ui.data.DinoCharacter
+import com.tal.hebrewdino.ui.data.PlayerAddress
 import com.tal.hebrewdino.ui.domain.LetterPoolSpec
 import com.tal.hebrewdino.ui.domain.StationQuizPlan
 
@@ -19,6 +21,8 @@ fun LetterQuizStationScreen(
     onBack: () -> Unit,
     onComplete: (stationId: Int, correctCount: Int, mistakeCount: Int) -> Unit,
     suppressInGameDinoProgress: Boolean = false,
+    chapter1CompanionCharacter: DinoCharacter? = null,
+    chapter1PlayerAddress: PlayerAddress? = null,
     modifier: Modifier = Modifier,
 ) {
     GameScreen(
@@ -35,6 +39,8 @@ fun LetterQuizStationScreen(
         onComplete = onComplete,
         // Station screens should not show letters help / debug / collected eggs in the top bar.
         suppressInGameDinoProgress = suppressInGameDinoProgress,
+        chapter1CompanionCharacter = chapter1CompanionCharacter,
+        chapter1PlayerAddress = chapter1PlayerAddress,
         modifier = modifier,
     )
 }

@@ -3,6 +3,8 @@ package com.tal.hebrewdino.ui
 import android.content.Context
 import androidx.navigation.NavHostController
 import com.tal.hebrewdino.ui.data.CharacterPrefs
+import com.tal.hebrewdino.ui.data.DinoCharacter
+import com.tal.hebrewdino.ui.data.PlayerAddress
 import com.tal.hebrewdino.ui.data.ProgressPrefs
 import com.tal.hebrewdino.ui.domain.Chapter1Config
 import com.tal.hebrewdino.ui.domain.Chapter2Config
@@ -57,6 +59,11 @@ internal data class AppNavHostState(
     val chapter5ComingSoon: Boolean,
     val chapter6ComingSoon: Boolean,
     val maxSelectableChapterId: Int,
+    val companionCharacter: DinoCharacter,
+    val playerAddress: PlayerAddress,
+    /** True after first-run companion + player-address choices are saved. */
+    val onboardingComplete: Boolean,
+    val hasChosenCompanion: Boolean,
 ) {
     val chaptersProgress: ChaptersProgress
         get() =
@@ -177,6 +184,10 @@ internal data class AppNavHostState(
                 chapter5ComingSoon = flags.chapter5ComingSoon,
                 chapter6ComingSoon = flags.chapter6ComingSoon,
                 maxSelectableChapterId = flags.maxSelectableChapterId,
+                companionCharacter = uiState.character ?: DinoCharacter.Dino,
+                playerAddress = uiState.playerAddress ?: PlayerAddress.Boy,
+                onboardingComplete = uiState.character != null && uiState.playerAddress != null,
+                hasChosenCompanion = uiState.character != null,
             )
         }
     }

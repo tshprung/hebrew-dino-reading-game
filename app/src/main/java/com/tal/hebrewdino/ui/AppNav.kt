@@ -168,7 +168,6 @@ fun AppNav() {
         progress.repairChapter4ProgressIfNeeded()
         progress.repairChapter5ProgressIfNeeded()
         progress.repairChapter6ProgressIfNeeded()
-        prefs.setCharacter(DinoCharacter.Dino)
     }
 
     NavHost(navController = navController, startDestination = NavRoutes.Opening) {

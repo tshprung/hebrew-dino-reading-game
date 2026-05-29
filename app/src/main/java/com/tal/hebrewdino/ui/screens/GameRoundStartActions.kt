@@ -1,8 +1,10 @@
 package com.tal.hebrewdino.ui.screens
 
 import com.tal.hebrewdino.ui.audio.AudioClips
+import com.tal.hebrewdino.ui.audio.RawVoicePlayer
 import com.tal.hebrewdino.ui.audio.SoundPoolPlayer
 import com.tal.hebrewdino.ui.audio.VoicePlayer
+import com.tal.hebrewdino.ui.data.PlayerAddress
 import com.tal.hebrewdino.ui.domain.LevelSession
 import com.tal.hebrewdino.ui.domain.Question
 import com.tal.hebrewdino.ui.domain.StationTemplateId
@@ -41,6 +43,8 @@ internal object GameRoundStartActions {
         station4IntroToWordExtraPauseMs: Long,
         cancelFeedbackVoice: () -> Unit,
         audioRuntime: GameAudioRuntimeState,
+        chapter1PlayerAddress: PlayerAddress? = null,
+        rawVoice: RawVoicePlayer? = null,
     ) {
         gameViewModel.phase = GamePhase.Intro
         gameViewModel.inputLocked = true
@@ -93,6 +97,8 @@ internal object GameRoundStartActions {
                     station4IntroToWordLeadScale = station4IntroToWordLeadScale,
                     station4IntroToWordGapBoost = station4IntroToWordGapBoost,
                     station4IntroToWordExtraPauseMs = station4IntroToWordExtraPauseMs,
+                    chapter1PlayerAddress = chapter1PlayerAddress,
+                    rawVoice = rawVoice,
                 )
             } finally {
                 gameViewModel.dinoTalking = false

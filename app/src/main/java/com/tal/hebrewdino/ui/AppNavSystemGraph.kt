@@ -14,6 +14,8 @@ import com.tal.hebrewdino.ui.data.DinoCharacter
 import com.tal.hebrewdino.ui.data.Season2ProgressPrefs
 import com.tal.hebrewdino.ui.domain.Season2Chapter1StationOrder
 import com.tal.hebrewdino.ui.screens.ChaptersScreen
+import com.tal.hebrewdino.ui.screens.OnboardingCompanionScreen
+import com.tal.hebrewdino.ui.screens.OnboardingPlayerAddressScreen
 import com.tal.hebrewdino.ui.screens.OpeningScreen
 import com.tal.hebrewdino.ui.screens.Season2ChapterSelectScreen
 import com.tal.hebrewdino.ui.screens.Season2ChapterStationScreen
@@ -27,12 +29,54 @@ import com.tal.hebrewdino.ui.domain.TrainingV1Config
 import kotlinx.coroutines.launch
 
 internal fun NavGraphBuilder.systemAndTrainingGraph(host: AppNavHostState) {
+    composable(NavRoutes.OnboardingCompanion) {
+        OnboardingCompanionScreen(
+            onNext = { character ->
+                host.scope.launch {
+                    host.prefs.setCharacter(character)
+                    host.navController.navigate(NavRoutes.OnboardingPlayerAddress) {
+                        popUpTo(NavRoutes.OnboardingCompanion) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                }
+            },
+        )
+    }
+
+    composable(NavRoutes.OnboardingPlayerAddress) {
+        OnboardingPlayerAddressScreen(
+            onStart = { address ->
+                host.scope.launch {
+                    host.prefs.setPlayerAddress(address)
+                    host.navController.navigate(NavRoutes.Seasons) {
+                        popUpTo(NavRoutes.Opening) { inclusive = false }
+                        launchSingleTop = true
+                    }
+                }
+            },
+        )
+    }
+
     composable(NavRoutes.Opening) {
         val context = LocalContext.current
         OpeningScreen(
             onPlay = {
-                host.navController.navigate(NavRoutes.Seasons) {
-                    launchSingleTop = true
+                when {
+                    host.onboardingComplete -> {
+                        host.navController.navigate(NavRoutes.Seasons) {
+                            launchSingleTop = true
+                        }
+                    }
+                    host.hasChosenCompanion -> {
+                        host.navController.navigate(NavRoutes.OnboardingPlayerAddress) {
+                            launchSingleTop = true
+                        }
+                    }
+                    else -> {
+                        host.navController.navigate(NavRoutes.OnboardingCompanion) {
+                            launchSingleTop = true
+                        }
+                    }
                 }
             },
             onOpenSettings = { host.navController.navigate(NavRoutes.Settings) },
@@ -234,11 +278,21 @@ internal fun NavGraphBuilder.systemAndTrainingGraph(host: AppNavHostState) {
             onResetAll = {
                 host.scope.launch {
                     host.progress.resetAll()
-                    host.prefs.setCharacter(DinoCharacter.Dino)
-                    host.navController.navigate(NavRoutes.Chapters) {
-                        popUpTo(NavRoutes.Settings) { inclusive = true }
+                    season2Progress.resetSeason2()
+                    host.prefs.clearOnboarding()
+                    host.navController.navigate(NavRoutes.Opening) {
+                        popUpTo(host.navController.graph.startDestinationId) { inclusive = true }
+                        launchSingleTop = true
                     }
                 }
+            },
+            companionCharacter = host.companionCharacter,
+            playerAddress = host.playerAddress,
+            onCompanionCharacterChange = { character ->
+                host.scope.launch { host.prefs.setCharacter(character) }
+            },
+            onPlayerAddressChange = { address ->
+                host.scope.launch { host.prefs.setPlayerAddress(address) }
             },
             onResetChapters = { chapterIds ->
                 host.scope.launch {

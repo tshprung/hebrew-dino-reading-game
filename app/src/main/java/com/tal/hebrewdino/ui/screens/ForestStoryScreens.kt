@@ -1,123 +1,54 @@
 package com.tal.hebrewdino.ui.screens
 
-
-
 import androidx.compose.runtime.Composable
-
 import androidx.compose.ui.Modifier
-
 import com.tal.hebrewdino.R
-
-import com.tal.hebrewdino.ui.audio.AudioClips
-
+import com.tal.hebrewdino.ui.companion.Chapter1AddressAwareAudio
+import com.tal.hebrewdino.ui.companion.Chapter1CompanionCopy
+import com.tal.hebrewdino.ui.companion.displayNameHebrew
 import com.tal.hebrewdino.ui.data.DinoCharacter
-
-
+import com.tal.hebrewdino.ui.data.PlayerAddress
 
 @Composable
-
 fun ForestIntroScreen(
-
     character: DinoCharacter,
-
     onContinue: () -> Unit,
-
     modifier: Modifier = Modifier,
-
 ) {
-
     ChapterLobbyStoryLayout(
-
         backgroundRes = R.drawable.forest_bg_story_intro,
-
-        dinoContentDescription = if (character == DinoCharacter.Dina) "דינה" else "דינו",
-
+        dinoContentDescription = character.displayNameHebrew(),
         title = "פרק 1 - מצא את הביצה",
-
-        body =
-
-            "אמא דינוזאור שמרה על הביצים שלה…\n" +
-
-                "\n" +
-
-                "אבל פתאום — הן נעלמו!\n" +
-
-                "\n" +
-
-                "\"אוי לא! איפה הביצים שלי?\", אמרה אמא דינוזאור\n" +
-
-                "\n" +
-
-                "בואו נעזור לה!\n" +
-
-                "\n" +
-
-                "נצא לדרך ונפתור משימות.",
-
-        voiceAssetPath = AudioClips.StoryForestIntro,
-
+        body = Chapter1CompanionCopy.forestIntroBody(character),
+        voiceRawResId = Chapter1AddressAwareAudio.storyIntroRawRes(character),
         companion = ChapterLobbyCompanion.DinoAndMom,
         useCompanionDinoArt = true,
+        companionCharacter = character,
         useCompanionMomArt = true,
         useWarmReadableStoryPanel = true,
         showMotherLostEggsCue = true,
-
         onContinue = onContinue,
-
         modifier = modifier,
-
     )
-
 }
-
-
 
 @Composable
-
 fun ForestOutroScreen(
-
     character: DinoCharacter,
-
+    playerAddress: PlayerAddress,
     onContinue: () -> Unit,
-
     modifier: Modifier = Modifier,
-
 ) {
-
     ChapterLobbyStoryLayout(
-
         backgroundRes = R.drawable.forest_bg_story_outro_egg,
-
-        dinoContentDescription = if (character == DinoCharacter.Dina) "דינה" else "דינו",
-
+        dinoContentDescription = character.displayNameHebrew(),
         title = "יש!",
-
-        body =
-
-            "מצאנו את הביצה הראשונה!\n" +
-
-                "\n" +
-
-                "אמא תשמח!\n" +
-
-                "\n" +
-
-                "אבל נשארו עוד 2 ביצים למצוא!\n" +
-
-                "\n" +
-
-                "בואו נמשיך!",
-
-        voiceAssetPath = AudioClips.StoryEggOutro,
-
+        body = Chapter1CompanionCopy.finaleBody(character, playerAddress),
+        voiceRawResId = Chapter1AddressAwareAudio.storyOutroRawRes(character),
         companion = ChapterLobbyCompanion.DinoOnly,
         useCompanionDinoArt = true,
-
+        companionCharacter = character,
         onContinue = onContinue,
-
         modifier = modifier,
-
     )
-
 }
-

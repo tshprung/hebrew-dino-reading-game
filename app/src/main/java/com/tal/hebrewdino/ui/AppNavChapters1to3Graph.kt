@@ -36,6 +36,8 @@ import kotlinx.coroutines.launch
 internal fun NavGraphBuilder.chapterOneToThreeGraph(host: AppNavHostState) {
     composable(NavRoutes.Ch1DinoCompanionIntro) {
         Chapter1DinoCompanionIntroScreen(
+            companionCharacter = host.companionCharacter,
+            playerAddress = host.playerAddress,
             onContinue = {
                 host.navController.navigate(NavRoutes.StoryIntro) {
                     popUpTo(NavRoutes.Ch1DinoCompanionIntro) { inclusive = true }
@@ -46,7 +48,7 @@ internal fun NavGraphBuilder.chapterOneToThreeGraph(host: AppNavHostState) {
 
     composable(NavRoutes.StoryIntro) {
         ForestIntroScreen(
-            character = DinoCharacter.Dino,
+            character = host.companionCharacter,
             onContinue = {
                 host.scope.launch { host.progress.markBeachIntroSeen() }
                 // After intro, always show letters presentation, then continue to journey.
@@ -204,6 +206,7 @@ internal fun NavGraphBuilder.chapterOneToThreeGraph(host: AppNavHostState) {
             unlockedLevel = host.unlockedLevel,
             completedLevels = host.completedLevels,
             useCompanionDinoOnMap = true,
+            companionCharacter = host.companionCharacter,
             collectedEggStripCount = host.collectedEggStripCount,
             // Stand at the egg once all stations are done, not only after the beach outro (JourneyEndWalk still plays first-time finale).
             endMarkerReached = host.beachOutroSeen || host.chapter1AllStationsComplete,
@@ -246,6 +249,7 @@ internal fun NavGraphBuilder.chapterOneToThreeGraph(host: AppNavHostState) {
             unlockedLevel = host.unlockedLevel,
             completedLevels = host.completedLevels,
             useCompanionDinoOnMap = true,
+            companionCharacter = host.companionCharacter,
             collectedEggStripCount = host.collectedEggStripCount,
             endMarkerReached = false,
             endWalkThenContinue = true,
@@ -324,6 +328,8 @@ internal fun NavGraphBuilder.chapterOneToThreeGraph(host: AppNavHostState) {
             levelId = levelId,
             onBack = { host.navController.popBackStack() },
             suppressInGameDinoProgress = host.completedLevels.contains(levelId),
+            chapter1CompanionCharacter = host.companionCharacter,
+            chapter1PlayerAddress = host.playerAddress,
             onComplete = { completedLevelId, correctCount, mistakeCount ->
                 host.scope.launch {
                     host.progress.markCompleted(completedLevelId)
@@ -375,11 +381,14 @@ internal fun NavGraphBuilder.chapterOneToThreeGraph(host: AppNavHostState) {
             mistakes = mistakes,
             onBackToMap = backToMap,
             chapter1DinoCompanionPilot = true,
+            chapter1CompanionCharacter = host.companionCharacter,
         )
     }
 
     composable(NavRoutes.Ch1MidBoost) {
         Chapter1MidBoostScreen(
+            companionCharacter = host.companionCharacter,
+            playerAddress = host.playerAddress,
             onContinue = {
                 host.scope.launch { host.progress.markChapter1MidBoostSeen() }
                 host.navController.navigate(NavRoutes.Journey) {
@@ -513,6 +522,8 @@ internal fun NavGraphBuilder.chapterOneToThreeGraph(host: AppNavHostState) {
 
     composable(NavRoutes.StoryOutro) {
         Chapter1DinoCompanionEggOutroScreen(
+            companionCharacter = host.companionCharacter,
+            playerAddress = host.playerAddress,
             onContinue = {
                 host.scope.launch { host.progress.markBeachOutroSeen() }
                 host.navController.navigate(NavRoutes.Chapters) {
