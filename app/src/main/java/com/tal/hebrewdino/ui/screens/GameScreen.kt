@@ -94,7 +94,6 @@ private object GameAudioPreloader {
         val perLetterPaths =
             poolLetters.flatMap { letter ->
                 listOfNotNull(
-                    AudioClips.chooseLetterClip(letter),
                     AudioClips.station1WrongCombined(letter),
                     AudioClips.letterNameClip(letter),
                 )
@@ -161,7 +160,6 @@ private object GameAudioPreloader {
         paths.add(AudioClips.VoFindLetter)
         paths.add(AudioClips.VoChooseLetter)
         for (l in letters) {
-            AudioClips.chooseLetterClip(l)?.let(paths::add)
             AudioClips.letterNameClip(l)?.let(paths::add)
         }
         paths.add(AudioClips.VoTryAgain1)

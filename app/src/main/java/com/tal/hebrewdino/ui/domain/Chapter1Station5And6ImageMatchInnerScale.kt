@@ -80,7 +80,10 @@ object Chapter1Station5And6ImageMatchInnerScale {
         val isFrog = choice.word == "צפרדע" || choice.id == "w_צ_3"
         val isHippo = choice.word == "היפופוטם" || choice.id == "w_ה_3"
         val isMountain = choice.word == "הר" || choice.id == "w_ה_1"
+        val isRasterLessonPic = RasterLessonPicDrawables.isPngTile(choice.tileDrawable)
         return when {
+            // PNG tiles are full-canvas art; default 2f inner scale is for sparse vectors.
+            isRasterLessonPic -> 1.05f
             // Tweaked: +20% for readability.
             isMedusa -> 0.8f
             isHouse -> 1f

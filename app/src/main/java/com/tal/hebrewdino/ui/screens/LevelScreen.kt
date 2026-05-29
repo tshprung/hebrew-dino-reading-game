@@ -492,7 +492,9 @@ internal fun PopBalloonsOptions(
 ) {
     val isCompactLandscapePhone = ScreenFit.isCompactLandscapePhone()
     val maxVisible = maxVisibleBalloonCount?.coerceIn(1, options.size)
-    val freeFlight = compactLandscapeFreeFlight && isCompactLandscapePhone && maxVisible != null
+    // When enabled, use the "free flight" scattered motion model (not a row/grid).
+    // Previously this was restricted to compact landscape phones; Season 2 wants the same feel in portrait too.
+    val freeFlight = compactLandscapeFreeFlight && maxVisible != null
     val visibleIndexSet =
         remember(options, correctAnswer, correctLetterSet, visualRoundSeed, maxVisible) {
             if (maxVisible == null || options.size <= maxVisible) {

@@ -175,4 +175,6 @@ object StationQuizPlans {
                 )
             else -> error("Unknown Training v1 stationId=$stationId")
         }
+
+    // Season 2 stations are routed explicitly from Season2 screens; no shared plan entry needed here.
 }

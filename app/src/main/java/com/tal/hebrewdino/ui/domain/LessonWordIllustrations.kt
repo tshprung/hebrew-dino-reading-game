@@ -34,6 +34,7 @@ object LessonWordIllustrations {
             "טוסט" -> "🍞"
             "טלפון" -> "📱"
             "טיגריס" -> "🐅"
+            // Removed from Season 2 (hard to illustrate) but kept for legacy compatibility if it appears elsewhere.
             "יום" -> "📅"
             "ילד" -> "🧒"
             "כיסא" -> "🪑"

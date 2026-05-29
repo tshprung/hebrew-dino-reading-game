@@ -28,21 +28,21 @@ object LessonWordCatalog {
 
     val entries: List<LessonWordEntry> =
         listOf(
-            LessonWordEntry("w_א_1", "א", "איש", 0xFFB3E5FC.toInt()),
-            LessonWordEntry("w_א_2", "א", "אריה", 0xFFFFF9C4.toInt()),
-            LessonWordEntry("w_א_3", "א", "אבטיח", 0xFFC8E6C9.toInt()),
-            LessonWordEntry("w_א_4", "א", "אוטו", carSynonymCardTint),
-            LessonWordEntry("w_א_5", "א", "ארנב", 0xFF9CCC65.toInt()),
+            LessonWordEntry("w_א_1", "א", "איש", 0xFFB3E5FC.toInt(), tileRes = R.drawable.lesson_pic_ish),
+            LessonWordEntry("w_א_2", "א", "אריה", 0xFFFFF9C4.toInt(), tileRes = R.drawable.lesson_pic_aryeh),
+            LessonWordEntry("w_א_3", "א", "אבטיח", 0xFFC8E6C9.toInt(), tileRes = R.drawable.lesson_pic_avatiach),
+            LessonWordEntry("w_א_4", "א", "אוטו", carSynonymCardTint, tileRes = R.drawable.lesson_pic_car),
+            LessonWordEntry("w_א_5", "א", "ארנב", 0xFF9CCC65.toInt(), tileRes = R.drawable.lesson_pic_arnav),
             LessonWordEntry("w_ב_1", "ב", "בית", 0xFFE1BEE7.toInt(), tileRes = R.drawable.lesson_pic_bait),
-            LessonWordEntry("w_ב_2", "ב", "בלון", 0xFFFFCDD2.toInt()),
-            LessonWordEntry("w_ב_3", "ב", "ברווז", 0xFFB2EBF2.toInt()),
+            LessonWordEntry("w_ב_2", "ב", "בלון", 0xFFFFCDD2.toInt(), tileRes = R.drawable.lesson_pic_balloon),
+            LessonWordEntry("w_ב_3", "ב", "ברווז", 0xFFB2EBF2.toInt(), tileRes = R.drawable.lesson_pic_barvaz),
             LessonWordEntry("w_ג_1", "ג", "גמל", 0xFF4DB6AC.toInt()),
             LessonWordEntry("w_ג_2", "ג", "גלידה", 0xFFFFD740.toInt()),
             LessonWordEntry("w_ג_3", "ג", "גדר", 0xFF8BC34A.toInt(), tileRes = R.drawable.lesson_pic_gader),
             LessonWordEntry("w_ג_4", "ג", "ג'ירפה", 0xFFFFA726.toInt(), tileRes = R.drawable.lesson_pic_girafa),
-            LessonWordEntry("w_ד_1", "ד", "דג", 0xFF81D4FA.toInt()),
-            LessonWordEntry("w_ד_2", "ד", "דלת", 0xFFFFF59D.toInt()),
-            LessonWordEntry("w_ד_3", "ד", "דחליל", 0xFFD1C4E9.toInt()),
+            LessonWordEntry("w_ד_1", "ד", "דג", 0xFF81D4FA.toInt(), tileRes = R.drawable.lesson_pic_dag),
+            LessonWordEntry("w_ד_2", "ד", "דלת", 0xFFFFF59D.toInt(), tileRes = R.drawable.lesson_pic_delet),
+            LessonWordEntry("w_ד_3", "ד", "דחליל", 0xFFD1C4E9.toInt(), tileRes = R.drawable.lesson_pic_dachlil),
             LessonWordEntry("w_ד_4", "ד", "דבש", 0xFFFFB300.toInt(), tileRes = R.drawable.lesson_pic_dvash),
             LessonWordEntry("w_ה_1", "ה", "הר", 0xFFA1887F.toInt()),
             LessonWordEntry("w_ה_2", "ה", "הפתעה", 0xFFFFF176.toInt()),
@@ -58,17 +58,38 @@ object LessonWordCatalog {
             LessonWordEntry("w_ט_1", "ט", "טוסט", 0xFF4DD0E1.toInt(), tileRes = R.drawable.lesson_pic_toast),
             LessonWordEntry("w_ט_2", "ט", "טלפון", 0xFFFF7043.toInt()),
             LessonWordEntry("w_ט_3", "ט", "טיגריס", 0xFF26C6DA.toInt()),
-            LessonWordEntry("w_י_1", "י", "יום", 0xFFFFF9A7.toInt()),
-            LessonWordEntry("w_י_2", "י", "ילד", 0xFF64B5F6.toInt()),
+            LessonWordEntry("w_י_2", "י", "ילד", 0xFF64B5F6.toInt(), tileRes = R.drawable.lesson_pic_yeled),
+            // Easier-to-draw yod words (Season 2 friendly).
+            LessonWordEntry("w_י_3", "י", "יד", 0xFF6EC6D8.toInt(), tileRes = R.drawable.lesson_pic_yad),
+            LessonWordEntry("w_י_4", "י", "יונה", 0xFF9FB7FF.toInt(), tileRes = R.drawable.lesson_pic_yona),
+            LessonWordEntry("w_י_5", "י", "ירח", 0xFFF2B880.toInt(), tileRes = R.drawable.lesson_pic_yareach),
+            LessonWordEntry("w_י_6", "י", "ינשוף", 0xFFB8A3D6.toInt(), tileRes = R.drawable.lesson_pic_yanshuf),
+            // Season 2 Chapter 1 — raster art in res/drawable-nodpi/lesson_pic_*.png
+            LessonWordEntry("w_ז_1", "ז", "זברה", 0xFF66B0FF.toInt(), tileRes = R.drawable.lesson_pic_zebra),
+            LessonWordEntry("w_ז_2", "ז", "זיקית", 0xFF86D6A0.toInt(), tileRes = R.drawable.lesson_pic_zikit),
+            LessonWordEntry("w_ז_3", "ז", "זחל", 0xFFD9C27E.toInt(), tileRes = R.drawable.lesson_pic_zakhal),
+            LessonWordEntry("w_ז_4", "ז", "זר", 0xFFF2A3B6.toInt(), tileRes = R.drawable.lesson_pic_zer),
+            LessonWordEntry("w_ס_1", "ס", "סוס", 0xFF7FD1C6.toInt(), tileRes = R.drawable.lesson_pic_sus),
+            LessonWordEntry("w_ס_2", "ס", "סירה", 0xFF5AA7E6.toInt(), tileRes = R.drawable.lesson_pic_sira),
+            LessonWordEntry("w_ס_3", "ס", "סוכריה", 0xFFFF9C7A.toInt(), tileRes = R.drawable.lesson_pic_sukariya),
+            LessonWordEntry("w_ס_4", "ס", "ספר", 0xFFB6C0FF.toInt(), tileRes = R.drawable.lesson_pic_sefer),
+            LessonWordEntry("w_ס_5", "ס", "סרטן", 0xFFFFCC6B.toInt(), tileRes = R.drawable.lesson_pic_sartan),
+            LessonWordEntry("w_ע_1", "ע", "עין", 0xFFB5E07A.toInt(), tileRes = R.drawable.lesson_pic_ayin),
+            LessonWordEntry("w_ע_2", "ע", "עגבניה", 0xFFEE7B67.toInt(), tileRes = R.drawable.lesson_pic_agvania),
+            LessonWordEntry("w_ע_3", "ע", "עכבר", 0xFFC8B8A6.toInt(), tileRes = R.drawable.lesson_pic_akbar),
+            LessonWordEntry("w_ע_4", "ע", "עוגה", 0xFFD8B3F0.toInt(), tileRes = R.drawable.lesson_pic_uga),
+            LessonWordEntry("w_ע_5", "ע", "עץ", 0xFF6EBB6F.toInt(), tileRes = R.drawable.lesson_pic_etz),
+            LessonWordEntry("w_ע_6", "ע", "עכביש", 0xFF9AA7B2.toInt(), tileRes = R.drawable.lesson_pic_akavish),
+            LessonWordEntry("w_ע_7", "ע", "עלה", 0xFF8BD37E.toInt(), tileRes = R.drawable.lesson_pic_aleh),
             LessonWordEntry("w_כ_1", "כ", "כיסא", 0xFFFFD54F.toInt()),
             LessonWordEntry("w_כ_2", "כ", "כלב", 0xFFC5E1A5.toInt()),
             LessonWordEntry("w_כ_3", "כ", "כדור", 0xFFAED581.toInt()),
-            LessonWordEntry("w_ל_1", "ל", "לחם", 0xFFFFE082.toInt()),
-            LessonWordEntry("w_ל_2", "ל", "לב", 0xFFF8BBD0.toInt()),
-            LessonWordEntry("w_ל_3", "ל", "למידה", 0xFFB2DFDB.toInt()),
+            LessonWordEntry("w_ל_1", "ל", "לחם", 0xFFFFE082.toInt(), tileRes = R.drawable.lesson_pic_lechem),
+            LessonWordEntry("w_ל_2", "ל", "לב", 0xFFF8BBD0.toInt(), tileRes = R.drawable.lesson_pic_lev),
+            LessonWordEntry("w_ל_3", "ל", "למידה", 0xFFB2DFDB.toInt(), tileRes = R.drawable.lesson_pic_limuda),
             // Car synonyms share the same picture + card background as [w_א_4] (אוטו).
-            LessonWordEntry("w_מ_1", "מ", "מכונית", carSynonymCardTint),
-            LessonWordEntry("w_מ_2", "מ", "מחבת", 0xFFDCEDC8.toInt()),
+            LessonWordEntry("w_מ_1", "מ", "מכונית", carSynonymCardTint, tileRes = R.drawable.lesson_pic_car),
+            LessonWordEntry("w_מ_2", "מ", "מחבת", 0xFFDCEDC8.toInt(), tileRes = R.drawable.lesson_pic_machbat),
             LessonWordEntry("w_מ_3", "מ", "מדוזה", 0xFFC5CAE9.toInt(), tileRes = R.drawable.lesson_pic_medusa),
             LessonWordEntry("w_מ_4", "מ", "מיטה", 0xFFB4A196.toInt(), tileRes = R.drawable.lesson_pic_mitah),
             LessonWordEntry("w_מ_5", "מ", "מוצץ", 0xFFE53935.toInt(), tileRes = R.drawable.lesson_pic_motzetz),
@@ -134,22 +155,12 @@ object LessonWordCatalog {
     /** Package-private for tests; throws if invalid. */
     internal fun validateCatalog(list: List<LessonWordEntry>) {
         val ids = mutableSetOf<String>()
-        val tintToIds = mutableMapOf<Int, MutableList<String>>()
-        val carSynonymIds = setOf("w_א_4", "w_מ_1", "w_ר_2")
         for (e in list) {
             check(ids.add(e.id)) { "Duplicate lesson id: ${e.id}" }
-            tintToIds.getOrPut(e.tintArgb) { mutableListOf() }.add(e.id)
             check(e.letter.isNotEmpty() && e.letter.length == 1) { "Bad letter for ${e.id}" }
             check(e.word.isNotEmpty()) { "Empty word for ${e.id}" }
             val first = e.word.first().toString()
             check(first == e.letter) { "Word first char mismatch: ${e.id} word=${e.word} letter=${e.letter} first=$first" }
-        }
-        for ((tint, idList) in tintToIds) {
-            if (idList.size <= 1) continue
-            val idSet = idList.toSet()
-            check(idSet == carSynonymIds) {
-                "Duplicate tint (visual collision): tint=$tint ids=$idList — only car synonyms may share a tint"
-            }
         }
     }
 }

@@ -44,6 +44,9 @@ object AudioClips {
     const val PopBalloonsWithLetter = "audio/pop_balloons_with_letter.wav"
     const val PopAllBalloonsWithLetter = "audio/pop_all_balloons_with_letter.wav"
 
+    /** Season 2 Chapter 1 station 4 (memory match): "מצא זוגות של אותיות זהות". */
+    const val Season2Ch1St4MemoryMatchInstructions = "audio/season2_ch1_st4_memory_match_instructions.wav"
+
     // SFX (optional). If missing from assets, playback will be skipped.
     const val SfxBalloonPop = "audio/sfx_pop.wav"
     /** Softer balloon pop/plop for kids (optional). */
@@ -142,13 +145,16 @@ object AudioClips {
                     "ח" -> "chet"
                     "ט" -> "tet"
                     "י" -> "yod"
+                    "ז" -> "zayin"
                     "כ" -> "kaf"
                     "ל" -> "lamed"
                     "מ" -> "mem"
                     "נ" -> "nun"
                     "פ" -> "peh"
+                    "ס" -> "samech"
                     "צ" -> "tsadi"
                     "ק" -> "kuf"
+                    "ע" -> "ayin"
                     "ר" -> "reish"
                     "ש" -> "shin"
                     "ת" -> "taf"
@@ -188,6 +194,9 @@ object AudioClips {
             "ח" -> "audio/choose_chet.wav"
             "ט" -> "audio/choose_tet.wav"
             "י" -> "audio/choose_yod.wav"
+            "ז" -> "audio/choose_zayin.wav"
+            "ס" -> "audio/choose_samech.wav"
+            "ע" -> "audio/choose_ayin.wav"
             "כ" -> "audio/choose_kaf.wav"
             "נ" -> "audio/choose_nun.wav"
             "פ" -> "audio/choose_peh.wav"
@@ -210,6 +219,9 @@ object AudioClips {
             "ח" -> "audio/letter_chet.wav"
             "ט" -> "audio/letter_tet.wav"
             "י" -> "audio/letter_yod.wav"
+            "ז" -> "audio/letter_zayin.wav"
+            "ס" -> "audio/letter_samech.wav"
+            "ע" -> "audio/letter_ayin.wav"
             "כ" -> "audio/letter_kaf.wav"
             "מ" -> "audio/letter_mem.wav"
             "ל" -> "audio/letter_lamed.wav"

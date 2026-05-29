@@ -9,7 +9,12 @@ object NavRoutes {
     /** UX prototype: Season 2 T-Rex puzzle chapter map. */
     const val Season2PuzzleMapPrototype = "season2_puzzle_map_prototype/{chapterId}"
     fun season2PuzzleMapPrototype(chapterId: Int): String = "season2_puzzle_map_prototype/$chapterId"
+    /** Season 2: chapter station gameplay (chapterId is UX index 1..6). */
+    const val Season2ChapterStation = "season2_chapter/{chapterId}/station/{stationId}"
+    fun season2ChapterStation(chapterId: Int, stationId: Int): String = "season2_chapter/$chapterId/station/$stationId"
     const val Chapters = "chapters"
+    /** Season 1 Ch.1 only: Dino companion help intro before [StoryIntro]. */
+    const val Ch1DinoCompanionIntro = "ch1_dino_companion_intro"
     const val StoryIntro = "story_intro"
     const val ChapterLettersIntro = "chapter_letters_intro"
     const val Journey = "journey"

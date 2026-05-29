@@ -3,6 +3,7 @@ package com.tal.hebrewdino.ui.screens
 import com.tal.hebrewdino.ui.audio.AudioClips
 import com.tal.hebrewdino.ui.audio.SoundPoolPlayer
 import com.tal.hebrewdino.ui.audio.VoicePlayer
+import com.tal.hebrewdino.ui.domain.Season2ChapterIds
 import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
 import com.tal.hebrewdino.ui.domain.Question
 import kotlinx.coroutines.delay
@@ -11,7 +12,8 @@ import kotlin.random.Random
 /** Matches [SixStationArcChapterRange] in GameScreen for saga prompt branching only. */
 private val SagaChapterRangeForAudioPrompts = 1..5
 
-private fun isSagaEpisodeForPrompt(chapterId: Int): Boolean = chapterId in SagaChapterRangeForAudioPrompts
+private fun isSagaEpisodeForPrompt(chapterId: Int): Boolean =
+    chapterId in SagaChapterRangeForAudioPrompts || chapterId == Season2ChapterIds.Chapter1Tyrannosaurus
 
 /** Station 3 find-letter intro: stretch the intro→letter delay by this factor (e.g. 1.10 = 10% more space before the letter). */
 private const val Station3IntroToLetterLeadStretchDefault = 1.10f
@@ -42,7 +44,6 @@ internal suspend fun playSagaFindGridIntroSoundPool(
     introLetterLeadFraction: Float,
 ) {
     sfx.stopAllStreams()
-    val combined = AudioClips.chooseLetterClip(q.targetLetter)
     val letter = AudioClips.letterNameClip(q.targetLetter)
     val findIntro = AudioClips.VoFindLetter
     val chooseIntro = AudioClips.VoChooseLetter
@@ -74,7 +75,7 @@ internal suspend fun playSagaFindGridIntroSoundPool(
     } else {
         val bundledPath =
             sfx.playFirstAvailableReturningPath(
-                *(listOfNotNull(combined, letter).toTypedArray()),
+                *(listOfNotNull(letter).toTypedArray()),
                 volume = 1f,
             )
         if (bundledPath != null) {
@@ -188,13 +189,6 @@ internal suspend fun speakLetterPrompt(
      */
     station1IntroVariant: Boolean = false,
 ) {
-    // Prefer one combined clip when the asset exists (e.g. full "בחר את האות …" per letter).
-    val combined = AudioClips.chooseLetterClip(letter)
-    if (combined != null && voice.hasAsset(combined)) {
-        voice.playBlocking(combined)
-        return
-    }
-
     val letterName = AudioClips.letterNameClip(letter)
     val parts =
         buildList {

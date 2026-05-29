@@ -22,6 +22,28 @@ class LevelSession(
     /** Correct catalog entry ids already used per letter (picture stations 4–5). */
     private val lessonWordUsedCorrectIdsByLetter: MutableMap<String, MutableSet<String>> = mutableMapOf()
 
+    /** Season 2 content: avoid words outside the curated easy-to-draw sets. */
+    private fun season2BannedCatalogIdsForLetter(letter: String): Set<String> {
+        if (letterPoolSpec !== Season2Chapter1LetterPoolSpec) return emptySet()
+        val allow: Set<String> =
+            when (letter) {
+                // Pick 4 easiest-to-draw words per your list.
+                "ז" -> setOf("w_ז_1", "w_ז_2", "w_ז_3", "w_ז_4") // זברה, זיקית, זחל, זר
+                "י" -> setOf("w_י_2", "w_י_3", "w_י_4", "w_י_5") // ילד, יד, יונה, ירח
+                "ס" -> setOf("w_ס_1", "w_ס_2", "w_ס_3", "w_ס_4") // סוס, סירה, סוכריה, ספר
+                "ע" -> setOf("w_ע_1", "w_ע_4", "w_ע_5", "w_ע_7") // עין, עוגה, עץ, עלה
+                "מ" -> emptySet() // keep existing catalog for mem
+                else -> emptySet()
+            }
+        if (allow.isEmpty()) return emptySet()
+        val allIdsForLetter =
+            LessonWordCatalog.entries.asSequence()
+                .filter { it.letter == letter }
+                .map { it.id }
+                .toSet()
+        return allIdsForLetter - allow
+    }
+
     /** Pop-all-letters balloons: pick 5 unique words once per station run. */
     private val chapter3PopAllLettersWords: List<Pair<String, String>>? =
         if (plan.mode == StationQuizMode.PopBalloons && plan.popAllLettersInWord) {
@@ -81,6 +103,7 @@ class LevelSession(
             Chapter3LetterPoolSpec -> Chapter3Config.letters
             Chapter4LetterPoolSpec -> Chapter4Config.letters
             Chapter5LetterPoolSpec -> Chapter5Config.letters
+            Season2Chapter1LetterPoolSpec -> letterPoolSpec.groups.flatten().distinct()
             else -> letterPoolSpec.groups.flatten().distinct()
         }
 
@@ -293,6 +316,7 @@ class LevelSession(
                             val correct = nextBalancedCorrect(group)
                             val used = lessonWordUsedCorrectIdsByLetter.getOrPut(correct) { mutableSetOf() }
                             val optionLetters = pictureStartsWithOptionLetters(correctLetter = correct)
+                            val banned = season2BannedCatalogIdsForLetter(correct)
                             val q =
                                 if (letterPoolSpec === Chapter3LetterPoolSpec) {
                                     Chapter3LessonGenerators.pictureStartsWith(
@@ -315,7 +339,7 @@ class LevelSession(
                                         rnd = rnd,
                                         group = group,
                                         targetLetter = correct,
-                                        excludeCorrectWordIds = used,
+                                        excludeCorrectWordIds = used + banned,
                                         optionLetters = optionLetters,
                                     )
                                 }
@@ -325,6 +349,7 @@ class LevelSession(
                         StationQuizMode.ImageMatch -> {
                             val correct = nextBalancedCorrect(group)
                             val used = lessonWordUsedCorrectIdsByLetter.getOrPut(correct) { mutableSetOf() }
+                            val banned = season2BannedCatalogIdsForLetter(correct)
                             val q =
                                 if (letterPoolSpec === Chapter3LetterPoolSpec) {
                                     Chapter3LessonGenerators.imageMatch(
@@ -349,7 +374,7 @@ class LevelSession(
                                         rnd = rnd,
                                         group = group,
                                         targetLetter = correct,
-                                        excludeCorrectWordIds = used,
+                                        excludeCorrectWordIds = used + banned,
                                         alwaysThreeChoices = plan.imageMatchAlwaysThreeChoices,
                                         forbidAutoAndCarTogether = plan.chapter1Station6ForbidAutoAndCarTogether,
                                         forbidVehicleSynonymsTogether = plan.forbidVehicleSynonymsTogether,

@@ -32,6 +32,8 @@ object StationBehaviorRegistry {
                 4 -> StationQuizPlans.chapter4(sid)
                 5 -> StationQuizPlans.chapter5(sid)
                 6 -> StationQuizPlans.chapter6(stationId.coerceIn(1, Chapter6Config.STATION_COUNT))
+                // Season 2 Chapter 1 reuses the same station mechanics as Season 1 Chapter 1; only letters differ.
+                Season2ChapterIds.Chapter1Tyrannosaurus -> StationQuizPlans.chapter1(sid)
                 TrainingV1Config.CHAPTER_ID -> StationQuizPlans.trainingV1(sid)
                 else -> error("Unsupported chapterId=$chapterId")
             }
@@ -44,10 +46,11 @@ object StationBehaviorRegistry {
             5 -> sixStationUiSpec(chapterId = 5, sid, plan)
             6 -> chapter6UiSpec(stationId.coerceIn(1, Chapter6Config.STATION_COUNT), plan)
             TrainingV1Config.CHAPTER_ID -> trainingV1UiSpec(sid, plan)
+            Season2ChapterIds.Chapter1Tyrannosaurus -> sixStationUiSpec(chapterId = Season2ChapterIds.Chapter1Tyrannosaurus, stationId = sid, plan = plan)
             else -> error("Unsupported chapterId=$chapterId")
         }
 
-        val isSagaEpisode = chapterId in 1..5
+        val isSagaEpisode = chapterId in 1..5 || chapterId == Season2ChapterIds.Chapter1Tyrannosaurus
         val audioStagingPickLetter = isSagaEpisode && plan.mode == StationQuizMode.PickLetter
         val audioStagingPopBalloons = isSagaEpisode && plan.mode == StationQuizMode.PopBalloons
         val audioStagingFindGrid = isSagaEpisode && plan.mode == StationQuizMode.FindLetterGrid
@@ -193,12 +196,14 @@ object StationBehaviorRegistry {
         plan: StationQuizPlan
     ): StationUiSpec {
         val listenOnly = plan.listenOnlyTargetPrompt
-        val isSagaEpisode = chapterId in 1..5
+        val isSagaEpisode = chapterId in 1..5 || chapterId == Season2ChapterIds.Chapter1Tyrannosaurus
+        val isLearningSixStationArc =
+            (chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5 || chapterId == Season2ChapterIds.Chapter1Tyrannosaurus)
         val pictureStartsWithCompactLandscapeRtlWrapInstruction =
-            (chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) &&
+            isLearningSixStationArc &&
                 stationId == PICTURE_PICK_ONE
         val pictureStartsWithVerticalNudgeDp =
-            if ((chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) &&
+            if (isLearningSixStationArc &&
                 stationId == PICTURE_PICK_ONE
             ) {
                 19f

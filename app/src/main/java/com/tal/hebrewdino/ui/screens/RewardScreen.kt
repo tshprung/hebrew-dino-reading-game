@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -33,10 +34,14 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.tal.hebrewdino.R
 import com.tal.hebrewdino.ui.audio.AudioClips
+import com.tal.hebrewdino.ui.audio.RawVoicePlayer
 import com.tal.hebrewdino.ui.audio.VoicePlayer
+import com.tal.hebrewdino.ui.companion.Chapter1DinoCompanionPilot
+import com.tal.hebrewdino.ui.companion.CompanionDinoPortrait
 import com.tal.hebrewdino.ui.layout.ScreenFit
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.random.Random
 
 /** Random celebratory dino pose on the stage-complete screen (not a single static "nice" moment). */
@@ -64,6 +69,8 @@ fun RewardScreen(
     onBackToMap: () -> Unit,
     /** Full-bleed station-complete backdrop (chapter-specific). */
     backgroundRes: Int = R.drawable.forest_bg_reward,
+    /** Season 1 Chapter 1 pilot: happy Dino + short raw success clip (no station VO). */
+    chapter1DinoCompanionPilot: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     fun rtl(text: String): String = "\u200F$text"
@@ -71,18 +78,24 @@ fun RewardScreen(
     val context = androidx.compose.ui.platform.LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val voice = remember { VoicePlayer(context = context) }
+    val rawVoice = remember(chapter1DinoCompanionPilot) { if (chapter1DinoCompanionPilot) RawVoicePlayer(context) else null }
     var navigatedAway by remember(levelId) { mutableStateOf(false) }
     val isCompactLandscapePhone = ScreenFit.isCompactLandscapePhone()
     val mascotRes =
-        remember {
+        remember(levelId) {
             RewardStageMascotDrawables[Random.nextInt(RewardStageMascotDrawables.size)]
         }
+    val companionPortraitW =
+        if (isCompactLandscapePhone) 160.dp else Chapter1DinoCompanionPilot.portraitWidthDp.dp
+    val companionPortraitH =
+        if (isCompactLandscapePhone) 160.dp else Chapter1DinoCompanionPilot.portraitHeightDp.dp
 
     DisposableEffect(lifecycleOwner, levelId) {
         val observer =
             LifecycleEventObserver { _, event ->
                 if (event == Lifecycle.Event.ON_PAUSE || event == Lifecycle.Event.ON_STOP) {
                     voice.stopNow()
+                    rawVoice?.stopNow()
                 }
             }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -90,21 +103,36 @@ fun RewardScreen(
             lifecycleOwner.lifecycle.removeObserver(observer)
             voice.stopNow()
             voice.release()
+            rawVoice?.stopNow()
+            rawVoice?.release()
         }
     }
 
-    LaunchedEffect(levelId) {
+    LaunchedEffect(levelId, chapter1DinoCompanionPilot) {
         coroutineScope {
-            // Level complete: say "finished level" then one random short praise (not only "יפה").
             val voiceJob =
                 launch {
-                    val praisePool = AudioClips.rewardStagePraiseTailCandidates()
-                    voice.warmUp(AudioClips.VoLevelDone, *praisePool)
-                    voice.playBlocking(AudioClips.VoLevelDone)
-                    voice.playFirstAvailableBlockingRandomized(praisePool)
+                    if (chapter1DinoCompanionPilot) {
+                        val clip = Chapter1DinoCompanionPilot.randomSuccessClip()
+                        withTimeoutOrNull(Chapter1DinoCompanionPilot.REWARD_VISIBLE_MS) {
+                            rawVoice?.playRawBlocking(clip)
+                        }
+                        rawVoice?.stopNow()
+                    } else {
+                        // Level complete: say "finished level" then one random short praise (not only "יפה").
+                        val praisePool = AudioClips.rewardStagePraiseTailCandidates()
+                        voice.warmUp(AudioClips.VoLevelDone, *praisePool)
+                        voice.playBlocking(AudioClips.VoLevelDone)
+                        voice.playFirstAvailableBlockingRandomized(praisePool)
+                    }
                 }
-            // Safety: always navigate back even if audio hangs.
-            GameAudioActions.await(voiceJob, 9000L)
+            val maxWaitMs =
+                if (chapter1DinoCompanionPilot) {
+                    Chapter1DinoCompanionPilot.REWARD_VISIBLE_MS + 200L
+                } else {
+                    9000L
+                }
+            GameAudioActions.await(voiceJob, maxWaitMs)
             if (!navigatedAway) {
                 navigatedAway = true
                 onBackToMap()
@@ -133,12 +161,20 @@ fun RewardScreen(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(14.dp, Alignment.CenterHorizontally),
             ) {
-                Image(
-                    painter = painterResource(id = mascotRes),
-                    contentDescription = null,
-                    modifier = Modifier.width(160.dp).height(160.dp),
-                    contentScale = ContentScale.Fit,
-                )
+                if (chapter1DinoCompanionPilot) {
+                    CompanionDinoPortrait(
+                        poseRes = Chapter1DinoCompanionPilot.poseHappy,
+                        modifier = Modifier.size(width = companionPortraitW, height = companionPortraitH),
+                        contentDescription = "דינו",
+                    )
+                } else {
+                    Image(
+                        painter = painterResource(id = mascotRes),
+                        contentDescription = null,
+                        modifier = Modifier.width(160.dp).height(160.dp),
+                        contentScale = ContentScale.Fit,
+                    )
+                }
                 Column(
                     modifier = Modifier.weight(1f, fill = true),
                     horizontalAlignment = Alignment.CenterHorizontally,
@@ -178,15 +214,23 @@ fun RewardScreen(
                     color = Color(0xFF0B2B3D),
                 )
                 Spacer(modifier = Modifier.height(8.dp))
-                Image(
-                    painter = painterResource(id = mascotRes),
-                    contentDescription = null,
-                    modifier =
-                        Modifier
-                            .height(168.dp)
-                            .fillMaxWidth(),
-                    contentScale = ContentScale.Fit,
-                )
+                if (chapter1DinoCompanionPilot) {
+                    CompanionDinoPortrait(
+                        poseRes = Chapter1DinoCompanionPilot.poseHappy,
+                        modifier = Modifier.size(width = companionPortraitW, height = companionPortraitH),
+                        contentDescription = "דינו",
+                    )
+                } else {
+                    Image(
+                        painter = painterResource(id = mascotRes),
+                        contentDescription = null,
+                        modifier =
+                            Modifier
+                                .height(168.dp)
+                                .fillMaxWidth(),
+                        contentScale = ContentScale.Fit,
+                    )
+                }
                 Spacer(modifier = Modifier.height(6.dp))
 
                 Box(

@@ -113,23 +113,25 @@ private fun season2PosterForChapter(chapterId: Int): Season2ChapterPoster =
 fun Season2PuzzleMapPrototypeScreen(
     chapterId: Int,
     onBack: () -> Unit,
+    onOpenStation: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
     val season2Progress = remember(context) { Season2ProgressPrefs(context.applicationContext) }
     val completedChapters by season2Progress.completedChaptersFlow.collectAsState(initial = emptySet())
+    val completedStations by season2Progress.completedStationsFlow(chapterId).collectAsState(initial = emptySet())
     val chapterPoster = remember(chapterId) { season2PosterForChapter(chapterId) }
     val posterPainter = painterResource(id = chapterPoster.posterResId)
 
     var coloredThrough by remember { mutableIntStateOf(0) }
-    var highlightedTile by remember { mutableIntStateOf(1) }
+    var nextPlayableTile by remember { mutableIntStateOf(1) }
     var revealingTile by remember { mutableStateOf<Int?>(null) }
     val revealProgress = remember { Animatable(0f) }
     val scope = rememberCoroutineScope()
     val isRevealing = revealingTile != null
 
     fun startReveal(tile: Int) {
-        if (isRevealing || tile != highlightedTile) return
+        if (isRevealing) return
         revealingTile = tile
         scope.launch {
             revealProgress.snapTo(0f)
@@ -137,10 +139,8 @@ fun Season2PuzzleMapPrototypeScreen(
                 targetValue = 1f,
                 animationSpec = tween(durationMillis = 1_450, easing = FastOutSlowInEasing),
             )
-            coloredThrough = tile
             revealingTile = null
             revealProgress.snapTo(0f)
-            highlightedTile = (tile + 1).coerceAtMost(TILE_COUNT)
         }
     }
 
@@ -175,11 +175,11 @@ fun Season2PuzzleMapPrototypeScreen(
                             cellWidth = cellWidth,
                             cellHeight = cellHeight,
                             coloredThrough = coloredThrough,
-                            highlightedTile = highlightedTile,
+                            nextPlayableTile = nextPlayableTile,
                             revealingTile = revealingTile,
                             revealProgress = revealProgress.value,
                             isRevealing = isRevealing,
-                            onTileTap = { tile -> startReveal(tile) },
+                            onTileTap = { tile -> if (!isRevealing) onOpenStation(tile) },
                         )
                     }
                 }
@@ -198,23 +198,35 @@ fun Season2PuzzleMapPrototypeScreen(
     }
 
     val isChapterCompleted = chapterId in completedChapters
-    LaunchedEffect(chapterId, isChapterCompleted) {
+    LaunchedEffect(chapterId, isChapterCompleted, completedStations) {
         if (isChapterCompleted) {
-            // Re-entering a completed chapter: show the full dinosaur in color and disable taps.
+            // Re-entering a completed chapter: full dinosaur in color; all stations remain replayable.
             coloredThrough = TILE_COUNT
-            highlightedTile = TILE_COUNT + 1
+            nextPlayableTile = TILE_COUNT + 1
             revealingTile = null
             revealProgress.snapTo(0f)
         } else {
-            // Fresh entry (or reset progress): start from locked.
-            coloredThrough = 0
-            highlightedTile = 1
+            val completedCount = completedStations.size.coerceIn(0, TILE_COUNT)
+            coloredThrough = completedCount
+            nextPlayableTile =
+                if (completedCount >= TILE_COUNT) {
+                    TILE_COUNT + 1
+                } else {
+                    (completedCount + 1).coerceAtMost(TILE_COUNT)
+                }
             revealingTile = null
             revealProgress.snapTo(0f)
         }
     }
 
+    var lastRevealedThrough by remember(chapterId) { mutableIntStateOf(0) }
     LaunchedEffect(chapterId, coloredThrough) {
+        if (coloredThrough > lastRevealedThrough && coloredThrough in 1..TILE_COUNT) {
+            startReveal(coloredThrough)
+            lastRevealedThrough = coloredThrough
+        } else if (coloredThrough <= 0) {
+            lastRevealedThrough = 0
+        }
         if (coloredThrough >= TILE_COUNT) {
             season2Progress.markChapterCompleted(chapterId)
         }
@@ -284,7 +296,7 @@ private fun ContinuousPosterBoard(
     cellWidth: Dp,
     cellHeight: Dp,
     coloredThrough: Int,
-    highlightedTile: Int,
+    nextPlayableTile: Int,
     revealingTile: Int?,
     revealProgress: Float,
     isRevealing: Boolean,
@@ -347,14 +359,28 @@ private fun ContinuousPosterBoard(
         for (tile in 1..TILE_COUNT) {
             val row = (tile - 1) / TILE_COLUMNS
             val col = (tile - 1) % TILE_COLUMNS
+            val isNext = tile == (coloredThrough + 1).coerceIn(1, TILE_COUNT)
+            val chapterFullyRevealed = coloredThrough >= TILE_COUNT
+            // UX: replay any completed tile; pulse only the next uncompleted station while in progress.
+            val enabled =
+                !isRevealing &&
+                    (
+                        chapterFullyRevealed ||
+                            tile <= coloredThrough ||
+                            (tile == nextPlayableTile && isNext)
+                    )
             TileInteractionLayer(
                 tileIndex = tile,
                 row = row,
                 col = col,
                 cellWidth = cellWidth,
                 cellHeight = cellHeight,
-                highlighted = tile == highlightedTile && !isRevealing && highlightedTile <= TILE_COUNT,
-                enabled = tile == highlightedTile && !isRevealing && highlightedTile <= TILE_COUNT,
+                highlighted =
+                    enabled &&
+                        !chapterFullyRevealed &&
+                        isNext &&
+                        tile == nextPlayableTile,
+                enabled = enabled,
                 onTap = { onTileTap(tile) },
             )
         }

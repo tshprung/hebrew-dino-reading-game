@@ -17,7 +17,9 @@ import androidx.compose.ui.zIndex
 import com.tal.hebrewdino.ui.components.station.Chapter3SagaPopBalloonsWordBanner
 import com.tal.hebrewdino.ui.components.station.PopBalloonsInstructionHeaderBlock
 import com.tal.hebrewdino.ui.components.station.PopBalloonsStationContent
+import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
 import com.tal.hebrewdino.ui.domain.Question
+import com.tal.hebrewdino.ui.domain.Season2ChapterIds
 import com.tal.hebrewdino.ui.domain.StationQuizMode
 import com.tal.hebrewdino.ui.domain.StationUiSpec
 
@@ -53,8 +55,11 @@ internal fun PopBalloonsQuestionRenderer(
     onAllCorrectPopped: (correctLetter: String, poppedBalloonColor: Color) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val forceSeason2Tuning =
+        stationUiSpec.chapterId == Season2ChapterIds.Chapter1Tyrannosaurus &&
+            stationUiSpec.stationId == Chapter1StationOrder.BALLOON_POP
     val compactLandscapePhoneTuning =
-        isCompactLandscapePhone && stationUiSpec.popBalloonsCompactLandscapePhoneTuning
+        forceSeason2Tuning || (isCompactLandscapePhone && stationUiSpec.popBalloonsCompactLandscapePhoneTuning)
 
     Column(
         modifier = modifier.fillMaxSize().padding(top = contentTopPaddingDp).scale(entryPulseScale),

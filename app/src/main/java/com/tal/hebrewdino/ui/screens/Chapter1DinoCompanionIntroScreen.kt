@@ -1,0 +1,133 @@
+package com.tal.hebrewdino.ui.screens
+
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Button
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.tal.hebrewdino.R
+import com.tal.hebrewdino.ui.audio.RawVoicePlayer
+import com.tal.hebrewdino.ui.companion.Chapter1DinoCompanionPilot
+import com.tal.hebrewdino.ui.companion.CompanionDinoPortrait
+import com.tal.hebrewdino.ui.layout.ScreenFit
+
+@Composable
+fun Chapter1DinoCompanionIntroScreen(
+    onContinue: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val rawVoice = remember { RawVoicePlayer(context = context) }
+    var introPlaying by remember { mutableStateOf(false) }
+    var introFinished by remember { mutableStateOf(false) }
+    val isCompactLandscapePhone = ScreenFit.isCompactLandscapePhone()
+    val portraitW = if (isCompactLandscapePhone) 160.dp else Chapter1DinoCompanionPilot.portraitWidthDp.dp
+    val portraitH = if (isCompactLandscapePhone) 160.dp else Chapter1DinoCompanionPilot.portraitHeightDp.dp
+
+    DisposableEffect(lifecycleOwner) {
+        val observer =
+            LifecycleEventObserver { _, event ->
+                if (event == Lifecycle.Event.ON_PAUSE || event == Lifecycle.Event.ON_STOP) {
+                    rawVoice.stopNow()
+                }
+            }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+            rawVoice.stopNow()
+            rawVoice.release()
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        introPlaying = true
+        rawVoice.playRawBlocking(Chapter1DinoCompanionPilot.introHelpFindEggs)
+        introPlaying = false
+        introFinished = true
+    }
+
+    val poseRes =
+        when {
+            introPlaying -> Chapter1DinoCompanionPilot.poseHelp
+            introFinished -> Chapter1DinoCompanionPilot.poseIdle
+            else -> Chapter1DinoCompanionPilot.poseHelp
+        }
+
+    Box(modifier = modifier.fillMaxSize()) {
+        Image(
+            painter = painterResource(id = R.drawable.forest_bg_story_intro),
+            contentDescription = null,
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Crop,
+        )
+
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(if (isCompactLandscapePhone) 12.dp else 24.dp),
+            verticalArrangement = Arrangement.SpaceBetween,
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                CompanionDinoPortrait(
+                    poseRes = poseRes,
+                    talkFrameResIds = Chapter1DinoCompanionPilot.talkFrameResIds,
+                    isTalking = introPlaying,
+                    modifier = Modifier.size(width = portraitW, height = portraitH),
+                    contentDescription = "דינו",
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "\u200Fהיי! אני צריך עזרה…",
+                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                    color = Color(0xFF0B2B3D),
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+
+            Button(
+                onClick = onContinue,
+                enabled = introFinished,
+                modifier = Modifier.fillMaxWidth(0.85f),
+            ) {
+                Text(text = "\u200Fבואו נתחיל!")
+            }
+        }
+    }
+}

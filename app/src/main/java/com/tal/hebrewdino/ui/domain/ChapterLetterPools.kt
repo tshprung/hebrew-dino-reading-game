@@ -28,3 +28,8 @@ object Chapter6LetterPoolSpec : LetterPoolSpec {
 object TrainingV1LetterPoolSpec : LetterPoolSpec {
     override val groups: List<List<String>> = listOf(TrainingV1Config.letters)
 }
+
+/** Season 2 Chapter 1 (Tyrannosaurus) letters: ז י ס ע + reinforcement מ. */
+object Season2Chapter1LetterPoolSpec : LetterPoolSpec {
+    override val groups: List<List<String>> = listOf(listOf("ז", "י", "ס", "ע", "מ"))
+}

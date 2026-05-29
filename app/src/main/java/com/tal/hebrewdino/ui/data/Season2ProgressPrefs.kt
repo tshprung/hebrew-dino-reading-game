@@ -17,6 +17,9 @@ class Season2ProgressPrefs(private val context: Context) {
     private val completedChaptersKey: Preferences.Key<String> =
         stringPreferencesKey("season2_completed_chapters")
 
+    private fun completedStationsKeyForChapter(chapterId: Int): Preferences.Key<String> =
+        stringPreferencesKey("season2_ch${chapterId}_completed_stations")
+
     val completedChaptersFlow: Flow<Set<Int>> =
         context.dataStore.data.map { prefs ->
             val raw = prefs[completedChaptersKey].orEmpty()
@@ -26,6 +29,33 @@ class Season2ProgressPrefs(private val context: Context) {
                 .filter { it in 1..6 }
                 .toSet()
         }
+
+    fun completedStationsFlow(chapterId: Int): Flow<Set<Int>> =
+        context.dataStore.data.map { prefs ->
+            if (chapterId !in 1..6) return@map emptySet()
+            val raw = prefs[completedStationsKeyForChapter(chapterId)].orEmpty()
+            if (raw.isBlank()) return@map emptySet()
+            raw.split(",")
+                .mapNotNull { it.trim().toIntOrNull() }
+                .filter { it in 1..6 }
+                .toSet()
+        }
+
+    suspend fun markStationCompleted(chapterId: Int, stationId: Int) {
+        if (chapterId !in 1..6) return
+        if (stationId !in 1..6) return
+        val key = completedStationsKeyForChapter(chapterId)
+        context.dataStore.edit { prefs ->
+            val raw = prefs[key].orEmpty()
+            val set =
+                raw.split(",")
+                    .mapNotNull { it.trim().toIntOrNull() }
+                    .filter { it in 1..6 }
+                    .toMutableSet()
+            set.add(stationId)
+            prefs[key] = set.toList().sorted().joinToString(",")
+        }
+    }
 
     suspend fun markChapterCompleted(chapterId: Int) {
         if (chapterId !in 1..6) return
@@ -44,6 +74,9 @@ class Season2ProgressPrefs(private val context: Context) {
     suspend fun resetSeason2() {
         context.dataStore.edit { prefs ->
             prefs[completedChaptersKey] = ""
+            for (ch in 1..6) {
+                prefs[completedStationsKeyForChapter(ch)] = ""
+            }
         }
     }
 }

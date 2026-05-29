@@ -12,9 +12,11 @@ import com.tal.hebrewdino.BuildConfig
 import com.tal.hebrewdino.ui.data.AudioPrefs
 import com.tal.hebrewdino.ui.data.DinoCharacter
 import com.tal.hebrewdino.ui.data.Season2ProgressPrefs
+import com.tal.hebrewdino.ui.domain.Season2Chapter1StationOrder
 import com.tal.hebrewdino.ui.screens.ChaptersScreen
 import com.tal.hebrewdino.ui.screens.OpeningScreen
 import com.tal.hebrewdino.ui.screens.Season2ChapterSelectScreen
+import com.tal.hebrewdino.ui.screens.Season2ChapterStationScreen
 import com.tal.hebrewdino.ui.screens.Season2PuzzleMapPrototypeScreen
 import com.tal.hebrewdino.ui.screens.SeasonsScreen
 import com.tal.hebrewdino.ui.screens.SettingsScreen
@@ -81,6 +83,32 @@ internal fun NavGraphBuilder.systemAndTrainingGraph(host: AppNavHostState) {
         Season2PuzzleMapPrototypeScreen(
             chapterId = chapterId,
             onBack = { host.navController.popBackStack() },
+            onOpenStation = { stationId ->
+                host.navController.navigate(NavRoutes.season2ChapterStation(chapterId, stationId)) {
+                    launchSingleTop = true
+                }
+            },
+        )
+    }
+
+    composable(
+        route = NavRoutes.Season2ChapterStation,
+        arguments =
+            listOf(
+                navArgument("chapterId") { type = NavType.IntType },
+                navArgument("stationId") { type = NavType.IntType },
+            ),
+    ) { backStackEntry ->
+        val chapterId = backStackEntry.arguments?.getInt("chapterId") ?: 1
+        val stationId = backStackEntry.arguments?.getInt("stationId") ?: Season2Chapter1StationOrder.POP_BALLOONS
+        Season2ChapterStationScreen(
+            chapterId = chapterId,
+            stationId = stationId,
+            onBack = { host.navController.popBackStack() },
+            onComplete = {
+                // Return to the puzzle board; it will reveal the next piece based on saved progress.
+                host.navController.popBackStack()
+            },
         )
     }
 
@@ -102,8 +130,8 @@ internal fun NavGraphBuilder.systemAndTrainingGraph(host: AppNavHostState) {
             onOpenChapter = { chapterId ->
                 when (chapterId) {
                     1 -> {
-                        // Always show chapter intro on entry (user request).
-                        host.navController.navigate(NavRoutes.StoryIntro)
+                        // Season 1 Ch.1: Dino companion intro, then existing story intro.
+                        host.navController.navigate(NavRoutes.Ch1DinoCompanionIntro)
                     }
                     2 -> {
                         val canEnterChapter2 = host.beachOutroSeen || host.chapter1AllStationsComplete

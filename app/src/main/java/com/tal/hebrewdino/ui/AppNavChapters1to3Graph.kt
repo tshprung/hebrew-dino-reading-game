@@ -12,6 +12,8 @@ import com.tal.hebrewdino.ui.domain.Chapter1Config
 import com.tal.hebrewdino.ui.domain.Chapter2Config
 import com.tal.hebrewdino.ui.domain.Chapter3Config
 import com.tal.hebrewdino.ui.domain.DevTools
+import com.tal.hebrewdino.ui.screens.Chapter1DinoCompanionEggOutroScreen
+import com.tal.hebrewdino.ui.screens.Chapter1DinoCompanionIntroScreen
 import com.tal.hebrewdino.ui.screens.Chapter1LettersIntroScreen
 import com.tal.hebrewdino.ui.screens.Chapter1MidBoostScreen
 import com.tal.hebrewdino.ui.screens.Chapter2IntroScreen
@@ -25,7 +27,6 @@ import com.tal.hebrewdino.ui.screens.Chapter3LevelScreen
 import com.tal.hebrewdino.ui.screens.Chapter3MidBoostScreen
 import com.tal.hebrewdino.ui.screens.Chapter3OutroScreen
 import com.tal.hebrewdino.ui.screens.ForestIntroScreen
-import com.tal.hebrewdino.ui.screens.ForestOutroScreen
 import com.tal.hebrewdino.ui.screens.JourneyEndMarker
 import com.tal.hebrewdino.ui.screens.JourneyScreen
 import com.tal.hebrewdino.ui.screens.LevelScreen
@@ -33,6 +34,16 @@ import com.tal.hebrewdino.ui.screens.RewardScreen
 import kotlinx.coroutines.launch
 
 internal fun NavGraphBuilder.chapterOneToThreeGraph(host: AppNavHostState) {
+    composable(NavRoutes.Ch1DinoCompanionIntro) {
+        Chapter1DinoCompanionIntroScreen(
+            onContinue = {
+                host.navController.navigate(NavRoutes.StoryIntro) {
+                    popUpTo(NavRoutes.Ch1DinoCompanionIntro) { inclusive = true }
+                }
+            },
+        )
+    }
+
     composable(NavRoutes.StoryIntro) {
         ForestIntroScreen(
             character = DinoCharacter.Dino,
@@ -361,6 +372,7 @@ internal fun NavGraphBuilder.chapterOneToThreeGraph(host: AppNavHostState) {
             correct = correct,
             mistakes = mistakes,
             onBackToMap = backToMap,
+            chapter1DinoCompanionPilot = true,
         )
     }
 
@@ -498,8 +510,7 @@ internal fun NavGraphBuilder.chapterOneToThreeGraph(host: AppNavHostState) {
     }
 
     composable(NavRoutes.StoryOutro) {
-        ForestOutroScreen(
-            character = DinoCharacter.Dino,
+        Chapter1DinoCompanionEggOutroScreen(
             onContinue = {
                 host.scope.launch { host.progress.markBeachOutroSeen() }
                 host.navController.navigate(NavRoutes.Chapters) {
