@@ -31,6 +31,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -44,6 +45,10 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import com.tal.hebrewdino.R
 import com.tal.hebrewdino.ui.audio.VoicePlayer
+import com.tal.hebrewdino.ui.companion.Chapter1DinoCompanionPilot
+import com.tal.hebrewdino.ui.companion.Chapter1ForestStoryCharacters
+import com.tal.hebrewdino.ui.companion.CompanionGentleIdleMotion
+import com.tal.hebrewdino.ui.companion.MotherLostEggsCue
 import com.tal.hebrewdino.ui.components.AnimatedTalkingCharacter
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -82,6 +87,14 @@ fun ChapterLobbyStoryLayout(
     voiceAssetPath: String? = null,
     bodyLineHeightOverride: TextUnit? = null,
     dinoContentDescription: String,
+    /** Season 1 Ch.1: companion Dino art only. */
+    useCompanionDinoArt: Boolean = false,
+    /** Season 1 Ch.1: companion mom art (static idle; no talk frames yet). */
+    useCompanionMomArt: Boolean = false,
+    /** Season 1 Ch.1: warm readable story card (matches Dino intro bubble). */
+    useWarmReadableStoryPanel: Boolean = false,
+    /** Season 1 Ch.1 forest intro: three small eggs near the mother. */
+    showMotherLostEggsCue: Boolean = false,
     onContinue: () -> Unit,
     /** Optional content between title and body (e.g. Episode 4 clue row). */
     betweenTitleAndBody: (@Composable () -> Unit)? = null,
@@ -118,6 +131,33 @@ fun ChapterLobbyStoryLayout(
 
     val talking = if (voiceAssetPath != null) autoNarrationPlaying else narrationPlaying
     val isCompactLandscapePhone = ScreenFit.isCompactLandscapePhone()
+    val dinoIdleRes =
+        if (useCompanionDinoArt) {
+            Chapter1DinoCompanionPilot.poseIdle
+        } else {
+            R.drawable.dino_idle
+        }
+    val dinoTalkResIds =
+        if (useCompanionDinoArt) {
+            Chapter1DinoCompanionPilot.talkFrameResIds
+        } else {
+            dinoTalkFrames
+        }
+    val momIdleRes =
+        if (useCompanionMomArt) {
+            Chapter1DinoCompanionPilot.poseMomIdle
+        } else {
+            R.drawable.mom_idle
+        }
+    val momTalkResIds = if (useCompanionMomArt) emptyList() else momTalkFrames
+    val momCharacterScale =
+        if (useCompanionMomArt) {
+            1f
+        } else {
+            0.85f
+        }
+    val storyTextColor = if (useWarmReadableStoryPanel) Color(0xFF1A2E3D) else Color(0xFF0B2B3D)
+    val storyCardShape = RoundedCornerShape(24.dp)
 
     Box(modifier = modifier.fillMaxSize()) {
         Image(
@@ -147,11 +187,24 @@ fun ChapterLobbyStoryLayout(
                         modifier =
                             Modifier
                                 .heightIn(max = maxHeight)
-                                .clip(RoundedCornerShape(24.dp))
-                                .background(Color.White.copy(alpha = 0.88f))
-                                .padding(if (isCompactLandscapePhone) 12.dp else 18.dp)
                                 .fillMaxWidth()
-                                .widthIn(max = 560.dp),
+                                .widthIn(max = 560.dp)
+                                .then(
+                                    if (useWarmReadableStoryPanel) {
+                                        Modifier.shadow(elevation = 8.dp, shape = storyCardShape, clip = false)
+                                    } else {
+                                        Modifier
+                                    },
+                                )
+                                .clip(storyCardShape)
+                                .background(
+                                    if (useWarmReadableStoryPanel) {
+                                        Color(0xFFFFF8E8)
+                                    } else {
+                                        Color.White.copy(alpha = 0.88f)
+                                    },
+                                )
+                                .padding(if (isCompactLandscapePhone) 12.dp else 18.dp),
                     ) {
                         if (isCompactLandscapePhone) {
                             val scroll = rememberScrollState()
@@ -168,7 +221,7 @@ fun ChapterLobbyStoryLayout(
                                     Text(
                                         text = title,
                                         style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Black),
-                                        color = Color(0xFF0B2B3D),
+                                        color = storyTextColor,
                                         textAlign = TextAlign.Center,
                                     )
                                     Spacer(modifier = Modifier.height(4.dp))
@@ -183,40 +236,58 @@ fun ChapterLobbyStoryLayout(
                                                 fontWeight = FontWeight.SemiBold,
                                                 lineHeight = bodyLineHeightOverride ?: 18.sp,
                                             ),
-                                        color = Color(0xFF0B2B3D),
+                                        color = storyTextColor,
                                         textAlign = TextAlign.Center,
                                     )
                                     Spacer(modifier = Modifier.height(6.dp))
                                 }
 
-                                Column(
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    modifier =
-                                        Modifier.width(
-                                            characterSize *
-                                                if (companion == ChapterLobbyCompanion.DinoAndMom) {
-                                                    1.5f
-                                                } else {
-                                                    1.15f
-                                                },
-                                        ),
-                                ) {
-                                    AnimatedTalkingCharacter(
-                                        idleRes = R.drawable.dino_idle,
-                                        talkFrameResIds = dinoTalkFrames,
-                                        isTalking = talking,
-                                        modifier = Modifier.size(characterSize),
-                                        contentDescription = dinoContentDescription,
+                                if (showMotherLostEggsCue && useCompanionMomArt && companion == ChapterLobbyCompanion.DinoAndMom) {
+                                    Chapter1ForestStoryCharacters(
+                                        dinoIdleRes = dinoIdleRes,
+                                        dinoTalkResIds = dinoTalkResIds,
+                                        dinoTalking = talking,
+                                        dinoContentDescription = dinoContentDescription,
+                                        momIdleRes = momIdleRes,
+                                        momTalkResIds = momTalkResIds,
+                                        momTalking = talking,
+                                        useCompanionMomArt = true,
                                     )
-                                    if (companion == ChapterLobbyCompanion.DinoAndMom) {
-                                        Spacer(modifier = Modifier.height(8.dp))
+                                } else {
+                                    Column(
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                        modifier =
+                                            Modifier.width(
+                                                characterSize *
+                                                    if (companion == ChapterLobbyCompanion.DinoAndMom) {
+                                                        1.5f
+                                                    } else {
+                                                        1.15f
+                                                    },
+                                            ),
+                                    ) {
                                         AnimatedTalkingCharacter(
-                                            idleRes = R.drawable.mom_idle,
-                                            talkFrameResIds = momTalkFrames,
+                                            idleRes = dinoIdleRes,
+                                            talkFrameResIds = dinoTalkResIds,
                                             isTalking = talking,
-                                            modifier = Modifier.size(characterSize * 0.85f),
-                                            contentDescription = "אמא דינוזאור",
+                                            modifier = Modifier.size(characterSize),
+                                            contentDescription = dinoContentDescription,
                                         )
+                                        if (companion == ChapterLobbyCompanion.DinoAndMom) {
+                                            Spacer(modifier = Modifier.height(8.dp))
+                                            ChapterLobbyMomCharacter(
+                                                momIdleRes = momIdleRes,
+                                                momTalkResIds = momTalkResIds,
+                                                talking = talking,
+                                                useCompanionMomArt = useCompanionMomArt,
+                                                size = characterSize,
+                                                momCharacterScale = momCharacterScale,
+                                            )
+                                            if (showMotherLostEggsCue) {
+                                                Spacer(modifier = Modifier.height(6.dp))
+                                                MotherLostEggsCue()
+                                            }
+                                        }
                                     }
                                 }
                             }
@@ -229,7 +300,7 @@ fun ChapterLobbyStoryLayout(
                                 Text(
                                     text = title,
                                     style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Black),
-                                    color = Color(0xFF0B2B3D),
+                                    color = storyTextColor,
                                     textAlign = TextAlign.Center,
                                 )
                                 Spacer(modifier = Modifier.height(10.dp))
@@ -240,27 +311,50 @@ fun ChapterLobbyStoryLayout(
                                 Text(
                                     text = body,
                                     style = MaterialTheme.typography.titleLarge.copy(lineHeight = bodyLineHeightOverride ?: 30.sp),
-                                    color = Color(0xFF0B2B3D),
+                                    color = storyTextColor,
                                     textAlign = TextAlign.Center,
                                 )
                                 Spacer(modifier = Modifier.height(14.dp))
-                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
-                                    AnimatedTalkingCharacter(
-                                        idleRes = R.drawable.dino_idle,
-                                        talkFrameResIds = dinoTalkFrames,
-                                        isTalking = talking,
-                                        modifier = Modifier.size(92.dp),
-                                        contentDescription = dinoContentDescription,
+                                if (showMotherLostEggsCue && useCompanionMomArt && companion == ChapterLobbyCompanion.DinoAndMom) {
+                                    Chapter1ForestStoryCharacters(
+                                        dinoIdleRes = dinoIdleRes,
+                                        dinoTalkResIds = dinoTalkResIds,
+                                        dinoTalking = talking,
+                                        dinoContentDescription = dinoContentDescription,
+                                        momIdleRes = momIdleRes,
+                                        momTalkResIds = momTalkResIds,
+                                        momTalking = talking,
+                                        useCompanionMomArt = true,
                                     )
-                                    if (companion == ChapterLobbyCompanion.DinoAndMom) {
-                                        Spacer(modifier = Modifier.width(14.dp))
+                                } else {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.Center,
+                                    ) {
                                         AnimatedTalkingCharacter(
-                                            idleRes = R.drawable.mom_idle,
-                                            talkFrameResIds = momTalkFrames,
+                                            idleRes = dinoIdleRes,
+                                            talkFrameResIds = dinoTalkResIds,
                                             isTalking = talking,
                                             modifier = Modifier.size(92.dp),
-                                            contentDescription = "אמא דינוזאור",
+                                            contentDescription = dinoContentDescription,
                                         )
+                                        if (companion == ChapterLobbyCompanion.DinoAndMom) {
+                                            Spacer(modifier = Modifier.width(14.dp))
+                                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                                ChapterLobbyMomCharacter(
+                                                    momIdleRes = momIdleRes,
+                                                    momTalkResIds = momTalkResIds,
+                                                    talking = talking,
+                                                    useCompanionMomArt = useCompanionMomArt,
+                                                    size = 92.dp,
+                                                    momCharacterScale = momCharacterScale,
+                                                )
+                                                if (showMotherLostEggsCue) {
+                                                    Spacer(modifier = Modifier.height(6.dp))
+                                                    MotherLostEggsCue()
+                                                }
+                                            }
+                                        }
                                     }
                                 }
                             }
@@ -280,5 +374,36 @@ fun ChapterLobbyStoryLayout(
                 Text("המשך")
             }
         }
+    }
+}
+
+@Composable
+private fun ChapterLobbyMomCharacter(
+    momIdleRes: Int,
+    momTalkResIds: List<Int>,
+    talking: Boolean,
+    useCompanionMomArt: Boolean,
+    size: androidx.compose.ui.unit.Dp,
+    momCharacterScale: Float,
+) {
+    val characterSize = size * momCharacterScale
+    if (useCompanionMomArt) {
+        CompanionGentleIdleMotion(active = talking) {
+            AnimatedTalkingCharacter(
+                idleRes = momIdleRes,
+                talkFrameResIds = momTalkResIds,
+                isTalking = false,
+                modifier = Modifier.size(characterSize),
+                contentDescription = "אמא דינוזאור",
+            )
+        }
+    } else {
+        AnimatedTalkingCharacter(
+            idleRes = momIdleRes,
+            talkFrameResIds = momTalkResIds,
+            isTalking = talking,
+            modifier = Modifier.size(characterSize),
+            contentDescription = "אמא דינוזאור",
+        )
     }
 }

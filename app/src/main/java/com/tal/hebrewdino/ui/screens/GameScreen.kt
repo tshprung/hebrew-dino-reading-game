@@ -34,12 +34,14 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.tal.hebrewdino.R
+import com.tal.hebrewdino.ui.companion.Chapter1DinoCompanionPilot
 import com.tal.hebrewdino.ui.audio.AudioClips
 import com.tal.hebrewdino.ui.audio.GameAudioEngine
 import com.tal.hebrewdino.ui.audio.SoundPoolPlayer
 import com.tal.hebrewdino.ui.audio.VoicePlayer
 import com.tal.hebrewdino.ui.AppAnalytics
 import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
+import com.tal.hebrewdino.ui.domain.DevTools
 import com.tal.hebrewdino.ui.domain.Episode4Help
 import com.tal.hebrewdino.ui.domain.LetterPoolSpec
 import com.tal.hebrewdino.ui.domain.Question
@@ -54,6 +56,7 @@ import com.tal.hebrewdino.ui.feedback.GameFeedback
 import com.tal.hebrewdino.ui.game.ChildGameAudioHooks
 import com.tal.hebrewdino.ui.layout.ScreenFit
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
 
 internal enum class GamePhase { Intro, Play }
 
@@ -411,6 +414,20 @@ fun GameScreen(
         )
     }
 
+    val devToolsEnabled = DevTools.enabled(context)
+
+    fun debugSkipToReward() {
+        if (!devToolsEnabled || gameViewModel.completionCallbackFired) return
+        gameViewModel.completionCallbackFired = true
+        gameViewModel.inputLocked = true
+        voice.stopNow()
+        cancelFeedbackVoice()
+        scope.launch {
+            val correct = session.totalQuestions.coerceAtLeast(1)
+            onComplete(stationId, correct, session.mistakeCount)
+        }
+    }
+
     GameAudioLifecycleEffects(
         lifecycleOwner = lifecycleOwner,
         stationId = stationId,
@@ -451,10 +468,18 @@ fun GameScreen(
             scope = scope,
         )
     }
+    val useChapter1CompanionDino = chapterId == 1
     val jumpFrames =
-        remember(stationId) {
-            listOf(R.drawable.dino_jump_0, R.drawable.dino_jump_1, R.drawable.dino_jump_2)
+        remember(stationId, useChapter1CompanionDino) {
+            if (useChapter1CompanionDino) {
+                Chapter1DinoCompanionPilot.talkFrameResIds
+            } else {
+                listOf(R.drawable.dino_jump_0, R.drawable.dino_jump_1, R.drawable.dino_jump_2)
+            }
         }
+    val companionTalkFrames = Chapter1DinoCompanionPilot.talkFrameResIds
+    val legacyTalkFrames =
+        listOf(R.drawable.dino_talk_0, R.drawable.dino_talk_1, R.drawable.dino_talk_2, R.drawable.dino_talk_3)
     val forwardDir = if (LocalLayoutDirection.current == LayoutDirection.Rtl) -1f else 1f
 
     GameAudioPreloadEffects(
@@ -642,13 +667,21 @@ fun GameScreen(
 
         if (isCompactLandscapePhone) {
             val dinoDrawable =
-                when (gameViewModel.dinoVisual) {
-                    DinoVisual.Idle -> R.drawable.dino_idle
-                    DinoVisual.TryAgain -> R.drawable.dino_try_again
-                    DinoVisual.Jump -> jumpFrames[gameViewModel.jumpFrameIndex.coerceIn(0, jumpFrames.lastIndex)]
+                if (useChapter1CompanionDino) {
+                    when (gameViewModel.dinoVisual) {
+                        DinoVisual.Idle -> Chapter1DinoCompanionPilot.poseIdle
+                        DinoVisual.TryAgain -> Chapter1DinoCompanionPilot.poseEncourage
+                        DinoVisual.Jump ->
+                            jumpFrames[gameViewModel.jumpFrameIndex.coerceIn(0, jumpFrames.lastIndex.coerceAtLeast(0))]
+                    }
+                } else {
+                    when (gameViewModel.dinoVisual) {
+                        DinoVisual.Idle -> R.drawable.dino_idle
+                        DinoVisual.TryAgain -> R.drawable.dino_try_again
+                        DinoVisual.Jump -> jumpFrames[gameViewModel.jumpFrameIndex.coerceIn(0, jumpFrames.lastIndex)]
+                    }
                 }
-            val talkFrames =
-                listOf(R.drawable.dino_talk_0, R.drawable.dino_talk_1, R.drawable.dino_talk_2, R.drawable.dino_talk_3)
+            val talkFrames = if (useChapter1CompanionDino) companionTalkFrames else legacyTalkFrames
             CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
                 Box(modifier = Modifier.fillMaxSize()) {
                     GameScreenDinoLayer(
@@ -1018,14 +1051,21 @@ fun GameScreen(
                 }
             }
             val dinoDrawable =
-                when (gameViewModel.dinoVisual) {
-                    DinoVisual.Idle -> R.drawable.dino_idle
-                    DinoVisual.TryAgain -> R.drawable.dino_try_again
-                    DinoVisual.Jump -> jumpFrames[gameViewModel.jumpFrameIndex.coerceIn(0, jumpFrames.lastIndex)]
+                if (useChapter1CompanionDino) {
+                    when (gameViewModel.dinoVisual) {
+                        DinoVisual.Idle -> Chapter1DinoCompanionPilot.poseIdle
+                        DinoVisual.TryAgain -> Chapter1DinoCompanionPilot.poseEncourage
+                        DinoVisual.Jump ->
+                            jumpFrames[gameViewModel.jumpFrameIndex.coerceIn(0, jumpFrames.lastIndex.coerceAtLeast(0))]
+                    }
+                } else {
+                    when (gameViewModel.dinoVisual) {
+                        DinoVisual.Idle -> R.drawable.dino_idle
+                        DinoVisual.TryAgain -> R.drawable.dino_try_again
+                        DinoVisual.Jump -> jumpFrames[gameViewModel.jumpFrameIndex.coerceIn(0, jumpFrames.lastIndex)]
+                    }
                 }
-            // Same in-round dino mouth animation for all chapters that use this screen (road-specific walks live in Journey).
-            val talkFrames =
-                listOf(R.drawable.dino_talk_0, R.drawable.dino_talk_1, R.drawable.dino_talk_2, R.drawable.dino_talk_3)
+            val talkFrames = if (useChapter1CompanionDino) companionTalkFrames else legacyTalkFrames
             if (!isCompactLandscapePhone) {
                 GameScreenDinoLayer(
                     idleRes = dinoDrawable,
@@ -1058,6 +1098,16 @@ fun GameScreen(
             voice = voice,
             cancelFeedbackVoice = { cancelFeedbackVoice() },
             audioRuntime = audioRuntime,
+        )
+
+        StationDebugSkipButton(
+            onSkip = { debugSkipToReward() },
+            enabled = !gameViewModel.completionCallbackFired,
+            modifier =
+                Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(start = 8.dp, bottom = 8.dp)
+                    .zIndex(6f),
         )
     }
 }

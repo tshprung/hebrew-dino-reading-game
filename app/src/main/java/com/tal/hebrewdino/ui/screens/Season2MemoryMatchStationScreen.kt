@@ -23,6 +23,7 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -45,9 +46,12 @@ import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.sp
 import com.tal.hebrewdino.ui.audio.AudioClips
+import com.tal.hebrewdino.ui.components.ChapterNavChipStyles
 import com.tal.hebrewdino.ui.audio.GameAudioEngine
+import com.tal.hebrewdino.ui.domain.DevTools
 import com.tal.hebrewdino.ui.layout.topChromeInsetsPadding
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -70,7 +74,8 @@ fun Season2MemoryMatchStationScreen(
     modifier: Modifier = Modifier,
 ) {
     val scope = rememberCoroutineScope()
-    val context = androidx.compose.ui.platform.LocalContext.current
+    val context = LocalContext.current
+    val devToolsEnabled = DevTools.enabled(context)
     val audio = remember { GameAudioEngine(context = context) }
     val voice = audio.voice
 
@@ -197,6 +202,19 @@ fun Season2MemoryMatchStationScreen(
                         style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold),
                         color = TitleBrown,
                     )
+                }
+                if (devToolsEnabled) {
+                    OutlinedButton(
+                        onClick = {
+                            letterPlayJob?.cancel()
+                            voice.stopNow()
+                            onMarkCompleted()
+                        },
+                        colors = ChapterNavChipStyles.outlinedButtonColors(),
+                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                    ) {
+                        Text("בדיקה", style = ChapterNavChipStyles.labelTextStyle())
+                    }
                 }
                 Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
                     Surface(

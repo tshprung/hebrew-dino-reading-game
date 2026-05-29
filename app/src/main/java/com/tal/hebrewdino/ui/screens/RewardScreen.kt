@@ -37,7 +37,9 @@ import com.tal.hebrewdino.ui.audio.AudioClips
 import com.tal.hebrewdino.ui.audio.RawVoicePlayer
 import com.tal.hebrewdino.ui.audio.VoicePlayer
 import com.tal.hebrewdino.ui.companion.Chapter1DinoCompanionPilot
-import com.tal.hebrewdino.ui.companion.CompanionDinoPortrait
+import com.tal.hebrewdino.ui.companion.CompanionDinoRewardCelebration
+import com.tal.hebrewdino.ui.companion.CompanionRewardCelebrationStyle
+import com.tal.hebrewdino.ui.companion.StoryReadablePanel
 import com.tal.hebrewdino.ui.layout.ScreenFit
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
@@ -80,6 +82,19 @@ fun RewardScreen(
     val voice = remember { VoicePlayer(context = context) }
     val rawVoice = remember(chapter1DinoCompanionPilot) { if (chapter1DinoCompanionPilot) RawVoicePlayer(context) else null }
     var navigatedAway by remember(levelId) { mutableStateOf(false) }
+    var companionVoicePlaying by remember(levelId) { mutableStateOf(false) }
+    val companionRewardStyle =
+        remember(levelId, chapter1DinoCompanionPilot) {
+            if (chapter1DinoCompanionPilot) {
+                Chapter1DinoCompanionPilot.rewardCelebrationForStation(levelId)
+            } else {
+                CompanionRewardCelebrationStyle.Happy
+            }
+        }
+    val companionShowFireworks =
+        chapter1DinoCompanionPilot &&
+            (companionRewardStyle == CompanionRewardCelebrationStyle.Sparkle ||
+                companionRewardStyle == CompanionRewardCelebrationStyle.GrandFinale)
     val isCompactLandscapePhone = ScreenFit.isCompactLandscapePhone()
     val mascotRes =
         remember(levelId) {
@@ -89,6 +104,14 @@ fun RewardScreen(
         if (isCompactLandscapePhone) 160.dp else Chapter1DinoCompanionPilot.portraitWidthDp.dp
     val companionPortraitH =
         if (isCompactLandscapePhone) 160.dp else Chapter1DinoCompanionPilot.portraitHeightDp.dp
+    val journeyProgressCue =
+        remember(levelId, chapter1DinoCompanionPilot) {
+            if (chapter1DinoCompanionPilot) {
+                Chapter1DinoCompanionPilot.journeyProgressCueForStation(levelId)
+            } else {
+                null
+            }
+        }
 
     DisposableEffect(lifecycleOwner, levelId) {
         val observer =
@@ -114,7 +137,9 @@ fun RewardScreen(
                 launch {
                     if (chapter1DinoCompanionPilot) {
                         val clip = Chapter1DinoCompanionPilot.successClipForStation(levelId)
+                        companionVoicePlaying = true
                         rawVoice?.playRawBlocking(clip)
+                        companionVoicePlaying = false
                         delay(Chapter1DinoCompanionPilot.REWARD_POST_AUDIO_MS)
                     } else {
                         // Level complete: say "finished level" then one random short praise (not only "יפה").
@@ -144,8 +169,19 @@ fun RewardScreen(
             contentScale = ContentScale.Crop,
         )
 
-        if (isCompactLandscapePhone) {
+        if (!chapter1DinoCompanionPilot && isCompactLandscapePhone) {
             RewardFireworksLayer(modifier = Modifier.fillMaxSize())
+        }
+        if (companionShowFireworks) {
+            RewardFireworksLayer(
+                modifier = Modifier.fillMaxSize(),
+                intensity =
+                    if (companionRewardStyle == CompanionRewardCelebrationStyle.GrandFinale) {
+                        RewardFireworksIntensity.Strong
+                    } else {
+                        RewardFireworksIntensity.Gentle
+                    },
+            )
         }
 
         if (isCompactLandscapePhone) {
@@ -158,10 +194,10 @@ fun RewardScreen(
                 horizontalArrangement = Arrangement.spacedBy(14.dp, Alignment.CenterHorizontally),
             ) {
                 if (chapter1DinoCompanionPilot) {
-                    CompanionDinoPortrait(
-                        poseRes = Chapter1DinoCompanionPilot.poseHappy,
+                    CompanionDinoRewardCelebration(
+                        style = companionRewardStyle,
+                        isTalking = companionVoicePlaying,
                         modifier = Modifier.size(width = companionPortraitW, height = companionPortraitH),
-                        contentDescription = "דינו",
                     )
                 } else {
                     Image(
@@ -171,23 +207,53 @@ fun RewardScreen(
                         contentScale = ContentScale.Fit,
                     )
                 }
-                Column(
-                    modifier = Modifier.weight(1f, fill = true),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    Text(
-                        text = rtl("כל הכבוד!"),
-                        style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Black),
-                        color = Color(0xFF0B2B3D),
-                        textAlign = TextAlign.Center,
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "שלב $levelId הסתיים",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = Color(0xFF0B2B3D),
-                        textAlign = TextAlign.Center,
-                    )
+                if (chapter1DinoCompanionPilot) {
+                    StoryReadablePanel(modifier = Modifier.weight(1f, fill = true)) {
+                        Text(
+                            text = rtl("כל הכבוד!"),
+                            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Black),
+                            color = Color(0xFF1A2E3D),
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "שלב $levelId הסתיים",
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                            color = Color(0xFF1A2E3D),
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        if (journeyProgressCue != null) {
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Text(
+                                text = journeyProgressCue,
+                                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                                color = Color(0xFF1565C0),
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                        }
+                    }
+                } else {
+                    Column(
+                        modifier = Modifier.weight(1f, fill = true),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        Text(
+                            text = rtl("כל הכבוד!"),
+                            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Black),
+                            color = Color(0xFF0B2B3D),
+                            textAlign = TextAlign.Center,
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "שלב $levelId הסתיים",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = Color(0xFF0B2B3D),
+                            textAlign = TextAlign.Center,
+                        )
+                    }
                 }
             }
         } else {
@@ -198,23 +264,53 @@ fun RewardScreen(
                         .padding(horizontal = 16.dp, vertical = 12.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Text(
-                    text = rtl("כל הכבוד!"),
-                    style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Black),
-                    color = Color(0xFF0B2B3D),
-                )
-                Spacer(modifier = Modifier.height(6.dp))
-                Text(
-                    text = "שלב $levelId הסתיים",
-                    style = MaterialTheme.typography.titleLarge,
-                    color = Color(0xFF0B2B3D),
-                )
+                if (chapter1DinoCompanionPilot) {
+                    StoryReadablePanel(modifier = Modifier.fillMaxWidth(0.9f)) {
+                        Text(
+                            text = rtl("כל הכבוד!"),
+                            style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Black),
+                            color = Color(0xFF1A2E3D),
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = "שלב $levelId הסתיים",
+                            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold),
+                            color = Color(0xFF1A2E3D),
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        if (journeyProgressCue != null) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = journeyProgressCue,
+                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                color = Color(0xFF1565C0),
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                        }
+                    }
+                } else {
+                    Text(
+                        text = rtl("כל הכבוד!"),
+                        style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Black),
+                        color = Color(0xFF0B2B3D),
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = "שלב $levelId הסתיים",
+                        style = MaterialTheme.typography.titleLarge,
+                        color = Color(0xFF0B2B3D),
+                    )
+                }
                 Spacer(modifier = Modifier.height(8.dp))
                 if (chapter1DinoCompanionPilot) {
-                    CompanionDinoPortrait(
-                        poseRes = Chapter1DinoCompanionPilot.poseHappy,
+                    CompanionDinoRewardCelebration(
+                        style = companionRewardStyle,
+                        isTalking = companionVoicePlaying,
                         modifier = Modifier.size(width = companionPortraitW, height = companionPortraitH),
-                        contentDescription = "דינו",
                     )
                 } else {
                     Image(
@@ -229,13 +325,17 @@ fun RewardScreen(
                 }
                 Spacer(modifier = Modifier.height(6.dp))
 
-                Box(
-                    modifier =
-                        Modifier
-                            .weight(1f, fill = true)
-                            .fillMaxSize(),
-                ) {
-                    RewardFireworksLayer(modifier = Modifier.fillMaxSize())
+                if (!chapter1DinoCompanionPilot) {
+                    Box(
+                        modifier =
+                            Modifier
+                                .weight(1f, fill = true)
+                                .fillMaxSize(),
+                    ) {
+                        RewardFireworksLayer(modifier = Modifier.fillMaxSize())
+                    }
+                } else {
+                    Spacer(modifier = Modifier.weight(1f, fill = true))
                 }
             }
         }

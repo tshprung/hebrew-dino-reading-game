@@ -203,6 +203,7 @@ internal fun NavGraphBuilder.chapterOneToThreeGraph(host: AppNavHostState) {
         JourneyScreen(
             unlockedLevel = host.unlockedLevel,
             completedLevels = host.completedLevels,
+            useCompanionDinoOnMap = true,
             collectedEggStripCount = host.collectedEggStripCount,
             // Stand at the egg once all stations are done, not only after the beach outro (JourneyEndWalk still plays first-time finale).
             endMarkerReached = host.beachOutroSeen || host.chapter1AllStationsComplete,
@@ -244,6 +245,7 @@ internal fun NavGraphBuilder.chapterOneToThreeGraph(host: AppNavHostState) {
         JourneyScreen(
             unlockedLevel = host.unlockedLevel,
             completedLevels = host.completedLevels,
+            useCompanionDinoOnMap = true,
             collectedEggStripCount = host.collectedEggStripCount,
             endMarkerReached = false,
             endWalkThenContinue = true,

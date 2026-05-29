@@ -18,6 +18,8 @@ fun Chapter1MidBoostScreen(
                 "יש כאן סימנים שמובילים קדימה…\n" +
                 "בואו נמשיך ונראה אם נגיע לביצה.",
         companion = ChapterLobbyCompanion.DinoOnly,
+        useCompanionDinoArt = true,
+        useWarmReadableStoryPanel = true,
         voiceAssetPath = AudioClips.StoryCh1MidBoost,
         dinoContentDescription = "דינו",
         onContinue = onContinue,

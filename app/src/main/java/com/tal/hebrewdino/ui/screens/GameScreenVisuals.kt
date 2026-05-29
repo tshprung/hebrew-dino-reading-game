@@ -50,9 +50,11 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
+import androidx.compose.ui.platform.LocalContext
 import com.tal.hebrewdino.ui.audio.VoicePlayer
 import com.tal.hebrewdino.ui.components.AnimatedTalkingCharacter
 import com.tal.hebrewdino.ui.components.ChapterNavChipStyles
+import com.tal.hebrewdino.ui.domain.DevTools
 import com.tal.hebrewdino.ui.components.Episode4Stations15HelpColumn
 import com.tal.hebrewdino.ui.domain.LevelSession
 import com.tal.hebrewdino.ui.domain.Question
@@ -73,6 +75,25 @@ enum class StationHeaderMode {
     None,
     /** Optional: show chapter title + stage label under top chrome. */
     ChapterTitleAndStage,
+}
+
+/** Debug builds only: skip station gameplay and run the normal completion → reward flow. */
+@Composable
+internal fun StationDebugSkipButton(
+    onSkip: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+) {
+    if (!DevTools.enabled(LocalContext.current)) return
+    OutlinedButton(
+        onClick = onSkip,
+        enabled = enabled,
+        colors = ChapterNavChipStyles.outlinedButtonColors(),
+        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+        modifier = modifier,
+    ) {
+        Text("בדיקה", style = ChapterNavChipStyles.labelTextStyle())
+    }
 }
 
 @Composable

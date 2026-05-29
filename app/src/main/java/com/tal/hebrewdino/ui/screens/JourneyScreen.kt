@@ -70,6 +70,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import com.tal.hebrewdino.R
+import com.tal.hebrewdino.ui.companion.Chapter1DinoCompanionPilot
 import com.tal.hebrewdino.ui.components.ChapterNavChipStyles
 import com.tal.hebrewdino.ui.components.learning.DinoNestMark
 import com.tal.hebrewdino.ui.components.learning.StoryEggStrip
@@ -192,6 +193,8 @@ fun JourneyScreen(
     headerTitle: String = "פרק 1 - מצא את הביצה",
     /** Optional second character drawn beside Dino (e.g. mom in chapter 2). */
     companionImageRes: Int? = null,
+    /** Season 1 Ch.1: companion Dino on the road (no legacy walk sprites). */
+    useCompanionDinoOnMap: Boolean = false,
     endMarker: JourneyEndMarker = JourneyEndMarker.Egg,
     backgroundRes: Int = R.drawable.forest_bg_journey_road,
     /** Eggs already collected in prior chapter finales (shown under the top bar). */
@@ -199,6 +202,25 @@ fun JourneyScreen(
     modifier: Modifier = Modifier,
 ) {
     val devToolsEnabled = DevTools.enabled(LocalContext.current)
+    val mapWalkFrameResIds =
+        if (useCompanionDinoOnMap) {
+            Chapter1DinoCompanionPilot.talkFrameResIds
+        } else {
+            walkFrames
+        }
+    val mapDinoIdleRes =
+        if (useCompanionDinoOnMap) {
+            Chapter1DinoCompanionPilot.poseIdle
+        } else {
+            R.drawable.dino_idle
+        }
+    /** Ch.1 pilot: progress clue on stations; egg only at road-end / finale. */
+    val completedStationMarkerRes =
+        if (useCompanionDinoOnMap) {
+            R.drawable.journey_station_clue_done
+        } else {
+            R.drawable.egg_found
+        }
     val nextPlayableSuggested =
         (1..playableLevels).firstOrNull { !completedLevels.contains(it) } ?: (playableLevels + 1)
     val allPlayableComplete = (1..playableLevels).all { level -> completedLevels.contains(level) }
@@ -260,10 +282,10 @@ fun JourneyScreen(
         savedProgress = dinoProgress.value.coerceIn(0f, maxDinoF)
     }
 
-    LaunchedEffect(walking) {
+    LaunchedEffect(walking, mapWalkFrameResIds.size) {
         while (walking) {
             delay(95)
-            walkFrame = (walkFrame + 1) % walkFrames.size
+            walkFrame = (walkFrame + 1) % mapWalkFrameResIds.size.coerceAtLeast(1)
         }
     }
 
@@ -464,9 +486,11 @@ fun JourneyScreen(
                         walking = walking,
                         navigationLocked = journeyNavigationLocked,
                         dinoProgress = dinoProgress.value,
-                        walkDrawable = walkFrames[walkFrame],
+                        walkDrawable = mapWalkFrameResIds[walkFrame % mapWalkFrameResIds.size],
+                        dinoIdleRes = mapDinoIdleRes,
                         companionImageRes = companionImageRes,
                         endMarker = endMarker,
+                        completedStationMarkerRes = completedStationMarkerRes,
                         roadHeight = roadH,
                         modifier = Modifier.offset(y = JourneyRoadShiftY),
                         onStationClick = { levelId ->
@@ -512,8 +536,10 @@ private fun JourneyRoadStrip(
     navigationLocked: Boolean = false,
     dinoProgress: Float,
     walkDrawable: Int,
+    dinoIdleRes: Int = R.drawable.dino_idle,
     companionImageRes: Int?,
     endMarker: JourneyEndMarker,
+    completedStationMarkerRes: Int = R.drawable.egg_found,
     roadHeight: Dp = 300.dp,
     modifier: Modifier = Modifier,
     onStationClick: (Int) -> Unit,
@@ -765,6 +791,7 @@ private fun JourneyRoadStrip(
                     suggested = suggested,
                     isLast = isLast,
                     endMarker = endMarker,
+                    completedStationMarkerRes = completedStationMarkerRes,
                     modifier =
                         Modifier
                             .align(Alignment.TopStart)
@@ -792,7 +819,7 @@ private fun JourneyRoadStrip(
                 }
             val dinoFMax = (chainPts.size - 1).coerceAtLeast(0).toFloat()
             val (dfx, dfy) = xyAlongStationChain(dinoProgress.coerceIn(0f, dinoFMax), chainPts)
-            val dinoRes = if (walking) walkDrawable else R.drawable.dino_idle
+            val dinoRes = if (walking) walkDrawable else dinoIdleRes
             // Keep the same screen offset while walking and while idle. Previously walking used the
             // path centerline but idle added an extra X/Y offset, so when the walk finished the dino
             // snapped “back” toward station 1 (road runs toward decreasing x; +X is that direction).
@@ -855,6 +882,7 @@ private fun JourneyStationMarker(
     suggested: Boolean,
     isLast: Boolean,
     endMarker: JourneyEndMarker,
+    completedStationMarkerRes: Int,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -876,7 +904,7 @@ private fun JourneyStationMarker(
                     JourneyEndMarker.BigEgg -> R.drawable.finish_marker_big_egg
                     JourneyEndMarker.ClueLetterPe -> null
                 }
-            completed -> R.drawable.egg_found
+            completed -> completedStationMarkerRes
             else -> R.drawable.stop_marker
         }
 

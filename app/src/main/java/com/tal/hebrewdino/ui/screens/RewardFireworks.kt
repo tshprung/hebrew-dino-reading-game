@@ -27,21 +27,53 @@ private val BurstColors =
         Color(0xFFFFF59D),
     )
 
+enum class RewardFireworksIntensity {
+    Normal,
+    Gentle,
+    Strong,
+}
+
 /**
  * Lightweight celebratory fireworks (no assets) — rockets rise then radial bursts.
  */
 @Composable
-fun RewardFireworksLayer(modifier: Modifier = Modifier) {
+fun RewardFireworksLayer(
+    modifier: Modifier = Modifier,
+    intensity: RewardFireworksIntensity = RewardFireworksIntensity.Normal,
+) {
+    val cycleMs =
+        when (intensity) {
+            RewardFireworksIntensity.Gentle -> 3800
+            RewardFireworksIntensity.Normal -> 3200
+            RewardFireworksIntensity.Strong -> 2600
+        }
+    val alphaScale =
+        when (intensity) {
+            RewardFireworksIntensity.Gentle -> 0.55f
+            RewardFireworksIntensity.Normal -> 1f
+            RewardFireworksIntensity.Strong -> 1.25f
+        }
+    val burstScale =
+        when (intensity) {
+            RewardFireworksIntensity.Gentle -> 0.85f
+            RewardFireworksIntensity.Normal -> 1f
+            RewardFireworksIntensity.Strong -> 1.2f
+        }
     val t by rememberInfiniteTransition(label = "fw").animateFloat(
         initialValue = 0f,
         targetValue = 1f,
-        animationSpec = infiniteRepeatable(animation = tween(3200, easing = LinearEasing), repeatMode = RepeatMode.Restart),
+        animationSpec = infiniteRepeatable(animation = tween(cycleMs, easing = LinearEasing), repeatMode = RepeatMode.Restart),
         label = "fwPhase",
     )
     Canvas(modifier = modifier) {
         val w = size.width
         val h = size.height
-        val launches = listOf(0.12f, 0.32f, 0.52f, 0.72f, 0.88f, 0.42f, 0.62f)
+        val launches =
+            when (intensity) {
+                RewardFireworksIntensity.Gentle -> listOf(0.22f, 0.48f, 0.74f, 0.38f)
+                RewardFireworksIntensity.Strong -> listOf(0.10f, 0.26f, 0.42f, 0.58f, 0.74f, 0.88f, 0.34f, 0.52f, 0.66f)
+                RewardFireworksIntensity.Normal -> listOf(0.12f, 0.32f, 0.52f, 0.72f, 0.88f, 0.42f, 0.62f)
+            }
         for ((i, lx) in launches.withIndex()) {
             val cycle = (t + i * 0.09f) % 1f
             val cx = w * lx
@@ -65,11 +97,11 @@ fun RewardFireworksLayer(modifier: Modifier = Modifier) {
                 val rays = 14
                 for (r in 0 until rays) {
                     val ang = r * 2f * PI.toFloat() / rays + i * 0.31f
-                    val dist = burstT * w * 0.14f
+                    val dist = burstT * w * 0.14f * burstScale
                     val px = cx + cos(ang) * dist
                     val py = cy + sin(ang) * dist * 0.88f
-                    val fade = (1f - burstT * 0.92f).coerceIn(0f, 1f)
-                    val c = BurstColors[(i + r) % BurstColors.size].copy(alpha = fade)
+                    val fade = (1f - burstT * 0.92f).coerceIn(0f, 1f) * alphaScale
+                    val c = BurstColors[(i + r) % BurstColors.size].copy(alpha = fade.coerceIn(0f, 1f))
                     drawCircle(color = c, radius = (5.5f * (1f - burstT * 0.55f)).coerceAtLeast(1.5f), center = Offset(px, py))
                 }
                 if (burstT > 0.12f) {
