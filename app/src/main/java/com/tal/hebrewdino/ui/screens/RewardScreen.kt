@@ -1,5 +1,11 @@
 package com.tal.hebrewdino.ui.screens
 
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -25,7 +31,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -65,6 +73,50 @@ private val RewardStageMascotDrawables =
         R.drawable.dino_walk_2,
         R.drawable.dino_walk_3,
     )
+
+@Composable
+private fun PilotRewardSparklesLayer(
+    modifier: Modifier = Modifier,
+) {
+    val t by rememberInfiniteTransition(label = "pilotSparkles").animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(animation = tween(2600, easing = LinearEasing)),
+        label = "pilotSparklesPhase",
+    )
+    Canvas(modifier = modifier) {
+        val w = size.width
+        val h = size.height
+        val xs = floatArrayOf(0.16f, 0.84f, 0.26f, 0.74f, 0.50f, 0.12f, 0.88f)
+        val ys = floatArrayOf(0.18f, 0.20f, 0.42f, 0.40f, 0.14f, 0.66f, 0.64f)
+        val phase = floatArrayOf(0.00f, 0.22f, 0.48f, 0.66f, 0.12f, 0.34f, 0.56f)
+        val base = size.minDimension * 0.020f
+        for (i in xs.indices) {
+            val p = (t + phase[i]) % 1f
+            val twinkle = (1f - (p - 0.5f) * (p - 0.5f) * 4f).coerceIn(0f, 1f)
+            val alpha = (0.10f + 0.22f * twinkle).coerceIn(0f, 0.30f)
+            val len = base * (0.55f + 1.10f * twinkle)
+            val stroke = (base * 0.30f).coerceAtLeast(1.4f)
+            val c = Color(0xFFFFF8E1).copy(alpha = alpha)
+            val cx = w * xs[i]
+            val cy = h * ys[i]
+            drawLine(
+                color = c,
+                start = Offset(cx - len, cy),
+                end = Offset(cx + len, cy),
+                strokeWidth = stroke,
+                cap = StrokeCap.Round,
+            )
+            drawLine(
+                color = c,
+                start = Offset(cx, cy - len),
+                end = Offset(cx, cy + len),
+                strokeWidth = stroke,
+                cap = StrokeCap.Round,
+            )
+        }
+    }
+}
 
 @Composable
 fun RewardScreen(
@@ -180,6 +232,9 @@ fun RewardScreen(
             modifier = Modifier.fillMaxSize(),
             contentScale = ContentScale.Crop,
         )
+        if (chapter1DinoCompanionPilot) {
+            PilotRewardSparklesLayer(modifier = Modifier.fillMaxSize())
+        }
 
         if (!chapter1DinoCompanionPilot && isCompactLandscapePhone) {
             RewardFireworksLayer(modifier = Modifier.fillMaxSize())

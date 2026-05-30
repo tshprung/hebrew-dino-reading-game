@@ -16,6 +16,17 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class StationBehaviorRegistryTest {
+    private fun expectedMatchLetterInstructionText(
+        chapterId: Int,
+        stationId: Int,
+    ): String {
+        return if (chapterId == 1 && stationId == FINALE_PICTURE_LETTER_MATCH) {
+            "התאימו כל אות למילה שמתחילה בה"
+        } else {
+            StationInstructionCopy.MatchLetterFinale
+        }
+    }
+
     private fun StationUiSpec.layoutComparable(): StationUiSpec =
         copy(
             chapterId = 0,
@@ -149,7 +160,7 @@ class StationBehaviorRegistryTest {
                 }
                 if (spec.templateId == StationTemplateId.MatchLetterToWord) {
                     assertTrue("Chapter $chapterId station $stationId should have readable panel", spec.matchLetterInstructionReadablePanel)
-                    assertEquals(StationInstructionCopy.MatchLetterFinale, spec.matchLetterInstructionText)
+                    assertEquals(expectedMatchLetterInstructionText(chapterId, stationId), spec.matchLetterInstructionText)
                 }
             }
         }
@@ -189,7 +200,7 @@ class StationBehaviorRegistryTest {
         for ((chapterId, stationId) in ids) {
             val spec = StationBehaviorRegistry.getStationUiSpec(chapterId, stationId)
             assertTrue("Ch$chapterId st$stationId should use readable instruction panel", spec.matchLetterInstructionReadablePanel)
-            assertEquals(StationInstructionCopy.MatchLetterFinale, spec.matchLetterInstructionText)
+            assertEquals(expectedMatchLetterInstructionText(chapterId, stationId), spec.matchLetterInstructionText)
         }
     }
 

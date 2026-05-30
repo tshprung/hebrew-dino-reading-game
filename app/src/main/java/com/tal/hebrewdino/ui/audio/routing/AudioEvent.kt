@@ -1,0 +1,68 @@
+package com.tal.hebrewdino.ui.audio.routing
+
+import com.tal.hebrewdino.ui.data.DinoCharacter
+import com.tal.hebrewdino.ui.data.PlayerAddress
+
+sealed interface AudioEvent {
+    data class StationInstruction(
+        val chapterId: Int,
+        val stationId: Int,
+        val stationTemplateId: Int?,
+        val playerAddress: PlayerAddress?,
+        val targetLetter: String?,
+        val targetWordCatalogId: String?,
+    ) : AudioEvent
+
+    data class TargetLetter(
+        val letter: String,
+    ) : AudioEvent
+
+    data class TargetWord(
+        val catalogEntryId: String,
+    ) : AudioEvent
+
+    data class CorrectPraise(
+        val chapterId: Int,
+        val stationId: Int,
+        val playerAddress: PlayerAddress?,
+        val avoidNoRepeatKey: String?,
+    ) : AudioEvent
+
+    data class WrongFeedback(
+        val chapterId: Int,
+        val stationId: Int,
+        val playerAddress: PlayerAddress?,
+        val wrongLetter: String?,
+        val wrongWordCatalogId: String?,
+        val wrongAlreadySpoken: Boolean,
+    ) : AudioEvent
+
+    data class StationReward(
+        val chapterId: Int,
+        val stationId: Int,
+    ) : AudioEvent
+
+    data class StoryNarration(
+        val chapterId: Int,
+        val character: DinoCharacter?,
+        val phase: StoryPhase,
+    ) : AudioEvent
+
+    data class CompanionIntro(
+        val chapterId: Int,
+        val companion: DinoCharacter,
+        val playerAddress: PlayerAddress,
+    ) : AudioEvent
+
+    data class ChapterOutro(
+        val chapterId: Int,
+        val companion: DinoCharacter?,
+        val playerAddress: PlayerAddress?,
+    ) : AudioEvent
+}
+
+enum class StoryPhase {
+    Intro,
+    MidBoost,
+    Outro,
+}
