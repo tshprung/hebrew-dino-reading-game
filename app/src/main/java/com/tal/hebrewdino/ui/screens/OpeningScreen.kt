@@ -67,7 +67,7 @@ fun OpeningScreen(
     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
         Box(modifier = modifier.fillMaxSize()) {
             Image(
-                painter = painterResource(id = R.drawable.opening_splash_art),
+                painter = painterResource(id = R.drawable.landing_bg_new),
                 contentDescription = null,
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop,

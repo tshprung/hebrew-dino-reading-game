@@ -36,7 +36,7 @@ private val LostEggDrawables =
 @Composable
 fun MotherLostEggsCue(modifier: Modifier = Modifier) {
     val isCompact = ScreenFit.isCompactLandscapePhone()
-    val eggSize = if (isCompact) 44.dp else 52.dp
+    val eggSize = if (isCompact) 50.dp else 60.dp
     val glowSize = eggSize * 1.5f
     val eggSpacing = if (isCompact) 5.dp else 7.dp
     val rowWidth = eggSize * 3 + eggSpacing * 2

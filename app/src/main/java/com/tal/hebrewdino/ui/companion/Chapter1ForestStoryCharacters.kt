@@ -32,8 +32,8 @@ fun Chapter1ForestStoryCharacters(
     modifier: Modifier = Modifier,
 ) {
     val isCompact = ScreenFit.isCompactLandscapePhone()
-    val momSize = if (isCompact) 148.dp else 142.dp
-    val dinoSize = if (isCompact) 72.dp else 76.dp
+    val momSize = if (isCompact) 172.dp else 178.dp
+    val dinoSize = if (isCompact) 92.dp else 98.dp
     Chapter1ForestStoryCharactersLayout(
         momSize = momSize,
         dinoSize = dinoSize,
@@ -81,7 +81,7 @@ private fun Chapter1ForestStoryCharactersLayout(
         Spacer(modifier = Modifier.width(dinoMomGap))
         Box(
             contentAlignment = Alignment.BottomCenter,
-            modifier = Modifier.padding(bottom = if (ScreenFit.isCompactLandscapePhone()) 22.dp else 26.dp),
+            modifier = Modifier.padding(bottom = if (ScreenFit.isCompactLandscapePhone()) 18.dp else 22.dp),
         ) {
             MomStoryCharacter(
                 momIdleRes = momIdleRes,
@@ -94,7 +94,7 @@ private fun Chapter1ForestStoryCharactersLayout(
                 modifier =
                     Modifier
                         .align(Alignment.BottomCenter)
-                        .offset(y = 14.dp),
+                        .offset(y = 12.dp),
             )
         }
     }

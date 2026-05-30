@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.Box
 
 import androidx.compose.foundation.layout.Column
 
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 
 import androidx.compose.foundation.layout.fillMaxSize
@@ -18,16 +17,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 
 import androidx.compose.foundation.layout.padding
 
 import androidx.compose.foundation.layout.size
 
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.material3.FilledTonalButton
-import androidx.compose.material3.MaterialTheme
-
-import androidx.compose.material3.Text
 
 import androidx.compose.runtime.Composable
 
@@ -43,6 +39,10 @@ import androidx.compose.runtime.remember
 
 import androidx.compose.runtime.setValue
 
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+
 import androidx.compose.ui.Alignment
 
 import androidx.compose.ui.Modifier
@@ -56,14 +56,13 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 
 import androidx.compose.ui.text.font.FontWeight
-
 import androidx.compose.ui.text.style.TextAlign
 
 import androidx.compose.ui.unit.dp
-
 import androidx.compose.ui.unit.sp
 
 import androidx.lifecycle.Lifecycle
+
 
 import androidx.lifecycle.LifecycleEventObserver
 
@@ -124,7 +123,7 @@ fun Chapter1DinoCompanionEggOutroScreen(
 
     val (portraitW, portraitH) = Chapter1DinoCompanionPilot.finalePortraitSize(isCompactLandscapePhone)
 
-    val foundEggSize = if (isCompactLandscapePhone) 120.dp else 148.dp
+    val foundEggSize = if (isCompactLandscapePhone) 140.dp else 176.dp
 
     val assets = remember(companionCharacter) { Chapter1DinoCompanionPilot.assets(companionCharacter) }
 
@@ -237,7 +236,10 @@ fun Chapter1DinoCompanionEggOutroScreen(
 
             Column(
 
-                modifier = Modifier.weight(1f),
+                modifier =
+                    Modifier
+                        .weight(1f)
+                        .offset(y = (-10).dp),
 
                 verticalArrangement = Arrangement.Center,
 
@@ -268,33 +270,15 @@ fun Chapter1DinoCompanionEggOutroScreen(
 
                 Spacer(modifier = Modifier.height(if (isCompactLandscapePhone) 10.dp else 14.dp))
 
-
-
-                if (isCompactLandscapePhone) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally),
-                    ) {
-                        FoundEggCelebration(eggSize = foundEggSize)
-                        CompanionDinoPortrait(
-                            poseRes = assets.poseHappy,
-                            talkFrameResIds = assets.talkFrameResIds,
-                            isTalking = voicePlaying,
-                            modifier = Modifier.size(width = portraitW.dp, height = portraitH.dp),
-                            contentDescription = companionCharacter.displayNameHebrew(),
-                        )
-                    }
-                } else {
-                    FoundEggCelebration(eggSize = foundEggSize)
-                    Spacer(modifier = Modifier.height(10.dp))
-                    CompanionDinoPortrait(
-                        poseRes = assets.poseHappy,
-                        talkFrameResIds = assets.talkFrameResIds,
-                        isTalking = voicePlaying,
-                        modifier = Modifier.size(width = portraitW.dp, height = portraitH.dp),
-                        contentDescription = companionCharacter.displayNameHebrew(),
-                    )
-                }
+                FoundEggCelebration(eggSize = foundEggSize)
+                Spacer(modifier = Modifier.height(if (isCompactLandscapePhone) 8.dp else 12.dp))
+                CompanionDinoPortrait(
+                    poseRes = assets.poseHappy,
+                    talkFrameResIds = assets.talkFrameResIds,
+                    isTalking = voicePlaying,
+                    modifier = Modifier.size(width = portraitW.dp, height = portraitH.dp),
+                    contentDescription = companionCharacter.displayNameHebrew(),
+                )
             }
 
 

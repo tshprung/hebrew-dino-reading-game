@@ -185,6 +185,14 @@ fun ChapterLobbyStoryLayout(
         }
     val storyTextColor = if (useWarmReadableStoryPanel) Color(0xFF1A2E3D) else Color(0xFF0B2B3D)
     val storyCardShape = RoundedCornerShape(24.dp)
+    val storyCardPadding =
+        if (isCompactLandscapePhone) {
+            12.dp
+        } else if (showMotherLostEggsCue) {
+            14.dp
+        } else {
+            18.dp
+        }
 
     Box(modifier = modifier.fillMaxSize()) {
         Image(
@@ -231,7 +239,7 @@ fun ChapterLobbyStoryLayout(
                                         Color.White.copy(alpha = 0.88f)
                                     },
                                 )
-                                .padding(if (isCompactLandscapePhone) 12.dp else 18.dp),
+                                .padding(storyCardPadding),
                     ) {
                         if (isCompactLandscapePhone) {
                             val scroll = rememberScrollState()
