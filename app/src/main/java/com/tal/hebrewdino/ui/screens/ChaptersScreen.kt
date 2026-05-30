@@ -213,7 +213,7 @@ fun ChaptersScreen(
             Spacer(modifier = Modifier.height(10.dp))
 
             Text(
-                text = "עונה 1 - המסע של דינו",
+                text = "מפת פרקים",
                 style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.ExtraBold),
                 color = Color(0xFF0B2B3D),
                 textAlign = TextAlign.Center,

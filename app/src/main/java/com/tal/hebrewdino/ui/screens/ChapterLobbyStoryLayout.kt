@@ -20,7 +20,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -390,16 +390,19 @@ fun ChapterLobbyStoryLayout(
                 }
             }
 
-            Button(
+            FilledTonalButton(
                 onClick = {
                     // UX: stop narration immediately when continuing (don't wait for dispose/navigation).
                     rawVoice?.stopNow()
                     voicePlayer?.stopNow()
                     onContinue()
                 },
-                modifier = Modifier.width(180.dp),
+                modifier = Modifier.widthIn(min = 160.dp, max = 200.dp),
             ) {
-                Text("המשך")
+                Text(
+                    text = "המשך",
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                )
             }
         }
     }

@@ -109,7 +109,7 @@ fun SeasonsScreen(
                     contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
                 )
                 Text(
-                    text = "בחר עונה",
+                    text = "עונות",
                     modifier = Modifier.align(Alignment.Center),
                     style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.ExtraBold),
                     color = Color(0xFF0B2B3D),

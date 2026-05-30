@@ -10,7 +10,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.Button
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -135,11 +136,11 @@ fun Chapter1DinoCompanionIntroScreen(
                 )
             }
 
-            Button(
+            FilledTonalButton(
                 onClick = { continueFromIntro() },
                 modifier =
                     Modifier
-                        .fillMaxWidth(0.85f)
+                        .widthIn(min = 180.dp, max = 320.dp)
                         .height(52.dp),
             ) {
                 Text(

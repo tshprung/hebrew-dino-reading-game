@@ -174,8 +174,8 @@ internal fun NavGraphBuilder.systemAndTrainingGraph(host: AppNavHostState) {
             onOpenChapter = { chapterId ->
                 when (chapterId) {
                     1 -> {
-                        // Season 1 Ch.1: Dino companion intro, then existing story intro.
-                        host.navController.navigate(NavRoutes.Ch1DinoCompanionIntro)
+                        // Season 1 Ch.1: story/narrator intro, then companion intro, then chapter flow.
+                        host.navController.navigate(NavRoutes.StoryIntro)
                     }
                     2 -> {
                         val canEnterChapter2 = host.beachOutroSeen || host.chapter1AllStationsComplete

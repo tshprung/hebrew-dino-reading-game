@@ -39,7 +39,7 @@ internal fun NavGraphBuilder.chapterOneToThreeGraph(host: AppNavHostState) {
             companionCharacter = host.companionCharacter,
             playerAddress = host.playerAddress,
             onContinue = {
-                host.navController.navigate(NavRoutes.StoryIntro) {
+                host.navController.navigate(NavRoutes.ChapterLettersIntro) {
                     popUpTo(NavRoutes.Ch1DinoCompanionIntro) { inclusive = true }
                 }
             },
@@ -51,8 +51,7 @@ internal fun NavGraphBuilder.chapterOneToThreeGraph(host: AppNavHostState) {
             character = host.companionCharacter,
             onContinue = {
                 host.scope.launch { host.progress.markBeachIntroSeen() }
-                // After intro, always show letters presentation, then continue to journey.
-                host.navController.navigate(NavRoutes.ChapterLettersIntro) {
+                host.navController.navigate(NavRoutes.Ch1DinoCompanionIntro) {
                     popUpTo(NavRoutes.StoryIntro) { inclusive = true }
                 }
             },

@@ -11,9 +11,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -24,6 +24,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -44,11 +45,9 @@ fun OnboardingCompanionScreen(
     modifier: Modifier = Modifier,
 ) {
     var selected by remember { mutableStateOf<DinoCharacter?>(null) }
+    var navigationLocked by remember { mutableStateOf(false) }
     OnboardingShell(
         title = "\u200Fבחרו חבר או חברה למסע",
-        continueLabel = "\u200Fהבא",
-        continueEnabled = selected != null,
-        onContinue = { selected?.let(onNext) },
         modifier = modifier,
     ) {
         Row(
@@ -59,13 +58,23 @@ fun OnboardingCompanionScreen(
                 label = "\u200Fדינו",
                 previewRes = CompanionAssets.forCharacter(DinoCharacter.Dino).poseIdle,
                 selected = selected == DinoCharacter.Dino,
-                onClick = { selected = DinoCharacter.Dino },
+                onClick = {
+                    if (navigationLocked) return@CompanionPickCard
+                    navigationLocked = true
+                    selected = DinoCharacter.Dino
+                    onNext(DinoCharacter.Dino)
+                },
             )
             CompanionPickCard(
                 label = "\u200Fדינה",
                 previewRes = CompanionAssets.forCharacter(DinoCharacter.Dina).poseIdle,
                 selected = selected == DinoCharacter.Dina,
-                onClick = { selected = DinoCharacter.Dina },
+                onClick = {
+                    if (navigationLocked) return@CompanionPickCard
+                    navigationLocked = true
+                    selected = DinoCharacter.Dina
+                    onNext(DinoCharacter.Dina)
+                },
             )
         }
     }
@@ -77,26 +86,36 @@ fun OnboardingPlayerAddressScreen(
     modifier: Modifier = Modifier,
 ) {
     var selected by remember { mutableStateOf<PlayerAddress?>(null) }
+    var navigationLocked by remember { mutableStateOf(false) }
     OnboardingShell(
         title = "\u200Fאיך לפנות אליכם?",
-        continueLabel = "\u200Fהתחלה",
-        continueEnabled = selected != null,
-        onContinue = { selected?.let(onStart) },
         modifier = modifier,
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally),
         ) {
-            TextPickCard(
+            AddressPickCard(
                 label = "\u200Fשחקן",
+                variant = AddressCardVariant.Boy,
                 selected = selected == PlayerAddress.Boy,
-                onClick = { selected = PlayerAddress.Boy },
+                onClick = {
+                    if (navigationLocked) return@AddressPickCard
+                    navigationLocked = true
+                    selected = PlayerAddress.Boy
+                    onStart(PlayerAddress.Boy)
+                },
             )
-            TextPickCard(
+            AddressPickCard(
                 label = "\u200Fשחקנית",
+                variant = AddressCardVariant.Girl,
                 selected = selected == PlayerAddress.Girl,
-                onClick = { selected = PlayerAddress.Girl },
+                onClick = {
+                    if (navigationLocked) return@AddressPickCard
+                    navigationLocked = true
+                    selected = PlayerAddress.Girl
+                    onStart(PlayerAddress.Girl)
+                },
             )
         }
     }
@@ -105,9 +124,6 @@ fun OnboardingPlayerAddressScreen(
 @Composable
 private fun OnboardingShell(
     title: String,
-    continueLabel: String,
-    continueEnabled: Boolean,
-    onContinue: () -> Unit,
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit,
 ) {
@@ -133,7 +149,12 @@ private fun OnboardingShell(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {
-            StoryReadablePanel(modifier = Modifier.fillMaxWidth(if (isCompact) 1f else 0.72f)) {
+            StoryReadablePanel(
+                modifier =
+                    Modifier
+                            .fillMaxWidth(if (isCompact) 0.90f else 0.72f)
+                            .widthIn(max = 480.dp),
+            ) {
                 Text(
                     text = title,
                     style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Black),
@@ -145,16 +166,7 @@ private fun OnboardingShell(
             Spacer(modifier = Modifier.height(if (isCompact) 20.dp else 28.dp))
             content()
         }
-        Button(
-            onClick = onContinue,
-            enabled = continueEnabled,
-            modifier =
-                Modifier
-                    .fillMaxWidth(0.85f)
-                    .height(52.dp),
-        ) {
-            Text(text = continueLabel, style = MaterialTheme.typography.titleMedium)
-        }
+            Spacer(modifier = Modifier.height(16.dp))
     }
     }
 }
@@ -226,6 +238,89 @@ private fun TextPickCard(
                 text = label,
                 style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                 color = Color(0xFF1A2E3D),
+            )
+        }
+    }
+}
+
+private enum class AddressCardVariant {
+    Boy,
+    Girl,
+}
+
+@Composable
+private fun AddressPickCard(
+    label: String,
+    variant: AddressCardVariant,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val context = LocalContext.current
+    val borderColor = if (selected) Color(0xFF2AA6C9) else Color(0xFFE0E0E0)
+    // TODO: Add real child illustrations in res/drawable/onboarding_boy.png and res/drawable/onboarding_girl.png
+    val resName =
+        when (variant) {
+            AddressCardVariant.Boy -> "onboarding_boy"
+            AddressCardVariant.Girl -> "onboarding_girl"
+        }
+    val placeholderLabel =
+        when (variant) {
+            AddressCardVariant.Boy -> "\u200Fאיור ילד"
+            AddressCardVariant.Girl -> "\u200Fאיור ילדה"
+        }
+    val resId =
+        remember(resName) {
+            context.resources.getIdentifier(resName, "drawable", context.packageName)
+        }
+    Surface(
+        modifier =
+            modifier
+                .size(width = 148.dp, height = 168.dp)
+                .selectable(selected = selected, onClick = onClick, role = Role.RadioButton),
+        shape = RoundedCornerShape(22.dp),
+        color = Color(0xFFFFF8E8),
+        shadowElevation = if (selected) 6.dp else 2.dp,
+        border = androidx.compose.foundation.BorderStroke(3.dp, borderColor),
+    ) {
+        Column(
+            modifier = Modifier.fillMaxSize().padding(12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+        ) {
+            if (resId != 0) {
+                Image(
+                    painter = painterResource(id = resId),
+                    contentDescription = null,
+                    modifier = Modifier.size(92.dp),
+                    contentScale = ContentScale.Fit,
+                )
+            } else {
+                Surface(
+                    shape = RoundedCornerShape(16.dp),
+                    color = Color(0xFFEEF5FF),
+                    tonalElevation = 0.dp,
+                    shadowElevation = 0.dp,
+                    modifier = Modifier.size(92.dp),
+                    border = androidx.compose.foundation.BorderStroke(2.dp, Color(0xFF1A2E3D).copy(alpha = 0.10f)),
+                ) {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text(
+                            text = placeholderLabel,
+                            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                            color = Color(0xFF1A2E3D).copy(alpha = 0.72f),
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(horizontal = 8.dp),
+                        )
+                    }
+                }
+            }
+            Spacer(modifier = Modifier.height(10.dp))
+            Text(
+                text = label,
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                color = Color(0xFF1A2E3D),
+                textAlign = TextAlign.Center,
             )
         }
     }

@@ -7,6 +7,8 @@ import com.tal.hebrewdino.ui.data.PlayerAddress
 
 /** Season 1 Ch.1 companion speech + story copy keyed by companion and player address. */
 object Chapter1CompanionCopy {
+    const val chapter1CompletionSpeechBubbleText: String = "\u200Fמצאנו ביצה! תודה על העזרה!"
+
     fun introSpeechText(
         character: DinoCharacter,
         address: PlayerAddress,
@@ -14,18 +16,16 @@ object Chapter1CompanionCopy {
         val name = character.displayNameHebrew()
         val taskLine =
             when (address) {
-                PlayerAddress.Boy -> "בכל משימה שתפתור, נתקדם עוד קצת ונמצא רמז."
-                PlayerAddress.Girl -> "בכל משימה שתפתרי, נתקדם עוד קצת ונמצא רמז."
+                PlayerAddress.Boy -> "בכל משימה שתפתור נתקדם עוד קצת ונמצא רמז."
+                PlayerAddress.Girl -> "בכל משימה שתפתרי נתקדם עוד קצת ונמצא רמז."
             }
         val helpQuestion =
             when (address) {
                 PlayerAddress.Boy -> "תעזור לי?"
                 PlayerAddress.Girl -> "תעזרי לי?"
             }
-        return "\u200Fהיי! אני $name.\n" +
-            "אמא שלי, דינוזאורית, איבדה שלוש ביצים…\n" +
-            "$taskLine\n" +
-            helpQuestion
+        return "\u200Fהיי אני $name. אמא שלי איבדה שלוש ביצים.\n" +
+            "$taskLine $helpQuestion"
     }
 
     @RawRes
@@ -47,37 +47,30 @@ object Chapter1CompanionCopy {
         }
 
     fun forestIntroBody(character: DinoCharacter): String {
-        val companionLine =
-            when (character) {
-                DinoCharacter.Dino -> "דינו יצא לדרך לעזור לאמא."
-                DinoCharacter.Dina -> "דינה יצאה לדרך לעזור לאמא."
-            }
-        return "\u200Fאמא דינוזאורית שמרה על הביצים שלה…\n\n" +
-            "אבל פתאום — הן נעלמו!\n\n" +
-            "\"אוי לא! איפה הביצים שלי?\", אמרה אמא דינוזאורית\n\n" +
-            "בואו נעזור לה!\n\n" +
-            "$companionLine\n\n" +
-            "נפתור משימות ונמצא רמזים."
+        return when (character) {
+            DinoCharacter.Dino ->
+                "\u200Fביער הירוק גרו אמא דינוזאורית ודינו הקטן.\n" +
+                    "יום אחד, אמא גילתה ששלוש הביצים שלה נעלמו.\n" +
+                    "דינו יצא למסע כדי למצוא אותן."
+            DinoCharacter.Dina ->
+                "\u200Fביער הירוק גרו אמא דינוזאורית ודינה הקטנה.\n" +
+                    "יום אחד, אמא גילתה ששלוש הביצים שלה נעלמו.\n" +
+                    "דינה יצאה למסע כדי למצוא אותן."
+        }
     }
 
     fun chapter1MidBoostBody(
         character: DinoCharacter,
         address: PlayerAddress,
     ): String {
-        val detectiveLine =
-            when (address) {
-                PlayerAddress.Boy -> "יופי! פתרת את החידות כמו בלש אמיתי."
-                PlayerAddress.Girl -> "יופי! פתרת את החידות כמו בלשית אמיתית."
-            }
-        val progressLine =
+        val foundCluesLine =
             when (character) {
-                DinoCharacter.Dino -> "דינו מרגיש שאנחנו מתקרבים לביצה."
-                DinoCharacter.Dina -> "דינה מרגישה שאנחנו מתקרבים לביצה."
+                DinoCharacter.Dino -> "יש! דינו מצא רמזים טובים."
+                DinoCharacter.Dina -> "יש! דינה מצאה רמזים טובים."
             }
-        return "$detectiveLine\n\n" +
-            "$progressLine\n\n" +
-            "יש כאן סימנים שמובילים קדימה…\n" +
-            "בואו נמשיך!"
+        return "\u200F$foundCluesLine\n" +
+            "המסע מתקדם.\n" +
+            "עוד קצת, ונגיע לביצה!"
     }
 
     fun finaleBody(
@@ -86,20 +79,12 @@ object Chapter1CompanionCopy {
     ): String {
         val foundLine =
             when (character) {
-                DinoCharacter.Dino -> "דינו מצא ביצה אחת!"
-                DinoCharacter.Dina -> "דינה מצאה ביצה אחת!"
+                DinoCharacter.Dino -> "יש! דינו מצא ביצה אחת!"
+                DinoCharacter.Dina -> "יש! דינה מצאה ביצה אחת!"
             }
-        val continueLine =
-            when (address) {
-                PlayerAddress.Boy ->
-                    "מצאנו ביצה אחת, אבל עוד ביצים מחכות לנו.\n" +
-                        "נמשיך במסע!"
-                PlayerAddress.Girl ->
-                    "מצאנו ביצה אחת, אבל עוד ביצים מחכות לנו.\n" +
-                        "נמשיך במסע!"
-            }
-        return "\u200F$foundLine\n\n" +
-            "אמא דינוזאורית תשמח!\n\n" +
-            continueLine
+        return "\u200F$foundLine\n" +
+            "אמא שמחה מאוד.\n" +
+            "אבל עוד ביצים מחכות לנו...\n" +
+            "נמשיך במסע!"
     }
 }

@@ -83,7 +83,7 @@ fun FoundEggCelebration(
                     ),
         )
         Image(
-            painter = painterResource(id = R.drawable.egg_found),
+            painter = painterResource(id = R.drawable.egg_white_up),
             contentDescription = null,
             modifier = Modifier.size(resolvedEggSize),
             contentScale = ContentScale.Fit,

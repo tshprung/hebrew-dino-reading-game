@@ -22,7 +22,12 @@ import com.tal.hebrewdino.R
 import com.tal.hebrewdino.ui.layout.ScreenFit
 
 /** Clean upright egg art (no nest/marker background). */
-private val LostEggDrawable = R.drawable.egg_white_up
+private val LostEggDrawables =
+    intArrayOf(
+        R.drawable.egg_white_up,
+        R.drawable.egg_pink_up,
+        R.drawable.egg_purple_up,
+    )
 
 /**
  * Three story eggs grouped near the mother's feet — Ch.1 forest intro.
@@ -33,7 +38,7 @@ fun MotherLostEggsCue(modifier: Modifier = Modifier) {
     val isCompact = ScreenFit.isCompactLandscapePhone()
     val eggSize = if (isCompact) 44.dp else 52.dp
     val glowSize = eggSize * 1.5f
-    val eggSpacing = if (isCompact) 8.dp else 10.dp
+    val eggSpacing = if (isCompact) 5.dp else 7.dp
     val rowWidth = eggSize * 3 + eggSpacing * 2
 
     Box(modifier = modifier, contentAlignment = Alignment.BottomCenter) {
@@ -62,15 +67,16 @@ fun MotherLostEggsCue(modifier: Modifier = Modifier) {
             horizontalArrangement = Arrangement.spacedBy(eggSpacing, Alignment.CenterHorizontally),
             verticalAlignment = Alignment.Bottom,
         ) {
-            LostEggWithGlow(eggSize = eggSize, glowSize = glowSize)
-            LostEggWithGlow(eggSize = eggSize, glowSize = glowSize)
-            LostEggWithGlow(eggSize = eggSize, glowSize = glowSize)
+            LostEggWithGlow(eggDrawable = LostEggDrawables[0], eggSize = eggSize, glowSize = glowSize)
+            LostEggWithGlow(eggDrawable = LostEggDrawables[1], eggSize = eggSize, glowSize = glowSize)
+            LostEggWithGlow(eggDrawable = LostEggDrawables[2], eggSize = eggSize, glowSize = glowSize)
         }
     }
 }
 
 @Composable
 private fun LostEggWithGlow(
+    eggDrawable: Int,
     eggSize: androidx.compose.ui.unit.Dp,
     glowSize: androidx.compose.ui.unit.Dp,
     modifier: Modifier = Modifier,
@@ -94,7 +100,7 @@ private fun LostEggWithGlow(
                     ),
         )
         Image(
-            painter = painterResource(id = LostEggDrawable),
+            painter = painterResource(id = eggDrawable),
             contentDescription = null,
             modifier = Modifier.size(eggSize),
             contentScale = ContentScale.Fit,
