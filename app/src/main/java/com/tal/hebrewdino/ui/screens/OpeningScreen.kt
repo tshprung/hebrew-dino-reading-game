@@ -86,7 +86,7 @@ fun OpeningScreen(
             )
 
             OpeningTopChip(
-                text = "הגדרות",
+                text = "הורים",
                 onClick = onOpenSettings,
                 modifier =
                     Modifier

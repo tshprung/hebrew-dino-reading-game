@@ -2,7 +2,20 @@ package com.tal.hebrewdino.ui
 
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavType
@@ -27,6 +40,7 @@ import com.tal.hebrewdino.ui.screens.TrainingV1IntroScreen
 import com.tal.hebrewdino.ui.screens.TrainingV1RoundScreen
 import com.tal.hebrewdino.ui.domain.TrainingV1Config
 import kotlinx.coroutines.launch
+import kotlin.random.Random
 
 internal fun NavGraphBuilder.systemAndTrainingGraph(host: AppNavHostState) {
     composable(NavRoutes.OnboardingCompanion) {
@@ -59,6 +73,9 @@ internal fun NavGraphBuilder.systemAndTrainingGraph(host: AppNavHostState) {
 
     composable(NavRoutes.Opening) {
         val context = LocalContext.current
+        var showParentsGate by remember { mutableStateOf(false) }
+        var parentsGateNonce by remember { mutableStateOf(0) }
+        val challenge = remember(parentsGateNonce) { generateParentsGateChallenge() }
         OpeningScreen(
             onPlay = {
                 when {
@@ -79,9 +96,22 @@ internal fun NavGraphBuilder.systemAndTrainingGraph(host: AppNavHostState) {
                     }
                 }
             },
-            onOpenSettings = { host.navController.navigate(NavRoutes.Settings) },
+            onOpenSettings = {
+                parentsGateNonce++
+                showParentsGate = true
+            },
             onExit = { (context as? android.app.Activity)?.finish() },
         )
+        if (showParentsGate) {
+            ParentsGateDialog(
+                challenge = challenge,
+                onCancel = { showParentsGate = false },
+                onSuccess = {
+                    showParentsGate = false
+                    host.navController.navigate(NavRoutes.Settings)
+                },
+            )
+        }
     }
 
     composable(NavRoutes.Seasons) {
@@ -157,6 +187,9 @@ internal fun NavGraphBuilder.systemAndTrainingGraph(host: AppNavHostState) {
     }
 
     composable(NavRoutes.Chapters) {
+        var showParentsGate by remember { mutableStateOf(false) }
+        var parentsGateNonce by remember { mutableStateOf(0) }
+        val challenge = remember(parentsGateNonce) { generateParentsGateChallenge() }
         ChaptersScreen(
             unlockedChapter = host.unlockedChapter,
             chapter4ComingSoon = host.chapter4ComingSoon,
@@ -170,7 +203,10 @@ internal fun NavGraphBuilder.systemAndTrainingGraph(host: AppNavHostState) {
                     launchSingleTop = true
                 }
             },
-            onOpenSettings = { host.navController.navigate(NavRoutes.Settings) },
+            onOpenSettings = {
+                parentsGateNonce++
+                showParentsGate = true
+            },
             onOpenChapter = { chapterId ->
                 when (chapterId) {
                     1 -> {
@@ -218,6 +254,16 @@ internal fun NavGraphBuilder.systemAndTrainingGraph(host: AppNavHostState) {
                 }
             },
         )
+        if (showParentsGate) {
+            ParentsGateDialog(
+                challenge = challenge,
+                onCancel = { showParentsGate = false },
+                onSuccess = {
+                    showParentsGate = false
+                    host.navController.navigate(NavRoutes.Settings)
+                },
+            )
+        }
     }
 
     composable(NavRoutes.TrainingIntro) {
@@ -310,4 +356,103 @@ internal fun NavGraphBuilder.systemAndTrainingGraph(host: AppNavHostState) {
             onBack = { host.navController.popBackStack() },
         )
     }
+}
+
+private enum class ParentsGateOp {
+    Plus,
+    Minus,
+}
+
+private data class ParentsGateChallenge(
+    val a: Int,
+    val b: Int,
+    val op: ParentsGateOp,
+) {
+    val answer: Int =
+        when (op) {
+            ParentsGateOp.Plus -> a + b
+            ParentsGateOp.Minus -> a - b
+        }
+
+    val display: String =
+        when (op) {
+            ParentsGateOp.Plus -> "\u200E$a + $b = ?\u200E"
+            ParentsGateOp.Minus -> "\u200E$a - $b = ?\u200E"
+        }
+}
+
+private fun generateParentsGateChallenge(): ParentsGateChallenge {
+    return if (Random.nextBoolean()) {
+        ParentsGateChallenge(
+            a = Random.nextInt(2, 10),
+            b = Random.nextInt(2, 10),
+            op = ParentsGateOp.Plus,
+        )
+    } else {
+        val a = Random.nextInt(4, 10)
+        val b = Random.nextInt(2, a)
+        ParentsGateChallenge(a = a, b = b, op = ParentsGateOp.Minus)
+    }
+}
+
+@androidx.compose.runtime.Composable
+private fun ParentsGateDialog(
+    challenge: ParentsGateChallenge,
+    onCancel: () -> Unit,
+    onSuccess: () -> Unit,
+) {
+    var input by remember(challenge) { mutableStateOf("") }
+    var showError by remember(challenge) { mutableStateOf(false) }
+
+    AlertDialog(
+        onDismissRequest = onCancel,
+        title = { Text(text = "אזור הורים") },
+        text = {
+            Column {
+                Text(text = "כדי להמשיך, פתרו תרגיל קצר:")
+                Text(
+                    text = challenge.display,
+                    style = MaterialTheme.typography.titleLarge,
+                    modifier = Modifier.padding(top = 10.dp),
+                )
+                OutlinedTextField(
+                    value = input,
+                    onValueChange = { v ->
+                        input = v.filter { it.isDigit() }.take(3)
+                        if (showError) showError = false
+                    },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    label = { Text("תשובה") },
+                    modifier = Modifier.padding(top = 10.dp),
+                )
+                if (showError) {
+                    Text(
+                        text = "נסו שוב",
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.padding(top = 8.dp),
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    val parsed = input.toIntOrNull()
+                    if (parsed == challenge.answer) {
+                        onSuccess()
+                    } else {
+                        showError = true
+                    }
+                },
+            ) {
+                Text("כניסה")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onCancel) {
+                Text("ביטול")
+            }
+        },
+    )
 }

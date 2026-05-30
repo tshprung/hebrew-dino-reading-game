@@ -1,20 +1,30 @@
 package com.tal.hebrewdino.ui.screens
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -23,8 +33,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.semantics.Role
 import com.tal.hebrewdino.ui.data.DinoCharacter
 import com.tal.hebrewdino.ui.data.PlayerAddress
@@ -32,6 +45,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.testTag
+import androidx.compose.foundation.shape.RoundedCornerShape
 
 private data class ChapterResetRow(
     val id: Int,
@@ -70,202 +84,183 @@ fun SettingsScreen(
     var showResetChaptersDialog by remember { mutableStateOf(false) }
     var showResetSeason2Dialog by remember { mutableStateOf(false) }
     var selectedChapters by remember { mutableStateOf(setOf<Int>()) }
+    var progressExpanded by remember { mutableStateOf(false) }
+    var managementExpanded by remember { mutableStateOf(false) }
 
-    Column(
-        modifier =
-            modifier
-                .fillMaxSize()
-                .padding(horizontal = 20.dp, vertical = 16.dp)
-                .verticalScroll(rememberScrollState()),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Top,
-    ) {
-        Text(
-            text = "הגדרות",
-            style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Black),
-            color = Color(0xFF0B2B3D),
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Text(
-            text = "חבר למסע",
-            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-            color = Color(0xFF0B2B3D),
-            modifier = Modifier.fillMaxWidth(),
-        )
-        SettingsChoiceRow(
-            options = listOf("דינו" to DinoCharacter.Dino, "דינה" to DinoCharacter.Dina),
-            selected = companionCharacter,
-            onSelect = onCompanionCharacterChange,
-        )
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        Text(
-            text = "פנייה",
-            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-            color = Color(0xFF0B2B3D),
-            modifier = Modifier.fillMaxWidth(),
-        )
-        SettingsChoiceRow(
-            options = listOf("שחקן" to PlayerAddress.Boy, "שחקנית" to PlayerAddress.Girl),
-            selected = playerAddress,
-            onSelect = onPlayerAddressChange,
-        )
-
-        Spacer(modifier = Modifier.height(20.dp))
-
-        Text(
-            text = "שמע",
-            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-            color = Color(0xFF0B2B3D),
-            modifier = Modifier.fillMaxWidth(),
-        )
-        Row(
+    Surface(modifier = modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+        Column(
             modifier =
                 Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 6.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Start,
+                    .fillMaxSize()
+                    .padding(WindowInsets.systemBars.asPaddingValues())
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 16.dp, vertical = 14.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Top,
         ) {
-            Checkbox(
-                checked = backgroundMusicEnabled,
-                onCheckedChange = { checked -> onBackgroundMusicEnabledChange(checked) },
-                modifier = Modifier.testTag(TestTagBackgroundMusicToggle),
+            Text(
+                text = "אזור הורים",
+                style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Black),
+                color = Color(0xFF0B2B3D),
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = TextAlign.Start,
             )
             Text(
-                text = "מוזיקת רקע",
-                style = MaterialTheme.typography.bodyLarge,
-                color = Color(0xFF0B2B3D),
-                modifier = Modifier.weight(1f),
+                text = "כאן אפשר לשנות את בחירות המשחק, הקול וההתקדמות.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = Color(0xFF0B2B3D).copy(alpha = 0.76f),
+                modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                textAlign = TextAlign.Start,
             )
-        }
-        Text(
-            text = "מנוגן במסכי כניסה/בחירה בלבד (ללא דיבור).",
-            style = MaterialTheme.typography.bodyMedium,
-            color = Color(0xFF0B2B3D).copy(alpha = 0.88f),
-            modifier = Modifier.fillMaxWidth().padding(top = 2.dp, bottom = 16.dp),
-            textAlign = TextAlign.Start,
-        )
 
-        Text(
-            text = "איפוס פרקים",
-            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-            color = Color(0xFF0B2B3D),
-            modifier = Modifier.fillMaxWidth(),
-        )
-        Text(
-            text = "סמנו פרק אחד או יותר, ואז יאופסו רק ההתקדמות שלהם (תחנות, אינטרו, ביצים של הפרק).",
-            style = MaterialTheme.typography.bodyMedium,
-            color = Color(0xFF0B2B3D).copy(alpha = 0.88f),
-            modifier = Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 8.dp),
-            textAlign = TextAlign.Start,
-        )
+            Spacer(modifier = Modifier.height(14.dp))
 
-        chapterResetRows.forEach { row ->
-            Row(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 2.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Start,
+            SettingsSectionCard(
+                title = "בחירות משחק",
+                helperText = "בחירות אלו משפיעות על הדמות ועל אופן הפנייה לאורך המשחק.",
             ) {
-                Checkbox(
-                    checked = row.id in selectedChapters,
-                    onCheckedChange = { checked ->
-                        selectedChapters =
-                            if (checked) {
-                                selectedChapters + row.id
-                            } else {
-                                selectedChapters - row.id
-                            }
-                    },
-                )
                 Text(
-                    text = row.label,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = Color(0xFF0B2B3D),
-                    modifier = Modifier.weight(1f),
+                    text = "חבר למסע",
+                    style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
+                    color = Color(0xFF0B2B3D).copy(alpha = 0.92f),
+                )
+                SegmentedChoiceRow(
+                    options = listOf("דינו" to DinoCharacter.Dino, "דינה" to DinoCharacter.Dina),
+                    selected = companionCharacter,
+                    onSelect = onCompanionCharacterChange,
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Text(
+                    text = "אופן פנייה",
+                    style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
+                    color = Color(0xFF0B2B3D).copy(alpha = 0.92f),
+                )
+                SegmentedChoiceRow(
+                    options = listOf("שחקן" to PlayerAddress.Boy, "שחקנית" to PlayerAddress.Girl),
+                    selected = playerAddress,
+                    onSelect = onPlayerAddressChange,
                 )
             }
-        }
 
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            TextButton(
-                onClick = { selectedChapters = chapterResetRows.map { it.id }.toSet() },
+            Spacer(modifier = Modifier.height(12.dp))
+
+            SettingsSectionCard(
+                title = "קול ומוזיקה",
+                helperText = "מוזיקת רקע מנוגנת במסכי כניסה/בחירה בלבד.",
             ) {
-                Text("בחר הכל")
+                SettingsToggleRow(
+                    title = "מוזיקת רקע",
+                    checked = backgroundMusicEnabled,
+                    onCheckedChange = onBackgroundMusicEnabledChange,
+                    testTag = TestTagBackgroundMusicToggle,
+                )
             }
-            TextButton(onClick = { selectedChapters = emptySet() }) {
-                Text("נקה בחירה")
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            SettingsExpandableSectionCard(
+                title = "התקדמות",
+                helperTextCollapsed = "איפוס פרקים נבחרים בלבד.",
+                helperTextExpanded = "סמנו פרק אחד או יותר, ואז יאופסו רק ההתקדמות שלהם.",
+                expanded = progressExpanded,
+                onExpandedChange = { progressExpanded = it },
+            ) {
+                chapterResetRows.forEach { row ->
+                    Row(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 2.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Start,
+                    ) {
+                        Checkbox(
+                            checked = row.id in selectedChapters,
+                            onCheckedChange = { checked ->
+                                selectedChapters =
+                                    if (checked) {
+                                        selectedChapters + row.id
+                                    } else {
+                                        selectedChapters - row.id
+                                    }
+                            },
+                        )
+                        Text(
+                            text = row.label,
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = Color(0xFF0B2B3D),
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    TextButton(
+                        onClick = { selectedChapters = chapterResetRows.map { it.id }.toSet() },
+                    ) {
+                        Text("בחר הכל")
+                    }
+                    TextButton(onClick = { selectedChapters = emptySet() }) {
+                        Text("נקה בחירה")
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                OutlinedButton(
+                    onClick = { if (selectedChapters.isNotEmpty()) showResetChaptersDialog = true },
+                    enabled = selectedChapters.isNotEmpty(),
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text("אפס פרקים נבחרים")
+                }
             }
-        }
 
-        Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
-        OutlinedButton(
-            onClick = { if (selectedChapters.isNotEmpty()) showResetChaptersDialog = true },
-            enabled = selectedChapters.isNotEmpty(),
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Text("אפס פרקים נבחרים")
-        }
+            SettingsExpandableSectionCard(
+                title = "איפוס וניהול",
+                helperTextCollapsed = "אפשרויות איפוס וניהול ההתקדמות.",
+                helperTextExpanded = "פעולות באזור זה מוחקות נתונים. מומלץ לבצע רק בהשגחת הורה.",
+                expanded = managementExpanded,
+                onExpandedChange = { managementExpanded = it },
+                accentColor = Color(0xFF7A1E1E),
+            ) {
+                OutlinedButton(
+                    onClick = { showResetAllDialog = true },
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text("איפוס משחק מלא")
+                }
 
-        Spacer(modifier = Modifier.height(20.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
-        Text(
-            text = "איפוס מלא",
-            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-            color = Color(0xFF0B2B3D),
-            modifier = Modifier.fillMaxWidth(),
-        )
-        Text(
-            text =
-                "מאפס את כל ההתקדמות, את בחירת הדמות (דינו או דינה), את אופן הפנייה אליכם " +
-                    "ואת עונה 2 — ומחזיר למסך הפתיחה כמו בהרצה ראשונה.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = Color(0xFF0B2B3D).copy(alpha = 0.88f),
-            modifier = Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 8.dp),
-            textAlign = TextAlign.Start,
-        )
+                Text(
+                    text = "איפוס עונה 2 מאפס רק את ההתקדמות של עונה 2.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color(0xFF0B2B3D).copy(alpha = 0.84f),
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = TextAlign.Start,
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedButton(
+                    onClick = { showResetSeason2Dialog = true },
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text("איפוס עונה 2")
+                }
+            }
 
-        OutlinedButton(
-            onClick = { showResetAllDialog = true },
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Text("איפוס משחק מלא")
-        }
+            Spacer(modifier = Modifier.height(14.dp))
 
-        Spacer(modifier = Modifier.height(14.dp))
-
-        Text(
-            text = "עונה 2",
-            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-            color = Color(0xFF0B2B3D),
-            modifier = Modifier.fillMaxWidth(),
-        )
-        Text(
-            text = "מאפס רק את ההתקדמות של עונה 2 (בחירת דינוזאורים/פרקים).",
-            style = MaterialTheme.typography.bodyMedium,
-            color = Color(0xFF0B2B3D).copy(alpha = 0.88f),
-            modifier = Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 8.dp),
-            textAlign = TextAlign.Start,
-        )
-        OutlinedButton(
-            onClick = { showResetSeason2Dialog = true },
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Text("איפוס עונה 2")
-        }
-
-        Spacer(modifier = Modifier.height(14.dp))
-        OutlinedButton(onClick = onBack, modifier = Modifier.fillMaxWidth()) {
-            Text("חזרה")
+            OutlinedButton(onClick = onBack, modifier = Modifier.fillMaxWidth()) {
+                Text("חזרה")
+            }
         }
     }
 
@@ -276,8 +271,7 @@ fun SettingsScreen(
             text = {
                 Text(
                     text =
-                        "זה יאפס את כל הפרקים, את בחירת הדמות ואת אופן הפנייה אליכם, " +
-                            "ויחזיר למסך הפתיחה. בלחיצה על «שחק» תתבקשו לבחור שוב. להמשיך?",
+                        "פעולה זו תמחק את ההתקדמות ותדרוש לבחור שוב דמות ואופן פנייה. להמשיך?",
                     textAlign = TextAlign.Start,
                 )
             },
@@ -289,7 +283,7 @@ fun SettingsScreen(
                         onResetAll()
                     },
                 ) {
-                    Text("כן, לאפס הכל")
+                    Text("כן, לאפס")
                 }
             },
             dismissButton = {
@@ -304,7 +298,7 @@ fun SettingsScreen(
         val sorted = selectedChapters.sorted()
         val names = sorted.map { id -> chapterResetRows.first { it.id == id }.label }
         AlertDialog(
-            onDismissRequest = { },
+            onDismissRequest = { showResetChaptersDialog = false },
             title = { Text(text = "איפוס פרקים נבחרים") },
             text = {
                 Text(
@@ -318,6 +312,7 @@ fun SettingsScreen(
             confirmButton = {
                 TextButton(
                     onClick = {
+                        showResetChaptersDialog = false
                         onResetChapters(selectedChapters.toSet())
                         selectedChapters = emptySet()
                     },
@@ -326,7 +321,7 @@ fun SettingsScreen(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { }) {
+                TextButton(onClick = { showResetChaptersDialog = false }) {
                     Text("ביטול")
                 }
             },
@@ -335,7 +330,7 @@ fun SettingsScreen(
 
     if (showResetSeason2Dialog) {
         AlertDialog(
-            onDismissRequest = { },
+            onDismissRequest = { showResetSeason2Dialog = false },
             title = { Text(text = "איפוס עונה 2") },
             text = {
                 Text(
@@ -363,18 +358,34 @@ fun SettingsScreen(
 }
 
 @Composable
-private fun <T> SettingsChoiceRow(
+private fun <T> SegmentedChoiceRow(
     options: List<Pair<String, T>>,
     selected: T,
     onSelect: (T) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Row(
-        modifier = modifier.fillMaxWidth().padding(top = 6.dp),
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .padding(top = 8.dp)
+                .clip(RoundedCornerShape(18.dp)),
         horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         options.forEach { (label, value) ->
             val isSelected = value == selected
+            val containerColor =
+                if (isSelected) {
+                    Color(0xFF2AA6C9).copy(alpha = 0.20f)
+                } else {
+                    Color.White.copy(alpha = 0.90f)
+                }
+            val border =
+                if (isSelected) {
+                    BorderStroke(1.dp, Color(0xFF2AA6C9).copy(alpha = 0.55f))
+                } else {
+                    BorderStroke(1.dp, Color(0xFF0B2B3D).copy(alpha = 0.14f))
+                }
             OutlinedButton(
                 onClick = { onSelect(value) },
                 modifier =
@@ -386,18 +397,117 @@ private fun <T> SettingsChoiceRow(
                             role = Role.RadioButton,
                         ),
                 colors =
-                    androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
-                        containerColor =
-                            if (isSelected) {
-                                Color(0xFF2AA6C9).copy(alpha = 0.18f)
-                            } else {
-                                Color.White.copy(alpha = 0.86f)
-                            },
+                    ButtonDefaults.outlinedButtonColors(
+                        containerColor = containerColor,
                         contentColor = Color(0xFF0B2B3D),
                     ),
+                border = border,
+                shape = RoundedCornerShape(18.dp),
             ) {
                 Text(label, style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold))
             }
         }
+    }
+}
+
+@Composable
+private fun SettingsSectionCard(
+    title: String,
+    helperText: String? = null,
+    modifier: Modifier = Modifier,
+    titleColor: Color = Color(0xFF0B2B3D),
+    content: @Composable () -> Unit,
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.92f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        shape = RoundedCornerShape(18.dp),
+    ) {
+        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black),
+                color = titleColor,
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = TextAlign.Start,
+            )
+            if (!helperText.isNullOrBlank()) {
+                Text(
+                    text = helperText,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color(0xFF0B2B3D).copy(alpha = 0.78f),
+                    modifier = Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 8.dp),
+                    textAlign = TextAlign.Start,
+                )
+            } else {
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+            content()
+        }
+    }
+}
+
+@Composable
+private fun SettingsExpandableSectionCard(
+    title: String,
+    helperTextCollapsed: String,
+    helperTextExpanded: String,
+    expanded: Boolean,
+    onExpandedChange: (Boolean) -> Unit,
+    modifier: Modifier = Modifier,
+    accentColor: Color = Color(0xFF0B2B3D),
+    content: @Composable () -> Unit,
+) {
+    SettingsSectionCard(
+        title = title,
+        helperText = if (expanded) helperTextExpanded else helperTextCollapsed,
+        modifier = modifier,
+        titleColor = accentColor,
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(bottom = if (expanded) 10.dp else 2.dp),
+            horizontalArrangement = Arrangement.End,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            TextButton(onClick = { onExpandedChange(!expanded) }) {
+                Text(if (expanded) "סגור" else "פתח")
+            }
+        }
+        if (expanded) {
+            content()
+        }
+    }
+}
+
+@Composable
+private fun SettingsToggleRow(
+    title: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+    testTag: String,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(16.dp))
+                .padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
+                color = Color(0xFF0B2B3D),
+            )
+        }
+        Switch(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+            modifier = Modifier.testTag(testTag),
+        )
     }
 }

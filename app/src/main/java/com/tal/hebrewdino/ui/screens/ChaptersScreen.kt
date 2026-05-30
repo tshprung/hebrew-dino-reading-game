@@ -269,7 +269,7 @@ fun ChaptersScreen(
                 onClick = onOpenSettings,
                 colors = ChapterNavChipStyles.outlinedButtonColors(),
             ) {
-                Text("הגדרות", style = ChapterNavChipStyles.labelTextStyle())
+                Text("הורים", style = ChapterNavChipStyles.labelTextStyle())
             }
         }
 
