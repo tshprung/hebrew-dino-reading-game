@@ -6,6 +6,7 @@ import androidx.compose.animation.core.AnimationVector1D
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import com.tal.hebrewdino.ui.audio.AudioClips
+import com.tal.hebrewdino.ui.audio.RawVoicePlayer
 import com.tal.hebrewdino.ui.audio.VoicePlayer
 import com.tal.hebrewdino.ui.AppAnalytics
 import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
@@ -51,6 +52,7 @@ internal object AdvanceAfterRoundActions {
         isChapter3AudioLetterRecognitionStation: Boolean,
         gameFeedback: GameFeedback,
         voice: VoicePlayer,
+        rawVoice: RawVoicePlayer?,
         cancelFeedbackVoice: () -> Unit,
         audioRuntime: GameAudioRuntimeState,
         dinoForward: Animatable<Float, AnimationVector1D>,
@@ -100,7 +102,13 @@ internal object AdvanceAfterRoundActions {
                 audioRuntime = audioRuntime,
                 cancelFeedbackVoice = cancelFeedbackVoice,
             ) {
-                GameAudioActions.playPraiseNoImmediateRepeat(voice, audioRuntime, Episode1PraiseCandidates)
+                GameAudioActions.playPraiseNoImmediateRepeat(
+                    voice = voice,
+                    audioRuntime = audioRuntime,
+                    candidates = Episode1PraiseCandidates,
+                    chapterId = chapterId,
+                    rawVoice = rawVoice,
+                )
             }
         } else if (otherPraiseEligible) {
             if (sagaUsesFindGridAudioStaging) {
@@ -112,7 +120,13 @@ internal object AdvanceAfterRoundActions {
                 audioRuntime = audioRuntime,
                 cancelFeedbackVoice = cancelFeedbackVoice,
             ) {
-                GameAudioActions.playPraiseNoImmediateRepeat(voice, audioRuntime, OtherPraiseCandidates)
+                GameAudioActions.playPraiseNoImmediateRepeat(
+                    voice = voice,
+                    audioRuntime = audioRuntime,
+                    candidates = OtherPraiseCandidates,
+                    chapterId = chapterId,
+                    rawVoice = rawVoice,
+                )
             }
         }
         if (!suppressInGameDinoProgress && !(isChapter3HighlightedLetterInWordStation && ch3SpellMidWord)) {

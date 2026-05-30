@@ -1,5 +1,8 @@
 package com.tal.hebrewdino.ui.screens
 
+import com.tal.hebrewdino.R
+import com.tal.hebrewdino.ui.audio.AudioClips
+import com.tal.hebrewdino.ui.audio.RawVoicePlayer
 import com.tal.hebrewdino.ui.audio.SoundPoolPlayer
 import com.tal.hebrewdino.ui.audio.VoicePlayer
 import kotlinx.coroutines.CoroutineScope
@@ -7,6 +10,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
+import kotlin.random.Random
 
 internal object GameAudioActions {
     fun cancelFeedbackVoice(
@@ -160,14 +164,70 @@ internal object GameAudioActions {
         voice: VoicePlayer,
         audioRuntime: GameAudioRuntimeState,
         candidates: Array<String>,
+        chapterId: Int? = null,
+        rawVoice: RawVoicePlayer? = null,
     ) {
         val played =
-            voice.playFirstAvailableBlockingRandomizedNoRepeat(
-                assetPaths = candidates,
-                avoidAssetPath = audioRuntime.lastPraiseAssetPath,
-            )
+            if (chapterId == 1 && rawVoice != null) {
+                playFirstAvailableBlockingRandomizedNoRepeatWithRawOverride(
+                    voice = voice,
+                    rawVoice = rawVoice,
+                    assetPaths = candidates,
+                    avoidAssetPath = audioRuntime.lastPraiseAssetPath,
+                    overrideAssetPath = AudioClips.VoPraiseHitzlacht,
+                    overrideRawResId = R.raw.vo_praise_meule,
+                )
+            } else {
+                voice.playFirstAvailableBlockingRandomizedNoRepeat(
+                    assetPaths = candidates,
+                    avoidAssetPath = audioRuntime.lastPraiseAssetPath,
+                )
+            }
         if (played != null) {
             audioRuntime.lastPraiseAssetPath = played
         }
+    }
+
+    private suspend fun playFirstAvailableBlockingRandomizedNoRepeatWithRawOverride(
+        voice: VoicePlayer,
+        rawVoice: RawVoicePlayer,
+        assetPaths: Array<String>,
+        avoidAssetPath: String?,
+        overrideAssetPath: String,
+        overrideRawResId: Int,
+        random: Random = Random.Default,
+    ): String? {
+        val n = assetPaths.size
+        if (n == 0) return null
+        val start = random.nextInt(n)
+
+        for (k in 0 until n) {
+            val p = assetPaths[(start + k) % n]
+            if (p.isBlank()) continue
+            if (avoidAssetPath != null && p == avoidAssetPath) continue
+            if (!voice.hasAsset(p)) continue
+            if (p == overrideAssetPath) {
+                rawVoice.playRawBlocking(overrideRawResId)
+                return p
+            }
+            voice.playBlocking(p)
+            return p
+        }
+
+        if (avoidAssetPath != null) {
+            for (k in 0 until n) {
+                val p = assetPaths[(start + k) % n]
+                if (p.isBlank()) continue
+                if (!voice.hasAsset(p)) continue
+                if (p == overrideAssetPath) {
+                    rawVoice.playRawBlocking(overrideRawResId)
+                    return p
+                }
+                voice.playBlocking(p)
+                return p
+            }
+        }
+
+        return null
     }
 }

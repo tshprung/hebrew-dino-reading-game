@@ -147,7 +147,12 @@ object StationBehaviorRegistry {
             replayMode = StationReplayMode.None,
             hintMode = StationHintMode.None,
             matchLetterInstructionReadablePanel = true,
-            matchLetterInstructionText = StationInstructionCopy.MatchLetterFinale,
+            matchLetterInstructionText =
+                if (chapterId == 1 && stationId == FINALE_PICTURE_LETTER_MATCH) {
+                    "התאימו כל אות למילה שמתחילה בה"
+                } else {
+                    StationInstructionCopy.MatchLetterFinale
+                },
             matchLetterCompactWideSpread = matchLetterCompactWideSpread,
             matchLetterVerticalNudgeDp = matchLetterVerticalNudgeDp,
         )
@@ -268,7 +273,11 @@ object StationBehaviorRegistry {
             balloonInstructionOverride = if (isPopAllLetters) {
                 null // Handled by banner in PopBalloonsStationContent
             } else {
-                "פוצץ את הבלונים עם האות:"
+                if (chapterId == 1 && stationId == BALLOON_POP && plan.listenOnlyTargetPrompt) {
+                    "פוצצי את הבלונים עם האות:"
+                } else {
+                    "פוצץ את הבלונים עם האות:"
+                }
             },
             popBalloonsSkipInstructionHeaderBlock = isPopAllLetters,
             popBalloonsPopAllLettersBannerInstruction = if (isPopAllLetters) {

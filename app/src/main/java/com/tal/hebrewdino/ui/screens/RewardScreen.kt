@@ -23,6 +23,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -103,9 +105,17 @@ fun RewardScreen(
             RewardStageMascotDrawables[Random.nextInt(RewardStageMascotDrawables.size)]
         }
     val companionPortraitW =
-        if (isCompactLandscapePhone) 160.dp else Chapter1DinoCompanionPilot.portraitWidthDp.dp
+        if (!chapter1DinoCompanionPilot) {
+            if (isCompactLandscapePhone) 160.dp else Chapter1DinoCompanionPilot.portraitWidthDp.dp
+        } else {
+            if (isCompactLandscapePhone) 176.dp else (Chapter1DinoCompanionPilot.portraitWidthDp + 20).dp
+        }
     val companionPortraitH =
-        if (isCompactLandscapePhone) 160.dp else Chapter1DinoCompanionPilot.portraitHeightDp.dp
+        if (!chapter1DinoCompanionPilot) {
+            if (isCompactLandscapePhone) 160.dp else Chapter1DinoCompanionPilot.portraitHeightDp.dp
+        } else {
+            if (isCompactLandscapePhone) 176.dp else (Chapter1DinoCompanionPilot.portraitHeightDp + 20).dp
+        }
     val journeyProgressCue =
         remember(levelId, chapter1DinoCompanionPilot) {
             if (chapter1DinoCompanionPilot) {
@@ -174,6 +184,18 @@ fun RewardScreen(
         if (!chapter1DinoCompanionPilot && isCompactLandscapePhone) {
             RewardFireworksLayer(modifier = Modifier.fillMaxSize())
         }
+        val pilotShowGentleFireworks =
+            chapter1DinoCompanionPilot &&
+                !companionShowFireworks
+        if (pilotShowGentleFireworks) {
+            RewardFireworksLayer(
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .alpha(0.32f),
+                intensity = RewardFireworksIntensity.Gentle,
+            )
+        }
         if (companionShowFireworks) {
             RewardFireworksLayer(
                 modifier = Modifier.fillMaxSize(),
@@ -196,12 +218,29 @@ fun RewardScreen(
                 horizontalArrangement = Arrangement.spacedBy(14.dp, Alignment.CenterHorizontally),
             ) {
                 if (chapter1DinoCompanionPilot) {
-                    CompanionDinoRewardCelebration(
-                        style = companionRewardStyle,
-                        isTalking = companionVoicePlaying,
-                        companionCharacter = chapter1CompanionCharacter,
-                        modifier = Modifier.size(width = companionPortraitW, height = companionPortraitH),
-                    )
+                    Box(
+                        modifier =
+                            Modifier
+                                .size(width = companionPortraitW, height = companionPortraitH)
+                                .drawBehind {
+                                    val base = size.minDimension * 0.55f
+                                    drawCircle(
+                                        color = Color(0xFFFFF59D).copy(alpha = 0.16f),
+                                        radius = base * 1.18f,
+                                    )
+                                    drawCircle(
+                                        color = Color(0xFFFFD54F).copy(alpha = 0.12f),
+                                        radius = base,
+                                    )
+                                },
+                    ) {
+                        CompanionDinoRewardCelebration(
+                            style = companionRewardStyle,
+                            isTalking = companionVoicePlaying,
+                            companionCharacter = chapter1CompanionCharacter,
+                            modifier = Modifier.fillMaxSize(),
+                        )
+                    }
                 } else {
                     Image(
                         painter = painterResource(id = mascotRes),
@@ -310,12 +349,29 @@ fun RewardScreen(
                 }
                 Spacer(modifier = Modifier.height(8.dp))
                 if (chapter1DinoCompanionPilot) {
-                    CompanionDinoRewardCelebration(
-                        style = companionRewardStyle,
-                        isTalking = companionVoicePlaying,
-                        companionCharacter = chapter1CompanionCharacter,
-                        modifier = Modifier.size(width = companionPortraitW, height = companionPortraitH),
-                    )
+                    Box(
+                        modifier =
+                            Modifier
+                                .size(width = companionPortraitW, height = companionPortraitH)
+                                .drawBehind {
+                                    val base = size.minDimension * 0.56f
+                                    drawCircle(
+                                        color = Color(0xFFFFF59D).copy(alpha = 0.15f),
+                                        radius = base * 1.22f,
+                                    )
+                                    drawCircle(
+                                        color = Color(0xFFFFD54F).copy(alpha = 0.11f),
+                                        radius = base,
+                                    )
+                                },
+                    ) {
+                        CompanionDinoRewardCelebration(
+                            style = companionRewardStyle,
+                            isTalking = companionVoicePlaying,
+                            companionCharacter = chapter1CompanionCharacter,
+                            modifier = Modifier.fillMaxSize(),
+                        )
+                    }
                 } else {
                     Image(
                         painter = painterResource(id = mascotRes),

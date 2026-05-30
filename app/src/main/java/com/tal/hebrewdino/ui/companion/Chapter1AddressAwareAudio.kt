@@ -50,23 +50,23 @@ object Chapter1AddressAwareAudio {
         when (kind) {
             InstructionKind.PickLetter ->
                 when (address) {
-                    PlayerAddress.Boy -> R.raw.instruction_pick_letter_boy
-                    PlayerAddress.Girl -> R.raw.instruction_pick_letter_girl
+                    PlayerAddress.Boy -> R.raw.instruction_pick_letter_short_boy
+                    PlayerAddress.Girl -> R.raw.instruction_pick_letter_short_girl
                 }
             InstructionKind.FindLetter ->
                 when (address) {
-                    PlayerAddress.Boy -> R.raw.instruction_find_letter_boy
-                    PlayerAddress.Girl -> R.raw.instruction_find_letter_girl
+                    PlayerAddress.Boy -> R.raw.instruction_find_letter_short_boy
+                    PlayerAddress.Girl -> R.raw.instruction_find_letter_short_girl
                 }
             InstructionKind.PictureStartsWith ->
                 when (address) {
-                    PlayerAddress.Boy -> R.raw.instruction_picture_starts_with_boy
-                    PlayerAddress.Girl -> R.raw.instruction_picture_starts_with_girl
+                    PlayerAddress.Boy -> R.raw.instruction_picture_starts_with_short_boy
+                    PlayerAddress.Girl -> R.raw.instruction_picture_starts_with_short_girl
                 }
             InstructionKind.WhichWordStartsWith ->
                 when (address) {
-                    PlayerAddress.Boy -> R.raw.instruction_which_word_starts_with_boy
-                    PlayerAddress.Girl -> R.raw.instruction_which_word_starts_with_girl
+                    PlayerAddress.Boy -> R.raw.instruction_which_word_starts_with_short_boy
+                    PlayerAddress.Girl -> R.raw.instruction_which_word_starts_with_short_girl
                 }
             InstructionKind.FindWordStartsWith ->
                 when (address) {
@@ -75,8 +75,8 @@ object Chapter1AddressAwareAudio {
                 }
             InstructionKind.MatchLetterToWord ->
                 when (address) {
-                    PlayerAddress.Boy -> R.raw.instruction_match_letter_to_word_boy
-                    PlayerAddress.Girl -> R.raw.instruction_match_letter_to_word_girl
+                    PlayerAddress.Boy -> R.raw.instruction_match_letter_to_word_short_boy
+                    PlayerAddress.Girl -> R.raw.instruction_match_letter_to_word_short_girl
                 }
             InstructionKind.MemoryMatch ->
                 when (address) {
@@ -85,8 +85,8 @@ object Chapter1AddressAwareAudio {
                 }
             InstructionKind.PopBalloons ->
                 when (address) {
-                    PlayerAddress.Boy -> R.raw.instruction_pop_balloons_boy
-                    PlayerAddress.Girl -> R.raw.instruction_pop_balloons_girl
+                    PlayerAddress.Boy -> R.raw.instruction_pop_balloons_short_boy
+                    PlayerAddress.Girl -> R.raw.instruction_pop_balloons_short_girl
                 }
         }
 

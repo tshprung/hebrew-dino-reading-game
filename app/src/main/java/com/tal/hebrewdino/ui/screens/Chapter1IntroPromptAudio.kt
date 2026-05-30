@@ -11,6 +11,8 @@ import com.tal.hebrewdino.ui.domain.Question
 import com.tal.hebrewdino.ui.domain.StationTemplateId
 import kotlinx.coroutines.delay
 
+private const val Chapter1InstructionToTargetGapMs: Long = 170L
+
 /** Plays Ch.1 address-aware station intro audio when applicable. Returns true if handled. */
 internal suspend fun playChapter1AddressAwareIntro(
     chapterId: Int,
@@ -56,6 +58,7 @@ internal suspend fun playChapter1AddressAwareIntro(
             } ?: return false
         sfx.stopAllStreams()
         rawVoice.playRawBlocking(instructionRaw)
+        delay(Chapter1InstructionToTargetGapMs)
         val letterClip = AudioClips.letterNameClip(target)
         if (letterClip != null && voice.hasAsset(letterClip)) {
             voice.playBlocking(letterClip)
@@ -66,6 +69,7 @@ internal suspend fun playChapter1AddressAwareIntro(
     if (sagaUsesFindGridAudioStaging && q is Question.FindLetterGridQuestion) {
         sfx.stopAllStreams()
         rawVoice.playRawBlocking(instructionRaw)
+        delay(Chapter1InstructionToTargetGapMs)
         val letterClip = AudioClips.letterNameClip(q.targetLetter)
         if (letterClip != null && voice.hasAsset(letterClip)) {
             voice.playBlocking(letterClip)
@@ -79,6 +83,7 @@ internal suspend fun playChapter1AddressAwareIntro(
     ) {
         sfx.stopAllStreams()
         rawVoice.playRawBlocking(instructionRaw)
+        delay(Chapter1InstructionToTargetGapMs)
         val letterName = AudioClips.letterNameClip(q.targetLetter)
         if (letterName != null && voice.hasAsset(letterName)) {
             voice.playBlocking(letterName)
@@ -95,6 +100,7 @@ internal suspend fun playChapter1AddressAwareIntro(
     if (isSagaEpisode && stationId == Chapter1StationOrder.PICTURE_PICK_ONE && q is Question.PictureStartsWithQuestion) {
         sfx.stopAllStreams()
         rawVoice.playRawBlocking(instructionRaw)
+        delay(Chapter1InstructionToTargetGapMs)
         val wordPath = AudioClips.wordClipByCatalogId(q.catalogEntryId)
         if (voice.hasAsset(wordPath)) {
             voice.playBlocking(wordPath)
@@ -105,6 +111,7 @@ internal suspend fun playChapter1AddressAwareIntro(
     if (sagaUsesPopBalloonsAudioStaging && q is Question.PopBalloonsQuestion) {
         sfx.stopAllStreams()
         rawVoice.playRawBlocking(instructionRaw)
+        delay(Chapter1InstructionToTargetGapMs)
         val letterClip = AudioClips.letterNameClip(q.correctAnswer)
         if (letterClip != null && voice.hasAsset(letterClip)) {
             voice.playBlocking(letterClip)

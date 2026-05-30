@@ -4,8 +4,11 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.AnimationVector1D
 import androidx.compose.ui.graphics.Color
 import com.tal.hebrewdino.ui.audio.AudioClips
+import com.tal.hebrewdino.ui.audio.RawVoicePlayer
 import com.tal.hebrewdino.ui.audio.SoundPoolPlayer
 import com.tal.hebrewdino.ui.audio.VoicePlayer
+import com.tal.hebrewdino.ui.companion.playAddressAwareTryAgainBlocking
+import com.tal.hebrewdino.ui.data.PlayerAddress
 import com.tal.hebrewdino.ui.domain.AnswerResult
 import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
 import com.tal.hebrewdino.ui.domain.LevelSession
@@ -27,6 +30,9 @@ internal object PopBalloonsActions {
         scope: CoroutineScope,
         voice: VoicePlayer,
         sfx: SoundPoolPlayer,
+        chapterId: Int,
+        chapter1PlayerAddress: PlayerAddress?,
+        rawVoice: RawVoicePlayer?,
         cancelFeedbackVoice: () -> Unit,
         audioRuntime: GameAudioRuntimeState,
         nextStation2CorrectPopVariant: () -> Int,
@@ -112,9 +118,11 @@ internal object PopBalloonsActions {
                         if (letterClip != null && voice.hasAsset(letterClip)) {
                             voice.playBlocking(letterClip)
                         }
-                        voice.playFirstAvailableBlocking(
-                            AudioClips.VoTryAgain2,
-                            AudioClips.VoTryAgain1,
+                        playAddressAwareTryAgainBlocking(
+                            chapterId = chapterId,
+                            playerAddress = chapter1PlayerAddress,
+                            rawVoice = rawVoice,
+                            voice = voice,
                         )
                     }
                 }

@@ -592,6 +592,7 @@ fun GameScreen(
             isChapter3AudioLetterRecognitionStation = isChapter3AudioLetterRecognitionStation,
             gameFeedback = gameFeedback,
             voice = voice,
+            rawVoice = rawVoice,
             cancelFeedbackVoice = { cancelFeedbackVoice() },
             audioRuntime = audioRuntime,
             dinoForward = dinoForward,
@@ -810,6 +811,7 @@ fun GameScreen(
                             scope = scope,
                             voice = voice,
                             sfx = sfx,
+                            rawVoice = rawVoice,
                             audioRuntime = audioRuntime,
                             onWrongFeedback = { wrongPickedLetter ->
                                 onWrongFeedback(wrongPickedLetter = wrongPickedLetter)
@@ -836,6 +838,9 @@ fun GameScreen(
                             scope = scope,
                             voice = voice,
                             sfx = sfx,
+                            chapterId = chapterId,
+                            chapter1PlayerAddress = chapter1PlayerAddress,
+                            rawVoice = rawVoice,
                             cancelFeedbackVoice = cancelFeedbackVoiceCb,
                             audioRuntime = audioRuntime,
                             nextStation2CorrectPopVariant = {
@@ -896,6 +901,7 @@ fun GameScreen(
                             session = session,
                             scope = scope,
                             voice = voice,
+                            rawVoice = rawVoice,
                             audioRuntime = audioRuntime,
                             advanceAfterRound = { isLast -> advanceAfterRound(isLast) },
                             onWrongFeedback = { wrongPickedLetter, wrongPickedLetterAlreadySpoken ->
@@ -941,6 +947,7 @@ fun GameScreen(
                             session = session,
                             scope = scope,
                             voice = voice,
+                            rawVoice = rawVoice,
                             audioRuntime = audioRuntime,
                             advanceAfterRound = { isLast -> advanceAfterRound(isLast) },
                             onWrongFeedback = { wrongWordCatalogId ->
@@ -961,6 +968,7 @@ fun GameScreen(
                             session = session,
                             scope = scope,
                             voice = voice,
+                            rawVoice = rawVoice,
                             audioRuntime = audioRuntime,
                             advanceAfterRound = { isLast -> advanceAfterRound(isLast) },
                             onWrongFeedback = { wrongWordCatalogId, generic ->
@@ -1010,6 +1018,7 @@ fun GameScreen(
                                 popBalloonsHelpControlsEnabled = popBalloonsHelpControlsEnabled,
                                 balloonHelpHintLetter = gameViewModel.balloonHelpHintLetter,
                                 showPopBalloonsTargetLetterChip = showPopBalloonsTargetLetterChip,
+                                chapter1PlayerAddress = chapter1PlayerAddress,
                             ),
                         state =
                             GameQuestionHostState(
@@ -1037,6 +1046,7 @@ fun GameScreen(
                                 scope = scope,
                                 voice = voice,
                                 sfx = sfx,
+                                rawVoice = rawVoice,
                                 cancelFeedbackVoice = cancelFeedbackVoiceCb,
                                 audioRuntime = audioRuntime,
                             ),

@@ -2,6 +2,7 @@ package com.tal.hebrewdino.ui.screens
 
 import android.os.SystemClock
 import com.tal.hebrewdino.ui.audio.AudioClips
+import com.tal.hebrewdino.ui.audio.RawVoicePlayer
 import com.tal.hebrewdino.ui.audio.VoicePlayer
 import com.tal.hebrewdino.ui.domain.AnswerResult
 import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
@@ -36,6 +37,7 @@ internal object PictureStartsWithActions {
         session: LevelSession,
         scope: CoroutineScope,
         voice: VoicePlayer,
+        rawVoice: RawVoicePlayer?,
         audioRuntime: GameAudioRuntimeState,
         advanceAfterRound: suspend (Boolean) -> Unit,
         onWrongFeedback: (wrongPickedLetter: String?, wrongPickedLetterAlreadySpoken: Boolean) -> Unit,
@@ -86,7 +88,13 @@ internal object PictureStartsWithActions {
                                 if (letterName != null && voice.hasAsset(letterName)) {
                                     voice.playBlocking(letterName)
                                 }
-                                GameAudioActions.playPraiseNoImmediateRepeat(voice, audioRuntime, SagaPictureStartsWithPraiseCandidates)
+                                GameAudioActions.playPraiseNoImmediateRepeat(
+                                    voice = voice,
+                                    audioRuntime = audioRuntime,
+                                    candidates = SagaPictureStartsWithPraiseCandidates,
+                                    chapterId = chapterId,
+                                    rawVoice = rawVoice,
+                                )
                             }
                         GameAudioActions.joinSilently(job)
                         if ((chapterId == 4 || chapterId == 5) && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {

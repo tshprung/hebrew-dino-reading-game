@@ -4,6 +4,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.tal.hebrewdino.ui.components.station.SagaImageMatchGameStationContent
+import com.tal.hebrewdino.ui.data.PlayerAddress
+import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
 import com.tal.hebrewdino.ui.domain.LessonChoice
 import com.tal.hebrewdino.ui.domain.Question
 import com.tal.hebrewdino.ui.domain.StationUiSpec
@@ -13,6 +15,7 @@ import com.tal.hebrewdino.ui.layout.ScreenFit
 internal fun ImageMatchQuestionRenderer(
     current: Question.ImageMatchQuestion,
     stationUiSpec: StationUiSpec,
+    chapter1PlayerAddress: PlayerAddress?,
     isCompactLandscapePhone: Boolean,
     headerInstructionFontScale: Float,
     listenOnlyTemporaryHintLetter: String?,
@@ -31,7 +34,18 @@ internal fun ImageMatchQuestionRenderer(
     entryPulseScale: Float,
     modifier: Modifier = Modifier,
 ) {
-    val rawHeaderInstructionText = stationUiSpec.imageMatchHeaderInstructionOverride
+    val rawHeaderInstructionText =
+        if (chapterId == 1 &&
+            stationId == Chapter1StationOrder.PICTURE_PICK_ALL &&
+            chapter1PlayerAddress != null
+        ) {
+            when (chapter1PlayerAddress) {
+                PlayerAddress.Boy -> "\u200Fבחר את התמונה שמתחילה באות:"
+                PlayerAddress.Girl -> "\u200Fבחרי את התמונה שמתחילה באות:"
+            }
+        } else {
+            stationUiSpec.imageMatchHeaderInstructionOverride
+        }
     val displayHeaderInstructionText =
         if (isCompactLandscapePhone &&
             stationUiSpec.imageMatchCompactLandscapeRtlWrapHeaderInstruction &&

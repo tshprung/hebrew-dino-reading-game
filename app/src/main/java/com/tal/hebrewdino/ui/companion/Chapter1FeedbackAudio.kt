@@ -5,6 +5,7 @@ import com.tal.hebrewdino.ui.audio.RawVoicePlayer
 import com.tal.hebrewdino.ui.audio.SoundPoolPlayer
 import com.tal.hebrewdino.ui.audio.VoicePlayer
 import com.tal.hebrewdino.ui.data.PlayerAddress
+import com.tal.hebrewdino.R
 import kotlinx.coroutines.delay
 
 /** Season 1 Ch.1 address-aware wrong-answer feedback (try again). */
@@ -14,8 +15,12 @@ internal suspend fun playAddressAwareTryAgainBlocking(
     rawVoice: RawVoicePlayer?,
     voice: VoicePlayer,
 ) {
-    if (chapterId == 1 && playerAddress != null && rawVoice != null) {
-        rawVoice.playRawBlocking(Chapter1AddressAwareAudio.tryAgainRawRes(playerAddress))
+    if (chapterId == 1 && rawVoice != null) {
+        if (playerAddress != null) {
+            rawVoice.playRawBlocking(Chapter1AddressAwareAudio.tryAgainRawRes(playerAddress))
+        } else {
+            rawVoice.playRawBlocking(R.raw.vo_try_again_neutral)
+        }
     } else {
         voice.playFirstAvailableBlocking(AudioClips.VoTryAgain2, AudioClips.VoTryAgain1)
     }

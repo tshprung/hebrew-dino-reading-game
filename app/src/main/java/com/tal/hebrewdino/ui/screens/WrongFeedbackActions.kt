@@ -28,7 +28,7 @@ internal object WrongFeedbackActions {
         rawVoice: RawVoicePlayer?,
         voice: VoicePlayer,
     ) {
-        if (chapterId == 1 && playerAddress != null && rawVoice != null) {
+        if (chapterId == 1 && rawVoice != null) {
             playLetterThenAddressAwareTryAgain(
                 sfx = sfx,
                 letterClip = letterClip,
@@ -76,7 +76,7 @@ internal object WrongFeedbackActions {
         rawVoice: RawVoicePlayer?,
         voice: VoicePlayer,
     ) {
-        if (chapterId == 1 && playerAddress != null && rawVoice != null) {
+        if (chapterId == 1 && rawVoice != null) {
             playAddressAwareTryAgainBlocking(
                 chapterId = chapterId,
                 playerAddress = playerAddress,

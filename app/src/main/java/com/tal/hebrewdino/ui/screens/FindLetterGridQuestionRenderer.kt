@@ -3,6 +3,7 @@ package com.tal.hebrewdino.ui.screens
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.tal.hebrewdino.ui.components.station.FindLetterGridStationContent
+import com.tal.hebrewdino.ui.data.PlayerAddress
 import com.tal.hebrewdino.ui.domain.Question
 import com.tal.hebrewdino.ui.domain.StationUiSpec
 
@@ -13,6 +14,7 @@ internal fun FindLetterGridQuestionRenderer(
     isSagaRevealStation: Boolean,
     sagaUsesFindGridAudioStaging: Boolean,
     stationUiSpec: StationUiSpec,
+    chapter1PlayerAddress: PlayerAddress?,
     chapter3ContextWordHint: String?,
     floatingTargetLetterHint: String?,
     episode4TargetCellsHintEpoch: Int,
@@ -31,6 +33,7 @@ internal fun FindLetterGridQuestionRenderer(
         question = current,
         modifier = modifier,
         listenOnly = listenOnly,
+        chapter1PlayerAddress = chapter1PlayerAddress,
         isSagaRevealStation = isSagaRevealStation,
         sagaUsesFindGridAudioStaging = sagaUsesFindGridAudioStaging,
         stationUiSpec = stationUiSpec,

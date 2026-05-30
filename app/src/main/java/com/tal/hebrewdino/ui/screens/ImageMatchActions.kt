@@ -1,6 +1,7 @@
 package com.tal.hebrewdino.ui.screens
 
 import com.tal.hebrewdino.ui.audio.AudioClips
+import com.tal.hebrewdino.ui.audio.RawVoicePlayer
 import com.tal.hebrewdino.ui.audio.VoicePlayer
 import com.tal.hebrewdino.ui.domain.AnswerResult
 import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
@@ -31,6 +32,7 @@ internal object ImageMatchActions {
         session: LevelSession,
         scope: CoroutineScope,
         voice: VoicePlayer,
+        rawVoice: RawVoicePlayer?,
         audioRuntime: GameAudioRuntimeState,
         advanceAfterRound: suspend (Boolean) -> Unit,
         onWrongFeedback: (wrongWordCatalogId: String?) -> Unit,
@@ -54,7 +56,13 @@ internal object ImageMatchActions {
                                 voiceHasAsset = { path -> voice.hasAsset(path) },
                             )
                         voice.playBlocking(clip)
-                        GameAudioActions.playPraiseNoImmediateRepeat(voice, audioRuntime, ImageToWordPraiseCandidates)
+                        GameAudioActions.playPraiseNoImmediateRepeat(
+                            voice = voice,
+                            audioRuntime = audioRuntime,
+                            candidates = ImageToWordPraiseCandidates,
+                            chapterId = chapterId,
+                            rawVoice = rawVoice,
+                        )
                     }
                 scope.launch {
                     GameAudioActions.joinSilently(audioJob)
@@ -139,6 +147,7 @@ internal object ImageMatchActions {
         session: LevelSession,
         scope: CoroutineScope,
         voice: VoicePlayer,
+        rawVoice: RawVoicePlayer?,
         audioRuntime: GameAudioRuntimeState,
         advanceAfterRound: suspend (Boolean) -> Unit,
         onWrongFeedback: (wrongWordCatalogId: String?, generic: Boolean) -> Unit,
@@ -160,7 +169,13 @@ internal object ImageMatchActions {
                                 stationId == TrainingV1Config.STATION_WHICH_WORD_STARTS_WITH_LETTER -> {
                                 val wordPath = AudioClips.wordClipByCatalogId(choiceId)
                                 if (voice.hasAsset(wordPath)) voice.playBlocking(wordPath)
-                                GameAudioActions.playPraiseNoImmediateRepeat(voice, audioRuntime, ImageToWordPraiseCandidates)
+                                GameAudioActions.playPraiseNoImmediateRepeat(
+                                    voice = voice,
+                                    audioRuntime = audioRuntime,
+                                    candidates = ImageToWordPraiseCandidates,
+                                    chapterId = chapterId,
+                                    rawVoice = rawVoice,
+                                )
                             }
                             sagaEpisode && stationId == Chapter1StationOrder.PICTURE_PICK_ALL -> {
                                 if (chapterId != 3 && chapterId != 6) {

@@ -15,10 +15,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
+import com.tal.hebrewdino.R
 import com.tal.hebrewdino.ui.audio.AudioClips
+import com.tal.hebrewdino.ui.audio.RawVoicePlayer
 import com.tal.hebrewdino.ui.audio.SoundPoolPlayer
 import com.tal.hebrewdino.ui.audio.VoicePlayer
 import com.tal.hebrewdino.ui.components.TargetLetterHeaderChip
+import com.tal.hebrewdino.ui.data.PlayerAddress
 import com.tal.hebrewdino.ui.domain.AnswerResult
 import com.tal.hebrewdino.ui.domain.Chapter1Station5And6ImageMatchInnerScale
 import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
@@ -95,6 +98,7 @@ internal data class GameQuestionHostUi(
     val popBalloonsHelpControlsEnabled: Boolean,
     val balloonHelpHintLetter: String?,
     val showPopBalloonsTargetLetterChip: Boolean,
+    val chapter1PlayerAddress: PlayerAddress?,
 )
 
 internal data class GameQuestionHostState(
@@ -122,6 +126,7 @@ internal data class GameQuestionHostDeps(
     val scope: CoroutineScope,
     val voice: VoicePlayer,
     val sfx: SoundPoolPlayer,
+    val rawVoice: RawVoicePlayer,
     val cancelFeedbackVoice: () -> Unit,
     val audioRuntime: GameAudioRuntimeState,
 )
@@ -168,6 +173,7 @@ internal fun GameQuestionHost(
                 isSagaRevealStation = ui.stationUiSpec.findGridSagaRevealStation,
                 sagaUsesFindGridAudioStaging = ui.sagaUsesFindGridAudioStaging,
                 stationUiSpec = ui.stationUiSpec,
+                chapter1PlayerAddress = ui.chapter1PlayerAddress,
                 chapter3ContextWordHint =
                     StationBehaviorRegistry.findGridContextWordHint(
                         stationUiSpec = ui.stationUiSpec,
@@ -219,6 +225,7 @@ internal fun GameQuestionHost(
                 PickLetterQuestionRenderer(
                     current = current,
                     stationUiSpec = ui.stationUiSpec,
+                    chapter1PlayerAddress = ui.chapter1PlayerAddress,
                     listenOnly = ui.listenOnly,
                     isSagaEpisode = isSagaEpisode(ui.chapterId),
                     sagaUsesPickLetterAudioStaging = ui.sagaUsesPickLetterAudioStaging,
@@ -487,7 +494,11 @@ internal fun GameQuestionHost(
                                         val picked = pickRandomAvoiding(MatchPraiseClips, lastPraiseClip)
                                         if (picked != null) {
                                             lastPraiseClip = picked
-                                            deps.voice.playBlocking(picked)
+                                            if (ui.chapterId == 1 && picked == AudioClips.VoPraiseHitzlacht) {
+                                                deps.rawVoice.playRawBlocking(R.raw.vo_praise_meule)
+                                            } else {
+                                                deps.voice.playBlocking(picked)
+                                            }
                                         }
                                     }
                                 GameAudioActions.joinSilently(job)
@@ -581,6 +592,7 @@ internal fun GameQuestionHost(
                     ImageMatchQuestionRenderer(
                         current = current,
                         stationUiSpec = effectiveStationUiSpec,
+                        chapter1PlayerAddress = ui.chapter1PlayerAddress,
                         isCompactLandscapePhone = ui.isCompactLandscapePhone,
                         headerInstructionFontScale =
                             (if (ui.chapterId == TrainingV1Config.CHAPTER_ID) 1.35f else 1.35f * 2f),

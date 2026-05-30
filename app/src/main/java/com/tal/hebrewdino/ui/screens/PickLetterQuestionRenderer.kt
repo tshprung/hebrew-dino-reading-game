@@ -14,11 +14,13 @@ import com.tal.hebrewdino.ui.domain.HebrewLetterOrder
 import com.tal.hebrewdino.ui.domain.Question
 import com.tal.hebrewdino.ui.domain.StationUiSpec
 import com.tal.hebrewdino.ui.domain.TrainingV1Config
+import com.tal.hebrewdino.ui.data.PlayerAddress
 
 @Composable
 internal fun PickLetterQuestionRenderer(
     current: Question.PopBalloonsQuestion,
     stationUiSpec: StationUiSpec,
+    chapter1PlayerAddress: PlayerAddress?,
     listenOnly: Boolean,
     isSagaEpisode: Boolean,
     sagaUsesPickLetterAudioStaging: Boolean,
@@ -41,6 +43,15 @@ internal fun PickLetterQuestionRenderer(
     onPick: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val resolvedPickLetterInstructionOverride =
+        if (chapterId == 1 && stationId == Chapter1StationOrder.TAP_LETTER && chapter1PlayerAddress != null) {
+            when (chapter1PlayerAddress) {
+                PlayerAddress.Boy -> "\u200Fבחר את האות:"
+                PlayerAddress.Girl -> "\u200Fבחרי את האות:"
+            }
+        } else {
+            stationUiSpec.pickLetterInstructionOverride
+        }
     Column(
         modifier = modifier.fillMaxSize().scale(entryPulseScale),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -94,13 +105,13 @@ internal fun PickLetterQuestionRenderer(
                 } else {
                     stationUiSpec.pickLetterRepeatLetterButtonLabel
                 },
-            pickLetterInstructionOverride = stationUiSpec.pickLetterInstructionOverride,
+            pickLetterInstructionOverride = resolvedPickLetterInstructionOverride,
             pickLetterSagaStation1CompactPreamble = stationUiSpec.pickLetterSagaStation1CompactPreamble,
             showSagaStation1CompactPreamble =
                 isSagaEpisode &&
                     stationId == Chapter1StationOrder.TAP_LETTER &&
                     stationUiSpec.pickLetterSagaStation1CompactPreamble != null &&
-                    stationUiSpec.pickLetterInstructionOverride == null &&
+                    resolvedPickLetterInstructionOverride == null &&
                     !isChapter3AudioLetterRecognitionStation &&
                     !stationUiSpec.pickLetterListenOnlyHebrewPanel &&
                     !isChapter3HighlightedLetterInWordStation,

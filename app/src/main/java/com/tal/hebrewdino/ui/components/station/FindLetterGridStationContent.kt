@@ -13,6 +13,7 @@ import com.tal.hebrewdino.ui.domain.Question
 import com.tal.hebrewdino.ui.domain.StationInstructionCopy
 import com.tal.hebrewdino.ui.domain.StationUiSpec
 import com.tal.hebrewdino.ui.domain.TrainingV1Config
+import com.tal.hebrewdino.ui.data.PlayerAddress
 import com.tal.hebrewdino.ui.game.FindLetterGridGame
 import com.tal.hebrewdino.ui.layout.ScreenFit
 
@@ -25,6 +26,7 @@ fun FindLetterGridStationContent(
     question: Question.FindLetterGridQuestion,
     modifier: Modifier = Modifier,
     listenOnly: Boolean,
+    chapter1PlayerAddress: PlayerAddress?,
     /** Precomputed: saga arc station 3 (find grid / reveal-then-choose). */
     isSagaRevealStation: Boolean,
     sagaUsesFindGridAudioStaging: Boolean,
@@ -50,7 +52,19 @@ fun FindLetterGridStationContent(
             stationUiSpec.stationId == TrainingV1Config.STATION_FIND_HEARD_LETTER_IN_GRID
     val inlineInstructionText =
         if (isSagaRevealStation || isTrainingStation4) {
-            stationUiSpec.findGridInlineInstructionOverride
+            val resolvedChapter1FindLetterOverride =
+                if (stationUiSpec.chapterId == 1 &&
+                    stationUiSpec.stationId == Chapter1StationOrder.REVEAL_THEN_CHOOSE &&
+                    chapter1PlayerAddress != null
+                ) {
+                    when (chapter1PlayerAddress) {
+                        PlayerAddress.Boy -> "\u200Fמצא את האות:"
+                        PlayerAddress.Girl -> "\u200Fמצאי את האות:"
+                    }
+                } else {
+                    null
+                }
+            resolvedChapter1FindLetterOverride ?: stationUiSpec.findGridInlineInstructionOverride
                 ?: if (listenOnly) {
                     StationInstructionCopy.FindGridListenFirst
                 } else {

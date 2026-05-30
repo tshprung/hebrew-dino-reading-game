@@ -1,6 +1,7 @@
 package com.tal.hebrewdino.ui.screens
 
 import com.tal.hebrewdino.ui.audio.AudioClips
+import com.tal.hebrewdino.ui.audio.RawVoicePlayer
 import com.tal.hebrewdino.ui.audio.SoundPoolPlayer
 import com.tal.hebrewdino.ui.audio.VoicePlayer
 import com.tal.hebrewdino.ui.domain.AnswerResult
@@ -35,6 +36,7 @@ internal object PickLetterActions {
         scope: CoroutineScope,
         voice: VoicePlayer,
         sfx: SoundPoolPlayer,
+        rawVoice: RawVoicePlayer?,
         audioRuntime: GameAudioRuntimeState,
         onWrongFeedback: (wrongPickedLetter: String) -> Unit,
         advanceAfterRound: suspend (isLast: Boolean, ch3SpellMidWord: Boolean) -> Unit,
@@ -69,7 +71,13 @@ internal object PickLetterActions {
                                     scope = scope,
                                     audioRuntime = audioRuntime,
                                 ) {
-                                    GameAudioActions.playPraiseNoImmediateRepeat(voice, audioRuntime, HighlightedWordDonePraiseCandidates)
+                                    GameAudioActions.playPraiseNoImmediateRepeat(
+                                        voice = voice,
+                                        audioRuntime = audioRuntime,
+                                        candidates = HighlightedWordDonePraiseCandidates,
+                                        chapterId = chapterId,
+                                        rawVoice = rawVoice,
+                                    )
                                 }
                             GameAudioActions.joinSilently(job)
                         }
@@ -96,7 +104,13 @@ internal object PickLetterActions {
                                 audioRuntime = audioRuntime,
                             ) {
                                 voice.playBlocking(letterName)
-                                GameAudioActions.playPraiseNoImmediateRepeat(voice, audioRuntime, praise)
+                                GameAudioActions.playPraiseNoImmediateRepeat(
+                                    voice = voice,
+                                    audioRuntime = audioRuntime,
+                                    candidates = praise,
+                                    chapterId = chapterId,
+                                    rawVoice = rawVoice,
+                                )
                             }
                         GameAudioActions.joinSilently(job)
                         val isLast = session.currentIndex >= session.totalQuestions - 1
@@ -116,7 +130,13 @@ internal object PickLetterActions {
                                 if (letterName != null && voice.hasAsset(letterName)) {
                                     voice.playBlocking(letterName)
                                 }
-                                GameAudioActions.playPraiseNoImmediateRepeat(voice, audioRuntime, praise)
+                                GameAudioActions.playPraiseNoImmediateRepeat(
+                                    voice = voice,
+                                    audioRuntime = audioRuntime,
+                                    candidates = praise,
+                                    chapterId = chapterId,
+                                    rawVoice = rawVoice,
+                                )
                             }
                         GameAudioActions.joinSilently(job)
                         val isLast = session.currentIndex >= session.totalQuestions - 1

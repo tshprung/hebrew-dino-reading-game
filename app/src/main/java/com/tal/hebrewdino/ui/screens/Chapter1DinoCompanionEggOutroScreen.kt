@@ -124,6 +124,8 @@ fun Chapter1DinoCompanionEggOutroScreen(
     val (portraitW, portraitH) = Chapter1DinoCompanionPilot.finalePortraitSize(isCompactLandscapePhone)
 
     val foundEggSize = if (isCompactLandscapePhone) 140.dp else 176.dp
+    val bubblePortraitW = if (isCompactLandscapePhone) 148.dp else 168.dp
+    val bubblePortraitH = bubblePortraitW
 
     val assets = remember(companionCharacter) { Chapter1DinoCompanionPilot.assets(companionCharacter) }
 
@@ -248,10 +250,23 @@ fun Chapter1DinoCompanionEggOutroScreen(
             ) {
 
                 if (phase == OutroPhase.Companion) {
-                    CompanionDinoSpeechBubble(
-                        text = Chapter1CompanionCopy.chapter1CompletionSpeechBubbleText,
-                        modifier = Modifier.fillMaxWidth(if (isCompactLandscapePhone) 0.98f else 0.92f),
-                    )
+                    androidx.compose.foundation.layout.Row(
+                        modifier = Modifier.fillMaxWidth(if (isCompactLandscapePhone) 1f else 0.94f),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    ) {
+                        CompanionDinoSpeechBubble(
+                            text = Chapter1CompanionCopy.chapter1CompletionSpeechBubbleText,
+                            modifier = Modifier.weight(1f, fill = true),
+                        )
+                        CompanionDinoPortrait(
+                            poseRes = assets.poseHappy,
+                            talkFrameResIds = assets.talkFrameResIds,
+                            isTalking = voicePlaying,
+                            modifier = Modifier.size(width = bubblePortraitW, height = bubblePortraitH),
+                            contentDescription = companionCharacter.displayNameHebrew(),
+                        )
+                    }
                 } else {
                     StoryReadablePanel(modifier = Modifier.fillMaxWidth(if (isCompactLandscapePhone) 1f else 0.88f)) {
                         Text(
@@ -271,14 +286,16 @@ fun Chapter1DinoCompanionEggOutroScreen(
                 Spacer(modifier = Modifier.height(if (isCompactLandscapePhone) 10.dp else 14.dp))
 
                 FoundEggCelebration(eggSize = foundEggSize)
-                Spacer(modifier = Modifier.height(if (isCompactLandscapePhone) 8.dp else 12.dp))
-                CompanionDinoPortrait(
-                    poseRes = assets.poseHappy,
-                    talkFrameResIds = assets.talkFrameResIds,
-                    isTalking = voicePlaying,
-                    modifier = Modifier.size(width = portraitW.dp, height = portraitH.dp),
-                    contentDescription = companionCharacter.displayNameHebrew(),
-                )
+                if (phase != OutroPhase.Companion) {
+                    Spacer(modifier = Modifier.height(if (isCompactLandscapePhone) 8.dp else 12.dp))
+                    CompanionDinoPortrait(
+                        poseRes = assets.poseHappy,
+                        talkFrameResIds = assets.talkFrameResIds,
+                        isTalking = voicePlaying,
+                        modifier = Modifier.size(width = portraitW.dp, height = portraitH.dp),
+                        contentDescription = companionCharacter.displayNameHebrew(),
+                    )
+                }
             }
 
 
