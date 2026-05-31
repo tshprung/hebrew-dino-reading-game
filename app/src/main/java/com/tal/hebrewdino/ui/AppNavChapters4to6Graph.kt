@@ -68,6 +68,8 @@ internal fun NavGraphBuilder.chapterFourToSixGraph(host: AppNavHostState) {
         JourneyScreen(
             unlockedLevel = host.chapter4UnlockedStation,
             completedLevels = host.chapter4CompletedStations,
+            useSelectedCompanionOnMap = true,
+            companionCharacter = host.companionCharacter,
             endMarkerReached = host.chapter4Completed || host.chapter4AllStationsComplete,
             totalLevels = Chapter4Config.STATION_COUNT,
             headerTitle = "פרק 4 - סיבוך בדרך",
@@ -115,6 +117,7 @@ internal fun NavGraphBuilder.chapterFourToSixGraph(host: AppNavHostState) {
             stationId = stationId,
             onBack = { host.navController.popBackStack() },
             suppressInGameDinoProgress = host.chapter4CompletedStations.contains(stationId),
+            playerAddress = host.playerAddress,
             onComplete = { completedStationId, correctCount, mistakeCount ->
                 host.scope.launch {
                     host.progress.markChapter4CompletedStation(completedStationId)
@@ -162,6 +165,8 @@ internal fun NavGraphBuilder.chapterFourToSixGraph(host: AppNavHostState) {
             correct = correct,
             mistakes = mistakes,
             onBackToMap = backToMap,
+            showSelectedCompanionPortrait = true,
+            selectedCompanionCharacter = host.companionCharacter,
         )
     }
 
@@ -212,6 +217,8 @@ internal fun NavGraphBuilder.chapterFourToSixGraph(host: AppNavHostState) {
         JourneyScreen(
             unlockedLevel = host.chapter5UnlockedStation,
             completedLevels = host.chapter5CompletedStations,
+            useSelectedCompanionOnMap = true,
+            companionCharacter = host.companionCharacter,
             endMarkerReached = host.chapter5Completed || host.chapter5AllStationsComplete,
             totalLevels = Chapter5Config.STATION_COUNT,
             headerTitle = "פרק 5 - הביצה השלישית",
@@ -260,6 +267,7 @@ internal fun NavGraphBuilder.chapterFourToSixGraph(host: AppNavHostState) {
             stationId = stationId,
             onBack = { host.navController.popBackStack() },
             suppressInGameDinoProgress = host.chapter5CompletedStations.contains(stationId),
+            playerAddress = host.playerAddress,
             onComplete = { completedStationId, correctCount, mistakeCount ->
                 host.scope.launch {
                     host.progress.markChapter5CompletedStation(completedStationId)
@@ -307,6 +315,8 @@ internal fun NavGraphBuilder.chapterFourToSixGraph(host: AppNavHostState) {
             correct = correct,
             mistakes = mistakes,
             onBackToMap = backToMap,
+            showSelectedCompanionPortrait = true,
+            selectedCompanionCharacter = host.companionCharacter,
         )
     }
 
@@ -357,6 +367,8 @@ internal fun NavGraphBuilder.chapterFourToSixGraph(host: AppNavHostState) {
         JourneyScreen(
             unlockedLevel = host.chapter6UnlockedStation,
             completedLevels = host.chapter6CompletedStations,
+            useSelectedCompanionOnMap = true,
+            companionCharacter = host.companionCharacter,
             endMarkerReached = host.chapter6Completed || host.chapter6AllStationsComplete,
             totalLevels = Chapter6Config.STATION_COUNT,
             headerTitle = "פרק 6 - חוזרים הביתה",
@@ -449,6 +461,8 @@ internal fun NavGraphBuilder.chapterFourToSixGraph(host: AppNavHostState) {
             correct = correct,
             mistakes = mistakes,
             onBackToMap = backToMap,
+            showSelectedCompanionPortrait = true,
+            selectedCompanionCharacter = host.companionCharacter,
         )
     }
 

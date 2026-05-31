@@ -20,7 +20,9 @@ class StationBehaviorRegistryTest {
         chapterId: Int,
         stationId: Int,
     ): String {
-        return if (chapterId == 1 && stationId == FINALE_PICTURE_LETTER_MATCH) {
+        return if ((chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) &&
+            stationId == FINALE_PICTURE_LETTER_MATCH
+        ) {
             "התאימו כל אות למילה שמתחילה בה"
         } else {
             StationInstructionCopy.MatchLetterFinale
@@ -493,7 +495,7 @@ class StationBehaviorRegistryTest {
     @Test
     fun episode4_finale_matchLetterInstructionText_present() {
         assertEquals(
-            StationInstructionCopy.MatchLetterFinale,
+            "התאימו כל אות למילה שמתחילה בה",
             StationBehaviorRegistry.getStationUiSpec(4, FINALE_PICTURE_LETTER_MATCH).matchLetterInstructionText,
         )
     }

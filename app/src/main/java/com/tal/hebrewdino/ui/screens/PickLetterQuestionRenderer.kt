@@ -44,7 +44,10 @@ internal fun PickLetterQuestionRenderer(
     modifier: Modifier = Modifier,
 ) {
     val resolvedPickLetterInstructionOverride =
-        if (chapterId == 1 && stationId == Chapter1StationOrder.TAP_LETTER && chapter1PlayerAddress != null) {
+        if ((chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) &&
+            stationId == Chapter1StationOrder.TAP_LETTER &&
+            chapter1PlayerAddress != null
+        ) {
             when (chapter1PlayerAddress) {
                 PlayerAddress.Boy -> "\u200Fבחר את האות:"
                 PlayerAddress.Girl -> "\u200Fבחרי את האות:"

@@ -44,7 +44,7 @@ internal suspend fun playIntroPrompt(
 ) {
     if (!audioEnabled) return
 
-    if (chapterId == 1 && chapter1PlayerAddress != null && rawVoice != null) {
+    if ((chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) && chapter1PlayerAddress != null && rawVoice != null) {
         if (
             playChapter1AddressAwareIntro(
                 chapterId = chapterId,

@@ -290,6 +290,7 @@ internal fun GameQuestionHost(
                         ui.stationUiSpec.popBalloonsPopAllLettersBannerInstruction
                             ?: StationInstructionCopy.PopBalloonsPopAllLettersInWord,
                     stationUiSpec = ui.stationUiSpec,
+                    chapter1PlayerAddress = ui.chapter1PlayerAddress,
                     isCompactLandscapePhone = ui.isCompactLandscapePhone,
                     listenOnly = ui.listenOnly,
                     sagaUsesPopBalloonsAudioStaging = ui.sagaUsesPopBalloonsAudioStaging,

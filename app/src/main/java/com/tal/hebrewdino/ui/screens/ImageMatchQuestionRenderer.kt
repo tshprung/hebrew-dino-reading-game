@@ -35,7 +35,7 @@ internal fun ImageMatchQuestionRenderer(
     modifier: Modifier = Modifier,
 ) {
     val rawHeaderInstructionText =
-        if (chapterId == 1 &&
+        if ((chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) &&
             stationId == Chapter1StationOrder.PICTURE_PICK_ALL &&
             chapter1PlayerAddress != null
         ) {

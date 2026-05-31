@@ -57,37 +57,47 @@ fun SeasonsScreen(
     modifier: Modifier = Modifier,
 ) {
     val scroll = rememberScrollState()
-    val season2Enabled = BuildConfig.DEBUG
     val seasons =
-        listOf(
-            SeasonCardConfig(
-                seasonId = 1,
-                title = "עונה 1: המסע הראשון",
-                subtitle = "6 פרקים + אימון",
-                enabled = true,
-            ),
-            SeasonCardConfig(
-                seasonId = 2,
-                title = "עונה 2: דינוזאורים",
-                subtitle = "פרוטוטיפ — לוח פאזל T-Rex",
-                status = if (season2Enabled) "פרוטוטיפ (Debug)" else "בקרוב",
-                enabled = season2Enabled,
-            ),
-            SeasonCardConfig(
-                seasonId = 3,
-                title = "עונה 3: קוראים יותר",
-                subtitle = "תרגול מתקדם יותר עם מילים מוכרות",
-                status = "בפיתוח",
-                enabled = false,
-            ),
-            SeasonCardConfig(
-                seasonId = 4,
-                title = "עונה 4: הרפתקה חדשה",
-                subtitle = "עוד מסע עם דינו והאותיות",
-                status = "בפיתוח",
-                enabled = false,
-            ),
-        )
+        if (BuildConfig.DEBUG) {
+            listOf(
+                SeasonCardConfig(
+                    seasonId = 1,
+                    title = "עונה 1: המסע הראשון",
+                    subtitle = "6 פרקים + אימון",
+                    enabled = true,
+                ),
+                SeasonCardConfig(
+                    seasonId = 2,
+                    title = "עונה 2: דינוזאורים",
+                    subtitle = "פרוטוטיפ — לוח פאזל T-Rex",
+                    status = "פרוטוטיפ (Debug)",
+                    enabled = true,
+                ),
+                SeasonCardConfig(
+                    seasonId = 3,
+                    title = "עונה 3: קוראים יותר",
+                    subtitle = "תרגול מתקדם יותר עם מילים מוכרות",
+                    status = "בפיתוח",
+                    enabled = false,
+                ),
+                SeasonCardConfig(
+                    seasonId = 4,
+                    title = "עונה 4: הרפתקה חדשה",
+                    subtitle = "עוד מסע עם דינו והאותיות",
+                    status = "בפיתוח",
+                    enabled = false,
+                ),
+            )
+        } else {
+            listOf(
+                SeasonCardConfig(
+                    seasonId = 1,
+                    title = "עונה 1: המסע הראשון",
+                    subtitle = "6 פרקים + אימון",
+                    enabled = true,
+                ),
+            )
+        }
 
     Box(modifier = modifier.fillMaxSize()) {
         SeasonsAmbientBackground(modifier = Modifier.fillMaxSize())

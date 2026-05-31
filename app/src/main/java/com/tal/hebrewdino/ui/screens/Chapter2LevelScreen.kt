@@ -3,6 +3,7 @@ package com.tal.hebrewdino.ui.screens
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.tal.hebrewdino.R
+import com.tal.hebrewdino.ui.data.PlayerAddress
 import com.tal.hebrewdino.ui.domain.Chapter2Config
 import com.tal.hebrewdino.ui.domain.Chapter2LetterPoolSpec
 import com.tal.hebrewdino.ui.domain.StationQuizPlans
@@ -15,6 +16,7 @@ fun Chapter2LevelScreen(
     onBack: () -> Unit,
     onComplete: (stationId: Int, correctCount: Int, mistakeCount: Int) -> Unit,
     suppressInGameDinoProgress: Boolean = false,
+    playerAddress: PlayerAddress? = null,
     modifier: Modifier = Modifier,
 ) {
     val station = stationId.coerceIn(1, Chapter2Config.STATION_COUNT)
@@ -29,6 +31,7 @@ fun Chapter2LevelScreen(
         onBack = onBack,
         onComplete = onComplete,
         suppressInGameDinoProgress = suppressInGameDinoProgress,
+        chapter1PlayerAddress = playerAddress,
         modifier = modifier,
     )
 }

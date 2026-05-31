@@ -215,28 +215,20 @@ internal fun NavGraphBuilder.systemAndTrainingGraph(host: AppNavHostState) {
                     }
                     2 -> {
                         val canEnterChapter2 = host.beachOutroSeen || host.chapter1AllStationsComplete
-                        if (canEnterChapter2) {
-                            // Always show chapter intro on entry (user request).
-                            host.navController.navigate(NavRoutes.Ch2Intro)
-                        }
+                        if (canEnterChapter2) host.navController.navigate(NavRoutes.Ch2Intro)
                     }
                     3 -> {
-                        val next =
-                            when {
-                                !host.chapter2Completed -> NavRoutes.Chapters
-                                else -> NavRoutes.Ch3Intro
-                            }
-                        if (next != NavRoutes.Chapters) host.navController.navigate(next)
+                        if (host.chapter2Completed) {
+                            host.navController.navigate(NavRoutes.Ch3Intro)
+                        }
                     }
                     4 -> {
                         if (host.chapter3Completed) {
-                            // Always show chapter intro on entry, then letters (same behavior as chapters 1–3).
                             host.navController.navigate(NavRoutes.Ch4Intro)
                         }
                     }
                     5 -> {
                         if (host.chapter4Completed) {
-                            // Always show chapter intro on entry, then letters (same behavior as chapters 1–3).
                             host.navController.navigate(NavRoutes.Ch5Intro)
                         }
                     }
@@ -323,9 +315,7 @@ internal fun NavGraphBuilder.systemAndTrainingGraph(host: AppNavHostState) {
             },
             onResetAll = {
                 host.scope.launch {
-                    host.progress.resetAll()
-                    season2Progress.resetSeason2()
-                    host.prefs.clearOnboarding()
+                    host.progress.fullGameReset()
                     host.navController.navigate(NavRoutes.Opening) {
                         popUpTo(host.navController.graph.startDestinationId) { inclusive = true }
                         launchSingleTop = true

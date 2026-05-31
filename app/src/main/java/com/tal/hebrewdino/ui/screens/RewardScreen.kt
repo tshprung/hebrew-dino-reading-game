@@ -129,6 +129,8 @@ fun RewardScreen(
     /** Season 1 Chapter 1 pilot: happy Dino + short raw success clip (no station VO). */
     chapter1DinoCompanionPilot: Boolean = false,
     chapter1CompanionCharacter: DinoCharacter = DinoCharacter.Dino,
+    showSelectedCompanionPortrait: Boolean = false,
+    selectedCompanionCharacter: DinoCharacter = DinoCharacter.Dino,
     modifier: Modifier = Modifier,
 ) {
     fun rtl(text: String): String = "\u200F$text"
@@ -139,10 +141,19 @@ fun RewardScreen(
     val rawVoice = remember(chapter1DinoCompanionPilot) { if (chapter1DinoCompanionPilot) RawVoicePlayer(context) else null }
     var navigatedAway by remember(levelId) { mutableStateOf(false) }
     var companionVoicePlaying by remember(levelId) { mutableStateOf(false) }
+    val showCompanionPortrait = chapter1DinoCompanionPilot || showSelectedCompanionPortrait
+    val portraitCharacter =
+        if (chapter1DinoCompanionPilot) {
+            chapter1CompanionCharacter
+        } else {
+            selectedCompanionCharacter
+        }
     val companionRewardStyle =
-        remember(levelId, chapter1DinoCompanionPilot) {
+        remember(levelId, chapter1DinoCompanionPilot, showSelectedCompanionPortrait) {
             if (chapter1DinoCompanionPilot) {
                 Chapter1DinoCompanionPilot.rewardCelebrationForStation(levelId)
+            } else if (showSelectedCompanionPortrait) {
+                CompanionRewardCelebrationStyle.Happy
             } else {
                 CompanionRewardCelebrationStyle.Happy
             }
@@ -272,7 +283,7 @@ fun RewardScreen(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(14.dp, Alignment.CenterHorizontally),
             ) {
-                if (chapter1DinoCompanionPilot) {
+                if (showCompanionPortrait) {
                     Box(
                         modifier =
                             Modifier
@@ -291,8 +302,8 @@ fun RewardScreen(
                     ) {
                         CompanionDinoRewardCelebration(
                             style = companionRewardStyle,
-                            isTalking = companionVoicePlaying,
-                            companionCharacter = chapter1CompanionCharacter,
+                            isTalking = chapter1DinoCompanionPilot && companionVoicePlaying,
+                            companionCharacter = portraitCharacter,
                             modifier = Modifier.fillMaxSize(),
                         )
                     }
@@ -403,7 +414,7 @@ fun RewardScreen(
                     )
                 }
                 Spacer(modifier = Modifier.height(8.dp))
-                if (chapter1DinoCompanionPilot) {
+                if (showCompanionPortrait) {
                     Box(
                         modifier =
                             Modifier
@@ -422,8 +433,8 @@ fun RewardScreen(
                     ) {
                         CompanionDinoRewardCelebration(
                             style = companionRewardStyle,
-                            isTalking = companionVoicePlaying,
-                            companionCharacter = chapter1CompanionCharacter,
+                            isTalking = chapter1DinoCompanionPilot && companionVoicePlaying,
+                            companionCharacter = portraitCharacter,
                             modifier = Modifier.fillMaxSize(),
                         )
                     }

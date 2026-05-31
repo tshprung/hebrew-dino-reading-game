@@ -96,6 +96,8 @@ internal fun NavGraphBuilder.chapterOneToThreeGraph(host: AppNavHostState) {
         JourneyScreen(
             unlockedLevel = host.chapter2UnlockedStation,
             completedLevels = host.chapter2CompletedStations,
+            useSelectedCompanionOnMap = true,
+            companionCharacter = host.companionCharacter,
             // After finishing all stations, Dino should stand by the tracks end marker and stay there.
             endMarkerReached = host.chapter2Completed || host.chapter2AllStationsComplete,
             totalLevels = Chapter2Config.STATION_COUNT,
@@ -162,6 +164,8 @@ internal fun NavGraphBuilder.chapterOneToThreeGraph(host: AppNavHostState) {
         JourneyScreen(
             unlockedLevel = host.chapter3UnlockedStation,
             completedLevels = host.chapter3CompletedStations,
+            useSelectedCompanionOnMap = true,
+            companionCharacter = host.companionCharacter,
             endMarkerReached = host.chapter3Completed || host.chapter3AllStationsComplete,
             totalLevels = Chapter3Config.STATION_COUNT,
             headerTitle = "פרק 3 - מצא את הביצה הורודה",
@@ -285,6 +289,7 @@ internal fun NavGraphBuilder.chapterOneToThreeGraph(host: AppNavHostState) {
             stationId = stationId,
             onBack = { host.navController.popBackStack() },
             suppressInGameDinoProgress = host.chapter2CompletedStations.contains(stationId),
+            playerAddress = host.playerAddress,
             onComplete = { completedStationId, correctCount, mistakeCount ->
                 host.scope.launch {
                     host.progress.markChapter2CompletedStation(completedStationId)
@@ -433,6 +438,8 @@ internal fun NavGraphBuilder.chapterOneToThreeGraph(host: AppNavHostState) {
             // Match gameplay (`Chapter2LevelScreen`) so station-complete doesn't feel like a different "camera".
             backgroundRes = R.drawable.chapter2_level_overlay,
             onBackToMap = backToMap,
+            showSelectedCompanionPortrait = true,
+            selectedCompanionCharacter = host.companionCharacter,
         )
     }
 
@@ -506,6 +513,8 @@ internal fun NavGraphBuilder.chapterOneToThreeGraph(host: AppNavHostState) {
             mistakes = mistakes,
             backgroundRes = R.drawable.ch3_reward_bg,
             onBackToMap = backToMap,
+            showSelectedCompanionPortrait = true,
+            selectedCompanionCharacter = host.companionCharacter,
         )
     }
 

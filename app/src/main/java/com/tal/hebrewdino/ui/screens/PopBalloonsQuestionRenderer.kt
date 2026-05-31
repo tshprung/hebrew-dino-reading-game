@@ -17,6 +17,7 @@ import androidx.compose.ui.zIndex
 import com.tal.hebrewdino.ui.components.station.Chapter3SagaPopBalloonsWordBanner
 import com.tal.hebrewdino.ui.components.station.PopBalloonsInstructionHeaderBlock
 import com.tal.hebrewdino.ui.components.station.PopBalloonsStationContent
+import com.tal.hebrewdino.ui.data.PlayerAddress
 import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
 import com.tal.hebrewdino.ui.domain.Question
 import com.tal.hebrewdino.ui.domain.Season2ChapterIds
@@ -31,6 +32,7 @@ internal fun PopBalloonsQuestionRenderer(
     popAllLettersWordForBanner: String,
     popAllLettersBannerInstruction: String,
     stationUiSpec: StationUiSpec,
+    chapter1PlayerAddress: PlayerAddress?,
     isCompactLandscapePhone: Boolean,
     listenOnly: Boolean,
     sagaUsesPopBalloonsAudioStaging: Boolean,
@@ -60,6 +62,18 @@ internal fun PopBalloonsQuestionRenderer(
             stationUiSpec.stationId == Chapter1StationOrder.BALLOON_POP
     val compactLandscapePhoneTuning =
         forceSeason2Tuning || (isCompactLandscapePhone && stationUiSpec.popBalloonsCompactLandscapePhoneTuning)
+    val resolvedBalloonInstructionOverride =
+        if ((stationUiSpec.chapterId == 1 || stationUiSpec.chapterId == 2 || stationUiSpec.chapterId == 4 || stationUiSpec.chapterId == 5) &&
+            stationUiSpec.stationId == Chapter1StationOrder.BALLOON_POP &&
+            chapter1PlayerAddress != null
+        ) {
+            when (chapter1PlayerAddress) {
+                PlayerAddress.Boy -> "\u200Fפוצץ את הבלונים עם האות:"
+                PlayerAddress.Girl -> "\u200Fפוצצי את הבלונים עם האות:"
+            }
+        } else {
+            stationUiSpec.balloonInstructionOverride
+        }
 
     Column(
         modifier = modifier.fillMaxSize().padding(top = contentTopPaddingDp).scale(entryPulseScale),
@@ -77,7 +91,7 @@ internal fun PopBalloonsQuestionRenderer(
                 listenOnly = listenOnly,
                 sagaUsesPopBalloonsAudioStaging = sagaUsesPopBalloonsAudioStaging,
                 skipInstructionHeaderBlock = stationUiSpec.popBalloonsSkipInstructionHeaderBlock,
-                balloonInstructionOverride = stationUiSpec.balloonInstructionOverride,
+                balloonInstructionOverride = resolvedBalloonInstructionOverride,
                 useEpisode4BalloonInstructionPanel = stationUiSpec.useEpisode4BalloonInstructionPanel,
                 showSagaStation2InstructionLine = stationUiSpec.popBalloonsShowSagaStation2InstructionLine,
                 showTargetLetterChip = showPopBalloonsTargetLetterChip,
@@ -119,7 +133,7 @@ internal fun PopBalloonsQuestionRenderer(
                     listenOnly = listenOnly,
                     sagaUsesPopBalloonsAudioStaging = sagaUsesPopBalloonsAudioStaging,
                     skipInstructionHeaderBlock = stationUiSpec.popBalloonsSkipInstructionHeaderBlock,
-                    balloonInstructionOverride = stationUiSpec.balloonInstructionOverride,
+                    balloonInstructionOverride = resolvedBalloonInstructionOverride,
                     useEpisode4BalloonInstructionPanel = stationUiSpec.useEpisode4BalloonInstructionPanel,
                     showSagaStation2InstructionLine = stationUiSpec.popBalloonsShowSagaStation2InstructionLine,
                     showTargetLetterChip = showPopBalloonsTargetLetterChip,

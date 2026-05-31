@@ -197,6 +197,7 @@ fun JourneyScreen(
     companionImageRes: Int? = null,
     /** Season 1 Ch.1: companion Dino on the road (no legacy walk sprites). */
     useCompanionDinoOnMap: Boolean = false,
+    useSelectedCompanionOnMap: Boolean = false,
     /** Selected companion when [useCompanionDinoOnMap] (Season 1 Ch.1). */
     companionCharacter: DinoCharacter = DinoCharacter.Dino,
     endMarker: JourneyEndMarker = JourneyEndMarker.Egg,
@@ -210,14 +211,15 @@ fun JourneyScreen(
         remember(companionCharacter) {
             CompanionAssets.forCharacter(companionCharacter)
         }
+    val useSelectedCompanionSprites = useCompanionDinoOnMap || useSelectedCompanionOnMap
     val mapWalkFrameResIds =
-        if (useCompanionDinoOnMap) {
+        if (useSelectedCompanionSprites) {
             chapter1CompanionAssets.talkFrameResIds
         } else {
             walkFrames
         }
     val mapDinoIdleRes =
-        if (useCompanionDinoOnMap) {
+        if (useSelectedCompanionSprites) {
             chapter1CompanionAssets.poseIdle
         } else {
             R.drawable.dino_idle

@@ -53,7 +53,10 @@ fun FindLetterGridStationContent(
     val inlineInstructionText =
         if (isSagaRevealStation || isTrainingStation4) {
             val resolvedChapter1FindLetterOverride =
-                if (stationUiSpec.chapterId == 1 &&
+                if ((stationUiSpec.chapterId == 1 ||
+                        stationUiSpec.chapterId == 2 ||
+                        stationUiSpec.chapterId == 4 ||
+                        stationUiSpec.chapterId == 5) &&
                     stationUiSpec.stationId == Chapter1StationOrder.REVEAL_THEN_CHOOSE &&
                     chapter1PlayerAddress != null
                 ) {

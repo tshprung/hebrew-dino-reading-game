@@ -148,7 +148,9 @@ object StationBehaviorRegistry {
             hintMode = StationHintMode.None,
             matchLetterInstructionReadablePanel = true,
             matchLetterInstructionText =
-                if (chapterId == 1 && stationId == FINALE_PICTURE_LETTER_MATCH) {
+                if ((chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) &&
+                    stationId == FINALE_PICTURE_LETTER_MATCH
+                ) {
                     "התאימו כל אות למילה שמתחילה בה"
                 } else {
                     StationInstructionCopy.MatchLetterFinale

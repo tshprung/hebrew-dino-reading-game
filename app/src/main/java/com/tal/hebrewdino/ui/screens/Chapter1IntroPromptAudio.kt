@@ -38,7 +38,7 @@ internal suspend fun playChapter1AddressAwareIntro(
     station4IntroToWordGapBoost: Float,
     station4IntroToWordExtraPauseMs: Long,
 ): Boolean {
-    if (chapterId != 1 || playerAddress == null) return false
+    if ((chapterId != 1 && chapterId != 2 && chapterId != 4 && chapterId != 5) || playerAddress == null) return false
     val kind =
         Chapter1AddressAwareAudio.instructionKindFor(
             stationId = stationId,
