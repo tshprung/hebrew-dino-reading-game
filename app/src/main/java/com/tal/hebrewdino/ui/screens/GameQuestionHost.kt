@@ -247,13 +247,28 @@ internal fun GameQuestionHost(
                     onRepeatLetterClick = repeatLetter@{
                         if (!ui.audioEnabled) return@repeatLetter
                         val letter = current.correctAnswer
-                        val clip = AudioClips.letterNameClip(letter) ?: return@repeatLetter
                         GameAudioActions.launchPromptVoice(
                             audioEnabled = ui.audioEnabled,
                             scope = deps.scope,
                             audioRuntime = deps.audioRuntime,
                             cancelFeedbackVoice = deps.cancelFeedbackVoice,
-                        ) { deps.voice.playBlocking(clip) }
+                        ) {
+                            if (ui.chapterId == 1 || ui.chapterId == 2 || ui.chapterId == 4 || ui.chapterId == 5) {
+                                val resId = AudioClips.letterNameRawResId(letter)
+                                if (resId == null) {
+                                    android.util.Log.e(
+                                        "MissingContent",
+                                        "Missing required repeat-letter audio. chapterId=${ui.chapterId} stationId=${ui.stationId} context=GameQuestionHost.onRepeatLetterClick stage=missing raw letter-name mapping letter='$letter'",
+                                    )
+                                    deps.rawVoice.playRawBlocking(0)
+                                    return@launchPromptVoice
+                                }
+                                deps.rawVoice.playRawBlocking(resId)
+                            } else {
+                                val clip = AudioClips.letterNameClip(letter) ?: return@launchPromptVoice
+                                deps.voice.playBlocking(clip)
+                            }
+                        }
                     },
                     onPick = { picked -> handlers.handlePickLetterPick(picked) },
                 )
@@ -360,15 +375,30 @@ internal fun GameQuestionHost(
                         { handlers.performSideHelpReplay() }
                     } else if (ui.audioEnabled) {
                         {
-                            val wordPath = AudioClips.wordClipByCatalogId(current.catalogEntryId)
-                            if (deps.voice.hasAsset(wordPath)) {
-                                GameAudioActions.launchPromptVoice(
-                                    audioEnabled = ui.audioEnabled,
-                                    scope = deps.scope,
-                                    audioRuntime = deps.audioRuntime,
-                                    cancelFeedbackVoice = deps.cancelFeedbackVoice,
-                                ) {
-                                    deps.voice.playBlocking(wordPath)
+                            val requiresRawWordReplay =
+                                (ui.chapterId == 3 || ui.chapterId == 6) && ui.stationId == 1
+                            GameAudioActions.launchPromptVoice(
+                                audioEnabled = ui.audioEnabled,
+                                scope = deps.scope,
+                                audioRuntime = deps.audioRuntime,
+                                cancelFeedbackVoice = deps.cancelFeedbackVoice,
+                            ) {
+                                if (requiresRawWordReplay) {
+                                    val resId = AudioClips.wordRawResIdByCatalogId(current.catalogEntryId)
+                                    if (resId == null) {
+                                        android.util.Log.e(
+                                            "MissingContent",
+                                            "Missing required word audio. chapterId=${ui.chapterId} stationId=${ui.stationId} context=GameQuestionHost.onPictureTapReplayWord stage=missing raw word mapping catalogId='${current.catalogEntryId}'",
+                                        )
+                                        deps.rawVoice.playRawBlocking(0)
+                                        return@launchPromptVoice
+                                    }
+                                    deps.rawVoice.playRawBlocking(resId)
+                                } else {
+                                    val wordPath = AudioClips.wordClipByCatalogId(current.catalogEntryId)
+                                    if (deps.voice.hasAsset(wordPath)) {
+                                        deps.voice.playBlocking(wordPath)
+                                    }
                                 }
                             }
                         }
@@ -451,32 +481,82 @@ internal fun GameQuestionHost(
                     val matchChoices = current.choices
 
                     var lastPraiseClip by remember(ui.chapterId, ui.stationId) { mutableStateOf<String?>(null) }
+                    var lastSpokenMatchWordChoiceId by remember(ui.chapterId, ui.stationId, deps.session.currentIndex) {
+                        mutableStateOf<String?>(null)
+                    }
 
                     fun handleMatchWordPressed(choiceId: String) {
+                        val requiresRawWordTap = (ui.chapterId == 3 || ui.chapterId == 6) && ui.stationId == 2
+                        val rawResId =
+                            if (requiresRawWordTap) {
+                                AudioClips.wordRawResIdByCatalogId(choiceId)
+                            } else {
+                                null
+                            }
+                        val clip =
+                            if (requiresRawWordTap) {
+                                ""
+                            } else {
+                                AudioClips.imageToWordClipByCatalogId(
+                                    catalogEntryId = choiceId,
+                                    chapterId = ui.chapterId,
+                                    voiceHasAsset = { path -> deps.voice.hasAsset(path) },
+                                )
+                            }
+                        val spokenNow =
+                            ui.audioEnabled &&
+                                if (requiresRawWordTap) {
+                                    rawResId != null
+                                } else {
+                                    deps.voice.hasAsset(clip)
+                                }
+                        lastSpokenMatchWordChoiceId = if (spokenNow) choiceId else null
                         GameAudioActions.launchPromptVoice(
                             audioEnabled = ui.audioEnabled,
                             scope = deps.scope,
                             audioRuntime = deps.audioRuntime,
                             cancelFeedbackVoice = deps.cancelFeedbackVoice,
                         ) {
-                            val clip =
-                                AudioClips.imageToWordClipByCatalogId(
-                                    catalogEntryId = choiceId,
-                                    chapterId = ui.chapterId,
-                                    voiceHasAsset = { path -> deps.voice.hasAsset(path) },
-                                )
-                            deps.voice.playBlocking(clip)
+                            if (requiresRawWordTap) {
+                                val resId = rawResId
+                                if (resId == null) {
+                                    android.util.Log.e(
+                                        "MissingContent",
+                                        "Missing required word audio. chapterId=${ui.chapterId} stationId=${ui.stationId} context=GameQuestionHost.handleMatchWordPressed stage=missing raw word mapping catalogId='$choiceId'",
+                                    )
+                                    deps.rawVoice.playRawBlocking(0)
+                                    return@launchPromptVoice
+                                }
+                                deps.rawVoice.playRawBlocking(resId)
+                            } else {
+                                deps.voice.playBlocking(clip)
+                            }
                         }
                     }
 
                     fun handleMatchLetterPressed(letter: String) {
-                        val clip = AudioClips.letterNameClip(letter) ?: return
                         GameAudioActions.launchPromptVoice(
                             audioEnabled = ui.audioEnabled,
                             scope = deps.scope,
                             audioRuntime = deps.audioRuntime,
                             cancelFeedbackVoice = deps.cancelFeedbackVoice,
-                        ) { deps.voice.playBlocking(clip) }
+                        ) {
+                            if (ui.chapterId == 1 || ui.chapterId == 2 || ui.chapterId == 3 || ui.chapterId == 4 || ui.chapterId == 5 || ui.chapterId == 6) {
+                                val resId = AudioClips.letterNameRawResId(letter)
+                                if (resId == null) {
+                                    android.util.Log.e(
+                                        "MissingContent",
+                                        "Missing required letter-name audio. chapterId=${ui.chapterId} stationId=${ui.stationId} context=GameQuestionHost.handleMatchLetterPressed stage=missing raw letter-name mapping letter='$letter'",
+                                    )
+                                    deps.rawVoice.playRawBlocking(0)
+                                    return@launchPromptVoice
+                                }
+                                deps.rawVoice.playRawBlocking(resId)
+                            } else {
+                                val clip = AudioClips.letterNameClip(letter) ?: return@launchPromptVoice
+                                deps.voice.playBlocking(clip)
+                            }
+                        }
                     }
 
                     fun handleMatchSolved() {
@@ -493,13 +573,35 @@ internal fun GameQuestionHost(
                                         cancelFeedbackVoice = deps.cancelFeedbackVoice,
                                     ) {
                                         val picked = pickRandomAvoiding(MatchPraiseClips, lastPraiseClip)
-                                        if (picked != null) {
-                                            lastPraiseClip = picked
-                                            if (ui.chapterId == 1 && picked == AudioClips.VoPraiseHitzlacht) {
-                                                deps.rawVoice.playRawBlocking(R.raw.vo_praise_meule)
-                                            } else {
-                                                deps.voice.playBlocking(picked)
+                                        val requiredChapter =
+                                            ui.chapterId == 1 || ui.chapterId == 2 || ui.chapterId == 4 || ui.chapterId == 5
+                                        if (picked == null) {
+                                            if (requiredChapter) {
+                                                android.util.Log.e(
+                                                    "MissingContent",
+                                                    "Missing required success praise audio. chapterId=${ui.chapterId} stationId=${ui.stationId} context=GameQuestionHost.handleMatchSolved stage=no picked praise clip",
+                                                )
+                                                deps.voice.playRequiredBlocking(
+                                                    assetPath = "",
+                                                    context = "GameQuestionHost.handleMatchSolved(missingPraisePick)",
+                                                    chapterId = ui.chapterId,
+                                                    stationId = ui.stationId,
+                                                )
                                             }
+                                            return@launchFeedbackVoice
+                                        }
+                                        lastPraiseClip = picked
+                                        if (requiredChapter && picked == AudioClips.VoPraiseHitzlacht) {
+                                            deps.rawVoice.playRawBlocking(R.raw.vo_praise_meule)
+                                        } else if (requiredChapter) {
+                                            deps.voice.playRequiredBlocking(
+                                                assetPath = picked,
+                                                context = "GameQuestionHost.handleMatchSolved(praise)",
+                                                chapterId = ui.chapterId,
+                                                stationId = ui.stationId,
+                                            )
+                                        } else {
+                                            deps.voice.playBlocking(picked)
                                         }
                                     }
                                 GameAudioActions.joinSilently(job)
@@ -529,6 +631,9 @@ internal fun GameQuestionHost(
                         onCorrectMatch = { _ ->
                             if (ui.audioEnabled) {
                                 deps.scope.launch {
+                                    if (ui.chapterId == 1 || ui.chapterId == 2 || ui.chapterId == 4 || ui.chapterId == 5) {
+                                        GameAudioActions.awaitTrackedVoices(deps.audioRuntime, 4500L)
+                                    }
                                     deps.sfx.playFirstAvailable(
                                         AudioClips.SfxCorrect,
                                         volume = 0.58f
@@ -537,15 +642,37 @@ internal fun GameQuestionHost(
                             }
                         },
                         onWrongMatch = { pickedLetter, pickedChoiceId ->
-                            if ((ui.chapterId == 1 || ui.chapterId == 2) &&
+                            if ((ui.chapterId == 1 || ui.chapterId == 2 || ui.chapterId == 4 || ui.chapterId == 5) &&
                                 ui.stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH
                             ) {
-                                handlers.onWrongFeedback(
-                                    pickedLetter,
-                                    pickedChoiceId,
-                                    false,
-                                    false,
-                                )
+                                val alreadySpoken =
+                                    if (ui.chapterId == 1 || ui.chapterId == 2 || ui.chapterId == 4 || ui.chapterId == 5) {
+                                        AudioClips.letterNameRawResId(pickedLetter) != null
+                                    } else {
+                                        val clip = AudioClips.letterNameClip(pickedLetter)
+                                        clip != null && deps.voice.hasAsset(clip)
+                                    }
+                                val wrongWordAlreadySpoken = lastSpokenMatchWordChoiceId == pickedChoiceId
+                                deps.scope.launch {
+                                    GameAudioActions.awaitTrackedVoices(deps.audioRuntime, 4500L)
+                                    handlers.onWrongFeedback(
+                                        pickedLetter,
+                                        pickedChoiceId,
+                                        alreadySpoken,
+                                        wrongWordAlreadySpoken,
+                                    )
+                                }
+                            } else if ((ui.chapterId == 3 || ui.chapterId == 6) && ui.stationId == 2) {
+                                val wrongWordAlreadySpoken = lastSpokenMatchWordChoiceId == pickedChoiceId
+                                deps.scope.launch {
+                                    GameAudioActions.awaitTrackedVoices(deps.audioRuntime, 4500L)
+                                    handlers.onWrongFeedback(
+                                        null,
+                                        pickedChoiceId,
+                                        false,
+                                        wrongWordAlreadySpoken,
+                                    )
+                                }
                             }
                         },
                         onMatchAttempt = { _ -> },

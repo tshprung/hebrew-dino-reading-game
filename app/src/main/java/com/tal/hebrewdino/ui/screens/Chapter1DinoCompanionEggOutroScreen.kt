@@ -71,6 +71,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.tal.hebrewdino.R
 
 import com.tal.hebrewdino.ui.audio.RawVoicePlayer
+import android.util.Log
 
 import com.tal.hebrewdino.ui.companion.Chapter1AddressAwareAudio
 
@@ -112,6 +113,9 @@ fun Chapter1DinoCompanionEggOutroScreen(
 ) {
 
     val context = LocalContext.current
+    val isDebuggable = remember {
+        (context.applicationContext.applicationInfo.flags and 0x2) != 0
+    }
 
     val lifecycleOwner = LocalLifecycleOwner.current
 
@@ -181,9 +185,44 @@ fun Chapter1DinoCompanionEggOutroScreen(
 
         phase = OutroPhase.Companion
         voicePlaying = true
-        rawVoice.playRawBlocking(Chapter1DinoCompanionPilot.chapterComplete)
+        val chapterCompleteRaw = Chapter1DinoCompanionPilot.chapterComplete
+        if (chapterCompleteRaw == 0) {
+            val msg =
+                "Missing required story narration raw resource. chapterId=1 storyContext=Chapter1DinoCompanionEggOutroScreen(chapterComplete) rawResId=0"
+            Log.e("MissingContent", msg)
+            if (isDebuggable) throw IllegalStateException(msg)
+        } else {
+            val failure =
+                runCatching { rawVoice.playRawBlocking(chapterCompleteRaw) }
+                    .exceptionOrNull()
+            if (failure != null) {
+                Log.e(
+                    "MissingContent",
+                    "Required story narration raw playback failed. chapterId=1 storyContext=Chapter1DinoCompanionEggOutroScreen(chapterComplete) rawResId=$chapterCompleteRaw",
+                    failure,
+                )
+                if (isDebuggable) throw failure
+            }
+        }
         phase = OutroPhase.Narrator
-        rawVoice.playRawBlocking(storyOutroRaw)
+        if (storyOutroRaw == 0) {
+            val msg =
+                "Missing required story narration raw resource. chapterId=1 storyContext=Chapter1DinoCompanionEggOutroScreen(narratorOutro) rawResId=0"
+            Log.e("MissingContent", msg)
+            if (isDebuggable) throw IllegalStateException(msg)
+        } else {
+            val failure =
+                runCatching { rawVoice.playRawBlocking(storyOutroRaw) }
+                    .exceptionOrNull()
+            if (failure != null) {
+                Log.e(
+                    "MissingContent",
+                    "Required story narration raw playback failed. chapterId=1 storyContext=Chapter1DinoCompanionEggOutroScreen(narratorOutro) rawResId=$storyOutroRaw",
+                    failure,
+                )
+                if (isDebuggable) throw failure
+            }
+        }
         voicePlaying = false
         phase = OutroPhase.Done
     }

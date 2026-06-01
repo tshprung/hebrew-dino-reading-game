@@ -6,6 +6,7 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.tal.hebrewdino.R
+import com.tal.hebrewdino.ui.companion.Chapter1DinoCompanionPilot
 import com.tal.hebrewdino.ui.domain.Chapter4Config
 import com.tal.hebrewdino.ui.domain.Chapter5Config
 import com.tal.hebrewdino.ui.domain.Chapter6Config
@@ -117,6 +118,7 @@ internal fun NavGraphBuilder.chapterFourToSixGraph(host: AppNavHostState) {
             stationId = stationId,
             onBack = { host.navController.popBackStack() },
             suppressInGameDinoProgress = host.chapter4CompletedStations.contains(stationId),
+            companionCharacter = host.companionCharacter,
             playerAddress = host.playerAddress,
             onComplete = { completedStationId, correctCount, mistakeCount ->
                 host.scope.launch {
@@ -167,6 +169,9 @@ internal fun NavGraphBuilder.chapterFourToSixGraph(host: AppNavHostState) {
             onBackToMap = backToMap,
             showSelectedCompanionPortrait = true,
             selectedCompanionCharacter = host.companionCharacter,
+            rewardSuccessRawResId = Chapter1DinoCompanionPilot.successClipForStation(stationId),
+            rewardChapterId = 4,
+            requireRawSuccessAudio = true,
         )
     }
 
@@ -267,6 +272,7 @@ internal fun NavGraphBuilder.chapterFourToSixGraph(host: AppNavHostState) {
             stationId = stationId,
             onBack = { host.navController.popBackStack() },
             suppressInGameDinoProgress = host.chapter5CompletedStations.contains(stationId),
+            companionCharacter = host.companionCharacter,
             playerAddress = host.playerAddress,
             onComplete = { completedStationId, correctCount, mistakeCount ->
                 host.scope.launch {
@@ -317,6 +323,9 @@ internal fun NavGraphBuilder.chapterFourToSixGraph(host: AppNavHostState) {
             onBackToMap = backToMap,
             showSelectedCompanionPortrait = true,
             selectedCompanionCharacter = host.companionCharacter,
+            rewardSuccessRawResId = Chapter1DinoCompanionPilot.successClipForStation(stationId),
+            rewardChapterId = 5,
+            requireRawSuccessAudio = true,
         )
     }
 

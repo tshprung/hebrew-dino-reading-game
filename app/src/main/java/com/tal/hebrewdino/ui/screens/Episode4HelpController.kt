@@ -1,6 +1,7 @@
 package com.tal.hebrewdino.ui.screens
 
 import com.tal.hebrewdino.ui.audio.AudioClips
+import com.tal.hebrewdino.ui.audio.RawVoicePlayer
 import com.tal.hebrewdino.ui.audio.SoundPoolPlayer
 import com.tal.hebrewdino.ui.audio.VoicePlayer
 import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
@@ -28,6 +29,7 @@ internal object SideHelpActions {
         session: LevelSession,
         voice: VoicePlayer,
         sfx: SoundPoolPlayer,
+        rawVoice: RawVoicePlayer,
         cancelFeedbackVoice: () -> Unit,
         audioRuntime: GameAudioRuntimeState,
         scope: CoroutineScope,
@@ -70,9 +72,29 @@ internal object SideHelpActions {
                 when (stationUiSpec.replayMode) {
                     StationReplayMode.TargetLetterOnly -> {
                         val letter = Episode4Help.targetLetterForHelpHint(q) ?: return@replay
+                        if (chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) {
+                            val resId = AudioClips.letterNameRawResId(letter)
+                            if (resId == null) {
+                                android.util.Log.e(
+                                    "MissingContent",
+                                    "Missing required help replay letter-name audio. chapterId=$chapterId stationId=$stationId context=SideHelpActions.startReplay(TargetLetterOnly) stage=missing raw letter-name mapping letter='$letter'",
+                                )
+                                rawVoice.playRawBlocking(0)
+                                return@replay
+                            }
+                            rawVoice.playRawBlocking(resId)
+                            return@replay
+                        }
                         val letterClip = AudioClips.letterNameClip(letter)
                         if (letterClip != null) {
-                            val id = sfx.playReturningStreamId(letterClip, volume = 1f)
+                            val id =
+                                sfx.playRequiredReturningStreamId(
+                                    assetPath = letterClip,
+                                    volume = 1f,
+                                    context = "SideHelpActions.startReplay(TargetLetterOnly)",
+                                    chapterId = chapterId,
+                                    stationId = stationId,
+                                )
                             if (id != null) return@replay
                             if (voice.hasAsset(letterClip)) {
                                 voice.playBlocking(letterClip)
@@ -80,7 +102,13 @@ internal object SideHelpActions {
                             }
                         }
                         if (chapterId == TrainingV1Config.CHAPTER_ID) return@replay
-                        speakLetterPrompt(voice, letter)
+                        speakLetterPrompt(
+                            voice = voice,
+                            letter = letter,
+                            chapterId = chapterId,
+                            stationId = stationId,
+                            context = "SideHelpActions.startReplay(TargetLetterOnly,fallback)",
+                        )
                     }
                     StationReplayMode.TargetWordOnly -> {
                         if (q is Question.PictureStartsWithQuestion) {
@@ -88,7 +116,15 @@ internal object SideHelpActions {
                             if (voice.hasAsset(wordPath)) voice.playBlocking(wordPath)
                         }
                     }
-                    else -> replayEpisode4Stations15RoundAudio(sfx = sfx, voice = voice, stationId = stationId, q = q)
+                    else ->
+                        replayEpisode4Stations15RoundAudio(
+                            sfx = sfx,
+                            voice = voice,
+                            chapterId = chapterId,
+                            stationId = stationId,
+                            q = q,
+                            rawVoice = rawVoice,
+                        )
                 }
             }
             return
@@ -97,18 +133,37 @@ internal object SideHelpActions {
             if (!audioEnabled) return
             val q = session.currentQuestion as? Question.PopBalloonsQuestion ?: return
             val letter = q.correctAnswer
-            val letterClip = AudioClips.letterNameClip(letter)
             GameAudioActions.launchPromptVoice(
                 audioEnabled = audioEnabled,
                 scope = scope,
                 audioRuntime = audioRuntime,
                 cancelFeedbackVoice = cancelFeedbackVoice,
             ) replay@{
+                if (chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) {
+                    val resId = AudioClips.letterNameRawResId(letter)
+                    if (resId == null) {
+                        android.util.Log.e(
+                            "MissingContent",
+                            "Missing required help replay letter-name audio. chapterId=$chapterId stationId=$stationId context=SideHelpActions.startReplay(PopBalloonsHelp) stage=missing raw letter-name mapping letter='$letter'",
+                        )
+                        rawVoice.playRawBlocking(0)
+                        return@replay
+                    }
+                    rawVoice.playRawBlocking(resId)
+                    return@replay
+                }
+                val letterClip = AudioClips.letterNameClip(letter)
                 if (letterClip != null && voice.hasAsset(letterClip)) {
                     voice.playBlocking(letterClip)
                     return@replay
                 }
-                speakLetterPrompt(voice, letter)
+                speakLetterPrompt(
+                    voice = voice,
+                    letter = letter,
+                    chapterId = chapterId,
+                    stationId = stationId,
+                    context = "SideHelpActions.startReplay(PopBalloonsHelp,fallback)",
+                )
             }
         }
     }

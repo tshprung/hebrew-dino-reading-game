@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import android.util.Log
 import com.tal.hebrewdino.R
 import com.tal.hebrewdino.ui.audio.RawVoicePlayer
 import com.tal.hebrewdino.ui.companion.Chapter1DinoCompanionPilot
@@ -51,6 +52,9 @@ fun Chapter1DinoCompanionIntroScreen(
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val rawVoice = remember { RawVoicePlayer(context = context) }
+    val isDebuggable = remember {
+        (context.applicationContext.applicationInfo.flags and 0x2) != 0
+    }
     var introPlaying by remember { mutableStateOf(false) }
     val isCompactLandscapePhone = ScreenFit.isCompactLandscapePhone()
     val (portraitW, portraitH) = Chapter1DinoCompanionPilot.introPortraitSize(isCompactLandscapePhone)
@@ -81,7 +85,24 @@ fun Chapter1DinoCompanionIntroScreen(
 
     LaunchedEffect(introClip) {
         introPlaying = true
-        rawVoice.playRawBlocking(introClip)
+        if (introClip == 0) {
+            val msg =
+                "Missing required story narration raw resource. chapterId=1 storyContext=Chapter1DinoCompanionIntroScreen rawResId=0"
+            Log.e("MissingContent", msg)
+            if (isDebuggable) throw IllegalStateException(msg)
+        } else {
+            val failure =
+                runCatching { rawVoice.playRawBlocking(introClip) }
+                    .exceptionOrNull()
+            if (failure != null) {
+                Log.e(
+                    "MissingContent",
+                    "Required story narration raw playback failed. chapterId=1 storyContext=Chapter1DinoCompanionIntroScreen rawResId=$introClip",
+                    failure,
+                )
+                if (isDebuggable) throw failure
+            }
+        }
         introPlaying = false
     }
 

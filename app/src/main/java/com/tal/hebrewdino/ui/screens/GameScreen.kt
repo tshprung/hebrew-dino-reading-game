@@ -1,5 +1,6 @@
 package com.tal.hebrewdino.ui.screens
 
+import android.util.Log
 import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -91,6 +92,7 @@ private object GameAudioPreloader {
         sfx: SoundPoolPlayer,
     ) {
         if (!(audioEnabled && sagaUsesPickLetterAudioStaging)) return
+        val usesRawLetterNames = chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5
         val poolLetters = letterPoolSpec.groups.flatten().distinct()
         voice.warmUp(
             AudioClips.VoChooseLetter,
@@ -102,7 +104,7 @@ private object GameAudioPreloader {
             poolLetters.flatMap { letter ->
                 listOfNotNull(
                     AudioClips.station1WrongCombined(letter),
-                    AudioClips.letterNameClip(letter),
+                    if (usesRawLetterNames) null else AudioClips.letterNameClip(letter),
                 )
             }
         val station1IntroExtras =
@@ -124,10 +126,12 @@ private object GameAudioPreloader {
     suspend fun preloadPopBalloons(
         audioEnabled: Boolean,
         usesPopBalloonsSoundPoolPrompt: Boolean,
+        chapterId: Int,
         letterPoolSpec: LetterPoolSpec,
         sfx: SoundPoolPlayer,
     ) {
         if (!(audioEnabled && usesPopBalloonsSoundPoolPrompt)) return
+        val usesRawLetterNames = chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5
         val letters = letterPoolSpec.groups.flatten().distinct()
         val paths = ArrayList<String>()
         paths.add(AudioClips.PopBalloonsWithLetter)
@@ -143,7 +147,9 @@ private object GameAudioPreloader {
         paths.add(AudioClips.SfxStation2PopPlop)
         paths.add(AudioClips.SfxStation2PopFinale)
         for (letter in letters) {
-            AudioClips.letterNameClip(letter)?.let(paths::add)
+            if (!usesRawLetterNames) {
+                AudioClips.letterNameClip(letter)?.let(paths::add)
+            }
             AudioClips.wrongSentenceClip(letter)?.let(paths::add)
             AudioClips.station1WrongCombined(letter)?.let(paths::add)
         }
@@ -160,15 +166,9 @@ private object GameAudioPreloader {
         if (!(audioEnabled && sagaUsesFindGridAudioStaging)) return
         val letters = letterPoolSpec.groups.flatten().distinct()
         voice.warmUp(AudioClips.VoFindLetter, AudioClips.VoChooseLetter, AudioClips.VoKolHakavod)
-        for (l in letters) {
-            AudioClips.letterNameClip(l)?.let { voice.warmUp(it) }
-        }
         val paths = ArrayList<String>()
         paths.add(AudioClips.VoFindLetter)
         paths.add(AudioClips.VoChooseLetter)
-        for (l in letters) {
-            AudioClips.letterNameClip(l)?.let(paths::add)
-        }
         paths.add(AudioClips.VoTryAgain1)
         paths.add(AudioClips.VoNice1)
         paths.add(AudioClips.VoKolHakavod)
@@ -231,6 +231,7 @@ private fun GameAudioPreloadEffects(
         GameAudioPreloader.preloadPopBalloons(
             audioEnabled = audioEnabled,
             usesPopBalloonsSoundPoolPrompt = usesPopBalloonsSoundPoolPrompt,
+            chapterId = chapterId,
             letterPoolSpec = letterPoolSpec,
             sfx = sfx,
         )
@@ -391,6 +392,19 @@ fun GameScreen(
     val sfx = audio.sfx
     val rawVoice = remember { RawVoicePlayer(context = context) }
     val gameFeedback = remember(stationId, sfx, view) { GameFeedback(scope, sfx, view) }
+    val devToolsEnabled = DevTools.enabled(context)
+
+    val expectsSelectedCompanion =
+        chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5
+    if (expectsSelectedCompanion && chapter1CompanionCharacter == null) {
+        val msg =
+            "Missing selected companion for station gameplay. chapterId=$chapterId stationId=$stationId context=GameScreen chapter1CompanionCharacter=null"
+        Log.e(
+            "MissingContent",
+            msg,
+        )
+        if (devToolsEnabled) throw IllegalStateException(msg)
+    }
 
     val audioRuntime = remember(stationId) { GameAudioRuntimeState() }
     val contentAlpha = remember(stationId) { Animatable(1f) }
@@ -421,8 +435,6 @@ fun GameScreen(
         )
         rawVoice.stopNow()
     }
-
-    val devToolsEnabled = DevTools.enabled(context)
 
     fun debugSkipToReward() {
         if (!devToolsEnabled || gameViewModel.completionCallbackFired) return
@@ -460,6 +472,7 @@ fun GameScreen(
                 session = session,
                 voice = voice,
                 sfx = sfx,
+                rawVoice = rawVoice,
                 cancelFeedbackVoice = { cancelFeedbackVoice() },
                 audioRuntime = audioRuntime,
                 scope = scope,
@@ -479,14 +492,16 @@ fun GameScreen(
             scope = scope,
         )
     }
-    val useChapter1CompanionDino = chapterId == 1 && chapter1CompanionCharacter != null
+    val useSagaSelectedCompanionDino =
+        (chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) &&
+            chapter1CompanionCharacter != null
     val chapter1CompanionAssets =
         remember(chapter1CompanionCharacter) {
             chapter1CompanionCharacter?.let { CompanionAssets.forCharacter(it) }
         }
     val jumpFrames =
-        remember(stationId, useChapter1CompanionDino, chapter1CompanionAssets) {
-            if (useChapter1CompanionDino && chapter1CompanionAssets != null) {
+        remember(stationId, useSagaSelectedCompanionDino, chapter1CompanionAssets) {
+            if (useSagaSelectedCompanionDino && chapter1CompanionAssets != null) {
                 chapter1CompanionAssets.talkFrameResIds
             } else {
                 listOf(R.drawable.dino_jump_0, R.drawable.dino_jump_1, R.drawable.dino_jump_2)
@@ -687,7 +702,7 @@ fun GameScreen(
 
         if (isCompactLandscapePhone) {
             val dinoDrawable =
-                if (useChapter1CompanionDino) {
+                if (useSagaSelectedCompanionDino) {
                     when (gameViewModel.dinoVisual) {
                         DinoVisual.Idle -> chapter1CompanionAssets!!.poseIdle
                         DinoVisual.TryAgain -> chapter1CompanionAssets!!.poseEncourage
@@ -701,7 +716,7 @@ fun GameScreen(
                         DinoVisual.Jump -> jumpFrames[gameViewModel.jumpFrameIndex.coerceIn(0, jumpFrames.lastIndex)]
                     }
                 }
-            val talkFrames = if (useChapter1CompanionDino) companionTalkFrames else legacyTalkFrames
+            val talkFrames = if (useSagaSelectedCompanionDino) companionTalkFrames else legacyTalkFrames
             CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
                 Box(modifier = Modifier.fillMaxSize()) {
                     GameScreenDinoLayer(
@@ -758,10 +773,12 @@ fun GameScreen(
                     ) {
                         FindGridActions.handleSagaGridLetterTapped(
                             audioEnabled = audioEnabled,
+                            chapterId = chapterId,
                             tapped = tapped,
                             question = question,
                             scope = scope,
                             sfx = sfx,
+                            rawVoice = rawVoice,
                             cancelFeedbackVoice = cancelFeedbackVoiceCb,
                             audioRuntime = audioRuntime,
                         )
@@ -813,8 +830,11 @@ fun GameScreen(
                             sfx = sfx,
                             rawVoice = rawVoice,
                             audioRuntime = audioRuntime,
-                            onWrongFeedback = { wrongPickedLetter ->
-                                onWrongFeedback(wrongPickedLetter = wrongPickedLetter)
+                            onWrongFeedback = { wrongPickedLetter, wrongPickedLetterAlreadySpoken ->
+                                onWrongFeedback(
+                                    wrongPickedLetter = wrongPickedLetter,
+                                    wrongPickedLetterAlreadySpoken = wrongPickedLetterAlreadySpoken,
+                                )
                             },
                             advanceAfterRound = { isLast, ch3SpellMidWord ->
                                 advanceAfterRound(isLast, ch3SpellMidWord = ch3SpellMidWord)
@@ -839,6 +859,7 @@ fun GameScreen(
                             voice = voice,
                             sfx = sfx,
                             chapterId = chapterId,
+                            stationId = stationId,
                             chapter1PlayerAddress = chapter1PlayerAddress,
                             rawVoice = rawVoice,
                             cancelFeedbackVoice = cancelFeedbackVoiceCb,
@@ -921,6 +942,7 @@ fun GameScreen(
                             session = session,
                             scope = scope,
                             voice = voice,
+                            rawVoice = rawVoice,
                             audioRuntime = audioRuntime,
                         )
                     }
@@ -933,6 +955,7 @@ fun GameScreen(
                             chapterId = chapterId,
                             scope = scope,
                             voice = voice,
+                            rawVoice = rawVoice,
                             audioRuntime = audioRuntime,
                         )
                     }
@@ -1080,7 +1103,7 @@ fun GameScreen(
                 }
             }
             val dinoDrawable =
-                if (useChapter1CompanionDino) {
+                if (useSagaSelectedCompanionDino) {
                     when (gameViewModel.dinoVisual) {
                         DinoVisual.Idle -> chapter1CompanionAssets!!.poseIdle
                         DinoVisual.TryAgain -> chapter1CompanionAssets!!.poseEncourage
@@ -1094,7 +1117,7 @@ fun GameScreen(
                         DinoVisual.Jump -> jumpFrames[gameViewModel.jumpFrameIndex.coerceIn(0, jumpFrames.lastIndex)]
                     }
                 }
-            val talkFrames = if (useChapter1CompanionDino) companionTalkFrames else legacyTalkFrames
+            val talkFrames = if (useSagaSelectedCompanionDino) companionTalkFrames else legacyTalkFrames
             if (!isCompactLandscapePhone) {
                 GameScreenDinoLayer(
                     idleRes = dinoDrawable,
@@ -1125,6 +1148,7 @@ fun GameScreen(
             session = session,
             scope = scope,
             voice = voice,
+            rawVoice = rawVoice,
             cancelFeedbackVoice = { cancelFeedbackVoice() },
             audioRuntime = audioRuntime,
         )

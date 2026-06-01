@@ -1,5 +1,6 @@
 package com.tal.hebrewdino.ui.screens
 
+import androidx.annotation.RawRes
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -39,6 +40,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import android.util.Log
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -51,6 +53,7 @@ import com.tal.hebrewdino.ui.data.DinoCharacter
 import com.tal.hebrewdino.ui.companion.CompanionDinoRewardCelebration
 import com.tal.hebrewdino.ui.companion.CompanionRewardCelebrationStyle
 import com.tal.hebrewdino.ui.companion.StoryReadablePanel
+import com.tal.hebrewdino.ui.domain.DevTools
 import com.tal.hebrewdino.ui.layout.ScreenFit
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
@@ -128,9 +131,13 @@ fun RewardScreen(
     backgroundRes: Int = R.drawable.forest_bg_reward,
     /** Season 1 Chapter 1 pilot: happy Dino + short raw success clip (no station VO). */
     chapter1DinoCompanionPilot: Boolean = false,
-    chapter1CompanionCharacter: DinoCharacter = DinoCharacter.Dino,
+    chapter1CompanionCharacter: DinoCharacter? = null,
     showSelectedCompanionPortrait: Boolean = false,
-    selectedCompanionCharacter: DinoCharacter = DinoCharacter.Dino,
+    selectedCompanionCharacter: DinoCharacter? = null,
+    /** Optional short raw success clip to play instead of generic reward voice (keeps visuals unchanged). */
+    @RawRes rewardSuccessRawResId: Int? = null,
+    rewardChapterId: Int? = null,
+    requireRawSuccessAudio: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     fun rtl(text: String): String = "\u200F$text"
@@ -138,15 +145,47 @@ fun RewardScreen(
     val context = androidx.compose.ui.platform.LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val voice = remember { VoicePlayer(context = context) }
-    val rawVoice = remember(chapter1DinoCompanionPilot) { if (chapter1DinoCompanionPilot) RawVoicePlayer(context) else null }
+    val isDebuggable = remember { DevTools.enabled(context) }
+    fun reportMissingSelectedCompanion(detail: String) {
+        Log.e(
+            "MissingContent",
+            "Missing selected companion for RewardScreen. chapterId=$rewardChapterId stationId=$levelId detail=$detail",
+        )
+        if (isDebuggable) throw IllegalStateException("Missing selected companion for RewardScreen. chapterId=$rewardChapterId stationId=$levelId detail=$detail")
+    }
+    if (chapter1DinoCompanionPilot && chapter1CompanionCharacter == null) {
+        reportMissingSelectedCompanion("chapter1DinoCompanionPilot=true chapter1CompanionCharacter=null")
+    }
+    if (showSelectedCompanionPortrait && selectedCompanionCharacter == null) {
+        reportMissingSelectedCompanion("showSelectedCompanionPortrait=true selectedCompanionCharacter=null")
+    }
+    fun reportRequiredRewardRawMissing(detail: String) {
+        Log.e(
+            "MissingContent",
+            "Missing required reward raw success audio. chapterId=$rewardChapterId stationId=$levelId rewardSuccessRawResId=$rewardSuccessRawResId detail=$detail",
+        )
+        if (isDebuggable) {
+            throw IllegalStateException(
+                "Missing required reward raw success audio. chapterId=$rewardChapterId stationId=$levelId rewardSuccessRawResId=$rewardSuccessRawResId detail=$detail",
+            )
+        }
+    }
+    val rawVoice =
+        remember(chapter1DinoCompanionPilot, rewardSuccessRawResId, requireRawSuccessAudio) {
+            if (chapter1DinoCompanionPilot || rewardSuccessRawResId != null || requireRawSuccessAudio) {
+                RawVoicePlayer(context)
+            } else {
+                null
+            }
+        }
     var navigatedAway by remember(levelId) { mutableStateOf(false) }
     var companionVoicePlaying by remember(levelId) { mutableStateOf(false) }
     val showCompanionPortrait = chapter1DinoCompanionPilot || showSelectedCompanionPortrait
     val portraitCharacter =
         if (chapter1DinoCompanionPilot) {
-            chapter1CompanionCharacter
+            chapter1CompanionCharacter ?: DinoCharacter.Dino
         } else {
-            selectedCompanionCharacter
+            selectedCompanionCharacter ?: DinoCharacter.Dino
         }
     val companionRewardStyle =
         remember(levelId, chapter1DinoCompanionPilot, showSelectedCompanionPortrait) {
@@ -206,7 +245,7 @@ fun RewardScreen(
         }
     }
 
-    LaunchedEffect(levelId, chapter1DinoCompanionPilot) {
+    LaunchedEffect(levelId, chapter1DinoCompanionPilot, rewardSuccessRawResId, requireRawSuccessAudio) {
         coroutineScope {
             val voiceJob =
                 launch {
@@ -216,15 +255,30 @@ fun RewardScreen(
                         rawVoice?.playRawBlocking(clip)
                         companionVoicePlaying = false
                         delay(Chapter1DinoCompanionPilot.REWARD_POST_AUDIO_MS)
+                    } else if (rewardSuccessRawResId != null) {
+                        if (rewardSuccessRawResId == 0) {
+                            reportRequiredRewardRawMissing("rewardSuccessRawResId==0")
+                        } else {
+                            companionVoicePlaying = true
+                            rawVoice?.playRawBlocking(rewardSuccessRawResId)
+                            companionVoicePlaying = false
+                            delay(Chapter1DinoCompanionPilot.REWARD_POST_AUDIO_MS)
+                        }
                     } else {
-                        // Level complete: say "finished level" then one random short praise (not only "יפה").
-                        val praisePool = AudioClips.rewardStagePraiseTailCandidates()
-                        voice.warmUp(AudioClips.VoLevelDone, *praisePool)
-                        voice.playBlocking(AudioClips.VoLevelDone)
-                        voice.playFirstAvailableBlockingRandomized(praisePool)
+                        if (requireRawSuccessAudio) {
+                            reportRequiredRewardRawMissing("rewardSuccessRawResId==null")
+                        } else {
+                            // Level complete: say "finished level" then one random short praise (not only "יפה").
+                            val praisePool = AudioClips.rewardStagePraiseTailCandidates()
+                            voice.warmUp(AudioClips.VoLevelDone, *praisePool)
+                            voice.playBlocking(AudioClips.VoLevelDone)
+                            voice.playFirstAvailableBlockingRandomized(praisePool)
+                        }
                     }
                 }
             if (chapter1DinoCompanionPilot) {
+                GameAudioActions.await(voiceJob, Chapter1DinoCompanionPilot.REWARD_AUDIO_MAX_WAIT_MS)
+            } else if (rewardSuccessRawResId != null) {
                 GameAudioActions.await(voiceJob, Chapter1DinoCompanionPilot.REWARD_AUDIO_MAX_WAIT_MS)
             } else {
                 GameAudioActions.await(voiceJob, 9000L)
@@ -302,7 +356,7 @@ fun RewardScreen(
                     ) {
                         CompanionDinoRewardCelebration(
                             style = companionRewardStyle,
-                            isTalking = chapter1DinoCompanionPilot && companionVoicePlaying,
+                            isTalking = (chapter1DinoCompanionPilot || rewardSuccessRawResId != null) && companionVoicePlaying,
                             companionCharacter = portraitCharacter,
                             modifier = Modifier.fillMaxSize(),
                         )
@@ -433,7 +487,7 @@ fun RewardScreen(
                     ) {
                         CompanionDinoRewardCelebration(
                             style = companionRewardStyle,
-                            isTalking = chapter1DinoCompanionPilot && companionVoicePlaying,
+                            isTalking = (chapter1DinoCompanionPilot || rewardSuccessRawResId != null) && companionVoicePlaying,
                             companionCharacter = portraitCharacter,
                             modifier = Modifier.fillMaxSize(),
                         )

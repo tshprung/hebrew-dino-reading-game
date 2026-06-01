@@ -2,6 +2,7 @@ package com.tal.hebrewdino.ui.screens
 
 import com.tal.hebrewdino.ui.audio.AudioClips
 import com.tal.hebrewdino.ui.audio.SoundPoolPlayer
+import com.tal.hebrewdino.ui.audio.RawVoicePlayer
 import com.tal.hebrewdino.ui.audio.VoicePlayer
 import com.tal.hebrewdino.ui.domain.Season2ChapterIds
 import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
@@ -41,22 +42,70 @@ internal suspend fun playSagaFindGridIntroSoundPool(
     voice: VoicePlayer,
     q: Question.FindLetterGridQuestion,
     chapterId: Int,
+    stationId: Int,
     introLetterLeadFraction: Float,
+    rawVoice: RawVoicePlayer? = null,
 ) {
     sfx.stopAllStreams()
-    val letter = AudioClips.letterNameClip(q.targetLetter)
     val findIntro = AudioClips.VoFindLetter
-    val chooseIntro = AudioClips.VoChooseLetter
-    val findMs = sfx.durationMs(findIntro) ?: 0L
-    val chooseMs = sfx.durationMs(chooseIntro) ?: 0L
-    val introPair: Pair<String, Long>? =
-        when {
-            findMs > 0L -> findIntro to findMs
-            chooseMs > 0L -> chooseIntro to chooseMs
-            else -> null
+    val requiredSoundPool =
+        chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5
+    if (requiredSoundPool) {
+        val letterResId = AudioClips.letterNameRawResId(q.targetLetter)
+        if (letterResId == null) {
+            android.util.Log.e(
+                "MissingContent",
+                "Missing required station prompt audio. chapterId=$chapterId stationId=$stationId context=GameScreenAudioPrompts.playSagaFindGridIntroSoundPool stage=missing raw letter-name mapping targetLetter='${q.targetLetter}'",
+            )
+            rawVoice?.playRawBlocking(0)
+            return
         }
-    if (letter != null && introPair != null) {
-        val (intro, introMs) = introPair
+        if (rawVoice == null) {
+            android.util.Log.e(
+                "MissingContent",
+                "Missing required station prompt audio. chapterId=$chapterId stationId=$stationId context=GameScreenAudioPrompts.playSagaFindGridIntroSoundPool stage=rawVoice=null expectedRawResId=$letterResId",
+            )
+            voice.playRequiredBlocking(
+                assetPath = "",
+                context = "GameScreenAudioPrompts.playSagaFindGridIntroSoundPool(rawVoice=null)",
+                chapterId = chapterId,
+                stationId = stationId,
+            )
+            return
+        }
+        val parsedMs =
+            sfx.durationMsRequiredOrNull(
+                assetPath = findIntro,
+                context = "GameScreenAudioPrompts.playSagaFindGridIntroSoundPool(intro=find)",
+                chapterId = chapterId,
+                stationId = stationId,
+            )
+        val introMs = parsedMs ?: Station3InstructionFallbackDurationMs
+        val stretch =
+            if (chapterId == 4) {
+                Station3IntroToLetterLeadStretchEpisode4
+            } else {
+                Station3IntroToLetterLeadStretchDefault
+            }
+        sfx.stopAllStreams()
+        sfx.playRequiredReturningStreamId(
+            assetPath = findIntro,
+            volume = 1f,
+            context = "GameScreenAudioPrompts.playSagaFindGridIntroSoundPool(intro)",
+            chapterId = chapterId,
+            stationId = stationId,
+        )
+        val lead =
+            (introMs * (introLetterLeadFraction * stretch))
+                .toLong()
+                .coerceIn(16L, introMs.coerceAtLeast(16L))
+        delay(lead)
+        rawVoice.playRawBlocking(letterResId)
+        return
+    }
+    val letter = AudioClips.letterNameClip(q.targetLetter)
+    val introMs = sfx.durationMs(findIntro) ?: 0L
+    if (letter != null && introMs > 0L) {
         val stretch =
             if (chapterId == 4) {
                 Station3IntroToLetterLeadStretchEpisode4
@@ -65,12 +114,15 @@ internal suspend fun playSagaFindGridIntroSoundPool(
             }
         GameAudioActions.playSoundPoolIntroWithOverlappedLetter(
             sfx = sfx,
-            intro = intro,
+            intro = findIntro,
             introMs = introMs,
             letter = letter,
             leadFraction = introLetterLeadFraction * stretch,
             extraPauseMs = 0L,
             delayScale = 1f,
+            chapterId = chapterId,
+            stationId = stationId,
+            context = "GameScreenAudioPrompts.playSagaFindGridIntroSoundPool(overlapLetter)",
         )
     } else {
         val bundledPath =
@@ -91,8 +143,6 @@ internal suspend fun playSagaFindGridIntroSoundPool(
             when {
                 voice.hasAsset(findIntro) ->
                     voice.playSequenceBlocking(findIntro, letter ?: "")
-                voice.hasAsset(chooseIntro) ->
-                    voice.playSequenceBlocking(chooseIntro, letter ?: "")
                 else -> speakLetterPrompt(voice, q.targetLetter)
             }
         }
@@ -104,11 +154,47 @@ internal suspend fun playEpisode4FindGridReplayLetterOnly(
     sfx: SoundPoolPlayer,
     voice: VoicePlayer,
     q: Question.FindLetterGridQuestion,
+    chapterId: Int,
+    stationId: Int,
+    rawVoice: RawVoicePlayer? = null,
 ) {
     sfx.stopAllStreams()
+    if (chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) {
+        val letterResId = AudioClips.letterNameRawResId(q.targetLetter)
+        if (letterResId == null) {
+            android.util.Log.e(
+                "MissingContent",
+                "Missing required replay letter-name audio. chapterId=$chapterId stationId=$stationId context=GameScreenAudioPrompts.playEpisode4FindGridReplayLetterOnly stage=missing raw letter-name mapping targetLetter='${q.targetLetter}'",
+            )
+            rawVoice?.playRawBlocking(0)
+            return
+        }
+        if (rawVoice == null) {
+            android.util.Log.e(
+                "MissingContent",
+                "Missing required replay letter-name audio. chapterId=$chapterId stationId=$stationId context=GameScreenAudioPrompts.playEpisode4FindGridReplayLetterOnly stage=rawVoice=null expectedRawResId=$letterResId",
+            )
+            voice.playRequiredBlocking(
+                assetPath = "",
+                context = "GameScreenAudioPrompts.playEpisode4FindGridReplayLetterOnly(rawVoice=null)",
+                chapterId = chapterId,
+                stationId = stationId,
+            )
+            return
+        }
+        rawVoice.playRawBlocking(letterResId)
+        return
+    }
     val letter = AudioClips.letterNameClip(q.targetLetter)
     if (letter != null) {
-        val id = sfx.playReturningStreamId(letter, volume = 1f)
+        val id =
+            sfx.playRequiredReturningStreamId(
+                assetPath = letter,
+                volume = 1f,
+                context = "GameScreenAudioPrompts.playEpisode4FindGridReplayLetterOnly",
+                chapterId = chapterId,
+                stationId = stationId,
+            )
         if (id != null) return
         if (voice.hasAsset(letter)) {
             voice.playBlocking(letter)
@@ -121,17 +207,52 @@ internal suspend fun playEpisode4FindGridReplayLetterOnly(
 internal suspend fun replayEpisode4Stations15RoundAudio(
     sfx: SoundPoolPlayer,
     voice: VoicePlayer,
+    chapterId: Int,
     stationId: Int,
     q: Question,
+    rawVoice: RawVoicePlayer? = null,
 ) {
     when (q) {
         is Question.PopBalloonsQuestion -> {
             when (stationId) {
                 Chapter1StationOrder.TAP_LETTER -> {
                     sfx.stopAllStreams()
+                    if (chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) {
+                        val resId = AudioClips.letterNameRawResId(q.correctAnswer)
+                        if (resId == null) {
+                            android.util.Log.e(
+                                "MissingContent",
+                                "Missing required replay letter-name audio. chapterId=$chapterId stationId=$stationId context=GameScreenAudioPrompts.replayEpisode4Stations15RoundAudio(TAP_LETTER) stage=missing raw letter-name mapping letter='${q.correctAnswer}'",
+                            )
+                            rawVoice?.playRawBlocking(0)
+                            return
+                        }
+                        if (rawVoice == null) {
+                            android.util.Log.e(
+                                "MissingContent",
+                                "Missing required replay letter-name audio. chapterId=$chapterId stationId=$stationId context=GameScreenAudioPrompts.replayEpisode4Stations15RoundAudio(TAP_LETTER) stage=rawVoice=null expectedRawResId=$resId",
+                            )
+                            voice.playRequiredBlocking(
+                                assetPath = "",
+                                context = "GameScreenAudioPrompts.replayEpisode4Stations15RoundAudio(TAP_LETTER,rawVoice=null)",
+                                chapterId = chapterId,
+                                stationId = stationId,
+                            )
+                            return
+                        }
+                        rawVoice.playRawBlocking(resId)
+                        return
+                    }
                     val letterClip = AudioClips.letterNameClip(q.correctAnswer)
                     if (letterClip != null) {
-                        val id = sfx.playReturningStreamId(letterClip, volume = 1f)
+                        val id =
+                            sfx.playRequiredReturningStreamId(
+                                assetPath = letterClip,
+                                volume = 1f,
+                                context = "GameScreenAudioPrompts.replayEpisode4Stations15RoundAudio(TAP_LETTER)",
+                                chapterId = chapterId,
+                                stationId = stationId,
+                            )
                         if (id != null) return
                         if (voice.hasAsset(letterClip)) {
                             voice.playBlocking(letterClip)
@@ -142,9 +263,42 @@ internal suspend fun replayEpisode4Stations15RoundAudio(
                 }
                 Chapter1StationOrder.BALLOON_POP -> {
                     sfx.stopAllStreams()
+                    if (chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) {
+                        val resId = AudioClips.letterNameRawResId(q.correctAnswer)
+                        if (resId == null) {
+                            android.util.Log.e(
+                                "MissingContent",
+                                "Missing required replay letter-name audio. chapterId=$chapterId stationId=$stationId context=GameScreenAudioPrompts.replayEpisode4Stations15RoundAudio(BALLOON_POP) stage=missing raw letter-name mapping letter='${q.correctAnswer}'",
+                            )
+                            rawVoice?.playRawBlocking(0)
+                            return
+                        }
+                        if (rawVoice == null) {
+                            android.util.Log.e(
+                                "MissingContent",
+                                "Missing required replay letter-name audio. chapterId=$chapterId stationId=$stationId context=GameScreenAudioPrompts.replayEpisode4Stations15RoundAudio(BALLOON_POP) stage=rawVoice=null expectedRawResId=$resId",
+                            )
+                            voice.playRequiredBlocking(
+                                assetPath = "",
+                                context = "GameScreenAudioPrompts.replayEpisode4Stations15RoundAudio(BALLOON_POP,rawVoice=null)",
+                                chapterId = chapterId,
+                                stationId = stationId,
+                            )
+                            return
+                        }
+                        rawVoice.playRawBlocking(resId)
+                        return
+                    }
                     val letterClip = AudioClips.letterNameClip(q.correctAnswer)
                     if (letterClip != null) {
-                        val id = sfx.playReturningStreamId(letterClip, volume = 1f)
+                        val id =
+                            sfx.playRequiredReturningStreamId(
+                                assetPath = letterClip,
+                                volume = 1f,
+                                context = "GameScreenAudioPrompts.replayEpisode4Stations15RoundAudio(BALLOON_POP)",
+                                chapterId = chapterId,
+                                stationId = stationId,
+                            )
                         if (id != null) return
                         if (voice.hasAsset(letterClip)) {
                             voice.playBlocking(letterClip)
@@ -156,7 +310,15 @@ internal suspend fun replayEpisode4Stations15RoundAudio(
                 else -> {}
             }
         }
-        is Question.FindLetterGridQuestion -> playEpisode4FindGridReplayLetterOnly(sfx, voice, q)
+        is Question.FindLetterGridQuestion ->
+            playEpisode4FindGridReplayLetterOnly(
+                sfx = sfx,
+                voice = voice,
+                q = q,
+                chapterId = chapterId,
+                stationId = stationId,
+                rawVoice = rawVoice,
+            )
         is Question.PictureStartsWithQuestion -> {
             val wordPath = AudioClips.wordClipByCatalogId(q.catalogEntryId)
             if (voice.hasAsset(wordPath)) {
@@ -165,9 +327,42 @@ internal suspend fun replayEpisode4Stations15RoundAudio(
         }
         is Question.ImageMatchQuestion -> {
             sfx.stopAllStreams()
+            if (chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) {
+                val resId = AudioClips.letterNameRawResId(q.targetLetter)
+                if (resId == null) {
+                    android.util.Log.e(
+                        "MissingContent",
+                        "Missing required replay letter-name audio. chapterId=$chapterId stationId=$stationId context=GameScreenAudioPrompts.replayEpisode4Stations15RoundAudio(ImageMatch) stage=missing raw letter-name mapping letter='${q.targetLetter}'",
+                    )
+                    rawVoice?.playRawBlocking(0)
+                    return
+                }
+                if (rawVoice == null) {
+                    android.util.Log.e(
+                        "MissingContent",
+                        "Missing required replay letter-name audio. chapterId=$chapterId stationId=$stationId context=GameScreenAudioPrompts.replayEpisode4Stations15RoundAudio(ImageMatch) stage=rawVoice=null expectedRawResId=$resId",
+                    )
+                    voice.playRequiredBlocking(
+                        assetPath = "",
+                        context = "GameScreenAudioPrompts.replayEpisode4Stations15RoundAudio(ImageMatch,rawVoice=null)",
+                        chapterId = chapterId,
+                        stationId = stationId,
+                    )
+                    return
+                }
+                rawVoice.playRawBlocking(resId)
+                return
+            }
             val letterName = AudioClips.letterNameClip(q.targetLetter)
             if (letterName != null) {
-                val id = sfx.playReturningStreamId(letterName, volume = 1f)
+                val id =
+                    sfx.playRequiredReturningStreamId(
+                        assetPath = letterName,
+                        volume = 1f,
+                        context = "GameScreenAudioPrompts.replayEpisode4Stations15RoundAudio(ImageMatch)",
+                        chapterId = chapterId,
+                        stationId = stationId,
+                    )
                 if (id != null) return
                 if (voice.hasAsset(letterName)) {
                     voice.playBlocking(letterName)
@@ -188,8 +383,82 @@ internal suspend fun speakLetterPrompt(
      * other stations use only "בחר את האות" when present.
      */
     station1IntroVariant: Boolean = false,
+    chapterId: Int? = null,
+    stationId: Int? = null,
+    context: String = "speakLetterPrompt",
+    rawVoice: RawVoicePlayer? = null,
 ) {
+    val requiredPrompt =
+        chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5
+    if (requiredPrompt && stationId != null) {
+        val expectedIntro =
+            if (
+                station1IntroVariant &&
+                    (chapterId == 4 || chapterId == 5) &&
+                    stationId == Chapter1StationOrder.TAP_LETTER
+            ) {
+                AudioClips.VoBachorEtHaot
+            } else {
+                AudioClips.VoChooseLetter
+            }
+        voice.playRequiredBlocking(
+            assetPath = expectedIntro,
+            context = "$context(intro)",
+            chapterId = chapterId,
+            stationId = stationId,
+        )
+        val letterResId = AudioClips.letterNameRawResId(letter)
+        if (letterResId == null) {
+            android.util.Log.e(
+                "MissingContent",
+                "Missing required station prompt audio. chapterId=$chapterId stationId=$stationId context=$context stage=missing letter-name mapping targetLetter='$letter'",
+            )
+            if (rawVoice != null) {
+                rawVoice.playRawBlocking(0)
+            } else {
+                voice.playRequiredBlocking(
+                    assetPath = "",
+                    context = "$context(missingLetterNameMapping,rawVoice=null)",
+                    chapterId = chapterId,
+                    stationId = stationId,
+                )
+            }
+            return
+        }
+        if (rawVoice == null) {
+            android.util.Log.e(
+                "MissingContent",
+                "Missing required station prompt audio. chapterId=$chapterId stationId=$stationId context=$context stage=rawVoice=null expectedRawResId=$letterResId",
+            )
+            voice.playRequiredBlocking(
+                assetPath = "",
+                context = "$context(rawVoice=null)",
+                chapterId = chapterId,
+                stationId = stationId,
+            )
+            return
+        }
+        rawVoice.playRawBlocking(letterResId)
+        return
+    }
     val letterName = AudioClips.letterNameClip(letter)
+    if (letterName == null) {
+        AudioClips.reportMissingLetterNameMapping(
+            tappedLetter = letter,
+            chapterId = chapterId,
+            stationId = stationId,
+            context = context,
+        )
+    } else if (!voice.hasAsset(letterName)) {
+        AudioClips.reportMissingLetterNameAsset(
+            tappedLetter = letter,
+            mappedAssetPath = letterName,
+            chapterId = chapterId,
+            stationId = stationId,
+            context = context,
+            detail = "VoicePlayer.hasAsset=false",
+        )
+    }
     val parts =
         buildList {
             if (station1IntroVariant) {
@@ -206,14 +475,32 @@ internal suspend fun speakLetterPrompt(
                         )
                     findOk -> add(AudioClips.VoFindLetter)
                     chooseOk -> add(AudioClips.VoChooseLetter)
+                    else ->
+                        android.util.Log.e(
+                            "MissingContent",
+                            "Missing required station prompt intro assets. chapterId=$chapterId stationId=$stationId context=$context expectedAnyOf=[${AudioClips.VoFindLetter}, ${AudioClips.VoChooseLetter}]",
+                        )
                 }
             } else {
-                if (voice.hasAsset(AudioClips.VoChooseLetter)) add(AudioClips.VoChooseLetter)
+                if (voice.hasAsset(AudioClips.VoChooseLetter)) {
+                    add(AudioClips.VoChooseLetter)
+                } else {
+                    android.util.Log.e(
+                        "MissingContent",
+                        "Missing required station prompt intro asset. chapterId=$chapterId stationId=$stationId context=$context expected=${AudioClips.VoChooseLetter}",
+                    )
+                }
             }
             if (letterName != null && voice.hasAsset(letterName)) add(letterName)
         }
     when (parts.size) {
-        0 -> return
+        0 -> {
+            android.util.Log.e(
+                "MissingContent",
+                "Missing required station prompt audio (no playable clips). chapterId=$chapterId stationId=$stationId context=$context targetLetter='$letter' mappedLetterClip=$letterName",
+            )
+            return
+        }
         1 -> voice.playBlocking(parts[0])
         else -> voice.playSequenceBlocking(parts)
     }
@@ -226,13 +513,30 @@ internal suspend fun speakPromptForQuestion(
     chapterId: Int,
     listenOnlyTargetPrompt: Boolean,
     q: Question,
+    rawVoice: RawVoicePlayer? = null,
 ) {
+    val requiredChapters = chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5
     when (q) {
         is Question.PopBalloonsQuestion -> {
             // Episode 1 station 2: instruction is started from GameScreen LaunchedEffect (SoundPool).
-            speakLetterPrompt(voice, q.correctAnswer)
+            speakLetterPrompt(
+                voice = voice,
+                letter = q.correctAnswer,
+                chapterId = if (requiredChapters) chapterId else null,
+                stationId = if (requiredChapters) stationId else null,
+                context = "speakPromptForQuestion(PopBalloons)",
+                rawVoice = rawVoice,
+            )
         }
-        is Question.FindLetterGridQuestion -> speakLetterPrompt(voice, q.targetLetter)
+        is Question.FindLetterGridQuestion ->
+            speakLetterPrompt(
+                voice = voice,
+                letter = q.targetLetter,
+                chapterId = if (requiredChapters) chapterId else null,
+                stationId = if (requiredChapters) stationId else null,
+                context = "speakPromptForQuestion(FindLetterGrid)",
+                rawVoice = rawVoice,
+            )
         is Question.PictureStartsWithQuestion -> {
             // Episode 1 station 4: instruction + spoken word (e.g. "ברווז").
             if (isSagaEpisodeForPrompt(chapterId) && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
@@ -245,16 +549,28 @@ internal suspend fun speakPromptForQuestion(
                 } else if (listenOnlyTargetPrompt && voice.hasAsset(wordPath)) {
                     voice.playBlocking(wordPath)
                 } else {
-                    speakLetterPrompt(voice, q.correctLetter)
+                    speakLetterPrompt(
+                        voice = voice,
+                        letter = q.correctLetter,
+                        chapterId = if (requiredChapters) chapterId else null,
+                        stationId = if (requiredChapters) stationId else null,
+                        context = "speakPromptForQuestion(Station4FallbackLetterPrompt)",
+                        rawVoice = rawVoice,
+                    )
                 }
             } else {
-                speakLetterPrompt(voice, q.correctLetter)
+                speakLetterPrompt(
+                    voice = voice,
+                    letter = q.correctLetter,
+                    chapterId = if (requiredChapters) chapterId else null,
+                    stationId = if (requiredChapters) stationId else null,
+                    context = "speakPromptForQuestion(PictureStartsWith)",
+                    rawVoice = rawVoice,
+                )
             }
         }
         is Question.ImageMatchQuestion -> {
-            if (chapterId == 3 && stationId == 6) {
-                // Episode 3 station 6: play the dedicated instruction ONLY if it exists,
-                // and always speak the pictured word (no legacy fallback).
+            if ((chapterId == 3 || chapterId == 6) && stationId == 6) {
                 val intro =
                     if (voice.hasAsset(AudioClips.Ch3ImageToWordInstructions)) {
                         AudioClips.Ch3ImageToWordInstructions
@@ -264,23 +580,79 @@ internal suspend fun speakPromptForQuestion(
                 if (voice.hasAsset(intro)) {
                     voice.playBlocking(intro)
                 }
-                val wordPath =
-                    AudioClips.imageToWordClipByCatalogId(
-                        catalogEntryId = q.correctChoiceId,
-                        chapterId = chapterId,
-                        voiceHasAsset = { path -> voice.hasAsset(path) },
+                val wordResId = AudioClips.wordRawResIdByCatalogId(q.correctChoiceId)
+                if (wordResId == null) {
+                    android.util.Log.e(
+                        "MissingContent",
+                        "Missing required station prompt audio. chapterId=$chapterId stationId=$stationId context=speakPromptForQuestion(ImageToWord) stage=missing raw word mapping catalogId='${q.correctChoiceId}'",
                     )
-                if (voice.hasAsset(wordPath)) {
-                    voice.playBlocking(wordPath)
+                    if (rawVoice != null) {
+                        rawVoice.playRawBlocking(0)
+                    } else {
+                        voice.playRequiredBlocking(
+                            assetPath = "",
+                            context = "speakPromptForQuestion(ImageToWord,missingWordMapping,rawVoice=null)",
+                            chapterId = chapterId,
+                            stationId = stationId,
+                        )
+                    }
+                    return
                 }
+                if (rawVoice == null) {
+                    android.util.Log.e(
+                        "MissingContent",
+                        "Missing required station prompt audio. chapterId=$chapterId stationId=$stationId context=speakPromptForQuestion(ImageToWord) stage=rawVoice=null expectedRawResId=$wordResId",
+                    )
+                    voice.playRequiredBlocking(
+                        assetPath = "",
+                        context = "speakPromptForQuestion(ImageToWord,rawVoice=null)",
+                        chapterId = chapterId,
+                        stationId = stationId,
+                    )
+                    return
+                }
+                rawVoice.playRawBlocking(wordResId)
                 return
             }
             if (isSagaEpisodeForPrompt(chapterId) && stationId == Chapter1StationOrder.PICTURE_PICK_ALL) {
                 // Episode 1 station 5: "איזו מילה מתחילה באות" + letter name (SoundPool overlap when duration parses).
                 val intro = AudioClips.WhichWordStartsWithLetter
-                val letterName = AudioClips.letterNameClip(q.targetLetter)
-                val introMs = sfx.durationMs(intro) ?: 0L
-                if (introMs > 0L && letterName != null) {
+                val requiredSoundPool =
+                    chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5
+                val introMs =
+                    if (requiredSoundPool) {
+                        sfx.durationMsRequiredOrNull(
+                            assetPath = intro,
+                            context = "GameScreenAudioPrompts.speakPromptForQuestion(station5,SoundPoolIntro)",
+                            chapterId = chapterId,
+                            stationId = stationId,
+                        ) ?: 0L
+                    } else {
+                        sfx.durationMs(intro) ?: 0L
+                    }
+                if (requiredSoundPool) {
+                    val letterResId = AudioClips.letterNameRawResId(q.targetLetter)
+                    if (letterResId == null) {
+                        android.util.Log.e(
+                            "MissingContent",
+                            "Missing required station prompt audio. chapterId=$chapterId stationId=$stationId context=GameScreenAudioPrompts.speakPromptForQuestion(station5) stage=missing raw letter-name mapping targetLetter='${q.targetLetter}'",
+                        )
+                        rawVoice?.playRawBlocking(0)
+                        return
+                    }
+                    if (rawVoice == null) {
+                        android.util.Log.e(
+                            "MissingContent",
+                            "Missing required station prompt audio. chapterId=$chapterId stationId=$stationId context=GameScreenAudioPrompts.speakPromptForQuestion(station5) stage=rawVoice=null expectedRawResId=$letterResId",
+                        )
+                        voice.playRequiredBlocking(
+                            assetPath = "",
+                            context = "GameScreenAudioPrompts.speakPromptForQuestion(station5,rawVoice=null)",
+                            chapterId = chapterId,
+                            stationId = stationId,
+                        )
+                        return
+                    }
                     val baseWhichWordLeadFrac =
                         Station5WhichWordIntroLetterLeadFraction *
                             Station5WhichWordIntroToLetterLeadScale
@@ -288,24 +660,78 @@ internal suspend fun speakPromptForQuestion(
                         baseWhichWordLeadFrac +
                             Station5WhichWordIntroToLetterGapBoost * (1f - baseWhichWordLeadFrac)
                     val delayScale = if (chapterId == 4) 1.10f else 1f
-                    GameAudioActions.playSoundPoolIntroWithOverlappedLetter(
-                        sfx = sfx,
-                        intro = intro,
-                        introMs = introMs,
-                        letter = letterName,
-                        leadFraction = whichWordLeadFrac,
-                        extraPauseMs = Station5WhichWordIntroToLetterExtraPauseMs,
-                        delayScale = delayScale,
-                    )
+                    if (introMs > 0L) {
+                        sfx.stopAllStreams()
+                        sfx.playRequiredReturningStreamId(
+                            assetPath = intro,
+                            volume = 1f,
+                            context = "GameScreenAudioPrompts.speakPromptForQuestion(station5,SoundPoolIntro)",
+                            chapterId = chapterId,
+                            stationId = stationId,
+                        )
+                        val lead =
+                            (introMs * whichWordLeadFrac)
+                                .toLong()
+                                .coerceIn(16L, introMs.coerceAtLeast(16L))
+                        val waitMs =
+                            ((lead + Station5WhichWordIntroToLetterExtraPauseMs) * delayScale)
+                                .toLong()
+                                .coerceAtLeast(0L)
+                        delay(waitMs)
+                        rawVoice.playRawBlocking(letterResId)
+                    } else {
+                        voice.playRequiredBlocking(
+                            assetPath = intro,
+                            context = "GameScreenAudioPrompts.speakPromptForQuestion(station5,VoiceIntroFallback)",
+                            chapterId = chapterId,
+                            stationId = stationId,
+                        )
+                        rawVoice.playRawBlocking(letterResId)
+                    }
                 } else {
-                    voice.playBlocking(intro)
-                    if (letterName != null) voice.playBlocking(letterName)
+                    val letterName = AudioClips.letterNameClip(q.targetLetter)
+                    if (introMs > 0L && letterName != null) {
+                        val baseWhichWordLeadFrac =
+                            Station5WhichWordIntroLetterLeadFraction *
+                                Station5WhichWordIntroToLetterLeadScale
+                        val whichWordLeadFrac =
+                            baseWhichWordLeadFrac +
+                                Station5WhichWordIntroToLetterGapBoost * (1f - baseWhichWordLeadFrac)
+                        val delayScale = if (chapterId == 4) 1.10f else 1f
+                        GameAudioActions.playSoundPoolIntroWithOverlappedLetter(
+                            sfx = sfx,
+                            intro = intro,
+                            introMs = introMs,
+                            letter = letterName,
+                            leadFraction = whichWordLeadFrac,
+                            extraPauseMs = Station5WhichWordIntroToLetterExtraPauseMs,
+                            delayScale = delayScale,
+                            chapterId = chapterId,
+                            stationId = stationId,
+                            context = "GameScreenAudioPrompts.speakPromptForQuestion(station5,SoundPoolIntroOverlapLetter)",
+                        )
+                    } else {
+                        voice.playBlocking(intro)
+                        if (letterName != null) voice.playBlocking(letterName)
+                    }
                 }
             } else if (isSagaEpisodeForPrompt(chapterId) && stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH) {
                 // Station 6: "ליחצו על אות והמילה שמתחילה באותה האות".
-                voice.playBlocking(AudioClips.MatchLetterToWordInstructions)
+                voice.playRequiredBlocking(
+                    assetPath = AudioClips.MatchLetterToWordInstructions,
+                    context = "speakPromptForQuestion(Station6MatchLetterToWord)",
+                    chapterId = chapterId,
+                    stationId = stationId,
+                )
             } else {
-                speakLetterPrompt(voice, q.targetLetter)
+                speakLetterPrompt(
+                    voice = voice,
+                    letter = q.targetLetter,
+                    chapterId = if (requiredChapters) chapterId else null,
+                    stationId = if (requiredChapters) stationId else null,
+                    context = "speakPromptForQuestion(ImageMatchFallbackLetterPrompt)",
+                    rawVoice = rawVoice,
+                )
             }
         }
         is Question.FinaleSlotQuestion -> voice.playBlocking(AudioClips.VoChooseLetter)

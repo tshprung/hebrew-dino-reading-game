@@ -1,25 +1,29 @@
 package com.tal.hebrewdino.ui.screens
 
 import com.tal.hebrewdino.ui.audio.AudioClips
+import com.tal.hebrewdino.ui.audio.RawVoicePlayer
 import com.tal.hebrewdino.ui.audio.SoundPoolPlayer
 import com.tal.hebrewdino.ui.domain.AnswerResult
 import com.tal.hebrewdino.ui.domain.LevelSession
 import com.tal.hebrewdino.ui.domain.Question
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlin.random.Random
 
 internal object FindGridActions {
     fun handleSagaGridLetterTapped(
         audioEnabled: Boolean,
+        chapterId: Int,
         tapped: String,
         question: Question.FindLetterGridQuestion,
         scope: CoroutineScope,
         sfx: SoundPoolPlayer,
+        rawVoice: RawVoicePlayer,
         cancelFeedbackVoice: () -> Unit,
         audioRuntime: GameAudioRuntimeState,
     ) {
         if (!audioEnabled) return
+        if (!(chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5)) return
         cancelFeedbackVoice()
         sfx.stopAllStreams()
         val isCorrect = tapped == question.targetLetter
@@ -28,33 +32,20 @@ internal object FindGridActions {
             scope = scope,
             audioRuntime = audioRuntime,
         ) {
+            val resId = AudioClips.letterNameRawResId(tapped)
+            if (resId == null) {
+                android.util.Log.e(
+                    "MissingContent",
+                    "Missing required letter-name audio. chapterId=$chapterId stationId=null context=FindGridActions.handleSagaGridLetterTapped(letterNameFirst) stage=missing raw letter-name mapping letter='$tapped'",
+                )
+                rawVoice.playRawBlocking(0)
+                return@launchFeedbackVoiceNoCancel
+            }
+            rawVoice.playRawBlocking(resId)
             if (isCorrect) {
                 sfx.playFirstAvailable(AudioClips.SfxCorrect, volume = 0.62f)
             } else {
-                val tappedClip = AudioClips.letterNameClip(tapped)
-                val playWrongSfx: suspend () -> Unit = {
-                    sfx.playFirstAvailable(AudioClips.SfxWrong, volume = 0.58f)
-                }
-                val playTappedClip: suspend () -> Boolean = {
-                    if (tappedClip == null) {
-                        false
-                    } else {
-                        sfx.playReturningStreamId(tappedClip, volume = 1f)
-                        true
-                    }
-                }
-                when (Random.nextInt(100)) {
-                    in 0..39 -> {
-                        playWrongSfx()
-                    }
-                    in 40..89 -> {
-                        if (!playTappedClip()) playWrongSfx()
-                    }
-                    else -> {
-                        playWrongSfx()
-                        playTappedClip()
-                    }
-                }
+                sfx.playFirstAvailable(AudioClips.SfxWrong, volume = 0.58f)
             }
         }
     }

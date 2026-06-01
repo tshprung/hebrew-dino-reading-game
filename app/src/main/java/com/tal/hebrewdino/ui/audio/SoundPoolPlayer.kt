@@ -3,6 +3,7 @@ package com.tal.hebrewdino.ui.audio
 import android.content.Context
 import android.media.AudioAttributes
 import android.media.SoundPool
+import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
@@ -17,6 +18,10 @@ import kotlin.coroutines.resume
 
 class SoundPoolPlayer(context: Context) {
     companion object {
+        private const val TAG: String = "SoundPoolPlayer"
+        private const val MISSING_TAG: String = "MissingContent"
+        private const val FLAG_DEBUGGABLE: Int = 0x2
+
         private val Registry: MutableSet<SoundPoolPlayer> =
             Collections.newSetFromMap(WeakHashMap())
 
@@ -29,6 +34,8 @@ class SoundPoolPlayer(context: Context) {
     }
 
     private val appContext = context.applicationContext
+    private val isDebuggable: Boolean =
+        (appContext.applicationInfo.flags and FLAG_DEBUGGABLE) != 0
 
     private val soundPool: SoundPool? =
         runCatching {
@@ -75,6 +82,99 @@ class SoundPoolPlayer(context: Context) {
         val streamId = pool.play(soundId, volume, volume, 1, 0, rate.coerceIn(0.8f, 1.25f))
         if (streamId != 0) activeStreamIds[streamId] = true
         return if (streamId != 0) streamId else null
+    }
+
+    suspend fun playRequiredReturningStreamId(
+        assetPath: String,
+        volume: Float = 1f,
+        rate: Float = 1f,
+        context: String,
+        chapterId: Int? = null,
+        stationId: Int? = null,
+    ): Int? {
+        if (assetPath.isBlank()) {
+            reportRequiredFailure(
+                assetPath = assetPath,
+                stage = "assetPath blank",
+                context = context,
+                chapterId = chapterId,
+                stationId = stationId,
+                cause = null,
+            )
+            return null
+        }
+        val pool =
+            soundPool
+                ?: run {
+                    reportRequiredFailure(
+                        assetPath = assetPath,
+                        stage = "SoundPool unavailable",
+                        context = context,
+                        chapterId = chapterId,
+                        stationId = stationId,
+                        cause = null,
+                    )
+                    return null
+                }
+        val soundId = loadIfNeededRequired(pool, assetPath, context, chapterId, stationId) ?: return null
+        val streamId =
+            runCatching { pool.play(soundId, volume, volume, 1, 0, rate.coerceIn(0.8f, 1.25f)) }
+                .getOrElse { t ->
+                    reportRequiredFailure(
+                        assetPath = assetPath,
+                        stage = "SoundPool.play threw",
+                        context = context,
+                        chapterId = chapterId,
+                        stationId = stationId,
+                        cause = t,
+                    )
+                    return null
+                }
+        if (streamId == 0) {
+            reportRequiredFailure(
+                assetPath = assetPath,
+                stage = "SoundPool.play returned streamId=0",
+                context = context,
+                chapterId = chapterId,
+                stationId = stationId,
+                cause = null,
+            )
+            return null
+        }
+        activeStreamIds[streamId] = true
+        return streamId
+    }
+
+    suspend fun durationMsRequiredOrNull(
+        assetPath: String,
+        context: String,
+        chapterId: Int? = null,
+        stationId: Int? = null,
+    ): Long? {
+        val ms =
+            runCatching { durationMs(assetPath) }
+                .getOrElse { t ->
+                    reportRequiredFailure(
+                        assetPath = assetPath,
+                        stage = "durationMs threw",
+                        context = context,
+                        chapterId = chapterId,
+                        stationId = stationId,
+                        cause = t,
+                    )
+                    return null
+                }
+        if (ms == null) {
+            reportRequiredFailure(
+                assetPath = assetPath,
+                stage = "durationMs unavailable (missing/unparseable WAV)",
+                context = context,
+                chapterId = chapterId,
+                stationId = stationId,
+                cause = null,
+            )
+        }
+        return ms
     }
 
     suspend fun playFirstAvailable(vararg assetPaths: String, volume: Float = 1f, rate: Float = 1f) {
@@ -174,6 +274,85 @@ class SoundPoolPlayer(context: Context) {
             } ?: return null
 
         return awaitLoaded(id)
+    }
+
+    private suspend fun loadIfNeededRequired(
+        pool: SoundPool,
+        assetPath: String,
+        context: String,
+        chapterId: Int?,
+        stationId: Int?,
+    ): Int? {
+        loadedSoundIdByPath[assetPath]?.let { existingId ->
+            val ready = readySoundIds[existingId]
+            val resolved = if (ready == true) existingId else awaitLoaded(existingId)
+            if (resolved == null) {
+                reportRequiredFailure(
+                    assetPath = assetPath,
+                    stage = "awaitLoaded failed (previous load not ready or failed)",
+                    context = context,
+                    chapterId = chapterId,
+                    stationId = stationId,
+                    cause = null,
+                )
+            }
+            return resolved
+        }
+
+        val idResult =
+            withContext(Dispatchers.IO) {
+                runCatching {
+                    val afd = appContext.assets.openFd(assetPath)
+                    val newId = pool.load(afd, 1)
+                    loadedSoundIdByPath[assetPath] = newId
+                    newId
+                }
+            }
+        val id = idResult.getOrNull()
+        if (id == null) {
+            reportRequiredFailure(
+                assetPath = assetPath,
+                stage = "assets.openFd/load failed",
+                context = context,
+                chapterId = chapterId,
+                stationId = stationId,
+                cause = idResult.exceptionOrNull(),
+            )
+            return null
+        }
+        val loaded = awaitLoaded(id)
+        if (loaded == null) {
+            reportRequiredFailure(
+                assetPath = assetPath,
+                stage = "awaitLoaded failed (load complete status not OK)",
+                context = context,
+                chapterId = chapterId,
+                stationId = stationId,
+                cause = null,
+            )
+        }
+        return loaded
+    }
+
+    private fun reportRequiredFailure(
+        assetPath: String,
+        stage: String,
+        context: String,
+        chapterId: Int?,
+        stationId: Int?,
+        cause: Throwable?,
+    ) {
+        val msg =
+            "Required SoundPool asset failed. assetPath='$assetPath' chapterId=$chapterId stationId=$stationId context=$context stage=$stage"
+        if (cause != null) {
+            Log.e(MISSING_TAG, msg, cause)
+        } else {
+            Log.e(MISSING_TAG, msg)
+        }
+        if (isDebuggable) {
+            if (cause != null) throw IllegalStateException(msg, cause)
+            throw IllegalStateException(msg)
+        }
     }
 
     private suspend fun awaitLoaded(soundId: Int): Int? {

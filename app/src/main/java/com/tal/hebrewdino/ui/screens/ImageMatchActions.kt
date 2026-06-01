@@ -49,13 +49,48 @@ internal object ImageMatchActions {
                         scope = scope,
                         audioRuntime = audioRuntime,
                     ) {
-                        val clip =
-                            AudioClips.imageToWordClipByCatalogId(
-                                catalogEntryId = choiceId,
-                                chapterId = chapterId,
-                                voiceHasAsset = { path -> voice.hasAsset(path) },
-                            )
-                        voice.playBlocking(clip)
+                        if (chapterId == 3 || chapterId == 6) {
+                            val wordResId = AudioClips.wordRawResIdByCatalogId(choiceId)
+                            if (wordResId == null) {
+                                android.util.Log.e(
+                                    "MissingContent",
+                                    "Missing required word audio. chapterId=$chapterId stationId=null context=ImageMatchActions.handleImageToWordAttempt(correct) stage=missing raw word mapping catalogId='$choiceId'",
+                                )
+                                if (rawVoice != null) {
+                                    rawVoice.playRawBlocking(0)
+                                } else {
+                                    voice.playRequiredBlocking(
+                                        assetPath = "",
+                                        context = "ImageMatchActions.handleImageToWordAttempt(correct,missingWordMapping,rawVoice=null)",
+                                        chapterId = chapterId,
+                                        stationId = null,
+                                    )
+                                }
+                                return@launchFeedbackVoiceNoCancel
+                            }
+                            if (rawVoice == null) {
+                                android.util.Log.e(
+                                    "MissingContent",
+                                    "Missing required word audio. chapterId=$chapterId stationId=null context=ImageMatchActions.handleImageToWordAttempt(correct) stage=rawVoice=null expectedRawResId=$wordResId",
+                                )
+                                voice.playRequiredBlocking(
+                                    assetPath = "",
+                                    context = "ImageMatchActions.handleImageToWordAttempt(correct,rawVoice=null)",
+                                    chapterId = chapterId,
+                                    stationId = null,
+                                )
+                                return@launchFeedbackVoiceNoCancel
+                            }
+                            rawVoice.playRawBlocking(wordResId)
+                        } else {
+                            val clip =
+                                AudioClips.imageToWordClipByCatalogId(
+                                    catalogEntryId = choiceId,
+                                    chapterId = chapterId,
+                                    voiceHasAsset = { path -> voice.hasAsset(path) },
+                                )
+                            voice.playBlocking(clip)
+                        }
                         GameAudioActions.playPraiseNoImmediateRepeat(
                             voice = voice,
                             audioRuntime = audioRuntime,
@@ -88,23 +123,59 @@ internal object ImageMatchActions {
         session: LevelSession,
         scope: CoroutineScope,
         voice: VoicePlayer,
+        rawVoice: RawVoicePlayer?,
         audioRuntime: GameAudioRuntimeState,
     ) {
         if (!audioEnabled) return
         val q = session.currentQuestion as? Question.ImageMatchQuestion ?: return
-        val clip =
-            AudioClips.imageToWordClipByCatalogId(
-                catalogEntryId = q.correctChoiceId,
-                chapterId = chapterId,
-                voiceHasAsset = { path -> voice.hasAsset(path) },
-            )
-        if (voice.hasAsset(clip)) {
-            GameAudioActions.launchPromptVoice(
-                audioEnabled = audioEnabled,
-                scope = scope,
-                audioRuntime = audioRuntime,
-                cancelFeedbackVoice = cancelFeedbackVoice,
-            ) {
+        GameAudioActions.launchPromptVoice(
+            audioEnabled = audioEnabled,
+            scope = scope,
+            audioRuntime = audioRuntime,
+            cancelFeedbackVoice = cancelFeedbackVoice,
+        ) {
+            if (chapterId == 3 || chapterId == 6) {
+                val wordResId = AudioClips.wordRawResIdByCatalogId(q.correctChoiceId)
+                if (wordResId == null) {
+                    android.util.Log.e(
+                        "MissingContent",
+                        "Missing required word audio. chapterId=$chapterId stationId=null context=ImageMatchActions.handleImageToWordReplayCorrectChoice stage=missing raw word mapping catalogId='${q.correctChoiceId}'",
+                    )
+                    if (rawVoice != null) {
+                        rawVoice.playRawBlocking(0)
+                    } else {
+                        voice.playRequiredBlocking(
+                            assetPath = "",
+                            context = "ImageMatchActions.handleImageToWordReplayCorrectChoice(missingWordMapping,rawVoice=null)",
+                            chapterId = chapterId,
+                            stationId = null,
+                        )
+                    }
+                    return@launchPromptVoice
+                }
+                if (rawVoice == null) {
+                    android.util.Log.e(
+                        "MissingContent",
+                        "Missing required word audio. chapterId=$chapterId stationId=null context=ImageMatchActions.handleImageToWordReplayCorrectChoice stage=rawVoice=null expectedRawResId=$wordResId",
+                    )
+                    voice.playRequiredBlocking(
+                        assetPath = "",
+                        context = "ImageMatchActions.handleImageToWordReplayCorrectChoice(rawVoice=null)",
+                        chapterId = chapterId,
+                        stationId = null,
+                    )
+                    return@launchPromptVoice
+                }
+                rawVoice.playRawBlocking(wordResId)
+                return@launchPromptVoice
+            }
+            val clip =
+                AudioClips.imageToWordClipByCatalogId(
+                    catalogEntryId = q.correctChoiceId,
+                    chapterId = chapterId,
+                    voiceHasAsset = { path -> voice.hasAsset(path) },
+                )
+            if (voice.hasAsset(clip)) {
                 voice.playBlocking(clip)
             }
         }
@@ -117,6 +188,7 @@ internal object ImageMatchActions {
         chapterId: Int,
         scope: CoroutineScope,
         voice: VoicePlayer,
+        rawVoice: RawVoicePlayer?,
         audioRuntime: GameAudioRuntimeState,
     ) {
         if (!audioEnabled) return
@@ -126,6 +198,41 @@ internal object ImageMatchActions {
             audioRuntime = audioRuntime,
             cancelFeedbackVoice = cancelFeedbackVoice,
         ) {
+            if (chapterId == 3 || chapterId == 6) {
+                val wordResId = AudioClips.wordRawResIdByCatalogId(choiceId)
+                if (wordResId == null) {
+                    android.util.Log.e(
+                        "MissingContent",
+                        "Missing required word audio. chapterId=$chapterId stationId=null context=ImageMatchActions.handleImageToWordWordPressed stage=missing raw word mapping catalogId='$choiceId'",
+                    )
+                    if (rawVoice != null) {
+                        rawVoice.playRawBlocking(0)
+                    } else {
+                        voice.playRequiredBlocking(
+                            assetPath = "",
+                            context = "ImageMatchActions.handleImageToWordWordPressed(missingWordMapping,rawVoice=null)",
+                            chapterId = chapterId,
+                            stationId = null,
+                        )
+                    }
+                    return@launchPromptVoice
+                }
+                if (rawVoice == null) {
+                    android.util.Log.e(
+                        "MissingContent",
+                        "Missing required word audio. chapterId=$chapterId stationId=null context=ImageMatchActions.handleImageToWordWordPressed stage=rawVoice=null expectedRawResId=$wordResId",
+                    )
+                    voice.playRequiredBlocking(
+                        assetPath = "",
+                        context = "ImageMatchActions.handleImageToWordWordPressed(rawVoice=null)",
+                        chapterId = chapterId,
+                        stationId = null,
+                    )
+                    return@launchPromptVoice
+                }
+                rawVoice.playRawBlocking(wordResId)
+                return@launchPromptVoice
+            }
             val clip =
                 AudioClips.imageToWordClipByCatalogId(
                     catalogEntryId = choiceId,
@@ -174,6 +281,8 @@ internal object ImageMatchActions {
                                     audioRuntime = audioRuntime,
                                     candidates = ImageToWordPraiseCandidates,
                                     chapterId = chapterId,
+                                    stationId = stationId,
+                                    context = "ImageMatchActions.handleImageMatchPick(correct,trainingPraise)",
                                     rawVoice = rawVoice,
                                 )
                             }

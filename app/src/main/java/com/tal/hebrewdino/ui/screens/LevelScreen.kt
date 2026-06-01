@@ -1,5 +1,6 @@
 package com.tal.hebrewdino.ui.screens
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -56,6 +57,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.geometry.Offset
@@ -74,6 +76,7 @@ import com.tal.hebrewdino.ui.data.DinoCharacter
 import com.tal.hebrewdino.ui.data.PlayerAddress
 import com.tal.hebrewdino.ui.domain.Chapter1Config
 import com.tal.hebrewdino.ui.domain.Chapter1LetterPoolSpec
+import com.tal.hebrewdino.ui.domain.DevTools
 import com.tal.hebrewdino.ui.domain.StationQuizPlans
 import com.tal.hebrewdino.ui.layout.ScreenFit
 import kotlinx.coroutines.launch
@@ -98,6 +101,16 @@ fun LevelScreen(
     modifier: Modifier = Modifier,
 ) {
     val chapterLevel = levelId.coerceIn(1, Chapter1Config.STATION_COUNT)
+    if (chapter1CompanionCharacter == null) {
+        val isDebuggable = DevTools.enabled(LocalContext.current)
+        val msg =
+            "Missing selected companion for station gameplay. chapterId=1 stationId=$chapterLevel context=LevelScreen chapter1CompanionCharacter=null"
+        Log.e(
+            "MissingContent",
+            msg,
+        )
+        if (isDebuggable) throw IllegalStateException(msg)
+    }
     LetterQuizStationScreen(
         stationId = chapterLevel,
         chapterId = 1,

@@ -107,6 +107,8 @@ internal object AdvanceAfterRoundActions {
                     audioRuntime = audioRuntime,
                     candidates = Episode1PraiseCandidates,
                     chapterId = chapterId,
+                    stationId = stationId,
+                    context = "AdvanceAfterRoundActions.playPraise(episode1)",
                     rawVoice = rawVoice,
                 )
             }
@@ -125,6 +127,8 @@ internal object AdvanceAfterRoundActions {
                     audioRuntime = audioRuntime,
                     candidates = OtherPraiseCandidates,
                     chapterId = chapterId,
+                    stationId = stationId,
+                    context = "AdvanceAfterRoundActions.playPraise(other)",
                     rawVoice = rawVoice,
                 )
             }

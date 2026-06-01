@@ -62,6 +62,7 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalContext
+import android.util.Log
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -198,20 +199,32 @@ fun JourneyScreen(
     /** Season 1 Ch.1: companion Dino on the road (no legacy walk sprites). */
     useCompanionDinoOnMap: Boolean = false,
     useSelectedCompanionOnMap: Boolean = false,
-    /** Selected companion when [useCompanionDinoOnMap] (Season 1 Ch.1). */
-    companionCharacter: DinoCharacter = DinoCharacter.Dino,
+    /** Selected companion when [useCompanionDinoOnMap] or [useSelectedCompanionOnMap]. */
+    companionCharacter: DinoCharacter? = null,
     endMarker: JourneyEndMarker = JourneyEndMarker.Egg,
     backgroundRes: Int = R.drawable.forest_bg_journey_road,
     /** Eggs already collected in prior chapter finales (shown under the top bar). */
     collectedEggStripCount: Int = 0,
     modifier: Modifier = Modifier,
 ) {
-    val devToolsEnabled = DevTools.enabled(LocalContext.current)
-    val chapter1CompanionAssets =
-        remember(companionCharacter) {
-            CompanionAssets.forCharacter(companionCharacter)
+    val ctx = LocalContext.current
+    val devToolsEnabled = DevTools.enabled(ctx)
+    val isDebuggable =
+        remember {
+            (ctx.applicationContext.applicationInfo.flags and 0x2) != 0
         }
     val useSelectedCompanionSprites = useCompanionDinoOnMap || useSelectedCompanionOnMap
+    if (useSelectedCompanionSprites && companionCharacter == null) {
+        val msg =
+            "Missing selected companion for JourneyScreen. useCompanionDinoOnMap=$useCompanionDinoOnMap useSelectedCompanionOnMap=$useSelectedCompanionOnMap companionCharacter=null"
+        Log.e("MissingContent", msg)
+        if (isDebuggable) throw IllegalStateException(msg)
+    }
+    val effectiveCompanionCharacter = companionCharacter ?: DinoCharacter.Dino
+    val chapter1CompanionAssets =
+        remember(effectiveCompanionCharacter) {
+            CompanionAssets.forCharacter(effectiveCompanionCharacter)
+        }
     val mapWalkFrameResIds =
         if (useSelectedCompanionSprites) {
             chapter1CompanionAssets.talkFrameResIds

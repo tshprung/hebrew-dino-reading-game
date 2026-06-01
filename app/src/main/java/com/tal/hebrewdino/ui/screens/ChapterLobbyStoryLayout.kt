@@ -57,6 +57,7 @@ import com.tal.hebrewdino.ui.components.AnimatedTalkingCharacter
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.tal.hebrewdino.ui.layout.ScreenFit
+import android.util.Log
 
 enum class ChapterLobbyCompanion {
     DinoOnly,
@@ -86,6 +87,8 @@ fun ChapterLobbyStoryLayout(
     title: String,
     body: String,
     companion: ChapterLobbyCompanion,
+    chapterId: Int? = null,
+    storyContext: String = "ChapterLobbyStoryLayout",
     narrationPlaying: Boolean = false,
     /** Optional narration WAV in assets (e.g. `audio/story_*.wav`). */
     voiceAssetPath: String? = null,
@@ -109,6 +112,9 @@ fun ChapterLobbyStoryLayout(
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
+    val isDebuggable = remember {
+        (context.applicationContext.applicationInfo.flags and 0x2) != 0
+    }
     val voicePlayer = remember(voiceAssetPath) { voiceAssetPath?.let { VoicePlayer(context = context) } }
     val rawVoice = remember(voiceRawResId) { if (voiceRawResId != null) RawVoicePlayer(context = context) else null }
     var autoNarrationPlaying by remember(voiceAssetPath, voiceRawResId) { mutableStateOf(false) }
@@ -133,16 +139,34 @@ fun ChapterLobbyStoryLayout(
 
     LaunchedEffect(voiceAssetPath, voiceRawResId) {
         when {
-            voiceRawResId != null && voiceRawResId != 0 -> {
+            voiceRawResId != null -> {
                 autoNarrationPlaying = true
-                rawVoice?.playRawBlocking(voiceRawResId)
+                if (voiceRawResId == 0) {
+                    val msg =
+                        "Missing required story narration raw resource. chapterId=$chapterId storyContext=$storyContext rawResId=0"
+                    Log.e("MissingContent", msg)
+                    if (isDebuggable) throw IllegalStateException(msg)
+                } else {
+                    val failure =
+                        runCatching { rawVoice?.playRawBlocking(voiceRawResId) }
+                            .exceptionOrNull()
+                    if (failure != null) {
+                        val msg =
+                            "Required story narration raw playback failed. chapterId=$chapterId storyContext=$storyContext rawResId=$voiceRawResId"
+                        Log.e("MissingContent", msg, failure)
+                        if (isDebuggable) throw failure
+                    }
+                }
                 autoNarrationPlaying = false
             }
-            voicePlayer != null && !voiceAssetPath.isNullOrBlank() -> {
+            voiceAssetPath != null && voicePlayer != null -> {
                 autoNarrationPlaying = true
-                if (voicePlayer.hasAsset(voiceAssetPath)) {
-                    voicePlayer.playBlocking(voiceAssetPath)
-                }
+                voicePlayer.playRequiredBlocking(
+                    assetPath = voiceAssetPath,
+                    context = "StoryNarration($storyContext)",
+                    chapterId = chapterId,
+                    stationId = null,
+                )
                 autoNarrationPlaying = false
             }
         }

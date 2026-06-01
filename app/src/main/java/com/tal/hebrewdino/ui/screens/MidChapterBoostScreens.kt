@@ -3,9 +3,9 @@ package com.tal.hebrewdino.ui.screens
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.tal.hebrewdino.R
+import com.tal.hebrewdino.ui.audio.AudioClips
 import com.tal.hebrewdino.ui.companion.Chapter1AddressAwareAudio
 import com.tal.hebrewdino.ui.companion.Chapter1CompanionCopy
-import com.tal.hebrewdino.ui.audio.AudioClips
 import com.tal.hebrewdino.ui.companion.displayNameHebrew
 import com.tal.hebrewdino.ui.data.DinoCharacter
 import com.tal.hebrewdino.ui.data.PlayerAddress
@@ -22,6 +22,8 @@ fun Chapter1MidBoostScreen(
         title = "ממשיכים!",
         body = Chapter1CompanionCopy.chapter1MidBoostBody(companionCharacter, playerAddress),
         companion = ChapterLobbyCompanion.DinoOnly,
+        chapterId = 1,
+        storyContext = "Chapter1MidBoostScreen",
         useCompanionDinoArt = true,
         companionCharacter = companionCharacter,
         useWarmReadableStoryPanel = true,
@@ -34,19 +36,29 @@ fun Chapter1MidBoostScreen(
 
 @Composable
 fun Chapter2MidBoostScreen(
+    companionCharacter: DinoCharacter,
     onContinue: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val voiceRawResId =
+        when (companionCharacter) {
+            DinoCharacter.Dino -> R.raw.ch2_story_mid_dino
+            DinoCharacter.Dina -> R.raw.ch2_story_mid_dina
+        }
     ChapterLobbyStoryLayout(
         backgroundRes = R.drawable.chapter2_story_intro,
         title = "ממש טוב!",
         body =
-            "הולך לכם נהדר!\n" +
-                "עכשיו הדרך עולה למעלה, והעקבות נהיות ברורות יותר.\n" +
-                "עוד קצת—ואולי נגלה מי עבר כאן ומה הוא לקח.",
+            "הוֹלֵךְ לָכֶם נֶהֱדָר!\n" +
+                "עַכְשָׁיו הַדֶּרֶךְ עוֹלָה לְמַעְלָה, וְהָעֲקֵבוֹת נִהְיוֹת בְּרוּרוֹת יוֹתֵר.\n" +
+                "עוֹד קְצָת — וְאוּלַי נְגַלֶּה מִי עָבַר כָּאן וּמָה נִלְקַח.",
         companion = ChapterLobbyCompanion.DinoOnly,
-        voiceAssetPath = AudioClips.StoryCh2MidBoost,
-        dinoContentDescription = "דינו",
+        chapterId = 2,
+        storyContext = "Chapter2MidBoostScreen",
+        useCompanionDinoArt = true,
+        companionCharacter = companionCharacter,
+        voiceRawResId = voiceRawResId,
+        dinoContentDescription = companionCharacter.displayNameHebrew(),
         onContinue = onContinue,
         modifier = modifier,
     )
@@ -85,6 +97,8 @@ fun Chapter4MidBoostScreen(
                 "עוד קצת חיזוק ואתם מוכנים לעוד אתגרים.\n" +
                 "בואו נמשיך ביחד!",
         companion = ChapterLobbyCompanion.DinoOnly,
+        chapterId = 4,
+        storyContext = "Chapter4MidBoostScreen",
         voiceAssetPath = AudioClips.StoryCh4MidBoost,
         dinoContentDescription = "דינו",
         onContinue = onContinue,
@@ -105,6 +119,8 @@ fun Chapter5MidBoostScreen(
                 "עוד קצת — ואולי נגיע לביצה השלישית.\n" +
                 "בואו נסיים את המסע!",
         companion = ChapterLobbyCompanion.DinoOnly,
+        chapterId = 5,
+        storyContext = "Chapter5MidBoostScreen",
         voiceAssetPath = AudioClips.StoryCh5MidBoost,
         dinoContentDescription = "דינו",
         onContinue = onContinue,

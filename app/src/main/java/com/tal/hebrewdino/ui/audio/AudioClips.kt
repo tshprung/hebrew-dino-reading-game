@@ -1,6 +1,11 @@
 package com.tal.hebrewdino.ui.audio
 
+import android.util.Log
+import com.tal.hebrewdino.R
+
 object AudioClips {
+    private const val TAG: String = "MissingContent"
+
     const val VoChooseLetter = "audio/vo_choose_letter.wav"
     /** Episode 4 station 1: spoken "בחור את האות" (then letter name clip). Add `assets/audio/vo_bachor_et_haot.wav`; falls back to [VoChooseLetter] if missing. */
     const val VoBachorEtHaot = "audio/vo_bachor_et_haot.wav"
@@ -168,6 +173,101 @@ object AudioClips {
         return "audio/word_${catalogEntryId}.wav"
     }
 
+    private val WordRawResByCatalogId: Map<String, Int> =
+        mapOf(
+            "w_א_1" to R.raw.word_w_alef_1,
+            "w_א_2" to R.raw.word_w_alef_2,
+            "w_א_3" to R.raw.word_w_alef_3,
+            "w_א_4" to R.raw.word_w_alef_4,
+            "w_א_5" to R.raw.word_w_alef_5,
+            "w_ב_1" to R.raw.word_w_bet_1,
+            "w_ב_2" to R.raw.word_w_bet_2,
+            "w_ב_3" to R.raw.word_w_bet_3,
+            "w_ג_1" to R.raw.word_w_gimel_1,
+            "w_ג_2" to R.raw.word_w_gimel_2,
+            "w_ג_3" to R.raw.word_w_gimel_3,
+            "w_ג_4" to R.raw.word_w_gimel_4,
+            "w_ד_1" to R.raw.word_w_dalet_1,
+            "w_ד_2" to R.raw.word_w_dalet_2,
+            "w_ד_3" to R.raw.word_w_dalet_3,
+            "w_ד_4" to R.raw.word_w_dalet_4,
+            "w_ה_1" to R.raw.word_w_heh_1,
+            "w_ה_2" to R.raw.word_w_heh_2,
+            "w_ה_3" to R.raw.word_w_heh_3,
+            "w_ו_1" to R.raw.word_w_vav_1,
+            "w_ו_2" to R.raw.word_w_vav_2,
+            "w_ו_3" to R.raw.word_w_vav_3,
+            "w_ח_1" to R.raw.word_w_chet_1,
+            "w_ח_2" to R.raw.word_w_chet_2,
+            "w_ח_3" to R.raw.word_w_chet_3,
+            "w_ח_4" to R.raw.word_w_chet_4,
+            "w_ט_1" to R.raw.word_w_tet_1,
+            "w_ט_2" to R.raw.word_w_tet_2,
+            "w_ט_3" to R.raw.word_w_tet_3,
+            "w_י_2" to R.raw.word_w_yod_2,
+            "w_י_3" to R.raw.word_w_yod_3,
+            "w_י_4" to R.raw.word_w_yod_4,
+            "w_י_5" to R.raw.word_w_yod_5,
+            "w_י_6" to R.raw.word_w_yod_6,
+            "w_ז_1" to R.raw.word_w_zayin_1,
+            "w_ז_2" to R.raw.word_w_zayin_2,
+            "w_ז_3" to R.raw.word_w_zayin_3,
+            "w_ז_4" to R.raw.word_w_zayin_4,
+            "w_ס_1" to R.raw.word_w_samech_1,
+            "w_ס_2" to R.raw.word_w_samech_2,
+            "w_ס_3" to R.raw.word_w_samech_3,
+            "w_ס_4" to R.raw.word_w_samech_4,
+            "w_ס_5" to R.raw.word_w_samech_5,
+            "w_ע_1" to R.raw.word_w_ayin_1,
+            "w_ע_2" to R.raw.word_w_ayin_2,
+            "w_ע_3" to R.raw.word_w_ayin_3,
+            "w_ע_4" to R.raw.word_w_ayin_4,
+            "w_ע_5" to R.raw.word_w_ayin_5,
+            "w_ע_6" to R.raw.word_w_ayin_6,
+            "w_ע_7" to R.raw.word_w_ayin_7,
+            "w_כ_1" to R.raw.word_w_kaf_1,
+            "w_כ_2" to R.raw.word_w_kaf_2,
+            "w_כ_3" to R.raw.word_w_kaf_3,
+            "w_ל_1" to R.raw.word_w_lamed_1,
+            "w_ל_2" to R.raw.word_w_lamed_2,
+            "w_ל_3" to R.raw.word_w_lamed_3,
+            "w_מ_1" to R.raw.word_w_mem_1,
+            "w_מ_2" to R.raw.word_w_mem_2,
+            "w_מ_3" to R.raw.word_w_mem_3,
+            "w_מ_4" to R.raw.word_w_mem_4,
+            "w_מ_5" to R.raw.word_w_mem_5,
+            "w_נ_1" to R.raw.word_w_nun_1,
+            "w_נ_2" to R.raw.word_w_nun_2,
+            "w_נ_3" to R.raw.word_w_nun_3,
+            "w_נ_4" to R.raw.word_w_nun_4,
+            "w_פ_1" to R.raw.word_w_peh_1,
+            "w_פ_2" to R.raw.word_w_peh_2,
+            "w_פ_3" to R.raw.word_w_peh_3,
+            "w_פ_4" to R.raw.word_w_peh_4,
+            "w_צ_1" to R.raw.word_w_tsadi_1,
+            "w_צ_2" to R.raw.word_w_tsadi_2,
+            "w_צ_3" to R.raw.word_w_tsadi_3,
+            "w_צ_4" to R.raw.word_w_tsadi_4,
+            "w_ק_1" to R.raw.word_w_kuf_1,
+            "w_ק_2" to R.raw.word_w_kuf_2,
+            "w_ק_3" to R.raw.word_w_kuf_3,
+            "w_ר_1" to R.raw.word_w_reish_1,
+            "w_ר_2" to R.raw.word_w_reish_2,
+            "w_ר_3" to R.raw.word_w_reish_3,
+            "w_ר_4" to R.raw.word_w_reish_4,
+            "w_ר_5" to R.raw.word_w_reish_5,
+            "w_ש_1" to R.raw.word_w_shin_1,
+            "w_ש_2" to R.raw.word_w_shin_2,
+            "w_ש_3" to R.raw.word_w_shin_3,
+            "w_ש_4" to R.raw.word_w_shin_4,
+            "w_ת_1" to R.raw.word_w_taf_1,
+            "w_ת_2" to R.raw.word_w_taf_2,
+            "w_ת_3" to R.raw.word_w_taf_3,
+            "w_ת_4" to R.raw.word_w_taf_4,
+        )
+
+    fun wordRawResIdByCatalogId(catalogId: String): Int? = WordRawResByCatalogId[catalogId]
+
     fun imageToWordClipByCatalogId(
         catalogEntryId: String,
         chapterId: Int,
@@ -234,6 +334,59 @@ object AudioClips {
             "ת" -> "audio/letter_taf.wav"
             else -> null
         }
+
+    fun letterNameRawResId(letter: String): Int? =
+        when (letter) {
+            "א" -> R.raw.letter_name_alef
+            "ב" -> R.raw.letter_name_bet
+            "ג" -> R.raw.letter_name_gimel
+            "ד" -> R.raw.letter_name_dalet
+            "ה" -> R.raw.letter_name_heh
+            "ו" -> R.raw.letter_name_vav
+            "ז" -> R.raw.letter_name_zayin
+            "ח" -> R.raw.letter_name_chet
+            "ט" -> R.raw.letter_name_tet
+            "י" -> R.raw.letter_name_yod
+            "כ" -> R.raw.letter_name_kaf
+            "ל" -> R.raw.letter_name_lamed
+            "מ" -> R.raw.letter_name_mem
+            "נ" -> R.raw.letter_name_nun
+            "ס" -> R.raw.letter_name_samech
+            "ע" -> R.raw.letter_name_ayin
+            "פ" -> R.raw.letter_name_peh
+            "צ" -> R.raw.letter_name_tsadi
+            "ק" -> R.raw.letter_name_kuf
+            "ר" -> R.raw.letter_name_reish
+            "ש" -> R.raw.letter_name_shin
+            "ת" -> R.raw.letter_name_tav
+            else -> null
+        }
+
+    fun reportMissingLetterNameMapping(
+        tappedLetter: String,
+        chapterId: Int? = null,
+        stationId: Int? = null,
+        context: String,
+    ) {
+        Log.e(
+            TAG,
+            "Missing required letter-name mapping. tappedLetter='$tappedLetter' chapterId=$chapterId stationId=$stationId context=$context",
+        )
+    }
+
+    fun reportMissingLetterNameAsset(
+        tappedLetter: String,
+        mappedAssetPath: String?,
+        chapterId: Int? = null,
+        stationId: Int? = null,
+        context: String,
+        detail: String? = null,
+    ) {
+        Log.e(
+            TAG,
+            "Missing/unloadable required letter-name asset. tappedLetter='$tappedLetter' mappedAssetPath=$mappedAssetPath chapterId=$chapterId stationId=$stationId context=$context detail=$detail",
+        )
+    }
 
     /**
      * Optional single clip: wrong balloon / wrong tap sentence (e.g. letter name + "נסה שוב").

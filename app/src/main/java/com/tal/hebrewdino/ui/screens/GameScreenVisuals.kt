@@ -52,6 +52,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import androidx.compose.ui.platform.LocalContext
 import com.tal.hebrewdino.ui.audio.VoicePlayer
+import com.tal.hebrewdino.ui.audio.RawVoicePlayer
 import com.tal.hebrewdino.ui.components.AnimatedTalkingCharacter
 import com.tal.hebrewdino.ui.components.ChapterNavChipStyles
 import com.tal.hebrewdino.ui.domain.DevTools
@@ -453,6 +454,7 @@ internal fun BoxScope.GameOverlayLayer(
     session: LevelSession,
     scope: CoroutineScope,
     voice: VoicePlayer,
+    rawVoice: RawVoicePlayer,
     cancelFeedbackVoice: () -> Unit,
     audioRuntime: GameAudioRuntimeState,
 ) {
@@ -490,6 +492,7 @@ internal fun BoxScope.GameOverlayLayer(
         session = session,
         scope = scope,
         voice = voice,
+        rawVoice = rawVoice,
         cancelFeedbackVoice = cancelFeedbackVoice,
         audioRuntime = audioRuntime,
         modifier =

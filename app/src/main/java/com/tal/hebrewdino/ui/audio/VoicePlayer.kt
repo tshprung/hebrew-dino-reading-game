@@ -19,6 +19,8 @@ import kotlin.random.Random
 class VoicePlayer(context: Context) {
     companion object {
         private const val TAG: String = "VoicePlayer"
+        private const val MISSING_TAG: String = "MissingContent"
+        private const val FLAG_DEBUGGABLE: Int = 0x2
         private val Registry: MutableSet<VoicePlayer> =
             Collections.newSetFromMap(WeakHashMap())
 
@@ -31,6 +33,8 @@ class VoicePlayer(context: Context) {
     }
 
     private val appContext = context.applicationContext
+    private val isDebuggable: Boolean =
+        (appContext.applicationInfo.flags and FLAG_DEBUGGABLE) != 0
     private val mutex = Mutex()
     private var player: MediaPlayer? = null
     @Volatile private var activeWaiter: CancellableContinuation<Unit>? = null
@@ -121,6 +125,104 @@ class VoicePlayer(context: Context) {
 
             stopLocked()
         }
+    }
+
+    suspend fun playRequiredBlocking(
+        assetPath: String,
+        context: String,
+        chapterId: Int? = null,
+        stationId: Int? = null,
+    ) {
+        if (assetPath.isBlank()) {
+            reportRequiredFailure(
+                assetPath = assetPath,
+                stage = "assetPath blank",
+                context = context,
+                chapterId = chapterId,
+                stationId = stationId,
+                cause = null,
+            )
+            return
+        }
+        if (!hasAsset(assetPath)) {
+            reportRequiredFailure(
+                assetPath = assetPath,
+                stage = "hasAsset=false",
+                context = context,
+                chapterId = chapterId,
+                stationId = stationId,
+                cause = null,
+            )
+            return
+        }
+        playBlocking(assetPath)
+    }
+
+    suspend fun playSequenceRequiredBlocking(
+        assetPaths: List<String>,
+        context: String,
+        chapterId: Int? = null,
+        stationId: Int? = null,
+    ) {
+        val cleaned = assetPaths.filter { it.isNotBlank() }
+        if (cleaned.isEmpty()) {
+            reportRequiredFailure(
+                assetPath = "",
+                stage = "empty sequence",
+                context = context,
+                chapterId = chapterId,
+                stationId = stationId,
+                cause = null,
+            )
+            return
+        }
+        val missing = cleaned.filterNot { hasAsset(it) }
+        if (missing.isNotEmpty()) {
+            reportRequiredFailure(
+                assetPath = missing.first(),
+                stage = "missing required sequence assets: $missing",
+                context = context,
+                chapterId = chapterId,
+                stationId = stationId,
+                cause = null,
+            )
+            return
+        }
+        playSequenceBlocking(cleaned)
+    }
+
+    suspend fun playFirstAvailableRequiredBlocking(
+        assetPaths: Array<String>,
+        context: String,
+        chapterId: Int? = null,
+        stationId: Int? = null,
+    ): String? {
+        val cleaned = assetPaths.filter { it.isNotBlank() }
+        if (cleaned.isEmpty()) {
+            reportRequiredFailure(
+                assetPath = "",
+                stage = "empty candidate list",
+                context = context,
+                chapterId = chapterId,
+                stationId = stationId,
+                cause = null,
+            )
+            return null
+        }
+        val playable = cleaned.firstOrNull { hasAsset(it) }
+        if (playable == null) {
+            reportRequiredFailure(
+                assetPath = cleaned.first(),
+                stage = "no candidate exists: $cleaned",
+                context = context,
+                chapterId = chapterId,
+                stationId = stationId,
+                cause = null,
+            )
+            return null
+        }
+        playBlocking(playable)
+        return playable
     }
 
     suspend fun playFirstAvailableBlocking(vararg assetPaths: String) {
@@ -316,5 +418,26 @@ class VoicePlayer(context: Context) {
             Log.w(TAG, "Missing/unplayable voice asset: $assetPath")
             false
         }
+
+    private fun reportRequiredFailure(
+        assetPath: String,
+        stage: String,
+        context: String,
+        chapterId: Int?,
+        stationId: Int?,
+        cause: Throwable?,
+    ) {
+        val msg =
+            "Required VoicePlayer asset failed. assetPath='$assetPath' chapterId=$chapterId stationId=$stationId context=$context stage=$stage"
+        if (cause != null) {
+            Log.e(MISSING_TAG, msg, cause)
+        } else {
+            Log.e(MISSING_TAG, msg)
+        }
+        if (isDebuggable) {
+            if (cause != null) throw IllegalStateException(msg, cause)
+            throw IllegalStateException(msg)
+        }
+    }
 }
 

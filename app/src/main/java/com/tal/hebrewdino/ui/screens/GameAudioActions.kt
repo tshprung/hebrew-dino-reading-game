@@ -114,15 +114,30 @@ internal object GameAudioActions {
         leadFraction: Float,
         extraPauseMs: Long,
         delayScale: Float,
+        chapterId: Int? = null,
+        stationId: Int? = null,
+        context: String,
     ) {
         sfx.stopAllStreams()
-        sfx.playReturningStreamId(intro, volume = 1f)
+        sfx.playRequiredReturningStreamId(
+            assetPath = intro,
+            volume = 1f,
+            context = context,
+            chapterId = chapterId,
+            stationId = stationId,
+        )
         val lead =
             (introMs * leadFraction)
                 .toLong()
                 .coerceIn(16L, introMs)
         delay(((lead + extraPauseMs) * delayScale).toLong())
-        sfx.playReturningStreamId(letter, volume = 1f)
+        sfx.playRequiredReturningStreamId(
+            assetPath = letter,
+            volume = 1f,
+            context = context,
+            chapterId = chapterId,
+            stationId = stationId,
+        )
     }
 
     suspend fun await(
@@ -165,17 +180,22 @@ internal object GameAudioActions {
         audioRuntime: GameAudioRuntimeState,
         candidates: Array<String>,
         chapterId: Int? = null,
+        stationId: Int? = null,
+        context: String = "GameAudioActions.playPraiseNoImmediateRepeat",
         rawVoice: RawVoicePlayer? = null,
     ) {
         val played =
-            if (chapterId == 1 && rawVoice != null) {
-                playFirstAvailableBlockingRandomizedNoRepeatWithRawOverride(
+            if (chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) {
+                playRequiredBlockingRandomizedNoRepeatWithRawOverride(
                     voice = voice,
                     rawVoice = rawVoice,
                     assetPaths = candidates,
                     avoidAssetPath = audioRuntime.lastPraiseAssetPath,
                     overrideAssetPath = AudioClips.VoPraiseHitzlacht,
                     overrideRawResId = R.raw.vo_praise_meule,
+                    chapterId = chapterId,
+                    stationId = stationId,
+                    context = context,
                 )
             } else {
                 voice.playFirstAvailableBlockingRandomizedNoRepeat(
@@ -188,29 +208,57 @@ internal object GameAudioActions {
         }
     }
 
-    private suspend fun playFirstAvailableBlockingRandomizedNoRepeatWithRawOverride(
+    private suspend fun playRequiredBlockingRandomizedNoRepeatWithRawOverride(
         voice: VoicePlayer,
-        rawVoice: RawVoicePlayer,
+        rawVoice: RawVoicePlayer?,
         assetPaths: Array<String>,
         avoidAssetPath: String?,
         overrideAssetPath: String,
         overrideRawResId: Int,
+        chapterId: Int,
+        stationId: Int?,
+        context: String,
         random: Random = Random.Default,
     ): String? {
         val n = assetPaths.size
-        if (n == 0) return null
+        if (n == 0) {
+            voice.playRequiredBlocking(
+                assetPath = "",
+                context = "$context(empty candidates)",
+                chapterId = chapterId,
+                stationId = stationId,
+            )
+            return null
+        }
         val start = random.nextInt(n)
 
         for (k in 0 until n) {
             val p = assetPaths[(start + k) % n]
             if (p.isBlank()) continue
             if (avoidAssetPath != null && p == avoidAssetPath) continue
-            if (!voice.hasAsset(p)) continue
             if (p == overrideAssetPath) {
+                if (rawVoice == null) {
+                    android.util.Log.e(
+                        "MissingContent",
+                        "Missing required praise raw override. chapterId=$chapterId stationId=$stationId context=$context stage=rawVoice=null expectedRawRes=$overrideRawResId expectedAssetPath='$overrideAssetPath'",
+                    )
+                    voice.playRequiredBlocking(
+                        assetPath = "",
+                        context = "$context(rawVoice=null for override)",
+                        chapterId = chapterId,
+                        stationId = stationId,
+                    )
+                    return null
+                }
                 rawVoice.playRawBlocking(overrideRawResId)
                 return p
             }
-            voice.playBlocking(p)
+            voice.playRequiredBlocking(
+                assetPath = p,
+                context = "$context(praise)",
+                chapterId = chapterId,
+                stationId = stationId,
+            )
             return p
         }
 
@@ -218,16 +266,39 @@ internal object GameAudioActions {
             for (k in 0 until n) {
                 val p = assetPaths[(start + k) % n]
                 if (p.isBlank()) continue
-                if (!voice.hasAsset(p)) continue
                 if (p == overrideAssetPath) {
+                    if (rawVoice == null) {
+                        android.util.Log.e(
+                            "MissingContent",
+                            "Missing required praise raw override. chapterId=$chapterId stationId=$stationId context=$context stage=rawVoice=null expectedRawRes=$overrideRawResId expectedAssetPath='$overrideAssetPath'",
+                        )
+                        voice.playRequiredBlocking(
+                            assetPath = "",
+                            context = "$context(rawVoice=null for override)",
+                            chapterId = chapterId,
+                            stationId = stationId,
+                        )
+                        return null
+                    }
                     rawVoice.playRawBlocking(overrideRawResId)
                     return p
                 }
-                voice.playBlocking(p)
+                voice.playRequiredBlocking(
+                    assetPath = p,
+                    context = "$context(praise)",
+                    chapterId = chapterId,
+                    stationId = stationId,
+                )
                 return p
             }
         }
 
+        voice.playRequiredBlocking(
+            assetPath = "",
+            context = "$context(no selectable candidates)",
+            chapterId = chapterId,
+            stationId = stationId,
+        )
         return null
     }
 }

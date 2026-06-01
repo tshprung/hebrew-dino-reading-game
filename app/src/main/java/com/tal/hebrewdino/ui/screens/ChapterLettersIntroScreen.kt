@@ -50,6 +50,7 @@ import com.tal.hebrewdino.ui.domain.Chapter6Config
 import com.tal.hebrewdino.ui.domain.HebrewLetterOrder
 import com.tal.hebrewdino.ui.components.learning.LetterChoiceTile
 import com.tal.hebrewdino.ui.audio.AudioClips
+import com.tal.hebrewdino.ui.audio.RawVoicePlayer
 import com.tal.hebrewdino.ui.audio.VoicePlayer
 import com.tal.hebrewdino.ui.layout.ScreenFit
 import androidx.lifecycle.Lifecycle
@@ -62,6 +63,7 @@ fun Chapter1LettersIntroScreen(
     modifier: Modifier = Modifier,
 ) {
     ChapterLettersIntroScreen(
+        chapterId = 1,
         chapterTitle = "פרק 1 - מצא את הביצה",
         letters = listOf("א", "ב", "ד", "ל", "מ"),
         backgroundRes = R.drawable.forest_bg_story_intro,
@@ -76,6 +78,7 @@ fun Chapter2LettersIntroScreen(
     modifier: Modifier = Modifier,
 ) {
     ChapterLettersIntroScreen(
+        chapterId = 2,
         chapterTitle = "פרק 2 - מצא את הביצה הורודה",
         letters = listOf("ג", "ה", "ו", "ר", "ש"),
         backgroundRes = R.drawable.chapter2_journey_road,
@@ -106,6 +109,7 @@ fun Chapter4LettersIntroScreen(
     modifier: Modifier = Modifier,
 ) {
     ChapterLettersIntroScreen(
+        chapterId = 4,
         chapterTitle = "פרק 4 - סיבוך בדרך",
         letters = Chapter4Config.letters,
         backgroundRes = R.drawable.forest_bg_journey_road,
@@ -120,6 +124,7 @@ fun Chapter5LettersIntroScreen(
     modifier: Modifier = Modifier,
 ) {
     ChapterLettersIntroScreen(
+        chapterId = 5,
         chapterTitle = "פרק 5 - הביצה השלישית",
         letters = Chapter5Config.letters,
         backgroundRes = R.drawable.forest_bg_journey_road,
@@ -146,6 +151,7 @@ fun Chapter6LettersIntroScreen(
 
 @Composable
 fun ChapterLettersIntroScreen(
+    chapterId: Int? = null,
     chapterTitle: String,
     letters: List<String>,
     backgroundRes: Int,
@@ -161,10 +167,12 @@ fun ChapterLettersIntroScreen(
 ) {
     val stableLetters = remember(letters) { HebrewLetterOrder.sortForDisplay(letters.distinct()) }
     val isCompactLandscapePhone = ScreenFit.isCompactLandscapePhone()
+    val usesRawLetterNames = chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5
 
     val context = androidx.compose.ui.platform.LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
-    val voice = remember { VoicePlayer(context = context) }
+    val voice = remember(usesRawLetterNames) { if (usesRawLetterNames) null else VoicePlayer(context = context) }
+    val rawVoice = remember(usesRawLetterNames) { if (usesRawLetterNames) RawVoicePlayer(context = context) else null }
     val scope = rememberCoroutineScope()
     var playing by remember { mutableStateOf(false) }
     var highlightedLetter by remember { mutableStateOf<String?>(null) }
@@ -175,15 +183,17 @@ fun ChapterLettersIntroScreen(
             LifecycleEventObserver { _, event ->
                 if (event == Lifecycle.Event.ON_PAUSE || event == Lifecycle.Event.ON_STOP) {
                     playJob?.cancel()
-                    voice.stopNow()
+                    voice?.stopNow()
+                    rawVoice?.stopNow()
                 }
             }
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(observer)
             playJob?.cancel()
-            voice.stopNow()
-            voice.release()
+            voice?.stopNow()
+            voice?.release()
+            rawVoice?.release()
         }
     }
 
@@ -192,8 +202,21 @@ fun ChapterLettersIntroScreen(
         try {
             for (l in stableLetters) {
                 highlightedLetter = l
-                val clip = AudioClips.letterNameClip(l)
-                if (clip != null) voice.playBlocking(clip)
+                if (usesRawLetterNames) {
+                    val resId = AudioClips.letterNameRawResId(l)
+                    if (resId == null) {
+                        android.util.Log.e(
+                            "MissingContent",
+                            "Missing required letter-name audio. chapterId=$chapterId stationId=null context=ChapterLettersIntroScreen.playAll stage=missing raw letter-name mapping letter='$l'",
+                        )
+                        rawVoice?.playRawBlocking(0)
+                    } else {
+                        rawVoice?.playRawBlocking(resId)
+                    }
+                } else {
+                    val clip = AudioClips.letterNameClip(l)
+                    if (clip != null) voice?.playBlocking(clip)
+                }
                 kotlinx.coroutines.delay(180)
             }
         } finally {
@@ -407,7 +430,8 @@ fun ChapterLettersIntroScreen(
                 onClick = {
                     // UX: stop intro immediately when continuing (don't wait for dispose/navigation).
                     playJob?.cancel()
-                    voice.stopNow()
+                    voice?.stopNow()
+                    rawVoice?.stopNow()
                     playing = false
                     highlightedLetter = null
                     onContinue()

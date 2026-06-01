@@ -24,20 +24,36 @@ internal object WrongFeedbackActions {
         letterMs: Long,
         followLeadFrac: Float,
         chapterId: Int,
+        stationId: Int,
         playerAddress: PlayerAddress?,
         rawVoice: RawVoicePlayer?,
         voice: VoicePlayer,
     ) {
-        if (chapterId == 1 && rawVoice != null) {
+        if ((chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) && rawVoice != null) {
             playLetterThenAddressAwareTryAgain(
                 sfx = sfx,
                 letterClip = letterClip,
                 letterMs = letterMs,
                 followLeadFrac = followLeadFrac,
                 chapterId = chapterId,
+                stationId = stationId,
                 playerAddress = playerAddress,
                 rawVoice = rawVoice,
                 voice = voice,
+                context = "WrongFeedbackActions.playLetterThenTryAgainOnSoundPool(addressAware)",
+            )
+            return
+        }
+        if ((chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) && rawVoice == null) {
+            android.util.Log.e(
+                "MissingContent",
+                "Missing required wrong-feedback try-again audio. chapterId=$chapterId stationId=$stationId context=WrongFeedbackActions.playLetterThenTryAgainOnSoundPool stage=rawVoice=null",
+            )
+            voice.playRequiredBlocking(
+                assetPath = "",
+                context = "WrongFeedbackActions.playLetterThenTryAgainOnSoundPool(rawVoice=null)",
+                chapterId = chapterId,
+                stationId = stationId,
             )
             return
         }
@@ -57,33 +73,52 @@ internal object WrongFeedbackActions {
 
     private suspend fun playTryAgainFallback(
         chapterId: Int,
+        stationId: Int,
         playerAddress: PlayerAddress?,
         rawVoice: RawVoicePlayer?,
         voice: VoicePlayer,
     ) {
         playAddressAwareTryAgainBlocking(
             chapterId = chapterId,
+            stationId = stationId,
             playerAddress = playerAddress,
             rawVoice = rawVoice,
             voice = voice,
+            context = "WrongFeedbackActions.playTryAgainFallback",
         )
     }
 
     private suspend fun playStandaloneTryAgain(
         sfx: SoundPoolPlayer,
         chapterId: Int,
+        stationId: Int,
         playerAddress: PlayerAddress?,
         rawVoice: RawVoicePlayer?,
         voice: VoicePlayer,
     ) {
-        if (chapterId == 1 && rawVoice != null) {
+        if ((chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) && rawVoice != null) {
             playAddressAwareTryAgainBlocking(
                 chapterId = chapterId,
+                stationId = stationId,
                 playerAddress = playerAddress,
                 rawVoice = rawVoice,
                 voice = voice,
+                context = "WrongFeedbackActions.playStandaloneTryAgain(addressAware)",
             )
         } else {
+            if ((chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) && rawVoice == null) {
+                android.util.Log.e(
+                    "MissingContent",
+                    "Missing required wrong-feedback try-again audio. chapterId=$chapterId stationId=$stationId context=WrongFeedbackActions.playStandaloneTryAgain stage=rawVoice=null",
+                )
+                voice.playRequiredBlocking(
+                    assetPath = "",
+                    context = "WrongFeedbackActions.playStandaloneTryAgain(rawVoice=null)",
+                    chapterId = chapterId,
+                    stationId = stationId,
+                )
+                return
+            }
             sfx.playFirstAvailable(
                 AudioClips.VoTryAgain2,
                 AudioClips.VoTryAgain1,
@@ -126,7 +161,8 @@ internal object WrongFeedbackActions {
                     sagaEpisode &&
                     (chapterId == 1 || chapterId == 2) &&
                     stationId == Chapter1StationOrder.PICTURE_PICK_ONE &&
-                    wrongPickedLetter != null
+                    wrongPickedLetter != null &&
+                    !wrongPickedLetterAlreadySpoken
             if (immediateCh1Ch2Station4Voice) {
                 GameAudioActions.launchFeedbackVoice(
                     audioEnabled = audioEnabled,
@@ -134,8 +170,55 @@ internal object WrongFeedbackActions {
                     audioRuntime = audioRuntime,
                     cancelFeedbackVoice = cancelFeedbackVoice,
                 ) {
+                    val requiredChapter = chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5
+                    if (requiredChapter) {
+                        val resId = AudioClips.letterNameRawResId(wrongPickedLetter)
+                        if (resId == null) {
+                            android.util.Log.e(
+                                "MissingContent",
+                                "Missing required wrong-feedback letter-name audio. chapterId=$chapterId stationId=$stationId context=WrongFeedbackActions.trigger(immediateStation4) stage=missing raw letter-name mapping wrongPickedLetter='$wrongPickedLetter'",
+                            )
+                            rawVoice?.playRawBlocking(0)
+                            return@launchFeedbackVoice
+                        }
+                        if (rawVoice == null) {
+                            android.util.Log.e(
+                                "MissingContent",
+                                "Missing required wrong-feedback letter-name audio. chapterId=$chapterId stationId=$stationId context=WrongFeedbackActions.trigger(immediateStation4) stage=rawVoice=null expectedRawResId=$resId",
+                            )
+                            voice.playRequiredBlocking(
+                                assetPath = "",
+                                context = "WrongFeedbackActions.trigger(immediateStation4,rawVoice=null)",
+                                chapterId = chapterId,
+                                stationId = stationId,
+                            )
+                            return@launchFeedbackVoice
+                        }
+                        rawVoice.playRawBlocking(resId)
+                        playTryAgainFallback(
+                            chapterId = chapterId,
+                            stationId = stationId,
+                            playerAddress = chapter1PlayerAddress,
+                            rawVoice = rawVoice,
+                            voice = voice,
+                        )
+                        return@launchFeedbackVoice
+                    }
+
                     val lc = AudioClips.letterNameClip(wrongPickedLetter)
-                    val letterMs = lc?.let { sfx.durationMs(it) } ?: 0L
+                    val letterMs =
+                        lc?.let {
+                            if (chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) {
+                                sfx.durationMsRequiredOrNull(
+                                    assetPath = it,
+                                    context = "WrongFeedbackActions.trigger(immediateStation4,SoundPoolLetter)",
+                                    chapterId = chapterId,
+                                    stationId = stationId,
+                                ) ?: 0L
+                            } else {
+                                sfx.durationMs(it) ?: 0L
+                            }
+                        } ?: 0L
                     if (lc != null && letterMs > 0L) {
                         val baseWrongFrac =
                             Station1WrongLetterToFollowLeadFraction *
@@ -149,16 +232,27 @@ internal object WrongFeedbackActions {
                             letterMs = letterMs,
                             followLeadFrac = followLeadFrac,
                             chapterId = chapterId,
+                            stationId = stationId,
                             playerAddress = chapter1PlayerAddress,
                             rawVoice = rawVoice,
                             voice = voice,
                         )
                     } else {
-                        if (lc != null && voice.hasAsset(lc)) {
-                            voice.playBlocking(lc)
+                        if (lc != null) {
+                            if (chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) {
+                                voice.playRequiredBlocking(
+                                    assetPath = lc,
+                                    context = "WrongFeedbackActions.trigger(immediateStation4,LetterOnly)",
+                                    chapterId = chapterId,
+                                    stationId = stationId,
+                                )
+                            } else if (voice.hasAsset(lc)) {
+                                voice.playBlocking(lc)
+                            }
                         }
                         playTryAgainFallback(
                             chapterId = chapterId,
+                            stationId = stationId,
                             playerAddress = chapter1PlayerAddress,
                             rawVoice = rawVoice,
                             voice = voice,
@@ -200,13 +294,84 @@ internal object WrongFeedbackActions {
                         audioRuntime = audioRuntime,
                         cancelFeedbackVoice = cancelFeedbackVoice,
                     ) play@{
+                        if (wrongPickedLetterAlreadySpoken) {
+                            playStandaloneTryAgain(
+                                sfx = sfx,
+                                chapterId = chapterId,
+                                stationId = stationId,
+                                playerAddress = chapter1PlayerAddress,
+                                rawVoice = rawVoice,
+                                voice = voice,
+                            )
+                            return@play
+                        }
+                        val requiredChapter = chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5
+                        if (requiredChapter) {
+                            val resId = AudioClips.letterNameRawResId(wrongPickedLetter)
+                            if (resId == null) {
+                                android.util.Log.e(
+                                    "MissingContent",
+                                    "Missing required wrong-feedback letter-name audio. chapterId=$chapterId stationId=$stationId context=WrongFeedbackActions.trigger(sagaPickLetter) stage=missing raw letter-name mapping wrongPickedLetter='$wrongPickedLetter'",
+                                )
+                                rawVoice?.playRawBlocking(0)
+                                return@play
+                            }
+                            if (rawVoice == null) {
+                                android.util.Log.e(
+                                    "MissingContent",
+                                    "Missing required wrong-feedback letter-name audio. chapterId=$chapterId stationId=$stationId context=WrongFeedbackActions.trigger(sagaPickLetter) stage=rawVoice=null expectedRawResId=$resId",
+                                )
+                                voice.playRequiredBlocking(
+                                    assetPath = "",
+                                    context = "WrongFeedbackActions.trigger(sagaPickLetter,rawVoice=null)",
+                                    chapterId = chapterId,
+                                    stationId = stationId,
+                                )
+                                return@play
+                            }
+                            val variant = Random.nextInt(100)
+                            if (variant < 20) {
+                                playStandaloneTryAgain(
+                                    sfx = sfx,
+                                    chapterId = chapterId,
+                                    stationId = stationId,
+                                    playerAddress = chapter1PlayerAddress,
+                                    rawVoice = rawVoice,
+                                    voice = voice,
+                                )
+                                return@play
+                            }
+                            rawVoice.playRawBlocking(resId)
+                            if (variant < 55) return@play
+                            playTryAgainFallback(
+                                chapterId = chapterId,
+                                stationId = stationId,
+                                playerAddress = chapter1PlayerAddress,
+                                rawVoice = rawVoice,
+                                voice = voice,
+                            )
+                            return@play
+                        }
                         val letterClip = AudioClips.letterNameClip(wrongPickedLetter)
-                        val letterMs = letterClip?.let { sfx.durationMs(it) } ?: 0L
+                        val letterMs =
+                            letterClip?.let {
+                                if (chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) {
+                                    sfx.durationMsRequiredOrNull(
+                                        assetPath = it,
+                                        context = "WrongFeedbackActions.trigger(sagaPickLetter,SoundPoolLetter)",
+                                        chapterId = chapterId,
+                                        stationId = stationId,
+                                    ) ?: 0L
+                                } else {
+                                    sfx.durationMs(it) ?: 0L
+                                }
+                            } ?: 0L
                         val variant = Random.nextInt(100)
                         if (variant < 20) {
                             playStandaloneTryAgain(
                                 sfx = sfx,
                                 chapterId = chapterId,
+                                stationId = stationId,
                                 playerAddress = chapter1PlayerAddress,
                                 rawVoice = rawVoice,
                                 voice = voice,
@@ -214,7 +379,29 @@ internal object WrongFeedbackActions {
                             return@play
                         }
                         if (variant < 55) {
-                            if (letterClip != null && voice.hasAsset(letterClip)) voice.playBlocking(letterClip)
+                            if (letterClip != null) {
+                                if (chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) {
+                                    voice.playRequiredBlocking(
+                                        assetPath = letterClip,
+                                        context = "WrongFeedbackActions.trigger(sagaPickLetter,LetterOnly)",
+                                        chapterId = chapterId,
+                                        stationId = stationId,
+                                    )
+                                } else if (voice.hasAsset(letterClip)) {
+                                    voice.playBlocking(letterClip)
+                                }
+                            } else if (chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) {
+                                android.util.Log.e(
+                                    "MissingContent",
+                                    "Missing required wrong-feedback letter audio. chapterId=$chapterId stationId=$stationId context=WrongFeedbackActions.trigger(sagaPickLetter,LetterOnly) stage=missing letter-name mapping wrongPickedLetter='$wrongPickedLetter'",
+                                )
+                                voice.playRequiredBlocking(
+                                    assetPath = "",
+                                    context = "WrongFeedbackActions.trigger(sagaPickLetter,missingLetterNameMapping)",
+                                    chapterId = chapterId,
+                                    stationId = stationId,
+                                )
+                            }
                             return@play
                         }
 
@@ -229,16 +416,38 @@ internal object WrongFeedbackActions {
                                 letterMs = letterMs,
                                 followLeadFrac = followLeadFrac,
                                 chapterId = chapterId,
+                                stationId = stationId,
                                 playerAddress = chapter1PlayerAddress,
                                 rawVoice = rawVoice,
                                 voice = voice,
                             )
                         } else {
-                            if (letterClip != null && voice.hasAsset(letterClip)) {
-                                voice.playBlocking(letterClip)
+                            if (letterClip != null) {
+                                if (chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) {
+                                    voice.playRequiredBlocking(
+                                        assetPath = letterClip,
+                                        context = "WrongFeedbackActions.trigger(sagaPickLetter,LetterOnlyFallback)",
+                                        chapterId = chapterId,
+                                        stationId = stationId,
+                                    )
+                                } else if (voice.hasAsset(letterClip)) {
+                                    voice.playBlocking(letterClip)
+                                }
+                            } else if (chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) {
+                                android.util.Log.e(
+                                    "MissingContent",
+                                    "Missing required wrong-feedback letter audio. chapterId=$chapterId stationId=$stationId context=WrongFeedbackActions.trigger(sagaPickLetter,LetterOnlyFallback) stage=missing letter-name mapping wrongPickedLetter='$wrongPickedLetter'",
+                                )
+                                voice.playRequiredBlocking(
+                                    assetPath = "",
+                                    context = "WrongFeedbackActions.trigger(sagaPickLetter,missingLetterNameMapping)",
+                                    chapterId = chapterId,
+                                    stationId = stationId,
+                                )
                             }
                             playTryAgainFallback(
                                 chapterId = chapterId,
+                                stationId = stationId,
                                 playerAddress = chapter1PlayerAddress,
                                 rawVoice = rawVoice,
                                 voice = voice,
@@ -259,9 +468,65 @@ internal object WrongFeedbackActions {
                         scope = scope,
                         audioRuntime = audioRuntime,
                         cancelFeedbackVoice = cancelFeedbackVoice,
-                    ) {
+                    ) play@{
+                        if (wrongPickedLetterAlreadySpoken) {
+                            playTryAgainFallback(
+                                chapterId = chapterId,
+                                stationId = stationId,
+                                playerAddress = chapter1PlayerAddress,
+                                rawVoice = rawVoice,
+                                voice = voice,
+                            )
+                            return@play
+                        }
+                        val requiredChapter = chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5
+                        if (requiredChapter) {
+                            val resId = AudioClips.letterNameRawResId(wrongPickedLetter)
+                            if (resId == null) {
+                                android.util.Log.e(
+                                    "MissingContent",
+                                    "Missing required wrong-feedback letter-name audio. chapterId=$chapterId stationId=$stationId context=WrongFeedbackActions.trigger(station4) stage=missing raw letter-name mapping wrongPickedLetter='$wrongPickedLetter'",
+                                )
+                                rawVoice?.playRawBlocking(0)
+                                return@play
+                            }
+                            if (rawVoice == null) {
+                                android.util.Log.e(
+                                    "MissingContent",
+                                    "Missing required wrong-feedback letter-name audio. chapterId=$chapterId stationId=$stationId context=WrongFeedbackActions.trigger(station4) stage=rawVoice=null expectedRawResId=$resId",
+                                )
+                                voice.playRequiredBlocking(
+                                    assetPath = "",
+                                    context = "WrongFeedbackActions.trigger(station4,rawVoice=null)",
+                                    chapterId = chapterId,
+                                    stationId = stationId,
+                                )
+                                return@play
+                            }
+                            rawVoice.playRawBlocking(resId)
+                            playTryAgainFallback(
+                                chapterId = chapterId,
+                                stationId = stationId,
+                                playerAddress = chapter1PlayerAddress,
+                                rawVoice = rawVoice,
+                                voice = voice,
+                            )
+                            return@play
+                        }
                         val lc = AudioClips.letterNameClip(wrongPickedLetter)
-                        val letterMs = lc?.let { sfx.durationMs(it) } ?: 0L
+                        val letterMs =
+                            lc?.let {
+                                if (chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) {
+                                    sfx.durationMsRequiredOrNull(
+                                        assetPath = it,
+                                        context = "WrongFeedbackActions.trigger(station4,SoundPoolLetter)",
+                                        chapterId = chapterId,
+                                        stationId = stationId,
+                                    ) ?: 0L
+                                } else {
+                                    sfx.durationMs(it) ?: 0L
+                                }
+                            } ?: 0L
                         if (lc != null && letterMs > 0L) {
                             val baseWrongFrac =
                                 Station1WrongLetterToFollowLeadFraction *
@@ -275,16 +540,38 @@ internal object WrongFeedbackActions {
                                 letterMs = letterMs,
                                 followLeadFrac = followLeadFrac,
                                 chapterId = chapterId,
+                                stationId = stationId,
                                 playerAddress = chapter1PlayerAddress,
                                 rawVoice = rawVoice,
                                 voice = voice,
                             )
                         } else {
-                            if (lc != null && voice.hasAsset(lc)) {
-                                voice.playBlocking(lc)
+                            if (lc != null) {
+                                if (chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) {
+                                    voice.playRequiredBlocking(
+                                        assetPath = lc,
+                                        context = "WrongFeedbackActions.trigger(station4,LetterOnlyFallback)",
+                                        chapterId = chapterId,
+                                        stationId = stationId,
+                                    )
+                                } else if (voice.hasAsset(lc)) {
+                                    voice.playBlocking(lc)
+                                }
+                            } else if (chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) {
+                                android.util.Log.e(
+                                    "MissingContent",
+                                    "Missing required wrong-feedback letter audio. chapterId=$chapterId stationId=$stationId context=WrongFeedbackActions.trigger(station4,LetterOnlyFallback) stage=missing letter-name mapping wrongPickedLetter='$wrongPickedLetter'",
+                                )
+                                voice.playRequiredBlocking(
+                                    assetPath = "",
+                                    context = "WrongFeedbackActions.trigger(station4,missingLetterNameMapping)",
+                                    chapterId = chapterId,
+                                    stationId = stationId,
+                                )
                             }
                             playTryAgainFallback(
                                 chapterId = chapterId,
+                                stationId = stationId,
                                 playerAddress = chapter1PlayerAddress,
                                 rawVoice = rawVoice,
                                 voice = voice,
@@ -304,22 +591,61 @@ internal object WrongFeedbackActions {
                     ) play@{
                         val feedbackDelayMs =
                             when {
-                                chapterId == 4 && stationId == Chapter1StationOrder.TAP_LETTER -> 0L
-                                chapterId == 4 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE -> 0L
-                                chapterId == 4 && stationId == Chapter1StationOrder.PICTURE_PICK_ALL -> 0L
                                 (chapterId == 1 || chapterId == 2) &&
                                     stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH ->
                                     0L
                                 (chapterId == 3 || chapterId == 6) && stationId == 4 -> 0L
-                                chapterId == 5 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE -> 0L
                                 else -> 110L
                             }
                         delay(feedbackDelayMs)
                         if (wrongWordCatalogId != null && !wrongWordAlreadySpoken) {
-                            val wordPath = AudioClips.wordClipByCatalogId(wrongWordCatalogId)
-                            if (voice.hasAsset(wordPath)) voice.playBlocking(wordPath)
+                            if (chapterId == 3 || chapterId == 6) {
+                                val resId = AudioClips.wordRawResIdByCatalogId(wrongWordCatalogId)
+                                if (resId == null) {
+                                    android.util.Log.e(
+                                        "MissingContent",
+                                        "Missing required wrong-feedback word audio. chapterId=$chapterId stationId=$stationId context=WrongFeedbackActions.trigger(wrongWord,wordThenTryAgain) stage=missing raw word mapping catalogId='$wrongWordCatalogId'",
+                                    )
+                                    if (rawVoice != null) {
+                                        rawVoice.playRawBlocking(0)
+                                    } else {
+                                        voice.playRequiredBlocking(
+                                            assetPath = "",
+                                            context = "WrongFeedbackActions.trigger(wrongWord,missingWordMapping,rawVoice=null)",
+                                            chapterId = chapterId,
+                                            stationId = stationId,
+                                        )
+                                    }
+                                } else if (rawVoice == null) {
+                                    android.util.Log.e(
+                                        "MissingContent",
+                                        "Missing required wrong-feedback word audio. chapterId=$chapterId stationId=$stationId context=WrongFeedbackActions.trigger(wrongWord,wordThenTryAgain) stage=rawVoice=null expectedRawResId=$resId",
+                                    )
+                                    voice.playRequiredBlocking(
+                                        assetPath = "",
+                                        context = "WrongFeedbackActions.trigger(wrongWord,rawVoice=null)",
+                                        chapterId = chapterId,
+                                        stationId = stationId,
+                                    )
+                                } else {
+                                    rawVoice.playRawBlocking(resId)
+                                }
+                            } else {
+                                val wordPath = AudioClips.wordClipByCatalogId(wrongWordCatalogId)
+                                if (chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) {
+                                    voice.playRequiredBlocking(
+                                        assetPath = wordPath,
+                                        context = "WrongFeedbackActions.trigger(wrongWord,wordThenTryAgain)",
+                                        chapterId = chapterId,
+                                        stationId = stationId,
+                                    )
+                                } else if (voice.hasAsset(wordPath)) {
+                                    voice.playBlocking(wordPath)
+                                }
+                            }
                             playTryAgainFallback(
                                 chapterId = chapterId,
+                                stationId = stationId,
                                 playerAddress = chapter1PlayerAddress,
                                 rawVoice = rawVoice,
                                 voice = voice,
@@ -328,27 +654,70 @@ internal object WrongFeedbackActions {
                         }
 
                         if (wrongPickedLetter != null) {
-                            if (chapterId == 5 && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
-                                val lc = AudioClips.letterNameClip(wrongPickedLetter)
-                                if (lc != null && voice.hasAsset(lc)) {
-                                    voice.playBlocking(lc)
-                                }
-                                playTryAgainFallback(
-                                    chapterId = chapterId,
-                                    playerAddress = chapter1PlayerAddress,
-                                    rawVoice = rawVoice,
-                                    voice = voice,
-                                )
-                                return@play
-                            }
                             if (!wrongPickedLetterAlreadySpoken) {
-                                val letterName = AudioClips.letterNameClip(wrongPickedLetter)
-                                if (letterName != null && voice.hasAsset(letterName)) {
-                                    voice.playBlocking(letterName)
+                                if (chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) {
+                                    val resId = AudioClips.letterNameRawResId(wrongPickedLetter)
+                                    if (resId == null) {
+                                        android.util.Log.e(
+                                            "MissingContent",
+                                            "Missing required wrong-feedback letter-name audio. chapterId=$chapterId stationId=$stationId context=WrongFeedbackActions.trigger(wrongLetter,letterThenTryAgain) stage=missing raw letter-name mapping wrongPickedLetter='$wrongPickedLetter'",
+                                        )
+                                        rawVoice?.playRawBlocking(0)
+                                    } else if (rawVoice == null) {
+                                        android.util.Log.e(
+                                            "MissingContent",
+                                            "Missing required wrong-feedback letter-name audio. chapterId=$chapterId stationId=$stationId context=WrongFeedbackActions.trigger(wrongLetter,letterThenTryAgain) stage=rawVoice=null expectedRawResId=$resId",
+                                        )
+                                        voice.playRequiredBlocking(
+                                            assetPath = "",
+                                            context = "WrongFeedbackActions.trigger(wrongLetter,rawVoice=null)",
+                                            chapterId = chapterId,
+                                            stationId = stationId,
+                                        )
+                                    } else {
+                                        rawVoice.playRawBlocking(resId)
+                                    }
+                                } else if (chapterId == 3 || chapterId == 6) {
+                                    val resId = AudioClips.letterNameRawResId(wrongPickedLetter)
+                                    if (resId == null) {
+                                        android.util.Log.e(
+                                            "MissingContent",
+                                            "Missing required wrong-feedback letter-name audio. chapterId=$chapterId stationId=$stationId context=WrongFeedbackActions.trigger(wrongLetter,letterThenTryAgain) stage=missing raw letter-name mapping wrongPickedLetter='$wrongPickedLetter'",
+                                        )
+                                        if (rawVoice != null) {
+                                            rawVoice.playRawBlocking(0)
+                                        } else {
+                                            voice.playRequiredBlocking(
+                                                assetPath = "",
+                                                context = "WrongFeedbackActions.trigger(wrongLetter,missingLetterNameMapping,rawVoice=null)",
+                                                chapterId = chapterId,
+                                                stationId = stationId,
+                                            )
+                                        }
+                                    } else if (rawVoice == null) {
+                                        android.util.Log.e(
+                                            "MissingContent",
+                                            "Missing required wrong-feedback letter-name audio. chapterId=$chapterId stationId=$stationId context=WrongFeedbackActions.trigger(wrongLetter,letterThenTryAgain) stage=rawVoice=null expectedRawResId=$resId",
+                                        )
+                                        voice.playRequiredBlocking(
+                                            assetPath = "",
+                                            context = "WrongFeedbackActions.trigger(wrongLetter,rawVoice=null)",
+                                            chapterId = chapterId,
+                                            stationId = stationId,
+                                        )
+                                    } else {
+                                        rawVoice.playRawBlocking(resId)
+                                    }
+                                } else {
+                                    val letterName = AudioClips.letterNameClip(wrongPickedLetter)
+                                    if (letterName != null && voice.hasAsset(letterName)) {
+                                        voice.playBlocking(letterName)
+                                    }
                                 }
                             }
                             playTryAgainFallback(
                                 chapterId = chapterId,
+                                stationId = stationId,
                                 playerAddress = chapter1PlayerAddress,
                                 rawVoice = rawVoice,
                                 voice = voice,
@@ -358,6 +727,7 @@ internal object WrongFeedbackActions {
 
                         playTryAgainFallback(
                             chapterId = chapterId,
+                            stationId = stationId,
                             playerAddress = chapter1PlayerAddress,
                             rawVoice = rawVoice,
                             voice = voice,

@@ -59,9 +59,15 @@ internal suspend fun playChapter1AddressAwareIntro(
         sfx.stopAllStreams()
         rawVoice.playRawBlocking(instructionRaw)
         delay(Chapter1InstructionToTargetGapMs)
-        val letterClip = AudioClips.letterNameClip(target)
-        if (letterClip != null && voice.hasAsset(letterClip)) {
-            voice.playBlocking(letterClip)
+        val resId = AudioClips.letterNameRawResId(target)
+        if (resId == null) {
+            android.util.Log.e(
+                "MissingContent",
+                "Missing required station prompt audio. chapterId=$chapterId stationId=$stationId context=playChapter1AddressAwareIntro(sagaUsesPickLetterAudioStaging) stage=missing raw letter-name mapping targetLetter='$target'",
+            )
+            rawVoice.playRawBlocking(0)
+        } else {
+            rawVoice.playRawBlocking(resId)
         }
         return true
     }
@@ -70,9 +76,15 @@ internal suspend fun playChapter1AddressAwareIntro(
         sfx.stopAllStreams()
         rawVoice.playRawBlocking(instructionRaw)
         delay(Chapter1InstructionToTargetGapMs)
-        val letterClip = AudioClips.letterNameClip(q.targetLetter)
-        if (letterClip != null && voice.hasAsset(letterClip)) {
-            voice.playBlocking(letterClip)
+        val resId = AudioClips.letterNameRawResId(q.targetLetter)
+        if (resId == null) {
+            android.util.Log.e(
+                "MissingContent",
+                "Missing required station prompt audio. chapterId=$chapterId stationId=$stationId context=playChapter1AddressAwareIntro(sagaUsesFindGridAudioStaging) stage=missing raw letter-name mapping targetLetter='${q.targetLetter}'",
+            )
+            rawVoice.playRawBlocking(0)
+        } else {
+            rawVoice.playRawBlocking(resId)
         }
         return true
     }
@@ -84,9 +96,15 @@ internal suspend fun playChapter1AddressAwareIntro(
         sfx.stopAllStreams()
         rawVoice.playRawBlocking(instructionRaw)
         delay(Chapter1InstructionToTargetGapMs)
-        val letterName = AudioClips.letterNameClip(q.targetLetter)
-        if (letterName != null && voice.hasAsset(letterName)) {
-            voice.playBlocking(letterName)
+        val resId = AudioClips.letterNameRawResId(q.targetLetter)
+        if (resId == null) {
+            android.util.Log.e(
+                "MissingContent",
+                "Missing required station prompt audio. chapterId=$chapterId stationId=$stationId context=playChapter1AddressAwareIntro(ImageMatchStation5) stage=missing raw letter-name mapping targetLetter='${q.targetLetter}'",
+            )
+            rawVoice.playRawBlocking(0)
+        } else {
+            rawVoice.playRawBlocking(resId)
         }
         return true
     }
@@ -102,9 +120,12 @@ internal suspend fun playChapter1AddressAwareIntro(
         rawVoice.playRawBlocking(instructionRaw)
         delay(Chapter1InstructionToTargetGapMs)
         val wordPath = AudioClips.wordClipByCatalogId(q.catalogEntryId)
-        if (voice.hasAsset(wordPath)) {
-            voice.playBlocking(wordPath)
-        }
+        voice.playRequiredBlocking(
+            assetPath = wordPath,
+            context = "playChapter1AddressAwareIntro(Station4Word)",
+            chapterId = chapterId,
+            stationId = stationId,
+        )
         return true
     }
 
@@ -112,12 +133,16 @@ internal suspend fun playChapter1AddressAwareIntro(
         sfx.stopAllStreams()
         rawVoice.playRawBlocking(instructionRaw)
         delay(Chapter1InstructionToTargetGapMs)
-        val letterClip = AudioClips.letterNameClip(q.correctAnswer)
-        if (letterClip != null && voice.hasAsset(letterClip)) {
-            voice.playBlocking(letterClip)
-        } else {
-            speakLetterPrompt(voice, q.correctAnswer)
+        val resId = AudioClips.letterNameRawResId(q.correctAnswer)
+        if (resId == null) {
+            android.util.Log.e(
+                "MissingContent",
+                "Missing required station prompt audio. chapterId=$chapterId stationId=$stationId context=playChapter1AddressAwareIntro(PopBalloons) stage=missing raw letter-name mapping targetLetter='${q.correctAnswer}'",
+            )
+            rawVoice.playRawBlocking(0)
+            return true
         }
+        rawVoice.playRawBlocking(resId)
         return true
     }
 

@@ -13,28 +13,45 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.tal.hebrewdino.R
 import com.tal.hebrewdino.ui.audio.AudioClips
+import com.tal.hebrewdino.ui.companion.displayNameHebrew
+import com.tal.hebrewdino.ui.data.DinoCharacter
 
 @Composable
 fun Chapter2OutroScreen(
+    companionCharacter: DinoCharacter,
     onContinue: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val voiceRawResId =
+        when (companionCharacter) {
+            DinoCharacter.Dino -> R.raw.ch2_story_outro_dino
+            DinoCharacter.Dina -> R.raw.ch2_story_outro_dina
+        }
+    val body =
+        when (companionCharacter) {
+            DinoCharacter.Dino ->
+                "הָעֲקֵבוֹת מַמְשִׁיכוֹת קָדִימָה…\n" +
+                    "נִרְאֶה שֶׁמִּישֶׁהוּ עָבַר כָּאן וְלָקַח מַשֶּׁהוּ.\n" +
+                    "דִּינוֹ מַמְשִׁיךְ לַעֲקֹב אַחֲרֵי הַדֶּרֶךְ, וְעַכְשָׁיו יֵשׁ כִּוּוּן בָּרוּר.\n" +
+                    "בּוֹאוּ נִתְקַדֵּם אַחֲרֵי הָעֲקֵבוֹת בַּפֶּרֶק הַבָּא."
+            DinoCharacter.Dina ->
+                "הָעֲקֵבוֹת מַמְשִׁיכוֹת קָדִימָה…\n" +
+                    "נִרְאֶה שֶׁמִּישֶׁהוּ עָבַר כָּאן וְלָקַח מַשֶּׁהוּ.\n" +
+                    "דִּינָה מַמְשִׁיכָה לַעֲקֹב אַחֲרֵי הַדֶּרֶךְ, וְעַכְשָׁיו יֵשׁ כִּוּוּן בָּרוּר.\n" +
+                    "בּוֹאוּ נִתְקַדֵּם אַחֲרֵי הָעֲקֵבוֹת בַּפֶּרֶק הַבָּא."
+        }
     ChapterLobbyStoryLayout(
         backgroundRes = R.drawable.chapter2_story_outro,
         title = "יש!",
-        body =
-            "העקבות ממשיכות קדימה…\n" +
-                "\n" +
-                "נראה שמישהו עבר כאן ולקח משהו.\n" +
-                "\n" +
-                "דינו ממשיך לעקוב אחרי הדרך,\n" +
-                "ועכשיו יש כיוון ברור.\n" +
-                "\n" +
-                "בואו נתקדם אחרי העקבות בפרק הבא.",
+        body = body,
         companion = ChapterLobbyCompanion.DinoOnly,
+        chapterId = 2,
+        storyContext = "Chapter2OutroScreen",
+        useCompanionDinoArt = true,
+        companionCharacter = companionCharacter,
         narrationPlaying = false,
-        voiceAssetPath = AudioClips.StoryMountainApproachOutro,
-        dinoContentDescription = "דינו",
+        voiceRawResId = voiceRawResId,
+        dinoContentDescription = companionCharacter.displayNameHebrew(),
         onContinue = onContinue,
         modifier = modifier,
     )
@@ -82,6 +99,8 @@ fun Chapter4IntroScreen(
                 "\n" +
                 "בואו נאזין היטב ונמשיך יחד.",
         companion = ChapterLobbyCompanion.DinoOnly,
+        chapterId = 4,
+        storyContext = "Chapter4IntroScreen",
         narrationPlaying = false,
         voiceAssetPath = AudioClips.StoryCh4Intro,
         dinoContentDescription = "דינו",
@@ -103,6 +122,8 @@ fun Chapter4OutroScreen(
                 "\n" +
                 "דינו ממשיך קדימה — העקבות מובילות הלאה, והמסע עוד לא נגמר.",
         companion = ChapterLobbyCompanion.DinoOnly,
+        chapterId = 4,
+        storyContext = "Chapter4OutroScreen",
         narrationPlaying = false,
         voiceAssetPath = AudioClips.StoryCh4ClueOutro,
         dinoContentDescription = "דינו",
@@ -144,6 +165,8 @@ fun Chapter5IntroScreen(
                 "עוד קצת קשב, עוד קצת חיזוק…\n" +
                 "ואולי הפעם נמצא אותה.",
         companion = ChapterLobbyCompanion.DinoOnly,
+        chapterId = 5,
+        storyContext = "Chapter5IntroScreen",
         narrationPlaying = false,
         voiceAssetPath = AudioClips.StoryCh5Intro,
         dinoContentDescription = "דינו",
@@ -168,6 +191,8 @@ fun Chapter5OutroScreen(
                 "\n" +
                 "כל הכבוד! 🎉",
         companion = ChapterLobbyCompanion.DinoOnly,
+        chapterId = 5,
+        storyContext = "Chapter5OutroScreen",
         narrationPlaying = false,
         voiceAssetPath = AudioClips.StoryCh5ThirdEggOutro,
         dinoContentDescription = "דינו",

@@ -38,11 +38,13 @@ internal object PickLetterActions {
         sfx: SoundPoolPlayer,
         rawVoice: RawVoicePlayer?,
         audioRuntime: GameAudioRuntimeState,
-        onWrongFeedback: (wrongPickedLetter: String) -> Unit,
+        onWrongFeedback: (wrongPickedLetter: String, wrongPickedLetterAlreadySpoken: Boolean) -> Unit,
         advanceAfterRound: suspend (isLast: Boolean, ch3SpellMidWord: Boolean) -> Unit,
     ) {
         if (!gameViewModel.consumeTapCooldown()) return
         cancelFeedbackVoice()
+        val applyImmediateLetterNameAudio =
+            chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5
         when (session.submitAnswer(picked)) {
             AnswerResult.Correct -> {
                 val isTrainingStation1 =
@@ -59,9 +61,35 @@ internal object PickLetterActions {
                     val wordDone = session.highlightedLetterInWordCompletesWordAfterCorrectRound()
                     scope.launch {
                         sfx.playFirstAvailable(AudioClips.SfxCorrect, volume = 0.62f)
-                        val letterName = AudioClips.letterNameClip(picked)
-                        if (letterName != null && voice.hasAsset(letterName)) {
-                            voice.playBlocking(letterName)
+                        val resId = AudioClips.letterNameRawResId(picked)
+                        if (resId == null) {
+                            android.util.Log.e(
+                                "MissingContent",
+                                "Missing required letter-name audio. chapterId=$chapterId stationId=$stationId context=PickLetterActions.handlePick(correct,highlightedLetterInWord) stage=missing raw letter-name mapping letter='$picked'",
+                            )
+                            if (rawVoice != null) {
+                                rawVoice.playRawBlocking(0)
+                            } else {
+                                voice.playRequiredBlocking(
+                                    assetPath = "",
+                                    context = "PickLetterActions.handlePick(correct,highlightedLetterInWord,missingLetterNameMapping,rawVoice=null)",
+                                    chapterId = chapterId,
+                                    stationId = stationId,
+                                )
+                            }
+                        } else if (rawVoice == null) {
+                            android.util.Log.e(
+                                "MissingContent",
+                                "Missing required letter-name audio. chapterId=$chapterId stationId=$stationId context=PickLetterActions.handlePick(correct,highlightedLetterInWord) stage=rawVoice=null expectedRawResId=$resId",
+                            )
+                            voice.playRequiredBlocking(
+                                assetPath = "",
+                                context = "PickLetterActions.handlePick(correct,highlightedLetterInWord,rawVoice=null)",
+                                chapterId = chapterId,
+                                stationId = stationId,
+                            )
+                        } else {
+                            rawVoice.playRawBlocking(resId)
                         }
                         if (wordDone) {
                             cancelFeedbackVoice()
@@ -76,6 +104,8 @@ internal object PickLetterActions {
                                         audioRuntime = audioRuntime,
                                         candidates = HighlightedWordDonePraiseCandidates,
                                         chapterId = chapterId,
+                                        stationId = stationId,
+                                        context = "PickLetterActions.handlePick(correct,highlightedWordDonePraise)",
                                         rawVoice = rawVoice,
                                     )
                                 }
@@ -90,6 +120,56 @@ internal object PickLetterActions {
                 } else if (audioEnabled && sagaUsesPickLetterAudioStaging) {
                     scope.launch {
                         cancelFeedbackVoice()
+                        if (applyImmediateLetterNameAudio) {
+                            val resId = AudioClips.letterNameRawResId(picked)
+                            if (resId == null) {
+                                android.util.Log.e(
+                                    "MissingContent",
+                                    "Missing required letter-name audio. chapterId=$chapterId stationId=$stationId context=PickLetterActions.handlePick(correct,sagaStaging) stage=missing raw letter-name mapping letter='$picked'",
+                                )
+                                rawVoice?.playRawBlocking(0)
+                                val isLast = session.currentIndex >= session.totalQuestions - 1
+                                advanceAfterRound(isLast, false)
+                                return@launch
+                            }
+                            if (rawVoice == null) {
+                                android.util.Log.e(
+                                    "MissingContent",
+                                    "Missing required letter-name audio. chapterId=$chapterId stationId=$stationId context=PickLetterActions.handlePick(correct,sagaStaging) stage=rawVoice=null expectedRawResId=$resId",
+                                )
+                                voice.playRequiredBlocking(
+                                    assetPath = "",
+                                    context = "PickLetterActions.handlePick(correct,sagaStaging,rawVoice=null)",
+                                    chapterId = chapterId,
+                                    stationId = stationId,
+                                )
+                                val isLast = session.currentIndex >= session.totalQuestions - 1
+                                advanceAfterRound(isLast, false)
+                                return@launch
+                            }
+                            val praise = AudioClips.station1CorrectPraiseTailCandidates()
+                            val job =
+                                GameAudioActions.launchFeedbackVoiceNoCancel(
+                                    audioEnabled = true,
+                                    scope = scope,
+                                    audioRuntime = audioRuntime,
+                                ) {
+                                    rawVoice.playRawBlocking(resId)
+                                    GameAudioActions.playPraiseNoImmediateRepeat(
+                                        voice = voice,
+                                        audioRuntime = audioRuntime,
+                                        candidates = praise,
+                                        chapterId = chapterId,
+                                        stationId = stationId,
+                                        context = "PickLetterActions.handlePick(correct,sagaStagingPraise)",
+                                        rawVoice = rawVoice,
+                                    )
+                                }
+                            GameAudioActions.joinSilently(job)
+                            val isLast = session.currentIndex >= session.totalQuestions - 1
+                            advanceAfterRound(isLast, false)
+                            return@launch
+                        }
                         val letterName = AudioClips.letterNameClip(picked)
                         if (letterName == null || !voice.hasAsset(letterName)) {
                             val isLast = session.currentIndex >= session.totalQuestions - 1
@@ -109,6 +189,8 @@ internal object PickLetterActions {
                                     audioRuntime = audioRuntime,
                                     candidates = praise,
                                     chapterId = chapterId,
+                                    stationId = stationId,
+                                    context = "PickLetterActions.handlePick(correct,sagaStagingPraise)",
                                     rawVoice = rawVoice,
                                 )
                             }
@@ -135,6 +217,8 @@ internal object PickLetterActions {
                                     audioRuntime = audioRuntime,
                                     candidates = praise,
                                     chapterId = chapterId,
+                                    stationId = stationId,
+                                    context = "PickLetterActions.handlePick(correct,trainingPraise)",
                                     rawVoice = rawVoice,
                                 )
                             }
@@ -147,20 +231,94 @@ internal object PickLetterActions {
                         if (audioEnabled) {
                             GameAudioActions.awaitTrackedVoices(audioRuntime, 10000L)
                         }
+                        if (audioEnabled && applyImmediateLetterNameAudio) {
+                            val resId = AudioClips.letterNameRawResId(picked)
+                            when {
+                                resId == null -> {
+                                    android.util.Log.e(
+                                        "MissingContent",
+                                        "Missing required letter-name audio. chapterId=$chapterId stationId=$stationId context=PickLetterActions.handlePick(correct) stage=missing raw letter-name mapping letter='$picked'",
+                                    )
+                                    rawVoice?.playRawBlocking(0)
+                                }
+                                rawVoice == null -> {
+                                    android.util.Log.e(
+                                        "MissingContent",
+                                        "Missing required letter-name audio. chapterId=$chapterId stationId=$stationId context=PickLetterActions.handlePick(correct) stage=rawVoice=null expectedRawResId=$resId",
+                                    )
+                                    voice.playRequiredBlocking(
+                                        assetPath = "",
+                                        context = "PickLetterActions.handlePick(correct,rawVoice=null)",
+                                        chapterId = chapterId,
+                                        stationId = stationId,
+                                    )
+                                }
+                                else -> rawVoice.playRawBlocking(resId)
+                            }
+                        }
                         val isLast = session.currentIndex >= session.totalQuestions - 1
                         advanceAfterRound(isLast, false)
                     }
                 }
             }
             AnswerResult.Wrong -> {
-                if (audioEnabled &&
-                    (!sagaUsesPickLetterAudioStaging || isChapter3HighlightedLetterInWordStation || isChapter3AudioLetterRecognitionStation)
-                ) {
-                    ChildGameAudioHooks.onWrong()
-                }
                 gameViewModel.shakeEpoch += 1
                 HintPulseActions.registerWrongTapForHintPulse(gameViewModel)
-                onWrongFeedback(picked)
+                val shouldRunWrongHook =
+                    audioEnabled &&
+                        (!sagaUsesPickLetterAudioStaging ||
+                            isChapter3HighlightedLetterInWordStation ||
+                            isChapter3AudioLetterRecognitionStation)
+                if (audioEnabled && applyImmediateLetterNameAudio) {
+                    val resId = AudioClips.letterNameRawResId(picked)
+                    if (resId == null) {
+                        android.util.Log.e(
+                            "MissingContent",
+                            "Missing required letter-name audio. chapterId=$chapterId stationId=$stationId context=PickLetterActions.handlePick(wrong) stage=missing raw letter-name mapping letter='$picked'",
+                        )
+                        scope.launch {
+                            if (rawVoice != null) {
+                                rawVoice.playRawBlocking(0)
+                            } else {
+                                voice.playRequiredBlocking(
+                                    assetPath = "",
+                                    context = "PickLetterActions.handlePick(wrong,missingLetterNameMapping,rawVoice=null)",
+                                    chapterId = chapterId,
+                                    stationId = stationId,
+                                )
+                            }
+                        }
+                        if (shouldRunWrongHook) ChildGameAudioHooks.onWrong()
+                        onWrongFeedback(picked, false)
+                        return
+                    }
+                    if (rawVoice == null) {
+                        android.util.Log.e(
+                            "MissingContent",
+                            "Missing required letter-name audio. chapterId=$chapterId stationId=$stationId context=PickLetterActions.handlePick(wrong) stage=rawVoice=null expectedRawResId=$resId",
+                        )
+                        scope.launch {
+                            voice.playRequiredBlocking(
+                                assetPath = "",
+                                context = "PickLetterActions.handlePick(wrong,rawVoice=null)",
+                                chapterId = chapterId,
+                                stationId = stationId,
+                            )
+                        }
+                        if (shouldRunWrongHook) ChildGameAudioHooks.onWrong()
+                        onWrongFeedback(picked, false)
+                        return
+                    }
+                    gameViewModel.inputLocked = true
+                    scope.launch {
+                        rawVoice.playRawBlocking(resId)
+                        if (shouldRunWrongHook) ChildGameAudioHooks.onWrong()
+                        onWrongFeedback(picked, true)
+                    }
+                } else {
+                    if (shouldRunWrongHook) ChildGameAudioHooks.onWrong()
+                    onWrongFeedback(picked, false)
+                }
             }
             AnswerResult.Finished -> {}
         }

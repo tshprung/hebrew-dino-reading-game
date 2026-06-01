@@ -7,6 +7,7 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.tal.hebrewdino.R
+import com.tal.hebrewdino.ui.companion.Chapter1DinoCompanionPilot
 import com.tal.hebrewdino.ui.data.DinoCharacter
 import com.tal.hebrewdino.ui.domain.Chapter1Config
 import com.tal.hebrewdino.ui.domain.Chapter2Config
@@ -71,6 +72,7 @@ internal fun NavGraphBuilder.chapterOneToThreeGraph(host: AppNavHostState) {
 
     composable(NavRoutes.Ch2Intro) {
         Chapter2IntroScreen(
+            companionCharacter = host.companionCharacter,
             onContinue = {
                 host.scope.launch { host.progress.markChapter2IntroSeen() }
                 // After intro, always show letters presentation, then continue to journey.
@@ -289,6 +291,7 @@ internal fun NavGraphBuilder.chapterOneToThreeGraph(host: AppNavHostState) {
             stationId = stationId,
             onBack = { host.navController.popBackStack() },
             suppressInGameDinoProgress = host.chapter2CompletedStations.contains(stationId),
+            companionCharacter = host.companionCharacter,
             playerAddress = host.playerAddress,
             onComplete = { completedStationId, correctCount, mistakeCount ->
                 host.scope.launch {
@@ -386,6 +389,8 @@ internal fun NavGraphBuilder.chapterOneToThreeGraph(host: AppNavHostState) {
             onBackToMap = backToMap,
             chapter1DinoCompanionPilot = true,
             chapter1CompanionCharacter = host.companionCharacter,
+            rewardChapterId = 1,
+            requireRawSuccessAudio = true,
         )
     }
 
@@ -440,11 +445,15 @@ internal fun NavGraphBuilder.chapterOneToThreeGraph(host: AppNavHostState) {
             onBackToMap = backToMap,
             showSelectedCompanionPortrait = true,
             selectedCompanionCharacter = host.companionCharacter,
+            rewardSuccessRawResId = Chapter1DinoCompanionPilot.successClipForStation(stationId),
+            rewardChapterId = 2,
+            requireRawSuccessAudio = true,
         )
     }
 
     composable(NavRoutes.Ch2MidBoost) {
         Chapter2MidBoostScreen(
+            companionCharacter = host.companionCharacter,
             onContinue = {
                 host.scope.launch { host.progress.markChapter2MidBoostSeen() }
                 host.navController.navigate(NavRoutes.Ch2Journey) {
@@ -467,6 +476,7 @@ internal fun NavGraphBuilder.chapterOneToThreeGraph(host: AppNavHostState) {
 
     composable(NavRoutes.Ch2StoryOutro) {
         Chapter2OutroScreen(
+            companionCharacter = host.companionCharacter,
             onContinue = {
                 // Safety: ensure chapter-2 completion is persisted even if the last-station completion
                 // path was bypassed (e.g. debug flows / navigation edge cases).
