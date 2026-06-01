@@ -66,19 +66,38 @@ fun Chapter2MidBoostScreen(
 
 @Composable
 fun Chapter3MidBoostScreen(
+    companionCharacter: DinoCharacter?,
     onContinue: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val voiceRawResId =
+        when (companionCharacter) {
+            DinoCharacter.Dino -> R.raw.ch3_story_mid_dino
+            DinoCharacter.Dina -> R.raw.ch3_story_mid_dina
+            null -> 0
+        }
+    val body =
+        when (companionCharacter) {
+            DinoCharacter.Dino, null ->
+                "אַתֶּם מִתְקַדְּמִים נִפְלָא!\n" +
+                    "הָעֲקֵבוֹת כְּבָר בְּרוּרוֹת יוֹתֵר, וְדִינוֹ שׁוֹמֵעַ רַעַשׁ קָטָן מֵאֲחוֹרֵי הַסְּלָעִים.\n" +
+                    "עוֹד קְצָת מַאֲמָץ — וְאוּלַי נִגְלֶה מָה מִסְתַּתֵּר שָׁם."
+            DinoCharacter.Dina ->
+                "אַתֶּם מִתְקַדְּמִים נִפְלָא!\n" +
+                    "הָעֲקֵבוֹת כְּבָר בְּרוּרוֹת יוֹתֵר, וְדִינָה שׁוֹמַעַת רַעַשׁ קָטָן מֵאֲחוֹרֵי הַסְּלָעִים.\n" +
+                    "עוֹד קְצָת מַאֲמָץ — וְאוּלַי נִגְלֶה מָה מִסְתַּתֵּר שָׁם."
+        }
     ChapterLobbyStoryLayout(
         backgroundRes = R.drawable.ch3_journey_bg,
         title = "ממשיכים!",
-        body =
-            "איזה יופי! אתם מתקדמים מצוין.\n" +
-                "עוד קצת והביצה הורודה כבר מרגישה קרובה.\n" +
-                "בואו נמשיך לגלות מה מחכה לנו בהמשך.",
+        body = body,
         companion = ChapterLobbyCompanion.DinoOnly,
-        voiceAssetPath = AudioClips.StoryCh3MidBoost,
-        dinoContentDescription = "דינו",
+        chapterId = 3,
+        storyContext = "Chapter3MidBoostScreen",
+        useCompanionDinoArt = true,
+        companionCharacter = companionCharacter ?: DinoCharacter.Dino,
+        voiceRawResId = voiceRawResId,
+        dinoContentDescription = (companionCharacter ?: DinoCharacter.Dino).displayNameHebrew(),
         onContinue = onContinue,
         modifier = modifier,
     )

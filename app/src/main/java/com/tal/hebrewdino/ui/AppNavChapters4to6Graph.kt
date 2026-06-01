@@ -423,6 +423,7 @@ internal fun NavGraphBuilder.chapterFourToSixGraph(host: AppNavHostState) {
             stationId = stationId,
             onBack = { host.navController.popBackStack() },
             suppressInGameDinoProgress = host.chapter6CompletedStations.contains(stationId),
+            playerAddress = host.playerAddress,
             onComplete = { completedStationId, correctCount, mistakeCount ->
                 host.scope.launch {
                     host.progress.markChapter6CompletedStation(completedStationId)

@@ -141,6 +141,7 @@ internal fun NavGraphBuilder.chapterOneToThreeGraph(host: AppNavHostState) {
 
     composable(NavRoutes.Ch3Intro) {
         Chapter3IntroScreen(
+            companionCharacter = host.companionCharacter,
             onContinue = {
                 host.scope.launch { host.progress.markChapter3IntroSeen() }
                 // After intro, always show letters presentation, then continue to journey.
@@ -313,6 +314,7 @@ internal fun NavGraphBuilder.chapterOneToThreeGraph(host: AppNavHostState) {
             stationId = stationId,
             onBack = { host.navController.popBackStack() },
             suppressInGameDinoProgress = host.chapter3CompletedStations.contains(stationId),
+            playerAddress = host.playerAddress,
             onComplete = { completedStationId, correctCount, mistakeCount ->
                 host.scope.launch {
                     host.progress.markChapter3CompletedStation(completedStationId)
@@ -465,6 +467,7 @@ internal fun NavGraphBuilder.chapterOneToThreeGraph(host: AppNavHostState) {
 
     composable(NavRoutes.Ch3MidBoost) {
         Chapter3MidBoostScreen(
+            companionCharacter = host.companionCharacter,
             onContinue = {
                 host.scope.launch { host.progress.markChapter3MidBoostSeen() }
                 host.navController.navigate(NavRoutes.Ch3Journey) {
@@ -533,6 +536,7 @@ internal fun NavGraphBuilder.chapterOneToThreeGraph(host: AppNavHostState) {
 
     composable(NavRoutes.Ch3StoryOutro) {
         Chapter3OutroScreen(
+            companionCharacter = host.companionCharacter,
             onContinue = {
                 host.navController.navigate(NavRoutes.Chapters) {
                     popUpTo(NavRoutes.Ch3StoryOutro) { inclusive = true }

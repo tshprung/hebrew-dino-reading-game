@@ -9,6 +9,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -117,6 +118,8 @@ fun AppNav() {
     val currentRoute = backStackEntry?.destination?.route
 
     val bgMusicEligible = currentRoute != null && currentRoute in BackgroundMusicEligibleRoutes
+    val latestRoute by rememberUpdatedState(currentRoute)
+    val latestBackgroundMusicEnabled by rememberUpdatedState(backgroundMusicEnabled)
 
     LaunchedEffect(currentRoute, backgroundMusicEnabled) {
         if (!backgroundMusicEnabled) {
@@ -134,6 +137,12 @@ fun AppNav() {
                     bgMusic.stop()
                     VoicePlayer.stopAllNow()
                     SoundPoolPlayer.stopAllNow()
+                } else if (event == Lifecycle.Event.ON_START || event == Lifecycle.Event.ON_RESUME) {
+                    if (!latestBackgroundMusicEnabled) return@LifecycleEventObserver
+                    val route = latestRoute
+                    bgMusic.playLoopFromAssets(assetPath = bgmAssetPathForRoute(route))
+                    val eligible = route != null && route in BackgroundMusicEligibleRoutes
+                    bgMusic.setMuted(!eligible)
                 }
             }
         lifecycleOwner.lifecycle.addObserver(observer)

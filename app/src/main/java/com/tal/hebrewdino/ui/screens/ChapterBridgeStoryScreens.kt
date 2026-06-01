@@ -59,24 +59,42 @@ fun Chapter2OutroScreen(
 
 @Composable
 fun Chapter3OutroScreen(
+    companionCharacter: DinoCharacter?,
     onContinue: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val voiceRawResId =
+        when (companionCharacter) {
+            DinoCharacter.Dino -> R.raw.ch3_story_outro_dino
+            DinoCharacter.Dina -> R.raw.ch3_story_outro_dina
+            null -> 0
+        }
+    val body =
+        when (companionCharacter) {
+            DinoCharacter.Dino, null ->
+                "מֵאֲחוֹרֵי הַסְּלָעִים מוֹפִיעָה בֵּיצָה נוֹסֶפֶת!\n" +
+                    "דִינוֹ מִתְרַגֵּשׁ מְאוֹד — מָצָאנוּ אֶת הַבֵּיצָה הַשְּׁנִיָּה!\n" +
+                    "אֲבָל עֲדַיִן חֲסֵרָה עוֹד בֵּיצָה אַחַת.\n" +
+                    "בּוֹאוּ נַחְזֹר אֶל הַשְּׁבִיל וְנַמְשִׁיךְ בַּמַּסָּע."
+            DinoCharacter.Dina ->
+                "מֵאֲחוֹרֵי הַסְּלָעִים מוֹפִיעָה בֵּיצָה נוֹסֶפֶת!\n" +
+                    "דִינָה מִתְרַגֶּשֶׁת מְאוֹד — מָצָאנוּ אֶת הַבֵּיצָה הַשְּׁנִיָּה!\n" +
+                    "אֲבָל עֲדַיִן חֲסֵרָה עוֹד בֵּיצָה אַחַת.\n" +
+                    "בּוֹאוּ נַחְזֹר אֶל הַשְּׁבִיל וְנַמְשִׁיךְ בַּמַּסָּע."
+        }
     ChapterLobbyStoryLayout(
         // Use the same background as in-station gameplay (user preference).
         backgroundRes = R.drawable.ch3_journey_bg,
         title = "הנה היא!",
-        body =
-            "הנה היא!\n" +
-                "\n" +
-                "דינו מצא עוד ביצה — והיא שלמה!\n" +
-                "\n" +
-                "הוא אוסף אותה בזהירות,\n" +
-                "וממשיך במסע למצוא את הביצה האחרונה.",
+        body = body,
         companion = ChapterLobbyCompanion.DinoOnly,
+        chapterId = 3,
+        storyContext = "Chapter3OutroScreen",
+        useCompanionDinoArt = true,
+        companionCharacter = companionCharacter ?: DinoCharacter.Dino,
         narrationPlaying = false,
-        voiceAssetPath = AudioClips.StoryMountainPathOutro,
-        dinoContentDescription = "דינו",
+        voiceRawResId = voiceRawResId,
+        dinoContentDescription = (companionCharacter ?: DinoCharacter.Dino).displayNameHebrew(),
         onContinue = onContinue,
         modifier = modifier,
     )
