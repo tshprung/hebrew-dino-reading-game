@@ -1,7 +1,6 @@
 package com.tal.hebrewdino.ui.audio.routing
 
 import com.tal.hebrewdino.R
-import com.tal.hebrewdino.ui.audio.AudioClips
 import com.tal.hebrewdino.ui.data.PlayerAddress
 import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
 import org.junit.Assert.assertEquals
@@ -33,8 +32,8 @@ class SampleChapter1AudioRouterTest {
                             blocking = true,
                         ),
                         AudioStep(
-                            lane = AudioLane.Voice,
-                            source = AudioSource.Asset("audio/letter_alef.wav"),
+                            lane = AudioLane.RawVoice,
+                            source = AudioSource.RawRes(R.raw.letter_name_alef),
                             blocking = true,
                             delayBeforeMs = 170L,
                         ),
@@ -68,8 +67,8 @@ class SampleChapter1AudioRouterTest {
                             blocking = true,
                         ),
                         AudioStep(
-                            lane = AudioLane.Voice,
-                            source = AudioSource.Asset(AudioClips.wordClipByCatalogId(catalogId)),
+                            lane = AudioLane.RawVoice,
+                            source = AudioSource.RawRes(R.raw.word_w_bet_1),
                             blocking = true,
                             delayBeforeMs = 170L,
                         ),

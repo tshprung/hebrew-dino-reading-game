@@ -29,45 +29,17 @@ internal object WrongFeedbackActions {
         rawVoice: RawVoicePlayer?,
         voice: VoicePlayer,
     ) {
-        if ((chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) && rawVoice != null) {
-            playLetterThenAddressAwareTryAgain(
-                sfx = sfx,
-                letterClip = letterClip,
-                letterMs = letterMs,
-                followLeadFrac = followLeadFrac,
-                chapterId = chapterId,
-                stationId = stationId,
-                playerAddress = playerAddress,
-                rawVoice = rawVoice,
-                voice = voice,
-                context = "WrongFeedbackActions.playLetterThenTryAgainOnSoundPool(addressAware)",
-            )
-            return
-        }
-        if ((chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) && rawVoice == null) {
-            android.util.Log.e(
-                "MissingContent",
-                "Missing required wrong-feedback try-again audio. chapterId=$chapterId stationId=$stationId context=WrongFeedbackActions.playLetterThenTryAgainOnSoundPool stage=rawVoice=null",
-            )
-            voice.playRequiredBlocking(
-                assetPath = "",
-                context = "WrongFeedbackActions.playLetterThenTryAgainOnSoundPool(rawVoice=null)",
-                chapterId = chapterId,
-                stationId = stationId,
-            )
-            return
-        }
-        sfx.stopAllStreams()
-        sfx.playReturningStreamId(letterClip, volume = 1f)
-        val lead =
-            (letterMs * followLeadFrac)
-                .toLong()
-                .coerceIn(16L, letterMs)
-        delay(lead)
-        sfx.playFirstAvailable(
-            AudioClips.VoTryAgain2,
-            AudioClips.VoTryAgain1,
-            volume = 1f,
+        playLetterThenAddressAwareTryAgain(
+            sfx = sfx,
+            letterClip = letterClip,
+            letterMs = letterMs,
+            followLeadFrac = followLeadFrac,
+            chapterId = chapterId,
+            stationId = stationId,
+            playerAddress = playerAddress,
+            rawVoice = rawVoice,
+            voice = voice,
+            context = "WrongFeedbackActions.playLetterThenTryAgainOnSoundPool(addressAware)",
         )
     }
 
@@ -96,35 +68,14 @@ internal object WrongFeedbackActions {
         rawVoice: RawVoicePlayer?,
         voice: VoicePlayer,
     ) {
-        if ((chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) && rawVoice != null) {
-            playAddressAwareTryAgainBlocking(
-                chapterId = chapterId,
-                stationId = stationId,
-                playerAddress = playerAddress,
-                rawVoice = rawVoice,
-                voice = voice,
-                context = "WrongFeedbackActions.playStandaloneTryAgain(addressAware)",
-            )
-        } else {
-            if ((chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) && rawVoice == null) {
-                android.util.Log.e(
-                    "MissingContent",
-                    "Missing required wrong-feedback try-again audio. chapterId=$chapterId stationId=$stationId context=WrongFeedbackActions.playStandaloneTryAgain stage=rawVoice=null",
-                )
-                voice.playRequiredBlocking(
-                    assetPath = "",
-                    context = "WrongFeedbackActions.playStandaloneTryAgain(rawVoice=null)",
-                    chapterId = chapterId,
-                    stationId = stationId,
-                )
-                return
-            }
-            sfx.playFirstAvailable(
-                AudioClips.VoTryAgain2,
-                AudioClips.VoTryAgain1,
-                volume = 1f,
-            )
-        }
+        playAddressAwareTryAgainBlocking(
+            chapterId = chapterId,
+            stationId = stationId,
+            playerAddress = playerAddress,
+            rawVoice = rawVoice,
+            voice = voice,
+            context = "WrongFeedbackActions.playStandaloneTryAgain(addressAware)",
+        )
     }
 
     fun trigger(
@@ -631,16 +582,33 @@ internal object WrongFeedbackActions {
                                     rawVoice.playRawBlocking(resId)
                                 }
                             } else {
-                                val wordPath = AudioClips.wordClipByCatalogId(wrongWordCatalogId)
                                 if (chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) {
-                                    voice.playRequiredBlocking(
-                                        assetPath = wordPath,
-                                        context = "WrongFeedbackActions.trigger(wrongWord,wordThenTryAgain)",
-                                        chapterId = chapterId,
-                                        stationId = stationId,
-                                    )
-                                } else if (voice.hasAsset(wordPath)) {
-                                    voice.playBlocking(wordPath)
+                                    val resId = AudioClips.wordRawResIdByCatalogId(wrongWordCatalogId)
+                                    if (resId == null) {
+                                        android.util.Log.e(
+                                            "MissingContent",
+                                            "Missing required wrong-feedback word audio. chapterId=$chapterId stationId=$stationId context=WrongFeedbackActions.trigger(wrongWord,wordThenTryAgain) stage=missing raw word mapping catalogId='$wrongWordCatalogId'",
+                                        )
+                                        rawVoice?.playRawBlocking(0)
+                                    } else if (rawVoice == null) {
+                                        android.util.Log.e(
+                                            "MissingContent",
+                                            "Missing required wrong-feedback word audio. chapterId=$chapterId stationId=$stationId context=WrongFeedbackActions.trigger(wrongWord,wordThenTryAgain) stage=rawVoice=null expectedRawResId=$resId",
+                                        )
+                                        voice.playRequiredBlocking(
+                                            assetPath = "",
+                                            context = "WrongFeedbackActions.trigger(wrongWord,rawVoice=null)",
+                                            chapterId = chapterId,
+                                            stationId = stationId,
+                                        )
+                                    } else {
+                                        rawVoice.playRawBlocking(resId)
+                                    }
+                                } else {
+                                    val wordPath = AudioClips.wordClipByCatalogId(wrongWordCatalogId)
+                                    if (voice.hasAsset(wordPath)) {
+                                        voice.playBlocking(wordPath)
+                                    }
                                 }
                             }
                             playTryAgainFallback(

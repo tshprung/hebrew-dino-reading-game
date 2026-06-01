@@ -1,5 +1,6 @@
 package com.tal.hebrewdino.ui.audio.routing
 
+import android.util.Log
 import com.tal.hebrewdino.R
 import com.tal.hebrewdino.ui.audio.AudioClips
 import com.tal.hebrewdino.ui.data.PlayerAddress
@@ -25,6 +26,13 @@ object SampleChapter1AudioRouter : GameAudioRouter {
         return when (event.stationId) {
             Chapter1StationOrder.TAP_LETTER -> {
                 val target = event.targetLetter ?: return AudioPlan.Empty
+                val letterResId = AudioClips.letterNameRawResId(target) ?: 0
+                if (letterResId == 0) {
+                    Log.e(
+                        "MissingContent",
+                        "Missing required letter-name audio. chapterId=${event.chapterId} stationId=${event.stationId} context=SampleChapter1AudioRouter.planStationInstruction(TAP_LETTER) stage=missing raw letter-name mapping letter='$target'",
+                    )
+                }
                 AudioPlan(
                     steps =
                         listOf(
@@ -34,8 +42,8 @@ object SampleChapter1AudioRouter : GameAudioRouter {
                                 blocking = true,
                             ),
                             AudioStep(
-                                lane = AudioLane.Voice,
-                                source = AudioSource.Asset(AudioClips.letterNameClip(target) ?: return AudioPlan.Empty),
+                                lane = AudioLane.RawVoice,
+                                source = AudioSource.RawRes(letterResId),
                                 blocking = true,
                                 delayBeforeMs = InstructionToTargetGapMs,
                             ),
@@ -44,6 +52,13 @@ object SampleChapter1AudioRouter : GameAudioRouter {
             }
             Chapter1StationOrder.PICTURE_PICK_ONE -> {
                 val catalogId = event.targetWordCatalogId ?: return AudioPlan.Empty
+                val wordResId = AudioClips.wordRawResIdByCatalogId(catalogId) ?: 0
+                if (wordResId == 0) {
+                    Log.e(
+                        "MissingContent",
+                        "Missing required word audio. chapterId=${event.chapterId} stationId=${event.stationId} context=SampleChapter1AudioRouter.planStationInstruction(PICTURE_PICK_ONE) stage=missing raw word mapping catalogId='$catalogId'",
+                    )
+                }
                 AudioPlan(
                     steps =
                         listOf(
@@ -53,8 +68,8 @@ object SampleChapter1AudioRouter : GameAudioRouter {
                                 blocking = true,
                             ),
                             AudioStep(
-                                lane = AudioLane.Voice,
-                                source = AudioSource.Asset(AudioClips.wordClipByCatalogId(catalogId)),
+                                lane = AudioLane.RawVoice,
+                                source = AudioSource.RawRes(wordResId),
                                 blocking = true,
                                 delayBeforeMs = InstructionToTargetGapMs,
                             ),

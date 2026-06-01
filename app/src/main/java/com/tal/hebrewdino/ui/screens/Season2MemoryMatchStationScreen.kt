@@ -48,6 +48,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.sp
+import com.tal.hebrewdino.ui.audio.RawVoicePlayer
 import com.tal.hebrewdino.ui.audio.AudioClips
 import com.tal.hebrewdino.ui.components.ChapterNavChipStyles
 import com.tal.hebrewdino.ui.audio.GameAudioEngine
@@ -78,6 +79,15 @@ fun Season2MemoryMatchStationScreen(
     val devToolsEnabled = DevTools.enabled(context)
     val audio = remember { GameAudioEngine(context = context) }
     val voice = audio.voice
+    val rawVoice = remember { RawVoicePlayer(context = context) }
+
+    androidx.compose.runtime.DisposableEffect(Unit) {
+        onDispose {
+            voice.stopNow()
+            audio.release()
+            rawVoice.release()
+        }
+    }
 
     LaunchedEffect(Unit) {
         val p = AudioClips.Season2Ch1St4MemoryMatchInstructions
@@ -123,10 +133,20 @@ fun Season2MemoryMatchStationScreen(
         val letter = deck[i]
         letterPlayJob?.cancel()
         voice.stopNow()
-        AudioClips.letterNameClip(letter)?.let { path ->
+        val resId = AudioClips.letterNameRawResId(letter)
+        if (resId == null) {
+            android.util.Log.e(
+                "MissingContent",
+                "Missing required letter-name audio. chapterId=${com.tal.hebrewdino.ui.domain.Season2ChapterIds.Chapter1Tyrannosaurus} stationId=4 context=Season2MemoryMatchStationScreen.revealIndex stage=missing raw letter-name mapping letter='$letter'",
+            )
             letterPlayJob =
                 scope.launch {
-                    voice.playFirstAvailableBlocking(path)
+                    rawVoice.playRawBlocking(0)
+                }
+        } else {
+            letterPlayJob =
+                scope.launch {
+                    rawVoice.playRawBlocking(resId)
                 }
         }
         if (firstIndex == -1) {

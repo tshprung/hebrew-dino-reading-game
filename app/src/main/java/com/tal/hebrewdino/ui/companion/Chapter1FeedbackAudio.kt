@@ -6,6 +6,7 @@ import com.tal.hebrewdino.ui.audio.SoundPoolPlayer
 import com.tal.hebrewdino.ui.audio.VoicePlayer
 import com.tal.hebrewdino.ui.data.PlayerAddress
 import com.tal.hebrewdino.R
+import com.tal.hebrewdino.ui.domain.TrainingV1Config
 import kotlinx.coroutines.delay
 
 /** Season 1 Ch.1 address-aware wrong-answer feedback (try again). */
@@ -17,12 +18,19 @@ internal suspend fun playAddressAwareTryAgainBlocking(
     voice: VoicePlayer,
     context: String = "playAddressAwareTryAgainBlocking",
 ) {
-    val requiredChapter = chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5
+    val requiredChapter =
+        chapterId == 1 ||
+            chapterId == 2 ||
+            chapterId == 3 ||
+            chapterId == 4 ||
+            chapterId == 5 ||
+            chapterId == 6 ||
+            chapterId == TrainingV1Config.CHAPTER_ID
     if (requiredChapter) {
         if (rawVoice == null) {
             android.util.Log.e(
                 "MissingContent",
-                "Missing required try-again feedback audio. chapterId=$chapterId stationId=$stationId context=$context stage=rawVoice=null expectedRawRes=${if (playerAddress != null) "Chapter1AddressAwareAudio.tryAgainRawRes($playerAddress)" else "R.raw.vo_try_again_neutral"}",
+                "Missing required try-again feedback audio. chapterId=$chapterId stationId=$stationId context=$context stage=rawVoice=null expectedRawRes=${if (playerAddress != null && chapterId != 3) "Chapter1AddressAwareAudio.tryAgainRawRes($playerAddress)" else "R.raw.vo_try_again_neutral"}",
             )
             voice.playRequiredBlocking(
                 assetPath = "",
@@ -32,14 +40,27 @@ internal suspend fun playAddressAwareTryAgainBlocking(
             )
             return
         }
-        if (playerAddress != null) {
+        if (playerAddress != null && chapterId != 3) {
             rawVoice.playRawBlocking(Chapter1AddressAwareAudio.tryAgainRawRes(playerAddress))
         } else {
             rawVoice.playRawBlocking(R.raw.vo_try_again_neutral)
         }
         return
     }
-    voice.playFirstAvailableBlocking(AudioClips.VoTryAgain2, AudioClips.VoTryAgain1)
+    if (rawVoice == null) {
+        android.util.Log.e(
+            "MissingContent",
+            "Missing required try-again feedback audio. chapterId=$chapterId stationId=$stationId context=$context stage=rawVoice=null expectedRawRes=R.raw.vo_try_again_neutral",
+        )
+        voice.playRequiredBlocking(
+            assetPath = "",
+            context = "$context(rawVoice=null)",
+            chapterId = chapterId,
+            stationId = stationId,
+        )
+        return
+    }
+    rawVoice.playRawBlocking(R.raw.vo_try_again_neutral)
 }
 
 internal suspend fun playLetterThenAddressAwareTryAgain(

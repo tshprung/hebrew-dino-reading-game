@@ -15,7 +15,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
-import com.tal.hebrewdino.R
 import com.tal.hebrewdino.ui.audio.AudioClips
 import com.tal.hebrewdino.ui.audio.RawVoicePlayer
 import com.tal.hebrewdino.ui.audio.SoundPoolPlayer
@@ -376,7 +375,11 @@ internal fun GameQuestionHost(
                     } else if (ui.audioEnabled) {
                         {
                             val requiresRawWordReplay =
-                                (ui.chapterId == 3 || ui.chapterId == 6) && ui.stationId == 1
+                                ((ui.chapterId == 3 || ui.chapterId == 6) && ui.stationId == 1) ||
+                                    ((ui.chapterId == 1 || ui.chapterId == 2 || ui.chapterId == 4 || ui.chapterId == 5) &&
+                                        ui.stationId == Chapter1StationOrder.PICTURE_PICK_ONE) ||
+                                    (ui.chapterId == TrainingV1Config.CHAPTER_ID &&
+                                        ui.stationId == TrainingV1Config.STATION_PICTURE_CHOOSE_WORD)
                             GameAudioActions.launchPromptVoice(
                                 audioEnabled = ui.audioEnabled,
                                 scope = deps.scope,
@@ -480,13 +483,17 @@ internal fun GameQuestionHost(
                     -> {
                     val matchChoices = current.choices
 
-                    var lastPraiseClip by remember(ui.chapterId, ui.stationId) { mutableStateOf<String?>(null) }
                     var lastSpokenMatchWordChoiceId by remember(ui.chapterId, ui.stationId, deps.session.currentIndex) {
                         mutableStateOf<String?>(null)
                     }
 
                     fun handleMatchWordPressed(choiceId: String) {
-                        val requiresRawWordTap = (ui.chapterId == 3 || ui.chapterId == 6) && ui.stationId == 2
+                        val requiresRawWordTap =
+                            ((ui.chapterId == 3 || ui.chapterId == 6) && ui.stationId == 2) ||
+                                ((ui.chapterId == 1 || ui.chapterId == 2 || ui.chapterId == 4 || ui.chapterId == 5) &&
+                                    ui.stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH) ||
+                                (ui.chapterId == TrainingV1Config.CHAPTER_ID &&
+                                    ui.stationId == TrainingV1Config.STATION_MATCH_LETTER_TO_WORD)
                         val rawResId =
                             if (requiresRawWordTap) {
                                 AudioClips.wordRawResIdByCatalogId(choiceId)
@@ -552,6 +559,17 @@ internal fun GameQuestionHost(
                                     return@launchPromptVoice
                                 }
                                 deps.rawVoice.playRawBlocking(resId)
+                            } else if (ui.chapterId == TrainingV1Config.CHAPTER_ID) {
+                                val resId = AudioClips.letterNameRawResId(letter)
+                                if (resId == null) {
+                                    android.util.Log.e(
+                                        "MissingContent",
+                                        "Missing required letter-name audio. chapterId=${ui.chapterId} stationId=${ui.stationId} context=GameQuestionHost.handleMatchLetterPressed stage=missing raw letter-name mapping letter='$letter'",
+                                    )
+                                    deps.rawVoice.playRawBlocking(0)
+                                    return@launchPromptVoice
+                                }
+                                deps.rawVoice.playRawBlocking(resId)
                             } else {
                                 val clip = AudioClips.letterNameClip(letter) ?: return@launchPromptVoice
                                 deps.voice.playBlocking(clip)
@@ -572,37 +590,16 @@ internal fun GameQuestionHost(
                                         audioRuntime = deps.audioRuntime,
                                         cancelFeedbackVoice = deps.cancelFeedbackVoice,
                                     ) {
-                                        val picked = pickRandomAvoiding(MatchPraiseClips, lastPraiseClip)
-                                        val requiredChapter =
-                                            ui.chapterId == 1 || ui.chapterId == 2 || ui.chapterId == 4 || ui.chapterId == 5
-                                        if (picked == null) {
-                                            if (requiredChapter) {
-                                                android.util.Log.e(
-                                                    "MissingContent",
-                                                    "Missing required success praise audio. chapterId=${ui.chapterId} stationId=${ui.stationId} context=GameQuestionHost.handleMatchSolved stage=no picked praise clip",
-                                                )
-                                                deps.voice.playRequiredBlocking(
-                                                    assetPath = "",
-                                                    context = "GameQuestionHost.handleMatchSolved(missingPraisePick)",
-                                                    chapterId = ui.chapterId,
-                                                    stationId = ui.stationId,
-                                                )
-                                            }
-                                            return@launchFeedbackVoice
-                                        }
-                                        lastPraiseClip = picked
-                                        if (requiredChapter && picked == AudioClips.VoPraiseHitzlacht) {
-                                            deps.rawVoice.playRawBlocking(R.raw.vo_praise_meule)
-                                        } else if (requiredChapter) {
-                                            deps.voice.playRequiredBlocking(
-                                                assetPath = picked,
-                                                context = "GameQuestionHost.handleMatchSolved(praise)",
-                                                chapterId = ui.chapterId,
-                                                stationId = ui.stationId,
-                                            )
-                                        } else {
-                                            deps.voice.playBlocking(picked)
-                                        }
+                                        GameAudioActions.playPraiseNoImmediateRepeat(
+                                            voice = deps.voice,
+                                            audioRuntime = deps.audioRuntime,
+                                            candidates = MatchPraiseClips,
+                                            playerAddress = ui.chapter1PlayerAddress,
+                                            chapterId = ui.chapterId,
+                                            stationId = ui.stationId,
+                                            context = "GameQuestionHost.handleMatchSolved(praise)",
+                                            rawVoice = deps.rawVoice,
+                                        )
                                     }
                                 GameAudioActions.joinSilently(job)
                             }

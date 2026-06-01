@@ -119,13 +119,16 @@ internal suspend fun playChapter1AddressAwareIntro(
         sfx.stopAllStreams()
         rawVoice.playRawBlocking(instructionRaw)
         delay(Chapter1InstructionToTargetGapMs)
-        val wordPath = AudioClips.wordClipByCatalogId(q.catalogEntryId)
-        voice.playRequiredBlocking(
-            assetPath = wordPath,
-            context = "playChapter1AddressAwareIntro(Station4Word)",
-            chapterId = chapterId,
-            stationId = stationId,
-        )
+        val wordResId = AudioClips.wordRawResIdByCatalogId(q.catalogEntryId)
+        if (wordResId == null) {
+            android.util.Log.e(
+                "MissingContent",
+                "Missing required station prompt audio. chapterId=$chapterId stationId=$stationId context=playChapter1AddressAwareIntro(Station4Word) stage=missing raw word mapping catalogId='${q.catalogEntryId}'",
+            )
+            rawVoice.playRawBlocking(0)
+            return true
+        }
+        rawVoice.playRawBlocking(wordResId)
         return true
     }
 

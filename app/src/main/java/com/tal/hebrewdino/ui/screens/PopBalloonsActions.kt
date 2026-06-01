@@ -138,6 +138,37 @@ internal object PopBalloonsActions {
                                 } else {
                                     rawVoice.playRawBlocking(resId)
                                 }
+                            } else if (chapterId == TrainingV1Config.CHAPTER_ID) {
+                                val resId = AudioClips.letterNameRawResId(letter)
+                                if (resId == null) {
+                                    android.util.Log.e(
+                                        "MissingContent",
+                                        "Missing required letter-name audio. chapterId=$chapterId stationId=$stationId context=PopBalloonsActions.handlePopSfx(correct) stage=missing raw letter-name mapping letter='$letter'",
+                                    )
+                                    if (rawVoice != null) {
+                                        rawVoice.playRawBlocking(0)
+                                    } else {
+                                        voice.playRequiredBlocking(
+                                            assetPath = "",
+                                            context = "PopBalloonsActions.handlePopSfx(correct,missingLetterNameMapping,rawVoice=null)",
+                                            chapterId = chapterId,
+                                            stationId = stationId,
+                                        )
+                                    }
+                                } else if (rawVoice == null) {
+                                    android.util.Log.e(
+                                        "MissingContent",
+                                        "Missing required letter-name audio. chapterId=$chapterId stationId=$stationId context=PopBalloonsActions.handlePopSfx(correct) stage=rawVoice=null expectedRawResId=$resId",
+                                    )
+                                    voice.playRequiredBlocking(
+                                        assetPath = "",
+                                        context = "PopBalloonsActions.handlePopSfx(correct,rawVoice=null)",
+                                        chapterId = chapterId,
+                                        stationId = stationId,
+                                    )
+                                } else {
+                                    rawVoice.playRawBlocking(resId)
+                                }
                             } else {
                                 val letterClip = AudioClips.letterNameClip(letter)
                                 if (letterClip != null) {
@@ -193,6 +224,37 @@ internal object PopBalloonsActions {
                                 rawVoice.playRawBlocking(resId)
                             }
                         } else if (chapterId == 3 || chapterId == 6) {
+                            val resId = AudioClips.letterNameRawResId(letter)
+                            if (resId == null) {
+                                android.util.Log.e(
+                                    "MissingContent",
+                                    "Missing required wrong-feedback letter-name audio. chapterId=$chapterId stationId=$stationId context=PopBalloonsActions.handlePopSfx(wrong) stage=missing raw letter-name mapping letter='$letter'",
+                                )
+                                if (rawVoice != null) {
+                                    rawVoice.playRawBlocking(0)
+                                } else {
+                                    voice.playRequiredBlocking(
+                                        assetPath = "",
+                                        context = "PopBalloonsActions.handlePopSfx(wrong,missingLetterNameMapping,rawVoice=null)",
+                                        chapterId = chapterId,
+                                        stationId = stationId,
+                                    )
+                                }
+                            } else if (rawVoice == null) {
+                                android.util.Log.e(
+                                    "MissingContent",
+                                    "Missing required wrong-feedback letter-name audio. chapterId=$chapterId stationId=$stationId context=PopBalloonsActions.handlePopSfx(wrong) stage=rawVoice=null expectedRawResId=$resId",
+                                )
+                                voice.playRequiredBlocking(
+                                    assetPath = "",
+                                    context = "PopBalloonsActions.handlePopSfx(wrong,rawVoice=null)",
+                                    chapterId = chapterId,
+                                    stationId = stationId,
+                                )
+                            } else {
+                                rawVoice.playRawBlocking(resId)
+                            }
+                        } else if (chapterId == TrainingV1Config.CHAPTER_ID) {
                             val resId = AudioClips.letterNameRawResId(letter)
                             if (resId == null) {
                                 android.util.Log.e(
@@ -292,6 +354,48 @@ internal object PopBalloonsActions {
                 rawVoice.playRawBlocking(resId)
             }
         } else if (chapterId == 3 || chapterId == 6) {
+            val resId = AudioClips.letterNameRawResId(letter)
+            if (resId == null) {
+                android.util.Log.e(
+                    "MissingContent",
+                    "Missing required letter-name audio. chapterId=$chapterId stationId=$stationId context=PopBalloonsActions.handlePopSfx(nonStagedPop) stage=missing raw letter-name mapping letter='$letter'",
+                )
+                scope.launch {
+                    if (rawVoice != null) {
+                        rawVoice.playRawBlocking(0)
+                    } else {
+                        voice.playRequiredBlocking(
+                            assetPath = "",
+                            context = "PopBalloonsActions.handlePopSfx(nonStagedPop,missingLetterNameMapping,rawVoice=null)",
+                            chapterId = chapterId,
+                            stationId = stationId,
+                        )
+                    }
+                }
+                return
+            }
+            GameAudioActions.launchFeedbackVoiceNoCancel(
+                audioEnabled = true,
+                scope = scope,
+                audioRuntime = audioRuntime,
+            ) {
+                delay(90)
+                if (rawVoice == null) {
+                    android.util.Log.e(
+                        "MissingContent",
+                        "Missing required letter-name audio. chapterId=$chapterId stationId=$stationId context=PopBalloonsActions.handlePopSfx(nonStagedPop) stage=rawVoice=null expectedRawResId=$resId",
+                    )
+                    voice.playRequiredBlocking(
+                        assetPath = "",
+                        context = "PopBalloonsActions.handlePopSfx(nonStagedPop,rawVoice=null)",
+                        chapterId = chapterId,
+                        stationId = stationId,
+                    )
+                    return@launchFeedbackVoiceNoCancel
+                }
+                rawVoice.playRawBlocking(resId)
+            }
+        } else if (chapterId == TrainingV1Config.CHAPTER_ID) {
             val resId = AudioClips.letterNameRawResId(letter)
             if (resId == null) {
                 android.util.Log.e(

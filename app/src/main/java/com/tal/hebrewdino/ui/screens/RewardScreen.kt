@@ -269,10 +269,14 @@ fun RewardScreen(
                             reportRequiredRewardRawMissing("rewardSuccessRawResId==null")
                         } else {
                             // Level complete: say "finished level" then one random short praise (not only "יפה").
-                            val praisePool = AudioClips.rewardStagePraiseTailCandidates()
-                            voice.warmUp(AudioClips.VoLevelDone, *praisePool)
+                            voice.warmUp(AudioClips.VoLevelDone)
                             voice.playBlocking(AudioClips.VoLevelDone)
-                            voice.playFirstAvailableBlockingRandomized(praisePool)
+                            val tail = RawVoicePlayer(context)
+                            try {
+                                tail.playRawBlocking(R.raw.vo_praise_meule)
+                            } finally {
+                                tail.release()
+                            }
                         }
                     }
                 }

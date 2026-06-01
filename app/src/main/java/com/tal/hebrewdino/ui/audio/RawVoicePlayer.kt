@@ -17,6 +17,7 @@ import kotlin.coroutines.resume
 class RawVoicePlayer(context: Context) {
     companion object {
         private const val TAG: String = "RawVoicePlayer"
+        private const val MISSING_TAG: String = "MissingContent"
         private const val FLAG_DEBUGGABLE: Int = 0x2
     }
 
@@ -144,9 +145,9 @@ class RawVoicePlayer(context: Context) {
     ) {
         val message = "Required raw voice failed. rawResId=$rawResId stage=$stage"
         if (cause != null) {
-            Log.e(TAG, message, cause)
+            Log.e(MISSING_TAG, message, cause)
         } else {
-            Log.e(TAG, message)
+            Log.e(MISSING_TAG, message)
         }
         if (isDebuggable) {
             if (cause != null) throw IllegalStateException(message, cause)

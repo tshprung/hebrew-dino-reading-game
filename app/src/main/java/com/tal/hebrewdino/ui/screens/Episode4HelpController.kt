@@ -47,73 +47,70 @@ internal object SideHelpActions {
             ) replay@{
                 if (plan.highlightedLetterInWordPickLetter && q is Question.PopBalloonsQuestion) {
                     val round = session.highlightedLetterInWordRound() ?: return@replay
-                    val wordPath = AudioClips.wordClipByCatalogId(round.catalogId)
-                    val letterClip = AudioClips.letterNameClip(round.correctLetter)
-                    val parts =
-                        buildList {
-                            if (voice.hasAsset(wordPath)) add(wordPath)
-                            if (letterClip != null && voice.hasAsset(letterClip)) add(letterClip)
-                        }
-                    if (parts.isNotEmpty()) {
-                        voice.playSequenceBlocking(parts)
-                    } else {
-                        if (letterClip != null) speakLetterPrompt(voice, round.correctLetter)
+                    val wordResId = AudioClips.wordRawResIdByCatalogId(round.catalogId)
+                    if (wordResId == null) {
+                        android.util.Log.e(
+                            "MissingContent",
+                            "Missing required help replay word audio. chapterId=$chapterId stationId=$stationId context=SideHelpActions.startReplay(highlightedLetterInWordPickLetter) stage=missing raw word mapping catalogId='${round.catalogId}'",
+                        )
+                        rawVoice.playRawBlocking(0)
+                        return@replay
                     }
+                    val letterResId = AudioClips.letterNameRawResId(round.correctLetter)
+                    if (letterResId == null) {
+                        android.util.Log.e(
+                            "MissingContent",
+                            "Missing required help replay letter-name audio. chapterId=$chapterId stationId=$stationId context=SideHelpActions.startReplay(highlightedLetterInWordPickLetter) stage=missing raw letter-name mapping letter='${round.correctLetter}'",
+                        )
+                        rawVoice.playRawBlocking(0)
+                        return@replay
+                    }
+                    rawVoice.playRawBlocking(wordResId)
+                    rawVoice.playRawBlocking(letterResId)
                     return@replay
                 }
                 if (plan.popAllLettersInWord && q is Question.PopBalloonsQuestion) {
                     val catalogId = session.chapter3PopAllLettersCurrentWord()?.second
                     if (!catalogId.isNullOrBlank()) {
-                        val wordPath = AudioClips.wordClipByCatalogId(catalogId)
-                        if (voice.hasAsset(wordPath)) voice.playBlocking(wordPath)
+                        val wordResId = AudioClips.wordRawResIdByCatalogId(catalogId)
+                        if (wordResId == null) {
+                            android.util.Log.e(
+                                "MissingContent",
+                                "Missing required help replay word audio. chapterId=$chapterId stationId=$stationId context=SideHelpActions.startReplay(popAllLettersInWord) stage=missing raw word mapping catalogId='$catalogId'",
+                            )
+                            rawVoice.playRawBlocking(0)
+                            return@replay
+                        }
+                        rawVoice.playRawBlocking(wordResId)
                     }
                     return@replay
                 }
                 when (stationUiSpec.replayMode) {
                     StationReplayMode.TargetLetterOnly -> {
                         val letter = Episode4Help.targetLetterForHelpHint(q) ?: return@replay
-                        if (chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) {
-                            val resId = AudioClips.letterNameRawResId(letter)
+                        val resId = AudioClips.letterNameRawResId(letter)
+                        if (resId == null) {
+                            android.util.Log.e(
+                                "MissingContent",
+                                "Missing required help replay letter-name audio. chapterId=$chapterId stationId=$stationId context=SideHelpActions.startReplay(TargetLetterOnly) stage=missing raw letter-name mapping letter='$letter'",
+                            )
+                            rawVoice.playRawBlocking(0)
+                            return@replay
+                        }
+                        rawVoice.playRawBlocking(resId)
+                    }
+                    StationReplayMode.TargetWordOnly -> {
+                        if (q is Question.PictureStartsWithQuestion) {
+                            val resId = AudioClips.wordRawResIdByCatalogId(q.catalogEntryId)
                             if (resId == null) {
                                 android.util.Log.e(
                                     "MissingContent",
-                                    "Missing required help replay letter-name audio. chapterId=$chapterId stationId=$stationId context=SideHelpActions.startReplay(TargetLetterOnly) stage=missing raw letter-name mapping letter='$letter'",
+                                    "Missing required help replay word audio. chapterId=$chapterId stationId=$stationId context=SideHelpActions.startReplay(TargetWordOnly) stage=missing raw word mapping catalogId='${q.catalogEntryId}'",
                                 )
                                 rawVoice.playRawBlocking(0)
                                 return@replay
                             }
                             rawVoice.playRawBlocking(resId)
-                            return@replay
-                        }
-                        val letterClip = AudioClips.letterNameClip(letter)
-                        if (letterClip != null) {
-                            val id =
-                                sfx.playRequiredReturningStreamId(
-                                    assetPath = letterClip,
-                                    volume = 1f,
-                                    context = "SideHelpActions.startReplay(TargetLetterOnly)",
-                                    chapterId = chapterId,
-                                    stationId = stationId,
-                                )
-                            if (id != null) return@replay
-                            if (voice.hasAsset(letterClip)) {
-                                voice.playBlocking(letterClip)
-                                return@replay
-                            }
-                        }
-                        if (chapterId == TrainingV1Config.CHAPTER_ID) return@replay
-                        speakLetterPrompt(
-                            voice = voice,
-                            letter = letter,
-                            chapterId = chapterId,
-                            stationId = stationId,
-                            context = "SideHelpActions.startReplay(TargetLetterOnly,fallback)",
-                        )
-                    }
-                    StationReplayMode.TargetWordOnly -> {
-                        if (q is Question.PictureStartsWithQuestion) {
-                            val wordPath = AudioClips.wordClipByCatalogId(q.catalogEntryId)
-                            if (voice.hasAsset(wordPath)) voice.playBlocking(wordPath)
                         }
                     }
                     else ->
@@ -139,31 +136,16 @@ internal object SideHelpActions {
                 audioRuntime = audioRuntime,
                 cancelFeedbackVoice = cancelFeedbackVoice,
             ) replay@{
-                if (chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) {
-                    val resId = AudioClips.letterNameRawResId(letter)
-                    if (resId == null) {
-                        android.util.Log.e(
-                            "MissingContent",
-                            "Missing required help replay letter-name audio. chapterId=$chapterId stationId=$stationId context=SideHelpActions.startReplay(PopBalloonsHelp) stage=missing raw letter-name mapping letter='$letter'",
-                        )
-                        rawVoice.playRawBlocking(0)
-                        return@replay
-                    }
-                    rawVoice.playRawBlocking(resId)
+                val resId = AudioClips.letterNameRawResId(letter)
+                if (resId == null) {
+                    android.util.Log.e(
+                        "MissingContent",
+                        "Missing required help replay letter-name audio. chapterId=$chapterId stationId=$stationId context=SideHelpActions.startReplay(PopBalloonsHelp) stage=missing raw letter-name mapping letter='$letter'",
+                    )
+                    rawVoice.playRawBlocking(0)
                     return@replay
                 }
-                val letterClip = AudioClips.letterNameClip(letter)
-                if (letterClip != null && voice.hasAsset(letterClip)) {
-                    voice.playBlocking(letterClip)
-                    return@replay
-                }
-                speakLetterPrompt(
-                    voice = voice,
-                    letter = letter,
-                    chapterId = chapterId,
-                    stationId = stationId,
-                    context = "SideHelpActions.startReplay(PopBalloonsHelp,fallback)",
-                )
+                rawVoice.playRawBlocking(resId)
             }
         }
     }

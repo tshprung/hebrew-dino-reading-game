@@ -57,6 +57,7 @@ import com.tal.hebrewdino.ui.components.AnimatedTalkingCharacter
 import com.tal.hebrewdino.ui.components.ChapterNavChipStyles
 import com.tal.hebrewdino.ui.domain.DevTools
 import com.tal.hebrewdino.ui.components.Episode4Stations15HelpColumn
+import com.tal.hebrewdino.ui.data.PlayerAddress
 import com.tal.hebrewdino.ui.domain.LevelSession
 import com.tal.hebrewdino.ui.domain.Question
 import com.tal.hebrewdino.ui.domain.StationHintMode
@@ -457,6 +458,7 @@ internal fun BoxScope.GameOverlayLayer(
     rawVoice: RawVoicePlayer,
     cancelFeedbackVoice: () -> Unit,
     audioRuntime: GameAudioRuntimeState,
+    chapter1PlayerAddress: PlayerAddress? = null,
 ) {
     val showSideHelpColumn = episode4HelpSt15 || popBalloonsHelpControlsEnabled
     if (showSideHelpColumn) {
@@ -495,6 +497,7 @@ internal fun BoxScope.GameOverlayLayer(
         rawVoice = rawVoice,
         cancelFeedbackVoice = cancelFeedbackVoice,
         audioRuntime = audioRuntime,
+        chapter1PlayerAddress = chapter1PlayerAddress,
         modifier =
             Modifier
                 .align(Alignment.CenterStart)

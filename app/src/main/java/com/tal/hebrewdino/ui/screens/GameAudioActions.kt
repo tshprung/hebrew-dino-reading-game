@@ -5,6 +5,9 @@ import com.tal.hebrewdino.ui.audio.AudioClips
 import com.tal.hebrewdino.ui.audio.RawVoicePlayer
 import com.tal.hebrewdino.ui.audio.SoundPoolPlayer
 import com.tal.hebrewdino.ui.audio.VoicePlayer
+import com.tal.hebrewdino.ui.companion.Chapter1AddressAwareAudio
+import com.tal.hebrewdino.ui.data.PlayerAddress
+import com.tal.hebrewdino.ui.domain.TrainingV1Config
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -179,24 +182,55 @@ internal object GameAudioActions {
         voice: VoicePlayer,
         audioRuntime: GameAudioRuntimeState,
         candidates: Array<String>,
+        playerAddress: PlayerAddress? = null,
         chapterId: Int? = null,
         stationId: Int? = null,
         context: String = "GameAudioActions.playPraiseNoImmediateRepeat",
         rawVoice: RawVoicePlayer? = null,
     ) {
+        val requiredChapter =
+            chapterId == 1 ||
+                chapterId == 2 ||
+                chapterId == 3 ||
+                chapterId == 4 ||
+                chapterId == 5 ||
+                chapterId == 6 ||
+                chapterId == TrainingV1Config.CHAPTER_ID
         val played =
-            if (chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) {
-                playRequiredBlockingRandomizedNoRepeatWithRawOverride(
-                    voice = voice,
-                    rawVoice = rawVoice,
-                    assetPaths = candidates,
-                    avoidAssetPath = audioRuntime.lastPraiseAssetPath,
-                    overrideAssetPath = AudioClips.VoPraiseHitzlacht,
-                    overrideRawResId = R.raw.vo_praise_meule,
-                    chapterId = chapterId,
-                    stationId = stationId,
-                    context = context,
-                )
+            if (requiredChapter) {
+                if (rawVoice == null) {
+                    android.util.Log.e(
+                        "MissingContent",
+                        "Missing required praise audio. chapterId=$chapterId stationId=$stationId context=$context stage=rawVoice=null expectedRawResId!=null",
+                    )
+                    voice.playRequiredBlocking(
+                        assetPath = "",
+                        context = "$context(rawVoice=null)",
+                        chapterId = chapterId,
+                        stationId = stationId,
+                    )
+                    null
+                } else {
+                    val addressSpecific =
+                        playerAddress?.let { Chapter1AddressAwareAudio.greatRawRes(it) }
+                    val options =
+                        buildList(2) {
+                            if (addressSpecific != null) {
+                                add("raw:feedback_great" to addressSpecific)
+                            }
+                            add("raw:vo_praise_meule" to R.raw.vo_praise_meule)
+                        }.toTypedArray()
+                    val avoid = audioRuntime.lastPraiseAssetPath
+                    val start = Random.nextInt(options.size)
+                    val pick =
+                        (0 until options.size)
+                            .asSequence()
+                            .map { options[(start + it) % options.size] }
+                            .firstOrNull { (k, _) -> avoid == null || k != avoid }
+                            ?: options.first()
+                    rawVoice.playRawBlocking(pick.second)
+                    pick.first
+                }
             } else {
                 voice.playFirstAvailableBlockingRandomizedNoRepeat(
                     assetPaths = candidates,

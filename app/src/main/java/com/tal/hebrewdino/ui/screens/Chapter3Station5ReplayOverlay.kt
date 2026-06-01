@@ -5,7 +5,9 @@ import androidx.compose.ui.Modifier
 import com.tal.hebrewdino.ui.audio.AudioClips
 import com.tal.hebrewdino.ui.audio.RawVoicePlayer
 import com.tal.hebrewdino.ui.audio.VoicePlayer
+import com.tal.hebrewdino.ui.companion.Chapter1AddressAwareAudio
 import com.tal.hebrewdino.ui.components.Chapter3Station5ReplayColumn
+import com.tal.hebrewdino.ui.data.PlayerAddress
 import com.tal.hebrewdino.ui.domain.LevelSession
 import com.tal.hebrewdino.ui.domain.Question
 import kotlinx.coroutines.CoroutineScope
@@ -25,6 +27,7 @@ internal fun Chapter3Station5ReplayOverlay(
     rawVoice: RawVoicePlayer,
     cancelFeedbackVoice: () -> Unit,
     audioRuntime: GameAudioRuntimeState,
+    chapter1PlayerAddress: PlayerAddress? = null,
     modifier: Modifier = Modifier,
 ) {
     if (!((chapterId == 3 || chapterId == 6) && stationId == 5 && !episode4HelpSt15)) return
@@ -61,10 +64,20 @@ internal fun Chapter3Station5ReplayOverlay(
                 audioRuntime = audioRuntime,
                 cancelFeedbackVoice = cancelFeedbackVoice,
             ) {
-                val instruction = AudioClips.VoChooseLetter
-                if (voice.hasAsset(instruction)) {
-                    voice.playBlocking(instruction)
+                if (chapter1PlayerAddress == null) {
+                    android.util.Log.e(
+                        "MissingContent",
+                        "Missing required pop-balloons instruction audio. chapterId=$chapterId stationId=$stationId context=Chapter3Station5ReplayOverlay.onReplayFull stage=chapter1PlayerAddress=null expectedRawRes=Chapter1AddressAwareAudio.instructionRawRes(PopBalloons, address)",
+                    )
+                    rawVoice.playRawBlocking(0)
+                    return@launchPromptVoice
                 }
+                rawVoice.playRawBlocking(
+                    Chapter1AddressAwareAudio.instructionRawRes(
+                        kind = Chapter1AddressAwareAudio.InstructionKind.PopBalloons,
+                        address = chapter1PlayerAddress,
+                    ),
+                )
                 val resId = AudioClips.letterNameRawResId(q.correctAnswer)
                 if (resId == null) {
                     android.util.Log.e(

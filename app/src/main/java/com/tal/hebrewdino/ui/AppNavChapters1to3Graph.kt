@@ -525,6 +525,9 @@ internal fun NavGraphBuilder.chapterOneToThreeGraph(host: AppNavHostState) {
             onBackToMap = backToMap,
             showSelectedCompanionPortrait = true,
             selectedCompanionCharacter = host.companionCharacter,
+            rewardSuccessRawResId = Chapter1DinoCompanionPilot.successClipForStation(stationId),
+            rewardChapterId = 3,
+            requireRawSuccessAudio = true,
         )
     }
 

@@ -93,6 +93,7 @@ fun Chapter3LettersIntroScreen(
     modifier: Modifier = Modifier,
 ) {
     ChapterLettersIntroScreen(
+        chapterId = 3,
         chapterTitle = "פרק 3 — האותיות במסע",
         letters = Chapter3Config.letters,
         backgroundRes = R.drawable.ch3_journey_bg,
@@ -139,6 +140,7 @@ fun Chapter6LettersIntroScreen(
     modifier: Modifier = Modifier,
 ) {
     ChapterLettersIntroScreen(
+        chapterId = 6,
         chapterTitle = "פרק 6 - חוזרים הביתה",
         letters = HebrewLetterOrder.sortForDisplay(Chapter6Config.letters),
         backgroundRes = R.drawable.forest_bg_journey_road,
@@ -167,7 +169,7 @@ fun ChapterLettersIntroScreen(
 ) {
     val stableLetters = remember(letters) { HebrewLetterOrder.sortForDisplay(letters.distinct()) }
     val isCompactLandscapePhone = ScreenFit.isCompactLandscapePhone()
-    val usesRawLetterNames = chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5
+    val usesRawLetterNames = chapterId == 1 || chapterId == 2 || chapterId == 3 || chapterId == 4 || chapterId == 5 || chapterId == 6
 
     val context = androidx.compose.ui.platform.LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current

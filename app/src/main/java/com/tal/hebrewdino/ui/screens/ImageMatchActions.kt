@@ -274,8 +274,38 @@ internal object ImageMatchActions {
                         when {
                             chapterId == TrainingV1Config.CHAPTER_ID &&
                                 stationId == TrainingV1Config.STATION_WHICH_WORD_STARTS_WITH_LETTER -> {
-                                val wordPath = AudioClips.wordClipByCatalogId(choiceId)
-                                if (voice.hasAsset(wordPath)) voice.playBlocking(wordPath)
+                                val wordResId = AudioClips.wordRawResIdByCatalogId(choiceId)
+                                if (wordResId == null) {
+                                    android.util.Log.e(
+                                        "MissingContent",
+                                        "Missing required word audio. chapterId=$chapterId stationId=$stationId context=ImageMatchActions.handleImageMatchAttempt(correct,training) stage=missing raw word mapping catalogId='$choiceId'",
+                                    )
+                                    if (rawVoice != null) {
+                                        rawVoice.playRawBlocking(0)
+                                    } else {
+                                        voice.playRequiredBlocking(
+                                            assetPath = "",
+                                            context = "ImageMatchActions.handleImageMatchAttempt(correct,training,missingWordMapping,rawVoice=null)",
+                                            chapterId = chapterId,
+                                            stationId = stationId,
+                                        )
+                                    }
+                                    return@launchFeedbackVoiceNoCancel
+                                }
+                                if (rawVoice == null) {
+                                    android.util.Log.e(
+                                        "MissingContent",
+                                        "Missing required word audio. chapterId=$chapterId stationId=$stationId context=ImageMatchActions.handleImageMatchAttempt(correct,training) stage=rawVoice=null expectedRawResId=$wordResId",
+                                    )
+                                    voice.playRequiredBlocking(
+                                        assetPath = "",
+                                        context = "ImageMatchActions.handleImageMatchAttempt(correct,training,rawVoice=null)",
+                                        chapterId = chapterId,
+                                        stationId = stationId,
+                                    )
+                                    return@launchFeedbackVoiceNoCancel
+                                }
+                                rawVoice.playRawBlocking(wordResId)
                                 GameAudioActions.playPraiseNoImmediateRepeat(
                                     voice = voice,
                                     audioRuntime = audioRuntime,
@@ -287,7 +317,40 @@ internal object ImageMatchActions {
                                 )
                             }
                             sagaEpisode && stationId == Chapter1StationOrder.PICTURE_PICK_ALL -> {
-                                if (chapterId != 3 && chapterId != 6) {
+                                if (chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) {
+                                    val wordResId = AudioClips.wordRawResIdByCatalogId(choiceId)
+                                    if (wordResId == null) {
+                                        android.util.Log.e(
+                                            "MissingContent",
+                                            "Missing required word audio. chapterId=$chapterId stationId=$stationId context=ImageMatchActions.handleImageMatchAttempt(correct,sagaStation5) stage=missing raw word mapping catalogId='$choiceId'",
+                                        )
+                                        if (rawVoice != null) {
+                                            rawVoice.playRawBlocking(0)
+                                        } else {
+                                            voice.playRequiredBlocking(
+                                                assetPath = "",
+                                                context = "ImageMatchActions.handleImageMatchAttempt(correct,sagaStation5,missingWordMapping,rawVoice=null)",
+                                                chapterId = chapterId,
+                                                stationId = stationId,
+                                            )
+                                        }
+                                        return@launchFeedbackVoiceNoCancel
+                                    }
+                                    if (rawVoice == null) {
+                                        android.util.Log.e(
+                                            "MissingContent",
+                                            "Missing required word audio. chapterId=$chapterId stationId=$stationId context=ImageMatchActions.handleImageMatchAttempt(correct,sagaStation5) stage=rawVoice=null expectedRawResId=$wordResId",
+                                        )
+                                        voice.playRequiredBlocking(
+                                            assetPath = "",
+                                            context = "ImageMatchActions.handleImageMatchAttempt(correct,sagaStation5,rawVoice=null)",
+                                            chapterId = chapterId,
+                                            stationId = stationId,
+                                        )
+                                        return@launchFeedbackVoiceNoCancel
+                                    }
+                                    rawVoice.playRawBlocking(wordResId)
+                                } else if (chapterId != 3 && chapterId != 6) {
                                     voice.playBlocking(AudioClips.wordClipByCatalogId(choiceId))
                                 }
                             }
