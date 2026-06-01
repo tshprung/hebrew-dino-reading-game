@@ -45,7 +45,6 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.tal.hebrewdino.R
-import com.tal.hebrewdino.ui.audio.AudioClips
 import com.tal.hebrewdino.ui.audio.RawVoicePlayer
 import com.tal.hebrewdino.ui.audio.VoicePlayer
 import com.tal.hebrewdino.ui.companion.Chapter1DinoCompanionPilot
@@ -268,15 +267,10 @@ fun RewardScreen(
                         if (requireRawSuccessAudio) {
                             reportRequiredRewardRawMissing("rewardSuccessRawResId==null")
                         } else {
-                            // Level complete: say "finished level" then one random short praise (not only "יפה").
-                            voice.warmUp(AudioClips.VoLevelDone)
-                            voice.playBlocking(AudioClips.VoLevelDone)
-                            val tail = RawVoicePlayer(context)
-                            try {
-                                tail.playRawBlocking(R.raw.vo_praise_meule)
-                            } finally {
-                                tail.release()
-                            }
+                            Log.e(
+                                "MissingContent",
+                                "Missing reward raw success audio. chapterId=$rewardChapterId stationId=$levelId rewardSuccessRawResId=null detail=legacy VoLevelDone fallback disabled",
+                            )
                         }
                     }
                 }
