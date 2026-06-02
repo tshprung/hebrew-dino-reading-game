@@ -58,10 +58,17 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.tal.hebrewdino.ui.layout.ScreenFit
 import android.util.Log
+import kotlinx.coroutines.CancellationException
 
 enum class ChapterLobbyCompanion {
     DinoOnly,
     DinoAndMom,
+}
+
+/** Ch.2–6 intro: companion bumper first; story narration only after Continue. */
+private enum class ChapterIntroNarrationPhase {
+    Bumper,
+    Story,
 }
 
 private val dinoTalkFrames =
@@ -133,13 +140,20 @@ fun ChapterLobbyStoryLayout(
     var autoNarrationPlaying by remember(voiceAssetPath, voiceRawResId, bumperVoiceRawResId) {
         mutableStateOf(false)
     }
-    val hasIntroBumper = bumperVoiceRawResId != null
-    var showingBumperBody by remember(bumperVoiceRawResId, bumperBodyText, body) {
-        mutableStateOf(hasIntroBumper && !bumperBodyText.isNullOrBlank())
+    val hasIntroBumper =
+        bumperVoiceRawResId != null && !bumperBodyText.isNullOrBlank()
+    var narrationPhase by remember(bumperVoiceRawResId, bumperBodyText) {
+        mutableStateOf(
+            if (hasIntroBumper) {
+                ChapterIntroNarrationPhase.Bumper
+            } else {
+                ChapterIntroNarrationPhase.Story
+            },
+        )
     }
     val visibleBody =
-        if (showingBumperBody && !bumperBodyText.isNullOrBlank()) {
-            bumperBodyText
+        if (narrationPhase == ChapterIntroNarrationPhase.Bumper) {
+            bumperBodyText!!
         } else {
             body
         }
@@ -162,49 +176,44 @@ fun ChapterLobbyStoryLayout(
         }
     }
 
-    LaunchedEffect(voiceAssetPath, voiceRawResId, bumperVoiceRawResId, bumperBodyText) {
+    LaunchedEffect(narrationPhase, voiceAssetPath, voiceRawResId, bumperVoiceRawResId) {
         try {
-            if (bumperVoiceRawResId != null) {
-                if (bumperBodyText.isNullOrBlank()) {
-                    val msg =
-                        "Missing required bumper body text. chapterId=$chapterId storyContext=$storyContext bumperVoiceRawResId=$bumperVoiceRawResId"
-                    Log.e("MissingContent", msg)
-                    if (isDebuggable) throw IllegalStateException(msg)
-                } else {
-                    showingBumperBody = true
+            when (narrationPhase) {
+                ChapterIntroNarrationPhase.Bumper -> {
+                    val bumperId = bumperVoiceRawResId ?: return@LaunchedEffect
                     autoNarrationPlaying = true
                     playRequiredStoryRaw(
                         rawVoice = rawVoice,
-                        rawResId = bumperVoiceRawResId,
+                        rawResId = bumperId,
                         chapterId = chapterId,
                         storyContext = storyContext,
                         stage = "companionIntroBumper",
                         isDebuggable = isDebuggable,
                     )
-                    showingBumperBody = false
                 }
-            }
-            when {
-                voiceRawResId != null -> {
-                    autoNarrationPlaying = true
-                    playRequiredStoryRaw(
-                        rawVoice = rawVoice,
-                        rawResId = voiceRawResId,
-                        chapterId = chapterId,
-                        storyContext = storyContext,
-                        stage = "storyNarration",
-                        isDebuggable = isDebuggable,
-                    )
-                }
-                voiceAssetPath != null && voicePlayer != null -> {
-                    autoNarrationPlaying = true
-                    voicePlayer.playRequiredBlocking(
-                        assetPath = voiceAssetPath,
-                        context = "StoryNarration($storyContext)",
-                        chapterId = chapterId,
-                        stationId = null,
-                    )
-                }
+                ChapterIntroNarrationPhase.Story ->
+                    when {
+                        voiceRawResId != null -> {
+                            autoNarrationPlaying = true
+                            playRequiredStoryRaw(
+                                rawVoice = rawVoice,
+                                rawResId = voiceRawResId,
+                                chapterId = chapterId,
+                                storyContext = storyContext,
+                                stage = "storyNarration",
+                                isDebuggable = isDebuggable,
+                            )
+                        }
+                        voiceAssetPath != null && voicePlayer != null -> {
+                            autoNarrationPlaying = true
+                            voicePlayer.playRequiredBlocking(
+                                assetPath = voiceAssetPath,
+                                context = "StoryNarration($storyContext)",
+                                chapterId = chapterId,
+                                stationId = null,
+                            )
+                        }
+                    }
             }
         } finally {
             autoNarrationPlaying = false
@@ -468,10 +477,13 @@ fun ChapterLobbyStoryLayout(
 
             FilledTonalButton(
                 onClick = {
-                    // UX: stop narration immediately when continuing (don't wait for dispose/navigation).
                     rawVoice?.stopNow()
                     voicePlayer?.stopNow()
-                    onContinue()
+                    if (narrationPhase == ChapterIntroNarrationPhase.Bumper) {
+                        narrationPhase = ChapterIntroNarrationPhase.Story
+                    } else {
+                        onContinue()
+                    }
                 },
                 modifier = Modifier.widthIn(min = 160.dp, max = 200.dp),
             ) {
@@ -510,6 +522,9 @@ private suspend fun playRequiredStoryRaw(
         runCatching { rawVoice.playRawBlocking(rawResId) }
             .exceptionOrNull()
     if (failure != null) {
+        if (failure is CancellationException) {
+            return
+        }
         val msg =
             "Required story raw playback failed. chapterId=$chapterId storyContext=$storyContext stage=$stage rawResId=$rawResId"
         Log.e("MissingContent", msg, failure)

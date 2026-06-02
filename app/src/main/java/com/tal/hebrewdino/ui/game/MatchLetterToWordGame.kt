@@ -80,15 +80,18 @@ private fun Modifier.offsetYIfNonZero(y: Dp): Modifier =
         this
     }
 
-/** Training rounds 6 and 10 (MatchLetterToWord): ~5 mm lower (~19 dp). */
-private fun trainingMatchLetterToWordExtraDownDp(chapterId: Int?, stationId: Int?): Dp =
+/** Training rounds 6 and 10: header + picture cards only (~6 mm ≈ 23 dp). */
+private fun trainingMatchLetterHeaderExtraDownDp(chapterId: Int?, stationId: Int?): Dp =
     if (chapterId == TrainingV1Config.CHAPTER_ID &&
         stationId == TrainingV1Config.STATION_MATCH_LETTER_TO_WORD
     ) {
-        19.dp
+        23.dp
     } else {
         0.dp
     }
+
+/** Training rounds 6 and 10: letter row stays at default vertical position. */
+private fun trainingMatchLetterLetterRowExtraDownDp(chapterId: Int?, stationId: Int?): Dp = 0.dp
 
 @Composable
 fun MatchLetterToWordGame(
@@ -266,9 +269,9 @@ fun MatchLetterToWordGame(
                     20.dp
                 chapterId == 3 && stationId == 2 -> 20.dp
                 chapterId == 6 && stationId == 2 -> 28.dp
-                else -> trainingMatchLetterToWordExtraDownDp(chapterId, stationId)
+                else -> trainingMatchLetterHeaderExtraDownDp(chapterId, stationId)
             }
-        val letterRowExtraDownDp = trainingMatchLetterToWordExtraDownDp(chapterId, stationId)
+        val letterRowExtraDownDp = trainingMatchLetterLetterRowExtraDownDp(chapterId, stationId)
         val chapter6Station2CaptionBoost = if (chapterId == 6 && stationId == 2) 1.30f else 1f
 
         // Header stays pinned; content below scales down if needed so nothing is clipped.
@@ -941,9 +944,9 @@ private fun SixStationArcStation6Board(
                 20.dp
             chapterId == 3 && stationId == 2 -> 20.dp
             chapterId == 6 && stationId == 2 -> 28.dp
-            else -> trainingMatchLetterToWordExtraDownDp(chapterId, stationId)
+            else -> trainingMatchLetterHeaderExtraDownDp(chapterId, stationId)
         }
-    val letterRowExtraDownDp = trainingMatchLetterToWordExtraDownDp(chapterId, stationId)
+    val letterRowExtraDownDp = trainingMatchLetterLetterRowExtraDownDp(chapterId, stationId)
     val topGroupOffsetEffectiveY = topGroupOffsetY + headerAndCardsExtraDownDp
     val columns = wordColumn.size.coerceIn(1, 6)
     val rowInnerW = (innerW - boardHorizontalPadding * 2f).coerceAtLeast(1.dp)

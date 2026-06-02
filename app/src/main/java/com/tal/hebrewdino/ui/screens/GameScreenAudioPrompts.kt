@@ -612,6 +612,48 @@ internal suspend fun speakPromptForQuestion(
                 rawVoice.playRawBlocking(wordResId)
                 return
             }
+            if (chapterId == TrainingV1Config.CHAPTER_ID &&
+                stationId == TrainingV1Config.STATION_WHICH_WORD_STARTS_WITH_LETTER
+            ) {
+                if (rawVoice == null) {
+                    android.util.Log.e(
+                        "MissingContent",
+                        "Missing required station prompt audio. chapterId=$chapterId stationId=$stationId context=speakPromptForQuestion(TrainingImageMatchPictureStartsWith) stage=rawVoice=null expectedInstructionRawRes!=null",
+                    )
+                    voice.playRequiredBlocking(
+                        assetPath = "",
+                        context = "speakPromptForQuestion(TrainingImageMatchPictureStartsWith,rawVoice=null)",
+                        chapterId = chapterId,
+                        stationId = stationId,
+                    )
+                    return
+                }
+                if (playerAddress == null) {
+                    android.util.Log.e(
+                        "MissingContent",
+                        "Missing required station prompt audio. chapterId=$chapterId stationId=$stationId context=speakPromptForQuestion(TrainingImageMatchPictureStartsWith) stage=playerAddress=null expectedInstructionKind=PictureStartsWith",
+                    )
+                    rawVoice.playRawBlocking(0)
+                    return
+                }
+                val letterResId = AudioClips.letterNameRawResId(q.targetLetter)
+                if (letterResId == null) {
+                    android.util.Log.e(
+                        "MissingContent",
+                        "Missing required station prompt audio. chapterId=$chapterId stationId=$stationId context=speakPromptForQuestion(TrainingImageMatchPictureStartsWith) stage=missing raw letter-name mapping targetLetter='${q.targetLetter}'",
+                    )
+                    rawVoice.playRawBlocking(0)
+                    return
+                }
+                rawVoice.playRawBlocking(
+                    Chapter1AddressAwareAudio.instructionRawRes(
+                        kind = Chapter1AddressAwareAudio.InstructionKind.PictureStartsWith,
+                        address = playerAddress,
+                    ),
+                )
+                rawVoice.playRawBlocking(letterResId)
+                return
+            }
             if (isSagaEpisodeForPrompt(chapterId) && stationId == Chapter1StationOrder.PICTURE_PICK_ALL) {
                 // Episode 1 station 5: "איזו מילה מתחילה באות" + letter name (SoundPool overlap when duration parses).
                 if (!requiredChapters) return

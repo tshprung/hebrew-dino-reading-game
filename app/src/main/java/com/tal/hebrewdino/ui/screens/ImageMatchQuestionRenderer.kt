@@ -9,6 +9,8 @@ import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
 import com.tal.hebrewdino.ui.domain.LessonChoice
 import com.tal.hebrewdino.ui.domain.Question
 import com.tal.hebrewdino.ui.domain.StationUiSpec
+import com.tal.hebrewdino.ui.domain.TrainingInstructionCopy
+import com.tal.hebrewdino.ui.domain.TrainingV1Config
 import com.tal.hebrewdino.ui.layout.ScreenFit
 
 @Composable
@@ -35,16 +37,19 @@ internal fun ImageMatchQuestionRenderer(
     modifier: Modifier = Modifier,
 ) {
     val rawHeaderInstructionText =
-        if ((chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) &&
-            stationId == Chapter1StationOrder.PICTURE_PICK_ALL &&
-            chapter1PlayerAddress != null
-        ) {
-            when (chapter1PlayerAddress) {
-                PlayerAddress.Boy -> "\u200Fבחר את התמונה שמתחילה באות:"
-                PlayerAddress.Girl -> "\u200Fבחרי את התמונה שמתחילה באות:"
-            }
-        } else {
-            stationUiSpec.imageMatchHeaderInstructionOverride
+        when {
+            chapterId == TrainingV1Config.CHAPTER_ID &&
+                stationId == TrainingV1Config.STATION_WHICH_WORD_STARTS_WITH_LETTER &&
+                chapter1PlayerAddress != null ->
+                TrainingInstructionCopy.pictureStartsWith(chapter1PlayerAddress)
+            (chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) &&
+                stationId == Chapter1StationOrder.PICTURE_PICK_ALL &&
+                chapter1PlayerAddress != null ->
+                when (chapter1PlayerAddress) {
+                    PlayerAddress.Boy -> "\u200Fבחר את התמונה שמתחילה באות:"
+                    PlayerAddress.Girl -> "\u200Fבחרי את התמונה שמתחילה באות:"
+                }
+            else -> stationUiSpec.imageMatchHeaderInstructionOverride
         }
     val displayHeaderInstructionText =
         if (isCompactLandscapePhone &&

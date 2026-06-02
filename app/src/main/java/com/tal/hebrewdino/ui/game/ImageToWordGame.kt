@@ -96,9 +96,11 @@ fun ImageToWordGame(
         val isCompactLandscapePhone = ScreenFit.isCompactLandscapePhone()
         val isTrainingStation3 =
             chapterId == TrainingV1Config.CHAPTER_ID && stationId == TrainingV1Config.STATION_PICTURE_CHOOSE_WORD
+        val isTrainingImageToWordRound38 =
+            isTrainingStation3 && trainingRoundIndex in setOf(3, 8)
         val isChapter3Or6Station6ImageToWord =
             (chapterId == 3 || chapterId == 6) && stationId == 6
-        val isInstructionWrapContent = isTrainingStation3 || isChapter3Or6Station6ImageToWord
+        val isInstructionWrapContent = isTrainingImageToWordRound38 || isChapter3Or6Station6ImageToWord
 
         // Match the same card sizing math as PictureStartsWith/ImageMatch (Episode 1/2 station 4).
         val cardGap = 10.dp
@@ -114,14 +116,14 @@ fun ImageToWordGame(
             pictureCardW *= 0.70f
         }
         if (isChapter3Or6Station6ImageToWord) {
-            pictureCardW *= 0.70f
+            pictureCardW = (pictureCardW * 1.40f).coerceAtMost(w - 48.dp)
         }
         val pictureCardH = pictureCardW * LessonChoiceCardPictureAspect
         val chapter3Station6ExtraDown = if (chapterId == 3 && stationId == 6) 19.dp else 0.dp
         val chapter6Station6ExtraDown = if (chapterId == 6 && stationId == 6) 38.dp else 0.dp
         // Training rounds 3 and 8 (ImageToWord): ~5 mm lower than default (~19 dp).
         val trainingImageToWordExtraDown =
-            if (isTrainingStation3 && trainingRoundIndex in setOf(3, 8)) {
+            if (isTrainingImageToWordRound38) {
                 19.dp
             } else {
                 0.dp
@@ -181,12 +183,11 @@ fun ImageToWordGame(
                     val pictureTapReplays = onPictureTapReplayWord != null
                     val innerScale =
                         innerPictureScaleForChoice(correctChoice) *
-                            if (isChapter3Or6Station6ImageToWord) {
-                                0.70f
-                            } else if (isCompactLandscapePhone) {
-                                1.50f
-                            } else {
-                                1f
+                            when {
+                                isTrainingImageToWordRound38 -> 0.70f
+                                isChapter3Or6Station6ImageToWord -> 1.40f
+                                isCompactLandscapePhone -> 1.50f
+                                else -> 1f
                             }
                     LessonChoiceCard(
                         choice = correctChoice,

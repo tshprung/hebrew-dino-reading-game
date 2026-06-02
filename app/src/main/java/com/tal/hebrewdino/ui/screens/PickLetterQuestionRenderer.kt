@@ -13,6 +13,7 @@ import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
 import com.tal.hebrewdino.ui.domain.HebrewLetterOrder
 import com.tal.hebrewdino.ui.domain.Question
 import com.tal.hebrewdino.ui.domain.StationUiSpec
+import com.tal.hebrewdino.ui.domain.TrainingInstructionCopy
 import com.tal.hebrewdino.ui.domain.TrainingV1Config
 import com.tal.hebrewdino.ui.data.PlayerAddress
 
@@ -44,16 +45,19 @@ internal fun PickLetterQuestionRenderer(
     modifier: Modifier = Modifier,
 ) {
     val resolvedPickLetterInstructionOverride =
-        if ((chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) &&
-            stationId == Chapter1StationOrder.TAP_LETTER &&
-            chapter1PlayerAddress != null
-        ) {
-            when (chapter1PlayerAddress) {
-                PlayerAddress.Boy -> "\u200Fבחר את האות:"
-                PlayerAddress.Girl -> "\u200Fבחרי את האות:"
-            }
-        } else {
-            stationUiSpec.pickLetterInstructionOverride
+        when {
+            chapterId == TrainingV1Config.CHAPTER_ID &&
+                stationId == TrainingV1Config.STATION_HEAR_LETTER_CHOOSE &&
+                chapter1PlayerAddress != null ->
+                TrainingInstructionCopy.pickLetter(chapter1PlayerAddress)
+            (chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) &&
+                stationId == Chapter1StationOrder.TAP_LETTER &&
+                chapter1PlayerAddress != null ->
+                when (chapter1PlayerAddress) {
+                    PlayerAddress.Boy -> "\u200Fבחר את האות:"
+                    PlayerAddress.Girl -> "\u200Fבחרי את האות:"
+                }
+            else -> stationUiSpec.pickLetterInstructionOverride
         }
     Column(
         modifier = modifier.fillMaxSize().scale(entryPulseScale),
