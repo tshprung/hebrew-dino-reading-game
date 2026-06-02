@@ -105,9 +105,16 @@ fun Chapter3MidBoostScreen(
 
 @Composable
 fun Chapter4MidBoostScreen(
+    companionCharacter: DinoCharacter?,
     onContinue: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val voiceRawResId =
+        when (companionCharacter) {
+            DinoCharacter.Dino -> R.raw.ch4_story_mid_dino
+            DinoCharacter.Dina -> R.raw.ch4_story_mid_dina
+            null -> 0
+        }
     ChapterLobbyStoryLayout(
         backgroundRes = R.drawable.forest_bg_journey_road,
         title = "כיף לראות!",
@@ -118,8 +125,10 @@ fun Chapter4MidBoostScreen(
         companion = ChapterLobbyCompanion.DinoOnly,
         chapterId = 4,
         storyContext = "Chapter4MidBoostScreen",
-        voiceAssetPath = AudioClips.StoryCh4MidBoost,
-        dinoContentDescription = "דינו",
+        useCompanionDinoArt = true,
+        companionCharacter = companionCharacter ?: DinoCharacter.Dino,
+        voiceRawResId = voiceRawResId,
+        dinoContentDescription = (companionCharacter ?: DinoCharacter.Dino).displayNameHebrew(),
         onContinue = onContinue,
         modifier = modifier,
     )

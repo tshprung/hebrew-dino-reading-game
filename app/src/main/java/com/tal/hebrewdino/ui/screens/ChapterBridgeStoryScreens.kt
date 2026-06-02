@@ -102,9 +102,16 @@ fun Chapter3OutroScreen(
 
 @Composable
 fun Chapter4IntroScreen(
+    companionCharacter: DinoCharacter?,
     onContinue: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val voiceRawResId =
+        when (companionCharacter) {
+            DinoCharacter.Dino -> R.raw.ch4_story_intro_dino
+            DinoCharacter.Dina -> R.raw.ch4_story_intro_dina
+            null -> 0
+        }
     ChapterLobbyStoryLayout(
         backgroundRes = R.drawable.forest_bg_journey_road,
         title = "פרק 4 - סיבוך בדרך",
@@ -120,8 +127,10 @@ fun Chapter4IntroScreen(
         chapterId = 4,
         storyContext = "Chapter4IntroScreen",
         narrationPlaying = false,
-        voiceAssetPath = AudioClips.StoryCh4Intro,
-        dinoContentDescription = "דינו",
+        useCompanionDinoArt = true,
+        companionCharacter = companionCharacter ?: DinoCharacter.Dino,
+        voiceRawResId = voiceRawResId,
+        dinoContentDescription = (companionCharacter ?: DinoCharacter.Dino).displayNameHebrew(),
         onContinue = onContinue,
         modifier = modifier,
     )
@@ -129,22 +138,41 @@ fun Chapter4IntroScreen(
 
 @Composable
 fun Chapter4OutroScreen(
+    companionCharacter: DinoCharacter?,
     onContinue: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val voiceRawResId =
+        when (companionCharacter) {
+            DinoCharacter.Dino -> R.raw.ch4_story_outro_dino
+            DinoCharacter.Dina -> R.raw.ch4_story_outro_dina
+            null -> 0
+        }
+    val body =
+        when (companionCharacter) {
+            DinoCharacter.Dino, null ->
+                "מצאנו רמז! האות פ…\n" +
+                    "זֹאת לֹא הַבֵּיצָה הָאַחֲרוֹנָה, אֲבָל זֶה רֶמֶז חָשׁוּב!\n" +
+                    "\n" +
+                    "דינו ממשיך קדימה — העקבות מובילות הלאה, והמסע עוד לא נגמר."
+            DinoCharacter.Dina ->
+                "מצאנו רמז! האות פ…\n" +
+                    "זֹאת לֹא הַבֵּיצָה הָאַחֲרוֹנָה, אֲבָל זֶה רֶמֶז חָשׁוּב!\n" +
+                    "\n" +
+                    "דינה ממשיכה קדימה — העקבות מובילות הלאה, והמסע עוד לא נגמר."
+        }
     ChapterLobbyStoryLayout(
         backgroundRes = R.drawable.forest_bg_journey_road,
         title = "מצאנו רמז!",
-        body =
-            "מצאנו רמז! האות פ… הביצה בטח קרובה!\n" +
-                "\n" +
-                "דינו ממשיך קדימה — העקבות מובילות הלאה, והמסע עוד לא נגמר.",
+        body = body,
         companion = ChapterLobbyCompanion.DinoOnly,
         chapterId = 4,
         storyContext = "Chapter4OutroScreen",
         narrationPlaying = false,
-        voiceAssetPath = AudioClips.StoryCh4ClueOutro,
-        dinoContentDescription = "דינו",
+        useCompanionDinoArt = true,
+        companionCharacter = companionCharacter ?: DinoCharacter.Dino,
+        voiceRawResId = voiceRawResId,
+        dinoContentDescription = (companionCharacter ?: DinoCharacter.Dino).displayNameHebrew(),
         onContinue = onContinue,
         betweenTitleAndBody = {
             Row(

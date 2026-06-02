@@ -34,6 +34,7 @@ import kotlinx.coroutines.launch
 internal fun NavGraphBuilder.chapterFourToSixGraph(host: AppNavHostState) {
     composable(NavRoutes.Ch4MidBoost) {
         Chapter4MidBoostScreen(
+            companionCharacter = host.companionCharacter,
             onContinue = {
                 host.scope.launch { host.progress.markChapter4MidBoostSeen() }
                 host.navController.navigate(NavRoutes.Ch4Journey) {
@@ -45,6 +46,7 @@ internal fun NavGraphBuilder.chapterFourToSixGraph(host: AppNavHostState) {
 
     composable(NavRoutes.Ch4Intro) {
         Chapter4IntroScreen(
+            companionCharacter = host.companionCharacter,
             onContinue = {
                 host.scope.launch { host.progress.markChapter4IntroSeen() }
                 host.navController.navigate(NavRoutes.Ch4Letters) {
@@ -177,6 +179,7 @@ internal fun NavGraphBuilder.chapterFourToSixGraph(host: AppNavHostState) {
 
     composable(NavRoutes.Ch4Outro) {
         Chapter4OutroScreen(
+            companionCharacter = host.companionCharacter,
             onContinue = {
                 host.navController.navigate(NavRoutes.Chapters) {
                     popUpTo(NavRoutes.Ch4Outro) { inclusive = true }
