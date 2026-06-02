@@ -67,18 +67,6 @@ object Chapter1DinoCompanionPilot {
 
     @RawRes val chapterComplete: Int = R.raw.dino_chapter1_complete_neutral
 
-    @RawRes
-    fun successClipForStation(stationId: Int): Int =
-        when (stationId.coerceIn(1, Chapter1Config.STATION_COUNT)) {
-            1 -> R.raw.dino_success_station_1
-            2 -> R.raw.dino_success_station_2
-            3 -> R.raw.dino_success_station_3
-            4 -> R.raw.dino_success_station_4
-            5 -> R.raw.dino_success_station_5
-            6 -> R.raw.dino_success_station_6
-            else -> R.raw.dino_success_station_1
-        }
-
     fun journeyProgressCueForStation(stationId: Int): String =
         when (stationId.coerceIn(1, Chapter1Config.STATION_COUNT)) {
             1, 4 -> "\u200Fמצאנו רמז!"

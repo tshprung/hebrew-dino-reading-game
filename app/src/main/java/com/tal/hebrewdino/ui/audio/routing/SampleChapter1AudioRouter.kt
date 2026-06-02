@@ -120,13 +120,13 @@ object SampleChapter1AudioRouter : GameAudioRouter {
         val sid = event.stationId.coerceIn(1, 6)
         val rawResId =
             when (sid) {
-                1 -> R.raw.dino_success_station_1
-                2 -> R.raw.dino_success_station_2
-                3 -> R.raw.dino_success_station_3
-                4 -> R.raw.dino_success_station_4
-                5 -> R.raw.dino_success_station_5
-                6 -> R.raw.dino_success_station_6
-                else -> R.raw.dino_success_station_1
+                1 -> R.raw.reward_success_neutral_01
+                2 -> R.raw.reward_success_neutral_02
+                3 -> R.raw.reward_success_neutral_03
+                4 -> R.raw.reward_success_neutral_04
+                5 -> R.raw.reward_success_neutral_05
+                6 -> R.raw.reward_success_neutral_06
+                else -> R.raw.reward_success_neutral_01
             }
         return AudioPlan(
             steps =

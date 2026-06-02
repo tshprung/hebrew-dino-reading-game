@@ -437,9 +437,16 @@ fun GameScreen(
         if (!devToolsEnabled || gameViewModel.completionCallbackFired) return
         gameViewModel.completionCallbackFired = true
         gameViewModel.inputLocked = true
-        voice.stopNow()
-        cancelFeedbackVoice()
         scope.launch {
+            if (audioEnabled) {
+                GameAudioActions.finishStationVoiceBeforeReward(
+                    audioRuntime = audioRuntime,
+                    cancelFeedbackVoice = { cancelFeedbackVoice() },
+                )
+            } else {
+                voice.stopNow()
+                cancelFeedbackVoice()
+            }
             val correct = session.totalQuestions.coerceAtLeast(1)
             onComplete(stationId, correct, session.mistakeCount)
         }
@@ -529,6 +536,17 @@ fun GameScreen(
             session = session,
             gameViewModel = gameViewModel,
             onComplete = onComplete,
+            prepareForRewardNavigation =
+                if (audioEnabled) {
+                    {
+                        GameAudioActions.finishStationVoiceBeforeReward(
+                            audioRuntime = audioRuntime,
+                            cancelFeedbackVoice = { cancelFeedbackVoice() },
+                        )
+                    }
+                } else {
+                    null
+                },
             modifier = modifier,
         )
         return

@@ -195,6 +195,12 @@ internal object AdvanceAfterRoundActions {
                 stationId = stationId,
                 timeTakenSeconds = timeTakenSeconds,
             )
+            if (audioEnabled) {
+                GameAudioActions.finishStationVoiceBeforeReward(
+                    audioRuntime = audioRuntime,
+                    cancelFeedbackVoice = cancelFeedbackVoice,
+                )
+            }
             onComplete(stationId, session.correctCount, session.mistakeCount)
         }
         contentAlpha.animateTo(1f, tween(BetweenQuestionFadeMs))

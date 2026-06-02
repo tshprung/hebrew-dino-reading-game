@@ -2,10 +2,10 @@ package com.tal.hebrewdino.ui.screens
 
 import com.tal.hebrewdino.R
 import com.tal.hebrewdino.ui.audio.AudioClips
+import com.tal.hebrewdino.ui.audio.InStationPraiseAudio
 import com.tal.hebrewdino.ui.audio.RawVoicePlayer
 import com.tal.hebrewdino.ui.audio.SoundPoolPlayer
 import com.tal.hebrewdino.ui.audio.VoicePlayer
-import com.tal.hebrewdino.ui.companion.Chapter1AddressAwareAudio
 import com.tal.hebrewdino.ui.data.PlayerAddress
 import com.tal.hebrewdino.ui.domain.TrainingV1Config
 import kotlinx.coroutines.CoroutineScope
@@ -178,26 +178,36 @@ internal object GameAudioActions {
         }
     }
 
+    /**
+     * Lets station feedback/praise finish, stops gameplay voice, then yields briefly so
+     * [RawVoicePlayer.release] on [GameScreen] dispose does not cut into reward speech.
+     */
+    internal const val STATION_TO_REWARD_AUDIO_HANDOFF_MS: Long = 80L
+
+    internal const val STATION_TO_REWARD_VOICE_DRAIN_MS: Long = 15_000L
+
+    suspend fun finishStationVoiceBeforeReward(
+        audioRuntime: GameAudioRuntimeState,
+        cancelFeedbackVoice: () -> Unit,
+        voiceDrainTimeoutMs: Long = STATION_TO_REWARD_VOICE_DRAIN_MS,
+    ) {
+        awaitTrackedVoices(audioRuntime, voiceDrainTimeoutMs)
+        cancelFeedbackVoice()
+        delay(STATION_TO_REWARD_AUDIO_HANDOFF_MS)
+    }
+
     suspend fun playPraiseNoImmediateRepeat(
         voice: VoicePlayer,
         audioRuntime: GameAudioRuntimeState,
         candidates: Array<String>,
-        playerAddress: PlayerAddress? = null,
+        @Suppress("UNUSED_PARAMETER") playerAddress: PlayerAddress? = null,
         chapterId: Int? = null,
         stationId: Int? = null,
         context: String = "GameAudioActions.playPraiseNoImmediateRepeat",
         rawVoice: RawVoicePlayer? = null,
     ) {
-        val requiredChapter =
-            chapterId == 1 ||
-                chapterId == 2 ||
-                chapterId == 3 ||
-                chapterId == 4 ||
-                chapterId == 5 ||
-                chapterId == 6 ||
-                chapterId == TrainingV1Config.CHAPTER_ID
         val played =
-            if (requiredChapter) {
+            if (InStationPraiseAudio.usesRawPraisePool(chapterId)) {
                 if (rawVoice == null) {
                     android.util.Log.e(
                         "MissingContent",
@@ -211,25 +221,11 @@ internal object GameAudioActions {
                     )
                     null
                 } else {
-                    val addressSpecific =
-                        playerAddress?.let { Chapter1AddressAwareAudio.greatRawRes(it) }
-                    val options =
-                        buildList(2) {
-                            if (addressSpecific != null) {
-                                add("raw:feedback_great" to addressSpecific)
-                            }
-                            add("raw:vo_praise_meule" to R.raw.vo_praise_meule)
-                        }.toTypedArray()
-                    val avoid = audioRuntime.lastPraiseAssetPath
-                    val start = Random.nextInt(options.size)
-                    val pick =
-                        (0 until options.size)
-                            .asSequence()
-                            .map { options[(start + it) % options.size] }
-                            .firstOrNull { (k, _) -> avoid == null || k != avoid }
-                            ?: options.first()
-                    rawVoice.playRawBlocking(pick.second)
-                    pick.first
+                    val avoid =
+                        InStationPraiseAudio.rawResIdFromTrackingKey(audioRuntime.lastPraiseAssetPath)
+                    val rawResId = InStationPraiseAudio.pick(avoidRawResId = avoid)
+                    rawVoice.playRawBlocking(rawResId)
+                    InStationPraiseAudio.trackingKey(rawResId)
                 }
             } else {
                 voice.playFirstAvailableBlockingRandomizedNoRepeat(

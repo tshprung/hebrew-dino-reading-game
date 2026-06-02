@@ -14,11 +14,13 @@ internal fun GameCompletionSafety(
     session: LevelSession,
     gameViewModel: GameViewModel,
     onComplete: (stationId: Int, correctCount: Int, mistakeCount: Int) -> Unit,
+    prepareForRewardNavigation: (suspend () -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     LaunchedEffect(stationId, sessionCurrentIndex) {
         if (!gameViewModel.completionCallbackFired) {
             gameViewModel.completionCallbackFired = true
+            prepareForRewardNavigation?.invoke()
             onComplete(stationId, session.correctCount, session.mistakeCount)
         }
     }

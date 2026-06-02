@@ -176,7 +176,7 @@ class SampleChapter1AudioRouterTest {
                     listOf(
                         AudioStep(
                             lane = AudioLane.RawVoice,
-                            source = AudioSource.RawRes(R.raw.dino_success_station_5),
+                            source = AudioSource.RawRes(R.raw.reward_success_neutral_05),
                             blocking = true,
                         ),
                     ),

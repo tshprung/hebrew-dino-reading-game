@@ -27,6 +27,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -226,6 +227,14 @@ fun RewardScreen(
                 null
             }
         }
+    val rewardVisitKey = remember(levelId, rewardChapterId) { "${rewardChapterId ?: 0}:$levelId" }
+    val companionForRewardPicker by rememberUpdatedState(
+        if (chapter1DinoCompanionPilot) {
+            chapter1CompanionCharacter
+        } else {
+            selectedCompanionCharacter
+        },
+    )
 
     DisposableEffect(lifecycleOwner, levelId) {
         val observer =
@@ -246,11 +255,10 @@ fun RewardScreen(
     }
 
     LaunchedEffect(
-        levelId,
+        rewardVisitKey,
         chapter1DinoCompanionPilot,
         rewardSuccessRawResId,
         requireRawSuccessAudio,
-        portraitCharacter,
     ) {
         coroutineScope {
             val needsRawRewardVoice = chapter1DinoCompanionPilot || requireRawSuccessAudio || rewardSuccessRawResId != null
@@ -261,8 +269,15 @@ fun RewardScreen(
                             when {
                                 rewardSuccessRawResId != null && rewardSuccessRawResId != 0 ->
                                     rewardSuccessRawResId
-                                chapter1DinoCompanionPilot || requireRawSuccessAudio ->
-                                    RewardSuccessAudio.pickAndRemember(portraitCharacter)
+                                chapter1DinoCompanionPilot || requireRawSuccessAudio -> {
+                                    val companion =
+                                        companionForRewardPicker
+                                            ?: run {
+                                                reportRequiredRewardRawMissing("companionForRewardPicker==null")
+                                                return@launch
+                                            }
+                                    RewardSuccessAudio.pickAndRemember(companion)
+                                }
                                 else -> {
                                     reportRequiredRewardRawMissing("rewardSuccessRawResId==null")
                                     return@launch
@@ -271,6 +286,12 @@ fun RewardScreen(
                         if (clip == 0) {
                             reportRequiredRewardRawMissing("rewardClip==0")
                             return@launch
+                        }
+                        if (isDebuggable) {
+                            Log.d(
+                                "RewardScreen",
+                                "rewardVoiceStart chapterId=$rewardChapterId stationId=$levelId rawResId=$clip",
+                            )
                         }
                         companionVoicePlaying = true
                         rawVoice?.playRawBlocking(clip)
