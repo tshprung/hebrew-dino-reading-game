@@ -71,6 +71,9 @@ private const val IntroDurationMs = 450L
 
 internal const val BetweenQuestionFadeMs = 80
 
+/** Ch3/Ch6 station 1: keep pinned letter + picture visible before round transition (~0.5 s). */
+internal const val Chapter3Or6Station1SuccessHoldMs = 480L
+
 /** Chapters that use the shared six-station journey ([Chapter1StationOrder]); intros, art, and letter pools differ. */
 private val SixStationArcChapterRange = 1..5
 

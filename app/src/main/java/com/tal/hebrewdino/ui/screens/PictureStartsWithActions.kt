@@ -8,6 +8,7 @@ import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
 import com.tal.hebrewdino.ui.domain.LevelSession
 import com.tal.hebrewdino.ui.game.ChildGameAudioHooks
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 private val SagaPictureStartsWithPraiseCandidates =
@@ -112,8 +113,11 @@ internal object PictureStartsWithActions {
                     scope.launch {
                         gameViewModel.correctTapPulseLetter = picked
                         gameViewModel.correctTapPulseEpoch += 1
-                        if (audioEnabled && (chapterId == 3 || chapterId == 6) && stationId == 1) {
-                            GameAudioActions.awaitTrackedVoices(audioRuntime, 10000L)
+                        if ((chapterId == 3 || chapterId == 6) && stationId == 1) {
+                            if (audioEnabled) {
+                                GameAudioActions.awaitTrackedVoices(audioRuntime, 10000L)
+                            }
+                            delay(Chapter3Or6Station1SuccessHoldMs)
                         }
                         val isLast = session.currentIndex >= session.totalQuestions - 1
                         advanceAfterRound(isLast)

@@ -94,6 +94,10 @@ fun ChapterLobbyStoryLayout(
     voiceAssetPath: String? = null,
     /** Optional narration MP3 in `res/raw` (Season 1 Ch.1 companion story clips). */
     @RawRes voiceRawResId: Int? = null,
+    /** When set, plays this companion direct-speech bumper before [voiceRawResId] (Ch.2–6 intros). */
+    @RawRes bumperVoiceRawResId: Int? = null,
+    /** Companion direct-speech line shown while [bumperVoiceRawResId] plays; then [body] is shown. */
+    bumperBodyText: String? = null,
     bodyLineHeightOverride: TextUnit? = null,
     dinoContentDescription: String,
     /** Season 1 Ch.1: companion Dino/Dina art only. */
@@ -118,8 +122,27 @@ fun ChapterLobbyStoryLayout(
         (context.applicationContext.applicationInfo.flags and 0x2) != 0
     }
     val voicePlayer = remember(voiceAssetPath) { voiceAssetPath?.let { VoicePlayer(context = context) } }
-    val rawVoice = remember(voiceRawResId) { if (voiceRawResId != null) RawVoicePlayer(context = context) else null }
-    var autoNarrationPlaying by remember(voiceAssetPath, voiceRawResId) { mutableStateOf(false) }
+    val rawVoice =
+        remember(voiceRawResId, bumperVoiceRawResId) {
+            if (voiceRawResId != null || bumperVoiceRawResId != null) {
+                RawVoicePlayer(context = context)
+            } else {
+                null
+            }
+        }
+    var autoNarrationPlaying by remember(voiceAssetPath, voiceRawResId, bumperVoiceRawResId) {
+        mutableStateOf(false)
+    }
+    val hasIntroBumper = bumperVoiceRawResId != null
+    var showingBumperBody by remember(bumperVoiceRawResId, bumperBodyText, body) {
+        mutableStateOf(hasIntroBumper && !bumperBodyText.isNullOrBlank())
+    }
+    val visibleBody =
+        if (showingBumperBody && !bumperBodyText.isNullOrBlank()) {
+            bumperBodyText
+        } else {
+            body
+        }
 
     DisposableEffect(lifecycleOwner, voicePlayer, rawVoice) {
         val observer =
@@ -139,44 +162,59 @@ fun ChapterLobbyStoryLayout(
         }
     }
 
-    LaunchedEffect(voiceAssetPath, voiceRawResId) {
-        when {
-            voiceRawResId != null -> {
-                autoNarrationPlaying = true
-                if (voiceRawResId == 0) {
+    LaunchedEffect(voiceAssetPath, voiceRawResId, bumperVoiceRawResId, bumperBodyText) {
+        try {
+            if (bumperVoiceRawResId != null) {
+                if (bumperBodyText.isNullOrBlank()) {
                     val msg =
-                        "Missing required story narration raw resource. chapterId=$chapterId storyContext=$storyContext rawResId=0"
+                        "Missing required bumper body text. chapterId=$chapterId storyContext=$storyContext bumperVoiceRawResId=$bumperVoiceRawResId"
                     Log.e("MissingContent", msg)
                     if (isDebuggable) throw IllegalStateException(msg)
                 } else {
-                    val failure =
-                        runCatching { rawVoice?.playRawBlocking(voiceRawResId) }
-                            .exceptionOrNull()
-                    if (failure != null) {
-                        val msg =
-                            "Required story narration raw playback failed. chapterId=$chapterId storyContext=$storyContext rawResId=$voiceRawResId"
-                        Log.e("MissingContent", msg, failure)
-                        if (isDebuggable) throw failure
-                    }
+                    showingBumperBody = true
+                    autoNarrationPlaying = true
+                    playRequiredStoryRaw(
+                        rawVoice = rawVoice,
+                        rawResId = bumperVoiceRawResId,
+                        chapterId = chapterId,
+                        storyContext = storyContext,
+                        stage = "companionIntroBumper",
+                        isDebuggable = isDebuggable,
+                    )
+                    showingBumperBody = false
                 }
-                autoNarrationPlaying = false
             }
-            voiceAssetPath != null && voicePlayer != null -> {
-                autoNarrationPlaying = true
-                voicePlayer.playRequiredBlocking(
-                    assetPath = voiceAssetPath,
-                    context = "StoryNarration($storyContext)",
-                    chapterId = chapterId,
-                    stationId = null,
-                )
-                autoNarrationPlaying = false
+            when {
+                voiceRawResId != null -> {
+                    autoNarrationPlaying = true
+                    playRequiredStoryRaw(
+                        rawVoice = rawVoice,
+                        rawResId = voiceRawResId,
+                        chapterId = chapterId,
+                        storyContext = storyContext,
+                        stage = "storyNarration",
+                        isDebuggable = isDebuggable,
+                    )
+                }
+                voiceAssetPath != null && voicePlayer != null -> {
+                    autoNarrationPlaying = true
+                    voicePlayer.playRequiredBlocking(
+                        assetPath = voiceAssetPath,
+                        context = "StoryNarration($storyContext)",
+                        chapterId = chapterId,
+                        stationId = null,
+                    )
+                }
             }
+        } finally {
+            autoNarrationPlaying = false
         }
     }
 
     val talking =
         when {
-            voiceRawResId != null || voiceAssetPath != null -> autoNarrationPlaying
+            voiceRawResId != null || voiceAssetPath != null || bumperVoiceRawResId != null ->
+                autoNarrationPlaying
             else -> narrationPlaying
         }
     val isCompactLandscapePhone = ScreenFit.isCompactLandscapePhone()
@@ -291,7 +329,7 @@ fun ChapterLobbyStoryLayout(
                                         Spacer(modifier = Modifier.height(4.dp))
                                     }
                                     Text(
-                                        text = body,
+                                        text = visibleBody,
                                         style =
                                             MaterialTheme.typography.bodyLarge.copy(
                                                 fontWeight = FontWeight.SemiBold,
@@ -372,7 +410,7 @@ fun ChapterLobbyStoryLayout(
                                     Spacer(modifier = Modifier.height(10.dp))
                                 }
                                 Text(
-                                    text = body,
+                                    text = visibleBody,
                                     style = MaterialTheme.typography.titleLarge.copy(lineHeight = bodyLineHeightOverride ?: 30.sp),
                                     color = storyTextColor,
                                     textAlign = TextAlign.Center,
@@ -443,6 +481,39 @@ fun ChapterLobbyStoryLayout(
                 )
             }
         }
+    }
+}
+
+private suspend fun playRequiredStoryRaw(
+    rawVoice: RawVoicePlayer?,
+    @RawRes rawResId: Int,
+    chapterId: Int?,
+    storyContext: String,
+    stage: String,
+    isDebuggable: Boolean,
+) {
+    if (rawResId == 0) {
+        val msg =
+            "Missing required story raw resource. chapterId=$chapterId storyContext=$storyContext stage=$stage rawResId=0"
+        Log.e("MissingContent", msg)
+        if (isDebuggable) throw IllegalStateException(msg)
+        return
+    }
+    if (rawVoice == null) {
+        val msg =
+            "Missing required story raw player. chapterId=$chapterId storyContext=$storyContext stage=$stage rawResId=$rawResId"
+        Log.e("MissingContent", msg)
+        if (isDebuggable) throw IllegalStateException(msg)
+        return
+    }
+    val failure =
+        runCatching { rawVoice.playRawBlocking(rawResId) }
+            .exceptionOrNull()
+    if (failure != null) {
+        val msg =
+            "Required story raw playback failed. chapterId=$chapterId storyContext=$storyContext stage=$stage rawResId=$rawResId"
+        Log.e("MissingContent", msg, failure)
+        if (isDebuggable) throw failure
     }
 }
 

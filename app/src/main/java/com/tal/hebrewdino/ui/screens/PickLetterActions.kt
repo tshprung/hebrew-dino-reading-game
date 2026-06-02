@@ -198,6 +198,50 @@ internal object PickLetterActions {
                         val isLast = session.currentIndex >= session.totalQuestions - 1
                         advanceAfterRound(isLast, false)
                     }
+                } else if (audioEnabled && isChapter3AudioLetterRecognitionStation) {
+                    scope.launch {
+                        cancelFeedbackVoice()
+                        val job =
+                            GameAudioActions.launchFeedbackVoiceNoCancel(
+                                audioEnabled = true,
+                                scope = scope,
+                                audioRuntime = audioRuntime,
+                            ) {
+                                val resId = AudioClips.letterNameRawResId(picked)
+                                if (resId == null) {
+                                    android.util.Log.e(
+                                        "MissingContent",
+                                        "Missing required letter-name audio. chapterId=$chapterId stationId=$stationId context=PickLetterActions.handlePick(correct,ch3AudioRecognition) stage=missing raw letter-name mapping letter='$picked'",
+                                    )
+                                    rawVoice?.playRawBlocking(0)
+                                } else if (rawVoice == null) {
+                                    android.util.Log.e(
+                                        "MissingContent",
+                                        "Missing required letter-name audio. chapterId=$chapterId stationId=$stationId context=PickLetterActions.handlePick(correct,ch3AudioRecognition) stage=rawVoice=null expectedRawResId=$resId",
+                                    )
+                                    voice.playRequiredBlocking(
+                                        assetPath = "",
+                                        context = "PickLetterActions.handlePick(correct,ch3AudioRecognition,rawVoice=null)",
+                                        chapterId = chapterId,
+                                        stationId = stationId,
+                                    )
+                                } else {
+                                    rawVoice.playRawBlocking(resId)
+                                }
+                                GameAudioActions.playPraiseNoImmediateRepeat(
+                                    voice = voice,
+                                    audioRuntime = audioRuntime,
+                                    candidates = HighlightedWordDonePraiseCandidates,
+                                    chapterId = chapterId,
+                                    stationId = stationId,
+                                    context = "PickLetterActions.handlePick(correct,ch3AudioRecognitionPraise)",
+                                    rawVoice = rawVoice,
+                                )
+                            }
+                        GameAudioActions.joinSilently(job)
+                        val isLast = session.currentIndex >= session.totalQuestions - 1
+                        advanceAfterRound(isLast, false)
+                    }
                 } else if (audioEnabled && isTrainingStation1) {
                     scope.launch {
                         cancelFeedbackVoice()

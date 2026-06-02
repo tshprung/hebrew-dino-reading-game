@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.sp
 import com.tal.hebrewdino.R
+import com.tal.hebrewdino.ui.audio.StoryIntroBumperAudio
 import com.tal.hebrewdino.ui.companion.displayNameHebrew
 import com.tal.hebrewdino.ui.data.DinoCharacter
 
@@ -41,6 +42,8 @@ fun Chapter2IntroScreen(
         useCompanionDinoArt = true,
         companionCharacter = companionCharacter,
         narrationPlaying = false,
+        bumperVoiceRawResId = StoryIntroBumperAudio.introBumperRawRes(2, companionCharacter),
+        bumperBodyText = StoryIntroBumperAudio.introBumperBodyText(2, companionCharacter),
         voiceRawResId = voiceRawResId,
         bodyLineHeightOverride = 20.sp,
         dinoContentDescription = companionCharacter.displayNameHebrew(),

@@ -15,40 +15,43 @@ object RewardSuccessAudioSession {
 }
 
 /**
- * Diversified reward-screen success voice lines (`res/raw` MP3 only).
- * Does not include legacy `dino_success_station_*` clips.
+ * Reward-screen companion speech (`res/raw` MP3 only).
+ * Each companion has its own emotional pool — no neutral narrator clips in active selection.
  */
 object RewardSuccessAudio {
-    private val NeutralClips: IntArray =
+    private val DinoClips: IntArray =
         intArrayOf(
-            R.raw.reward_success_neutral_01,
-            R.raw.reward_success_neutral_02,
-            R.raw.reward_success_neutral_03,
-            R.raw.reward_success_neutral_04,
-            R.raw.reward_success_neutral_05,
-            R.raw.reward_success_neutral_06,
-            R.raw.reward_success_neutral_07,
-            R.raw.reward_success_neutral_08,
-            R.raw.reward_success_neutral_09,
-            R.raw.reward_success_neutral_10,
-            R.raw.reward_success_neutral_11,
-            R.raw.reward_success_neutral_12,
+            R.raw.reward_dino_01,
+            R.raw.reward_dino_02,
+            R.raw.reward_dino_03,
+            R.raw.reward_dino_04,
+            R.raw.reward_dino_05,
+            R.raw.reward_dino_06,
+            R.raw.reward_dino_07,
+            R.raw.reward_dino_08,
         )
 
-    @RawRes val dinoClip: Int = R.raw.reward_success_dino_01
-
-    @RawRes val dinaClip: Int = R.raw.reward_success_dina_01
-
-    fun neutralPool(): IntArray = NeutralClips
+    private val DinaClips: IntArray =
+        intArrayOf(
+            R.raw.reward_dina_01,
+            R.raw.reward_dina_02,
+            R.raw.reward_dina_03,
+            R.raw.reward_dina_04,
+            R.raw.reward_dina_05,
+            R.raw.reward_dina_06,
+            R.raw.reward_dina_07,
+            R.raw.reward_dina_08,
+        )
 
     fun poolFor(companion: DinoCharacter): IntArray =
         when (companion) {
-            DinoCharacter.Dino -> NeutralClips + dinoClip
-            DinoCharacter.Dina -> NeutralClips + dinaClip
+            DinoCharacter.Dino -> DinoClips
+            DinoCharacter.Dina -> DinaClips
         }
 
     /**
-     * Picks a reward success clip, avoiding [avoidRawResId] when the pool has another option.
+     * Picks a reward speech clip, avoiding [avoidRawResId] when it is in this companion's pool
+     * and another option exists.
      */
     @RawRes
     fun pick(
@@ -58,7 +61,7 @@ object RewardSuccessAudio {
     ): Int {
         val pool = poolFor(companion)
         val candidates =
-            if (avoidRawResId != null && pool.size > 1) {
+            if (avoidRawResId != null && pool.contains(avoidRawResId) && pool.size > 1) {
                 pool.filter { it != avoidRawResId }.toIntArray()
             } else {
                 pool

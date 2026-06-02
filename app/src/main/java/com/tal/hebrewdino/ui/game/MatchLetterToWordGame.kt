@@ -80,6 +80,16 @@ private fun Modifier.offsetYIfNonZero(y: Dp): Modifier =
         this
     }
 
+/** Training rounds 6 and 10 (MatchLetterToWord): ~5 mm lower (~19 dp). */
+private fun trainingMatchLetterToWordExtraDownDp(chapterId: Int?, stationId: Int?): Dp =
+    if (chapterId == TrainingV1Config.CHAPTER_ID &&
+        stationId == TrainingV1Config.STATION_MATCH_LETTER_TO_WORD
+    ) {
+        19.dp
+    } else {
+        0.dp
+    }
+
 @Composable
 fun MatchLetterToWordGame(
     choices: List<LessonChoice>,
@@ -256,12 +266,9 @@ fun MatchLetterToWordGame(
                     20.dp
                 chapterId == 3 && stationId == 2 -> 20.dp
                 chapterId == 6 && stationId == 2 -> 28.dp
-                chapterId == TrainingV1Config.CHAPTER_ID &&
-                    stationId == TrainingV1Config.STATION_MATCH_LETTER_TO_WORD ->
-                    11.dp
-                else -> 0.dp
+                else -> trainingMatchLetterToWordExtraDownDp(chapterId, stationId)
             }
-        val letterRowExtraDownDp = 0.dp
+        val letterRowExtraDownDp = trainingMatchLetterToWordExtraDownDp(chapterId, stationId)
         val chapter6Station2CaptionBoost = if (chapterId == 6 && stationId == 2) 1.30f else 1f
 
         // Header stays pinned; content below scales down if needed so nothing is clipped.
@@ -934,12 +941,9 @@ private fun SixStationArcStation6Board(
                 20.dp
             chapterId == 3 && stationId == 2 -> 20.dp
             chapterId == 6 && stationId == 2 -> 28.dp
-            chapterId == TrainingV1Config.CHAPTER_ID &&
-                stationId == TrainingV1Config.STATION_MATCH_LETTER_TO_WORD ->
-                11.dp
-            else -> 0.dp
+            else -> trainingMatchLetterToWordExtraDownDp(chapterId, stationId)
         }
-    val letterRowExtraDownDp = 0.dp
+    val letterRowExtraDownDp = trainingMatchLetterToWordExtraDownDp(chapterId, stationId)
     val topGroupOffsetEffectiveY = topGroupOffsetY + headerAndCardsExtraDownDp
     val columns = wordColumn.size.coerceIn(1, 6)
     val rowInnerW = (innerW - boardHorizontalPadding * 2f).coerceAtLeast(1.dp)

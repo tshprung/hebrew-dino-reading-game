@@ -12,6 +12,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.tal.hebrewdino.R
+import com.tal.hebrewdino.ui.audio.StoryIntroBumperAudio
 import com.tal.hebrewdino.ui.companion.displayNameHebrew
 import com.tal.hebrewdino.ui.data.DinoCharacter
 
@@ -105,12 +106,15 @@ fun Chapter4IntroScreen(
     onContinue: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val portraitCharacter = companionCharacter ?: DinoCharacter.Dino
     val voiceRawResId =
         when (companionCharacter) {
             DinoCharacter.Dino -> R.raw.ch4_story_intro_dino
             DinoCharacter.Dina -> R.raw.ch4_story_intro_dina
             null -> 0
         }
+    val bumperVoiceRawResId = StoryIntroBumperAudio.introBumperRawRes(4, portraitCharacter)
+    val bumperBodyText = StoryIntroBumperAudio.introBumperBodyText(4, portraitCharacter)
     val body =
         when (companionCharacter) {
             DinoCharacter.Dino, null ->
@@ -135,9 +139,11 @@ fun Chapter4IntroScreen(
         storyContext = "Chapter4IntroScreen",
         narrationPlaying = false,
         useCompanionDinoArt = true,
-        companionCharacter = companionCharacter ?: DinoCharacter.Dino,
+        companionCharacter = portraitCharacter,
+        bumperVoiceRawResId = bumperVoiceRawResId,
+        bumperBodyText = bumperBodyText,
         voiceRawResId = voiceRawResId,
-        dinoContentDescription = (companionCharacter ?: DinoCharacter.Dino).displayNameHebrew(),
+        dinoContentDescription = portraitCharacter.displayNameHebrew(),
         onContinue = onContinue,
         modifier = modifier,
     )
@@ -209,12 +215,15 @@ fun Chapter5IntroScreen(
     onContinue: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val portraitCharacter = companionCharacter ?: DinoCharacter.Dino
     val voiceRawResId =
         when (companionCharacter) {
             DinoCharacter.Dino -> R.raw.ch5_story_intro_dino
             DinoCharacter.Dina -> R.raw.ch5_story_intro_dina
             null -> 0
         }
+    val bumperVoiceRawResId = StoryIntroBumperAudio.introBumperRawRes(5, portraitCharacter)
+    val bumperBodyText = StoryIntroBumperAudio.introBumperBodyText(5, portraitCharacter)
     val body =
         when (companionCharacter) {
             DinoCharacter.Dino, null ->
@@ -239,9 +248,11 @@ fun Chapter5IntroScreen(
         storyContext = "Chapter5IntroScreen",
         narrationPlaying = false,
         useCompanionDinoArt = true,
-        companionCharacter = companionCharacter ?: DinoCharacter.Dino,
+        companionCharacter = portraitCharacter,
+        bumperVoiceRawResId = bumperVoiceRawResId,
+        bumperBodyText = bumperBodyText,
         voiceRawResId = voiceRawResId,
-        dinoContentDescription = (companionCharacter ?: DinoCharacter.Dino).displayNameHebrew(),
+        dinoContentDescription = portraitCharacter.displayNameHebrew(),
         onContinue = onContinue,
         modifier = modifier,
     )
@@ -297,12 +308,15 @@ fun Chapter6IntroScreen(
     onContinue: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val portraitCharacter = companionCharacter ?: DinoCharacter.Dino
     val voiceRawResId =
         when (companionCharacter) {
             DinoCharacter.Dino -> R.raw.ch6_story_intro_dino
             DinoCharacter.Dina -> R.raw.ch6_story_intro_dina
             null -> 0
         }
+    val bumperVoiceRawResId = StoryIntroBumperAudio.introBumperRawRes(6, portraitCharacter)
+    val bumperBodyText = StoryIntroBumperAudio.introBumperBodyText(6, portraitCharacter)
     val body =
         when (companionCharacter) {
             DinoCharacter.Dino, null ->
@@ -325,9 +339,11 @@ fun Chapter6IntroScreen(
         storyContext = "Chapter6IntroScreen",
         narrationPlaying = false,
         useCompanionDinoArt = true,
-        companionCharacter = companionCharacter ?: DinoCharacter.Dino,
+        companionCharacter = portraitCharacter,
+        bumperVoiceRawResId = bumperVoiceRawResId,
+        bumperBodyText = bumperBodyText,
         voiceRawResId = voiceRawResId,
-        dinoContentDescription = (companionCharacter ?: DinoCharacter.Dino).displayNameHebrew(),
+        dinoContentDescription = portraitCharacter.displayNameHebrew(),
         onContinue = onContinue,
         modifier = modifier,
     )

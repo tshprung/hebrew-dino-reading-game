@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.OutlinedButton
@@ -95,6 +96,9 @@ fun ImageToWordGame(
         val isCompactLandscapePhone = ScreenFit.isCompactLandscapePhone()
         val isTrainingStation3 =
             chapterId == TrainingV1Config.CHAPTER_ID && stationId == TrainingV1Config.STATION_PICTURE_CHOOSE_WORD
+        val isChapter3Or6Station6ImageToWord =
+            (chapterId == 3 || chapterId == 6) && stationId == 6
+        val isInstructionWrapContent = isTrainingStation3 || isChapter3Or6Station6ImageToWord
 
         // Match the same card sizing math as PictureStartsWith/ImageMatch (Episode 1/2 station 4).
         val cardGap = 10.dp
@@ -109,14 +113,18 @@ fun ImageToWordGame(
         if (isCompactLandscapePhone) {
             pictureCardW *= 0.70f
         }
+        if (isChapter3Or6Station6ImageToWord) {
+            pictureCardW *= 0.70f
+        }
         val pictureCardH = pictureCardW * LessonChoiceCardPictureAspect
         val chapter3Station6ExtraDown = if (chapterId == 3 && stationId == 6) 19.dp else 0.dp
         val chapter6Station6ExtraDown = if (chapterId == 6 && stationId == 6) 38.dp else 0.dp
+        // Training rounds 3 and 8 (ImageToWord): ~5 mm lower than default (~19 dp).
         val trainingImageToWordExtraDown =
-            when {
-                isTrainingStation3 && trainingRoundIndex == 8 -> 11.dp
-                isTrainingStation3 -> 19.dp
-                else -> 0.dp
+            if (isTrainingStation3 && trainingRoundIndex in setOf(3, 8)) {
+                19.dp
+            } else {
+                0.dp
             }
         val baseDown = if (isCompactLandscapePhone) (-10).dp else 0.dp
         val totalDown = baseDown + chapter3Station6ExtraDown + chapter6Station6ExtraDown + trainingImageToWordExtraDown
@@ -148,7 +156,13 @@ fun ImageToWordGame(
                     textAlign = TextAlign.Center,
                     modifier =
                         Modifier
-                            .fillMaxWidth()
+                            .then(
+                                if (isInstructionWrapContent) {
+                                    Modifier.wrapContentWidth(Alignment.CenterHorizontally)
+                                } else {
+                                    Modifier.fillMaxWidth()
+                                },
+                            )
                             .widthIn(max = w - 24.dp)
                             .padding(top = if (isCompactLandscapePhone) 2.dp else 6.dp, bottom = if (isCompactLandscapePhone) 6.dp else 10.dp)
                             .background(Color.White.copy(alpha = 0.72f), RoundedCornerShape(18.dp))
@@ -167,7 +181,13 @@ fun ImageToWordGame(
                     val pictureTapReplays = onPictureTapReplayWord != null
                     val innerScale =
                         innerPictureScaleForChoice(correctChoice) *
-                            if (isCompactLandscapePhone) 1.50f else 1f
+                            if (isChapter3Or6Station6ImageToWord) {
+                                0.70f
+                            } else if (isCompactLandscapePhone) {
+                                1.50f
+                            } else {
+                                1f
+                            }
                     LessonChoiceCard(
                         choice = correctChoice,
                         enabled = enabled && pictureTapReplays,
@@ -293,7 +313,7 @@ fun ImageToWordGame(
                                 .padding(horizontal = 10.dp, vertical = if (isCompactLandscapePhone) 4.dp else 6.dp),
                         contentAlignment = Alignment.Center,
                     ) {
-                        if (isTrainingStation3) {
+                        if (isTrainingStation3 || isChapter3Or6Station6ImageToWord) {
                             AutoFitSingleLineText(
                                 text = choice.word,
                                 maxWidth = optionW - 20.dp,

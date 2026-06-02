@@ -3,6 +3,7 @@ package com.tal.hebrewdino.ui.screens
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.tal.hebrewdino.R
+import com.tal.hebrewdino.ui.audio.StoryIntroBumperAudio
 import com.tal.hebrewdino.ui.companion.displayNameHebrew
 import com.tal.hebrewdino.ui.data.DinoCharacter
 
@@ -12,12 +13,15 @@ fun Chapter3IntroScreen(
     onContinue: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val portraitCharacter = companionCharacter ?: DinoCharacter.Dino
     val voiceRawResId =
         when (companionCharacter) {
             DinoCharacter.Dino -> R.raw.ch3_story_intro_dino
             DinoCharacter.Dina -> R.raw.ch3_story_intro_dina
             null -> 0
         }
+    val bumperVoiceRawResId = StoryIntroBumperAudio.introBumperRawRes(3, portraitCharacter)
+    val bumperBodyText = StoryIntroBumperAudio.introBumperBodyText(3, portraitCharacter)
     val body =
         when (companionCharacter) {
             DinoCharacter.Dino, null ->
@@ -41,10 +45,12 @@ fun Chapter3IntroScreen(
         chapterId = 3,
         storyContext = "Chapter3IntroScreen",
         useCompanionDinoArt = true,
-        companionCharacter = companionCharacter ?: DinoCharacter.Dino,
+        companionCharacter = portraitCharacter,
         narrationPlaying = false,
+        bumperVoiceRawResId = bumperVoiceRawResId,
+        bumperBodyText = bumperBodyText,
         voiceRawResId = voiceRawResId,
-        dinoContentDescription = (companionCharacter ?: DinoCharacter.Dino).displayNameHebrew(),
+        dinoContentDescription = portraitCharacter.displayNameHebrew(),
         onContinue = onContinue,
         modifier = modifier,
     )
