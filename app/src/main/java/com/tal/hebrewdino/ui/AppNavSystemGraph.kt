@@ -260,6 +260,7 @@ internal fun NavGraphBuilder.systemAndTrainingGraph(host: AppNavHostState) {
 
     composable(NavRoutes.TrainingIntro) {
         TrainingV1IntroScreen(
+            companionCharacter = host.companionCharacter,
             onContinue = { host.navController.navigate("${NavRoutes.TrainingRound}/1") },
         )
     }
@@ -288,11 +289,13 @@ internal fun NavGraphBuilder.systemAndTrainingGraph(host: AppNavHostState) {
                     }
                 }
             },
+            playerAddress = host.playerAddress,
         )
     }
 
     composable(NavRoutes.TrainingComplete) {
         TrainingV1CompleteScreen(
+            companionCharacter = host.companionCharacter,
             onContinue = {
                 host.navController.navigate(NavRoutes.Chapters) {
                     popUpTo(NavRoutes.TrainingIntro) { inclusive = true }

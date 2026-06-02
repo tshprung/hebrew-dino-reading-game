@@ -258,17 +258,10 @@ fun MatchLetterToWordGame(
                 chapterId == 6 && stationId == 2 -> 28.dp
                 chapterId == TrainingV1Config.CHAPTER_ID &&
                     stationId == TrainingV1Config.STATION_MATCH_LETTER_TO_WORD ->
-                    38.dp
+                    11.dp
                 else -> 0.dp
             }
-        val letterRowExtraDownDp =
-            if (chapterId == TrainingV1Config.CHAPTER_ID &&
-                stationId == TrainingV1Config.STATION_MATCH_LETTER_TO_WORD
-            ) {
-                15.dp
-            } else {
-                0.dp
-            }
+        val letterRowExtraDownDp = 0.dp
         val chapter6Station2CaptionBoost = if (chapterId == 6 && stationId == 2) 1.30f else 1f
 
         // Header stays pinned; content below scales down if needed so nothing is clipped.
@@ -943,17 +936,10 @@ private fun SixStationArcStation6Board(
             chapterId == 6 && stationId == 2 -> 28.dp
             chapterId == TrainingV1Config.CHAPTER_ID &&
                 stationId == TrainingV1Config.STATION_MATCH_LETTER_TO_WORD ->
-                38.dp
+                11.dp
             else -> 0.dp
         }
-    val letterRowExtraDownDp =
-        if (chapterId == TrainingV1Config.CHAPTER_ID &&
-            stationId == TrainingV1Config.STATION_MATCH_LETTER_TO_WORD
-        ) {
-            15.dp
-        } else {
-            0.dp
-        }
+    val letterRowExtraDownDp = 0.dp
     val topGroupOffsetEffectiveY = topGroupOffsetY + headerAndCardsExtraDownDp
     val columns = wordColumn.size.coerceIn(1, 6)
     val rowInnerW = (innerW - boardHorizontalPadding * 2f).coerceAtLeast(1.dp)

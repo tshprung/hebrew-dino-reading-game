@@ -581,7 +581,11 @@ internal suspend fun speakPromptForQuestion(
             }
         }
         is Question.ImageMatchQuestion -> {
-            if ((chapterId == 3 || chapterId == 6) && stationId == 6) {
+            if (
+                ((chapterId == 3 || chapterId == 6) && stationId == 6) ||
+                    (chapterId == TrainingV1Config.CHAPTER_ID &&
+                        stationId == TrainingV1Config.STATION_PICTURE_CHOOSE_WORD)
+            ) {
                 if (rawVoice == null) {
                     android.util.Log.e(
                         "MissingContent",

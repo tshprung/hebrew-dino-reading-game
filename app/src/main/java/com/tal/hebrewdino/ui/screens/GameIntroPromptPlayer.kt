@@ -288,7 +288,11 @@ internal suspend fun playIntroPrompt(
 
     if (stationTemplateId == StationTemplateId.ImageToWord && q is Question.ImageMatchQuestion) {
         sfx.stopAllStreams()
-        if (chapterId == 3 || chapterId == 6) {
+        if (
+            chapterId == 3 ||
+                chapterId == 6 ||
+                chapterId == TrainingV1Config.CHAPTER_ID
+        ) {
             if (rawVoice == null) {
                 android.util.Log.e(
                     "MissingContent",

@@ -130,7 +130,12 @@ object StationBehaviorRegistry {
                 stationId == FINALE_PICTURE_LETTER_MATCH) ||
                 ((chapterId == 3 || chapterId == 6) && stationId == 2) ||
                 (chapterId == TrainingV1Config.CHAPTER_ID && stationId == TrainingV1Config.STATION_MATCH_LETTER_TO_WORD)
-        val matchLetterVerticalNudgeDp = if (chapterId == TrainingV1Config.CHAPTER_ID) 0f else 19f
+        val matchLetterVerticalNudgeDp =
+            if (chapterId == TrainingV1Config.CHAPTER_ID) {
+                0f
+            } else {
+                19f
+            }
         val showBetweenRoundIntroPulse =
             !(isSagaEpisode && stationId == FINALE_PICTURE_LETTER_MATCH) &&
                 !((chapterId == 3 || chapterId == 6) && stationId == 2) &&
@@ -474,7 +479,7 @@ object StationBehaviorRegistry {
                     helpControlsEnabled = false,
                     replayMode = StationReplayMode.None,
                     hintMode = StationHintMode.None,
-                    imageToWordInstructionText = StationInstructionCopy.TrainingChooseWordForPicture,
+                    imageToWordInstructionText = StationInstructionCopy.Chapter3ImageToWord,
                     contentTopInsetDp = 56f,
                 )
             TrainingV1Config.STATION_FIND_HEARD_LETTER_IN_GRID ->

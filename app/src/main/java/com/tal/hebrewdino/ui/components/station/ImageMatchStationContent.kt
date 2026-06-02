@@ -27,6 +27,7 @@ fun Chapter3Station6ImageToWordStationContent(
     instructionText: String,
     chapterId: Int,
     stationId: Int,
+    trainingRoundIndex: Int? = null,
     onPictureTapReplayWord: (() -> Unit)? = null,
     onWordPressed: (String) -> Unit,
     onAttempt: (String) -> Boolean,
@@ -39,6 +40,7 @@ fun Chapter3Station6ImageToWordStationContent(
         instructionText = instructionText,
         chapterId = chapterId,
         stationId = stationId,
+        trainingRoundIndex = trainingRoundIndex,
         onPictureTapReplayWord = onPictureTapReplayWord,
         onWordPressed = onWordPressed,
         innerPictureScaleForChoice = { choice ->

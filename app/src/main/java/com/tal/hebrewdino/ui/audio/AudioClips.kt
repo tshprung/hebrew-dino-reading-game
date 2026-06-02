@@ -99,33 +99,8 @@ object AudioClips {
     const val SfxCorrect = "audio/sfx_correct.wav"
     const val SfxWrong = "audio/sfx_wrong.wav"
 
-    // Story narration (optional).
-    // Episode 1 (forest)
-    const val StoryForestIntro = "audio/episode1_intro.wav"
-    const val StoryEggOutro = "audio/episode1_outro.wav"
-    // Episode 2–4 (optional, if you record them later)
-    const val StoryMountainApproachIntro = "audio/story_mountain_approach_intro.wav"
-    const val StoryMountainApproachOutro = "audio/story_mountain_approach_outro.wav"
-    const val StoryMountainPathIntro = "audio/story_mountain_path_intro.wav"
-    const val StoryMountainPathOutro = "audio/story_mountain_path_outro.wav"
-    const val StoryCh4Intro = "audio/story_ch4_intro.wav"
-
-    /** Episode 4 finale: clue narration (record `audio/story_ch4_clue_outro.wav`; optional until present). */
-    const val StoryCh4ClueOutro = "audio/story_ch4_clue_outro.wav"
-    /** Episode 5 (optional narration). */
-    const val StoryCh5Intro = "audio/story_ch5_intro.wav"
-    const val StoryCh5ThirdEggOutro = "audio/story_ch5_third_egg_outro.wav"
-    /** Episode 6 (optional narration). */
-    const val StoryCh6Intro = "audio/story_ch6_intro.wav"
-    const val StoryCh6Outro = "audio/story_ch6_outro.wav"
-    // Mid-chapter boost (after station 3)
-    const val StoryCh1MidBoost = "audio/story_ch1_mid_boost.wav"
-    const val StoryCh2MidBoost = "audio/story_ch2_mid_boost.wav"
-    /** Episode 3: mid-chapter encouragement after station 3. */
-    const val StoryCh3MidBoost = "audio/story_ch3_mid_boost.wav"
-    const val StoryCh4MidBoost = "audio/story_ch4_mid_boost.wav"
-    const val StoryCh5MidBoost = "audio/story_ch5_mid_boost.wav"
-    const val StoryCh6MidBoost = "audio/story_ch6_mid_boost.wav"
+    // Story narration
+    // (Season 1 Ch3–Ch6 story narration migrated to res/raw MP3 variants; WAV story narration assets removed.)
 
     /**
      * Optional per-word voice lines, keyed by catalog entry id (e.g. `w_ב_1`).

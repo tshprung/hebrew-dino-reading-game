@@ -48,9 +48,9 @@ class Chapter1Station5And6ImageMatchInnerScaleTest {
     }
 
     @Test
-    fun toast_isHalfSize() {
-        assertEquals(1f, Chapter1Station5And6ImageMatchInnerScale.innerScale(LessonChoice("w_ט_1", "ט", "טוסט", 0, R.drawable.lesson_pic_toast)), 0f)
-        assertEquals(1f, Chapter1Station5And6ImageMatchInnerScale.innerScale(LessonChoice("x", "ט", "טוסט", 0, R.drawable.lesson_pic_toast)), 0f)
+    fun toast_usesRasterPngInnerScale() {
+        assertEquals(1.05f, Chapter1Station5And6ImageMatchInnerScale.innerScale(LessonChoice("w_ט_1", "ט", "טוסט", 0, R.drawable.lesson_pic_tost)), 0f)
+        assertEquals(1.05f, Chapter1Station5And6ImageMatchInnerScale.innerScale(LessonChoice("x", "ט", "טוסט", 0, R.drawable.lesson_pic_tost)), 0f)
     }
 
     @Test

@@ -29,6 +29,26 @@ class PopBalloonsGeneratorTest {
     }
 
     @Test
+    fun trainingPopBalloons_hasTwoOrThreeTargetLetterBalloons_andAtLeastOneDistractor() {
+        val rnd = Random(99)
+        val group = TrainingV1Config.letters
+        val correct = group.first()
+        val q =
+            PopBalloonsGenerator(TrainingV1LetterPoolSpec).generateWithRepeatedCorrect(
+                rnd = rnd,
+                group = group,
+                correctAnswer = correct,
+                optionCount = 10,
+                correctBalloonCountRange = 2..3,
+            )
+        val targetCount = q.options.count { it == correct }
+        assertTrue("Expected 2..3 target balloons but got $targetCount in ${q.options}", targetCount in 2..3)
+        assertTrue("Expected at least one distractor", q.options.any { it != correct })
+        assertEquals(10, q.options.size)
+        assertEquals(correct, q.correctAnswer)
+    }
+
+    @Test
     fun generateWithRepeatedCorrect_repeatsCorrectBetween1And3_withoutForcingAllLetters() {
         val rnd = Random(123)
         val group = listOf("א", "ב", "ג", "ד", "ה", "ו", "ז", "ח", "ט", "י")

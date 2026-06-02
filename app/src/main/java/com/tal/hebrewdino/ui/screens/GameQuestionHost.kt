@@ -468,6 +468,7 @@ internal fun GameQuestionHost(
                                 ?: StationInstructionCopy.Chapter3ImageToWord,
                         chapterId = ui.chapterId,
                         stationId = ui.stationId,
+                        trainingRoundIndex = ui.trainingRoundIndex,
                         onPictureTapReplayWord =
                             if (ui.audioEnabled) {
                                 { handlers.handleImageToWordReplayCorrectChoice() }

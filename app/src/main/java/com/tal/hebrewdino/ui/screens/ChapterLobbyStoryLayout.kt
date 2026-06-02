@@ -105,6 +105,8 @@ fun ChapterLobbyStoryLayout(
     useWarmReadableStoryPanel: Boolean = false,
     /** Season 1 Ch.1 forest intro: three small eggs near the mother. */
     showMotherLostEggsCue: Boolean = false,
+    /** When false, story card shows title/body only (no Dino/mom portrait). */
+    showStoryCharacterArt: Boolean = true,
     onContinue: () -> Unit,
     /** Optional content between title and body (e.g. Episode 4 clue row). */
     betweenTitleAndBody: (@Composable () -> Unit)? = null,
@@ -301,50 +303,52 @@ fun ChapterLobbyStoryLayout(
                                     Spacer(modifier = Modifier.height(6.dp))
                                 }
 
-                                if (showMotherLostEggsCue && useCompanionMomArt && companion == ChapterLobbyCompanion.DinoAndMom) {
-                                    Chapter1ForestStoryCharacters(
-                                        dinoIdleRes = dinoIdleRes,
-                                        dinoTalkResIds = dinoTalkResIds,
-                                        dinoTalking = talking,
-                                        dinoContentDescription = dinoContentDescription,
-                                        momIdleRes = momIdleRes,
-                                        momTalkResIds = momTalkResIds,
-                                        momTalking = talking,
-                                        useCompanionMomArt = true,
-                                    )
-                                } else {
-                                    Column(
-                                        horizontalAlignment = Alignment.CenterHorizontally,
-                                        modifier =
-                                            Modifier.width(
-                                                characterSize *
-                                                    if (companion == ChapterLobbyCompanion.DinoAndMom) {
-                                                        1.5f
-                                                    } else {
-                                                        1.15f
-                                                    },
-                                            ),
-                                    ) {
-                                        AnimatedTalkingCharacter(
-                                            idleRes = dinoIdleRes,
-                                            talkFrameResIds = dinoTalkResIds,
-                                            isTalking = talking,
-                                            modifier = Modifier.size(characterSize),
-                                            contentDescription = dinoContentDescription,
+                                if (showStoryCharacterArt) {
+                                    if (showMotherLostEggsCue && useCompanionMomArt && companion == ChapterLobbyCompanion.DinoAndMom) {
+                                        Chapter1ForestStoryCharacters(
+                                            dinoIdleRes = dinoIdleRes,
+                                            dinoTalkResIds = dinoTalkResIds,
+                                            dinoTalking = talking,
+                                            dinoContentDescription = dinoContentDescription,
+                                            momIdleRes = momIdleRes,
+                                            momTalkResIds = momTalkResIds,
+                                            momTalking = talking,
+                                            useCompanionMomArt = true,
                                         )
-                                        if (companion == ChapterLobbyCompanion.DinoAndMom) {
-                                            Spacer(modifier = Modifier.height(8.dp))
-                                            ChapterLobbyMomCharacter(
-                                                momIdleRes = momIdleRes,
-                                                momTalkResIds = momTalkResIds,
-                                                talking = talking,
-                                                useCompanionMomArt = useCompanionMomArt,
-                                                size = characterSize,
-                                                momCharacterScale = momCharacterScale,
+                                    } else {
+                                        Column(
+                                            horizontalAlignment = Alignment.CenterHorizontally,
+                                            modifier =
+                                                Modifier.width(
+                                                    characterSize *
+                                                        if (companion == ChapterLobbyCompanion.DinoAndMom) {
+                                                            1.5f
+                                                        } else {
+                                                            1.15f
+                                                        },
+                                                ),
+                                        ) {
+                                            AnimatedTalkingCharacter(
+                                                idleRes = dinoIdleRes,
+                                                talkFrameResIds = dinoTalkResIds,
+                                                isTalking = talking,
+                                                modifier = Modifier.size(characterSize),
+                                                contentDescription = dinoContentDescription,
                                             )
-                                            if (showMotherLostEggsCue) {
-                                                Spacer(modifier = Modifier.height(6.dp))
-                                                MotherLostEggsCue()
+                                            if (companion == ChapterLobbyCompanion.DinoAndMom) {
+                                                Spacer(modifier = Modifier.height(8.dp))
+                                                ChapterLobbyMomCharacter(
+                                                    momIdleRes = momIdleRes,
+                                                    momTalkResIds = momTalkResIds,
+                                                    talking = talking,
+                                                    useCompanionMomArt = useCompanionMomArt,
+                                                    size = characterSize,
+                                                    momCharacterScale = momCharacterScale,
+                                                )
+                                                if (showMotherLostEggsCue) {
+                                                    Spacer(modifier = Modifier.height(6.dp))
+                                                    MotherLostEggsCue()
+                                                }
                                             }
                                         }
                                     }
@@ -373,44 +377,46 @@ fun ChapterLobbyStoryLayout(
                                     color = storyTextColor,
                                     textAlign = TextAlign.Center,
                                 )
-                                Spacer(modifier = Modifier.height(14.dp))
-                                if (showMotherLostEggsCue && useCompanionMomArt && companion == ChapterLobbyCompanion.DinoAndMom) {
-                                    Chapter1ForestStoryCharacters(
-                                        dinoIdleRes = dinoIdleRes,
-                                        dinoTalkResIds = dinoTalkResIds,
-                                        dinoTalking = talking,
-                                        dinoContentDescription = dinoContentDescription,
-                                        momIdleRes = momIdleRes,
-                                        momTalkResIds = momTalkResIds,
-                                        momTalking = talking,
-                                        useCompanionMomArt = true,
-                                    )
-                                } else {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.Center,
-                                    ) {
-                                        AnimatedTalkingCharacter(
-                                            idleRes = dinoIdleRes,
-                                            talkFrameResIds = dinoTalkResIds,
-                                            isTalking = talking,
-                                            modifier = Modifier.size(92.dp),
-                                            contentDescription = dinoContentDescription,
+                                if (showStoryCharacterArt) {
+                                    Spacer(modifier = Modifier.height(14.dp))
+                                    if (showMotherLostEggsCue && useCompanionMomArt && companion == ChapterLobbyCompanion.DinoAndMom) {
+                                        Chapter1ForestStoryCharacters(
+                                            dinoIdleRes = dinoIdleRes,
+                                            dinoTalkResIds = dinoTalkResIds,
+                                            dinoTalking = talking,
+                                            dinoContentDescription = dinoContentDescription,
+                                            momIdleRes = momIdleRes,
+                                            momTalkResIds = momTalkResIds,
+                                            momTalking = talking,
+                                            useCompanionMomArt = true,
                                         )
-                                        if (companion == ChapterLobbyCompanion.DinoAndMom) {
-                                            Spacer(modifier = Modifier.width(14.dp))
-                                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                                ChapterLobbyMomCharacter(
-                                                    momIdleRes = momIdleRes,
-                                                    momTalkResIds = momTalkResIds,
-                                                    talking = talking,
-                                                    useCompanionMomArt = useCompanionMomArt,
-                                                    size = 92.dp,
-                                                    momCharacterScale = momCharacterScale,
-                                                )
-                                                if (showMotherLostEggsCue) {
-                                                    Spacer(modifier = Modifier.height(6.dp))
-                                                    MotherLostEggsCue()
+                                    } else {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.Center,
+                                        ) {
+                                            AnimatedTalkingCharacter(
+                                                idleRes = dinoIdleRes,
+                                                talkFrameResIds = dinoTalkResIds,
+                                                isTalking = talking,
+                                                modifier = Modifier.size(92.dp),
+                                                contentDescription = dinoContentDescription,
+                                            )
+                                            if (companion == ChapterLobbyCompanion.DinoAndMom) {
+                                                Spacer(modifier = Modifier.width(14.dp))
+                                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                                    ChapterLobbyMomCharacter(
+                                                        momIdleRes = momIdleRes,
+                                                        momTalkResIds = momTalkResIds,
+                                                        talking = talking,
+                                                        useCompanionMomArt = useCompanionMomArt,
+                                                        size = 92.dp,
+                                                        momCharacterScale = momCharacterScale,
+                                                    )
+                                                    if (showMotherLostEggsCue) {
+                                                        Spacer(modifier = Modifier.height(6.dp))
+                                                        MotherLostEggsCue()
+                                                    }
                                                 }
                                             }
                                         }

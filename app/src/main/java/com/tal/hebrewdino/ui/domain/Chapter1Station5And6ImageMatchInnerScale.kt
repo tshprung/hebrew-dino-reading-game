@@ -69,12 +69,12 @@ object Chapter1Station5And6ImageMatchInnerScale {
         val isLeg = choice.word == "רגל" || choice.id == "w_ר_3" || choice.tileDrawable == R.drawable.lesson_pic_regel
         val isRose = choice.word == "ורד" || choice.id == "w_ו_1" || choice.tileDrawable == R.drawable.lesson_pic_vered
         val isHoney = choice.word == "דבש" || choice.id == "w_ד_4" || choice.tileDrawable == R.drawable.lesson_pic_dvash
-        val isWindow = choice.word == "חלון" || choice.id == "w_ח_3" || choice.tileDrawable == R.drawable.lesson_pic_halon
+        val isWindow = choice.word == "חלון" || choice.id == "w_ח_3" || choice.tileDrawable == R.drawable.lesson_pic_chalon
         val isButterfly = choice.word == "פרפר" || choice.id == "w_פ_4" || choice.tileDrawable == R.drawable.lesson_pic_parpar
         val isTrainEngine = choice.word == "קטר" || choice.id == "w_ק_3"
         val isMonkey = choice.word == "קוף" || choice.id == "w_ק_1"
-        val isCube = choice.word == "קוביה" || choice.id == "w_ק_2" || choice.tileDrawable == R.drawable.lesson_pic_cube
-        val isToast = choice.word == "טוסט" || choice.id == "w_ט_1" || choice.tileDrawable == R.drawable.lesson_pic_toast
+        val isCube = choice.word == "קוביה" || choice.id == "w_ק_2" || choice.tileDrawable == R.drawable.lesson_pic_kubia
+        val isToast = choice.word == "טוסט" || choice.id == "w_ט_1" || choice.tileDrawable == R.drawable.lesson_pic_tost
         val isPlate = choice.word == "צלחת" || choice.id == "w_צ_4"
         val isAnt = choice.word == "נמלה" || choice.id == "w_נ_1"
         val isFrog = choice.word == "צפרדע" || choice.id == "w_צ_3"

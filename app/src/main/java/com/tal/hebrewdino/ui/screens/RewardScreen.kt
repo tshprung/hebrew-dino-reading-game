@@ -46,6 +46,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.tal.hebrewdino.R
 import com.tal.hebrewdino.ui.audio.RawVoicePlayer
+import com.tal.hebrewdino.ui.audio.RewardSuccessAudio
 import com.tal.hebrewdino.ui.audio.VoicePlayer
 import com.tal.hebrewdino.ui.companion.Chapter1DinoCompanionPilot
 import com.tal.hebrewdino.ui.data.DinoCharacter
@@ -244,39 +245,45 @@ fun RewardScreen(
         }
     }
 
-    LaunchedEffect(levelId, chapter1DinoCompanionPilot, rewardSuccessRawResId, requireRawSuccessAudio) {
+    LaunchedEffect(
+        levelId,
+        chapter1DinoCompanionPilot,
+        rewardSuccessRawResId,
+        requireRawSuccessAudio,
+        portraitCharacter,
+    ) {
         coroutineScope {
+            val needsRawRewardVoice = chapter1DinoCompanionPilot || requireRawSuccessAudio || rewardSuccessRawResId != null
             val voiceJob =
                 launch {
-                    if (chapter1DinoCompanionPilot) {
-                        val clip = Chapter1DinoCompanionPilot.successClipForStation(levelId)
+                    if (needsRawRewardVoice) {
+                        val clip =
+                            when {
+                                rewardSuccessRawResId != null && rewardSuccessRawResId != 0 ->
+                                    rewardSuccessRawResId
+                                chapter1DinoCompanionPilot || requireRawSuccessAudio ->
+                                    RewardSuccessAudio.pickAndRemember(portraitCharacter)
+                                else -> {
+                                    reportRequiredRewardRawMissing("rewardSuccessRawResId==null")
+                                    return@launch
+                                }
+                            }
+                        if (clip == 0) {
+                            reportRequiredRewardRawMissing("rewardClip==0")
+                            return@launch
+                        }
                         companionVoicePlaying = true
                         rawVoice?.playRawBlocking(clip)
                         companionVoicePlaying = false
                         delay(Chapter1DinoCompanionPilot.REWARD_POST_AUDIO_MS)
-                    } else if (rewardSuccessRawResId != null) {
-                        if (rewardSuccessRawResId == 0) {
-                            reportRequiredRewardRawMissing("rewardSuccessRawResId==0")
-                        } else {
-                            companionVoicePlaying = true
-                            rawVoice?.playRawBlocking(rewardSuccessRawResId)
-                            companionVoicePlaying = false
-                            delay(Chapter1DinoCompanionPilot.REWARD_POST_AUDIO_MS)
-                        }
                     } else {
-                        if (requireRawSuccessAudio) {
-                            reportRequiredRewardRawMissing("rewardSuccessRawResId==null")
-                        } else {
-                            Log.e(
-                                "MissingContent",
-                                "Missing reward raw success audio. chapterId=$rewardChapterId stationId=$levelId rewardSuccessRawResId=null detail=legacy VoLevelDone fallback disabled",
-                            )
-                        }
+                        Log.e(
+                            "MissingContent",
+                            "Missing reward raw success audio. chapterId=$rewardChapterId stationId=$levelId rewardSuccessRawResId=null detail=legacy VoLevelDone fallback disabled",
+                        )
                     }
                 }
-            if (chapter1DinoCompanionPilot) {
-                GameAudioActions.await(voiceJob, Chapter1DinoCompanionPilot.REWARD_AUDIO_MAX_WAIT_MS)
-            } else if (rewardSuccessRawResId != null) {
+            if (needsRawRewardVoice) {
                 GameAudioActions.await(voiceJob, Chapter1DinoCompanionPilot.REWARD_AUDIO_MAX_WAIT_MS)
             } else {
                 GameAudioActions.await(voiceJob, 9000L)

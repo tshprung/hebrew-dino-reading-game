@@ -43,6 +43,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.tal.hebrewdino.ui.components.TargetLetterHeaderChip
+import com.tal.hebrewdino.ui.components.learning.AutoFitSingleLineText
 import com.tal.hebrewdino.ui.components.learning.LessonChoiceCard
 import com.tal.hebrewdino.ui.components.learning.LessonChoiceCardPictureAspect
 import com.tal.hebrewdino.ui.components.learning.captionFontSizeForWordCard
@@ -67,6 +68,8 @@ fun ImageToWordGame(
     instructionText: String,
     chapterId: Int? = null,
     stationId: Int? = null,
+    /** Training chapter: 1-based round index (e.g. 3 and 8 are ImageToWord). */
+    trainingRoundIndex: Int? = null,
     onPictureTapReplayWord: (() -> Unit)? = null,
     onWordPressed: ((choiceId: String) -> Unit)? = null,
     innerPictureScaleForChoice: (LessonChoice) -> Float = { choice -> Chapter1Station5And6ImageMatchInnerScale.innerScale(choice) },
@@ -109,9 +112,14 @@ fun ImageToWordGame(
         val pictureCardH = pictureCardW * LessonChoiceCardPictureAspect
         val chapter3Station6ExtraDown = if (chapterId == 3 && stationId == 6) 19.dp else 0.dp
         val chapter6Station6ExtraDown = if (chapterId == 6 && stationId == 6) 38.dp else 0.dp
-        val trainingStation3ExtraDown = if (isTrainingStation3) 19.dp else 0.dp
+        val trainingImageToWordExtraDown =
+            when {
+                isTrainingStation3 && trainingRoundIndex == 8 -> 11.dp
+                isTrainingStation3 -> 19.dp
+                else -> 0.dp
+            }
         val baseDown = if (isCompactLandscapePhone) (-10).dp else 0.dp
-        val totalDown = baseDown + chapter3Station6ExtraDown + chapter6Station6ExtraDown + trainingStation3ExtraDown
+        val totalDown = baseDown + chapter3Station6ExtraDown + chapter6Station6ExtraDown + trainingImageToWordExtraDown
         var hintLetter by remember(contentKey) { mutableStateOf<String?>(null) }
         var hintEpoch by remember(contentKey) { mutableIntStateOf(0) }
 
@@ -129,12 +137,19 @@ fun ImageToWordGame(
             ) {
                 Text(
                     text = instructionText,
-                    fontSize = if (isCompactLandscapePhone) 20.sp else 24.sp,
+                    fontSize =
+                        when {
+                            isTrainingStation3 && isCompactLandscapePhone -> 18.sp
+                            isCompactLandscapePhone -> 20.sp
+                            else -> 24.sp
+                        },
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFF0B2B3D),
                     textAlign = TextAlign.Center,
                     modifier =
                         Modifier
+                            .fillMaxWidth()
+                            .widthIn(max = w - 24.dp)
                             .padding(top = if (isCompactLandscapePhone) 2.dp else 6.dp, bottom = if (isCompactLandscapePhone) 6.dp else 10.dp)
                             .background(Color.White.copy(alpha = 0.72f), RoundedCornerShape(18.dp))
                             .padding(horizontal = 14.dp, vertical = 8.dp),
@@ -207,19 +222,25 @@ fun ImageToWordGame(
                         flash.animateTo(0f, tween(220))
                     }
 
+                    val optionCardH = (optionW * 0.54f).coerceAtLeast(if (isCompactLandscapePhone) 56.dp else 64.dp)
                     val captionSp =
                         captionFontSizeForWordCard(
                             density = density,
                             cardWidth = optionW,
                             word = choice.word,
                             sizeMultiplier =
-                                if ((chapterId == 3 || chapterId == 6) && stationId == 6) {
-                                    1.25f * 0.70f
-                                } else {
-                                    1.25f
+                                when {
+                                    isTrainingStation3 && choice.word == "היפופוטם" -> 1.05f
+                                    (chapterId == 3 || chapterId == 6) && stationId == 6 -> 1.25f * 0.70f
+                                    else -> 1.25f
                                 },
                             chapterId = chapterId,
                             stationId = stationId,
+                        )
+                    val captionStyle =
+                        androidx.compose.ui.text.TextStyle(
+                            fontWeight = FontWeight.Black,
+                            color = Color(0xFF0B2B3D),
                         )
 
                     val isLockedCorrectThisChoice = hasLockedCorrectChoice && choice.id == successChoiceId
@@ -227,7 +248,7 @@ fun ImageToWordGame(
                         modifier =
                             Modifier
                                 .width(optionW)
-                                .height((optionW * 0.54f).coerceAtLeast(if (isCompactLandscapePhone) 56.dp else 64.dp))
+                                .height(optionCardH)
                                 .background(
                                     if (!hasLockedCorrectChoice) {
                                         Color.White.copy(alpha = 0.92f)
@@ -272,14 +293,26 @@ fun ImageToWordGame(
                                 .padding(horizontal = 10.dp, vertical = if (isCompactLandscapePhone) 4.dp else 6.dp),
                         contentAlignment = Alignment.Center,
                     ) {
-                        Text(
-                            text = choice.word,
-                            fontSize = captionSp,
-                            fontWeight = FontWeight.Black,
-                            color = Color(0xFF0B2B3D),
-                            textAlign = TextAlign.Center,
-                            maxLines = 2,
-                        )
+                        if (isTrainingStation3) {
+                            AutoFitSingleLineText(
+                                text = choice.word,
+                                maxWidth = optionW - 20.dp,
+                                maxHeight = optionCardH - 12.dp,
+                                targetFontSize = captionSp,
+                                style = captionStyle,
+                                minFontSize = 14.sp,
+                                textAlign = TextAlign.Center,
+                            )
+                        } else {
+                            Text(
+                                text = choice.word,
+                                fontSize = captionSp,
+                                fontWeight = FontWeight.Black,
+                                color = Color(0xFF0B2B3D),
+                                textAlign = TextAlign.Center,
+                                maxLines = 2,
+                            )
+                        }
                     }
                 }
             }

@@ -171,7 +171,6 @@ internal fun NavGraphBuilder.chapterFourToSixGraph(host: AppNavHostState) {
             onBackToMap = backToMap,
             showSelectedCompanionPortrait = true,
             selectedCompanionCharacter = host.companionCharacter,
-            rewardSuccessRawResId = Chapter1DinoCompanionPilot.successClipForStation(stationId),
             rewardChapterId = 4,
             requireRawSuccessAudio = true,
         )
@@ -328,7 +327,6 @@ internal fun NavGraphBuilder.chapterFourToSixGraph(host: AppNavHostState) {
             onBackToMap = backToMap,
             showSelectedCompanionPortrait = true,
             selectedCompanionCharacter = host.companionCharacter,
-            rewardSuccessRawResId = Chapter1DinoCompanionPilot.successClipForStation(stationId),
             rewardChapterId = 5,
             requireRawSuccessAudio = true,
         )
@@ -481,7 +479,6 @@ internal fun NavGraphBuilder.chapterFourToSixGraph(host: AppNavHostState) {
             onBackToMap = backToMap,
             showSelectedCompanionPortrait = true,
             selectedCompanionCharacter = host.companionCharacter,
-            rewardSuccessRawResId = Chapter1DinoCompanionPilot.successClipForStation(stationId),
             rewardChapterId = 6,
             requireRawSuccessAudio = true,
         )

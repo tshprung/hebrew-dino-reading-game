@@ -12,6 +12,9 @@ import com.tal.hebrewdino.ui.game.ChildGameAudioHooks
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
+private fun usesImageToWordRawWordClips(chapterId: Int): Boolean =
+    chapterId == 3 || chapterId == 6 || chapterId == TrainingV1Config.CHAPTER_ID
+
 private val ImageToWordPraiseCandidates =
     arrayOf(
         AudioClips.VoPraiseMetzuyan,
@@ -49,7 +52,7 @@ internal object ImageMatchActions {
                         scope = scope,
                         audioRuntime = audioRuntime,
                     ) {
-                        if (chapterId == 3 || chapterId == 6) {
+                        if (usesImageToWordRawWordClips(chapterId)) {
                             val wordResId = AudioClips.wordRawResIdByCatalogId(choiceId)
                             if (wordResId == null) {
                                 android.util.Log.e(
@@ -134,7 +137,7 @@ internal object ImageMatchActions {
             audioRuntime = audioRuntime,
             cancelFeedbackVoice = cancelFeedbackVoice,
         ) {
-            if (chapterId == 3 || chapterId == 6) {
+            if (usesImageToWordRawWordClips(chapterId)) {
                 val wordResId = AudioClips.wordRawResIdByCatalogId(q.correctChoiceId)
                 if (wordResId == null) {
                     android.util.Log.e(
@@ -198,7 +201,7 @@ internal object ImageMatchActions {
             audioRuntime = audioRuntime,
             cancelFeedbackVoice = cancelFeedbackVoice,
         ) {
-            if (chapterId == 3 || chapterId == 6) {
+            if (usesImageToWordRawWordClips(chapterId)) {
                 val wordResId = AudioClips.wordRawResIdByCatalogId(choiceId)
                 if (wordResId == null) {
                     android.util.Log.e(
