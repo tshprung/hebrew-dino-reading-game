@@ -3,7 +3,6 @@ package com.tal.hebrewdino.ui.screens
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.tal.hebrewdino.R
-import com.tal.hebrewdino.ui.audio.AudioClips
 import com.tal.hebrewdino.ui.companion.Chapter1AddressAwareAudio
 import com.tal.hebrewdino.ui.companion.Chapter1CompanionCopy
 import com.tal.hebrewdino.ui.companion.displayNameHebrew
@@ -136,21 +135,40 @@ fun Chapter4MidBoostScreen(
 
 @Composable
 fun Chapter5MidBoostScreen(
+    companionCharacter: DinoCharacter?,
     onContinue: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val voiceRawResId =
+        when (companionCharacter) {
+            DinoCharacter.Dino -> R.raw.ch5_story_mid_dino
+            DinoCharacter.Dina -> R.raw.ch5_story_mid_dina
+            null -> 0
+        }
+    val body =
+        when (companionCharacter) {
+            DinoCharacter.Dino, null ->
+                "אַתֶּם עוֹשִׂים עֲבוֹדָה נִפְלָאָה!\n" +
+                    "דִּינוֹ מוֹצֵא עוֹד קְלִפָּה קְטַנָּה, וְהַפַּעַם הִיא מַמָּשׁ טְרִיָּה.\n" +
+                    "הַסִּימָנִים מוֹבִילִים אֶל מָקוֹם שָׁקֵט מֵאֲחוֹרֵי הַשִּׂיחִים.\n" +
+                    "עוֹד קְצָת — וְאוּלַי נִמְצָא אֶת הַבֵּיצָה הָאַחֲרוֹנָה."
+            DinoCharacter.Dina ->
+                "אַתֶּם עוֹשִׂים עֲבוֹדָה נִפְלָאָה!\n" +
+                    "דִּינָה מוֹצֵאת עוֹד קְלִפָּה קְטַנָּה, וְהַפַּעַם הִיא מַמָּשׁ טְרִיָּה.\n" +
+                    "הַסִּימָנִים מוֹבִילִים אֶל מָקוֹם שָׁקֵט מֵאֲחוֹרֵי הַשִּׂיחִים.\n" +
+                    "עוֹד קְצָת — וְאוּלַי נִמְצָא אֶת הַבֵּיצָה הָאַחֲרוֹנָה."
+        }
     ChapterLobbyStoryLayout(
         backgroundRes = R.drawable.forest_bg_journey_road,
         title = "ממשיכים!",
-        body =
-            "אתם כבר מקשיבים וקוראים מצוין.\n" +
-                "עוד קצת — ואולי נגיע לביצה השלישית.\n" +
-                "בואו נסיים את המסע!",
+        body = body,
         companion = ChapterLobbyCompanion.DinoOnly,
         chapterId = 5,
         storyContext = "Chapter5MidBoostScreen",
-        voiceAssetPath = AudioClips.StoryCh5MidBoost,
-        dinoContentDescription = "דינו",
+        useCompanionDinoArt = true,
+        companionCharacter = companionCharacter ?: DinoCharacter.Dino,
+        voiceRawResId = voiceRawResId,
+        dinoContentDescription = (companionCharacter ?: DinoCharacter.Dino).displayNameHebrew(),
         onContinue = onContinue,
         modifier = modifier,
     )
@@ -158,19 +176,38 @@ fun Chapter5MidBoostScreen(
 
 @Composable
 fun Chapter6MidBoostScreen(
+    companionCharacter: DinoCharacter?,
     onContinue: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val voiceRawResId =
+        when (companionCharacter) {
+            DinoCharacter.Dino -> R.raw.ch6_story_mid_dino
+            DinoCharacter.Dina -> R.raw.ch6_story_mid_dina
+            null -> 0
+        }
+    val body =
+        when (companionCharacter) {
+            DinoCharacter.Dino, null ->
+                "כמעט בבית!\n" +
+                    "דינו כבר רואה את הדרך לאמא.\n" +
+                    "נמשיך לתרגל ונחזיר את הביצים הביתה."
+            DinoCharacter.Dina ->
+                "כמעט בבית!\n" +
+                    "דינה כבר רואה את הדרך לאמא.\n" +
+                    "נמשיך לתרגל ונחזיר את הביצים הביתה."
+        }
     ChapterLobbyStoryLayout(
         backgroundRes = R.drawable.forest_bg_journey_road,
         title = "ממשיכים!",
-        body =
-            "כמעט בבית!\n" +
-                "דינו כבר רואה את הדרך לאמא.\n" +
-                "נמשיך לתרגל ונחזיר את הביצים הביתה.",
+        body = body,
         companion = ChapterLobbyCompanion.DinoOnly,
-        voiceAssetPath = AudioClips.StoryCh6MidBoost,
-        dinoContentDescription = "דינו",
+        chapterId = 6,
+        storyContext = "Chapter6MidBoostScreen",
+        useCompanionDinoArt = true,
+        companionCharacter = companionCharacter ?: DinoCharacter.Dino,
+        voiceRawResId = voiceRawResId,
+        dinoContentDescription = (companionCharacter ?: DinoCharacter.Dino).displayNameHebrew(),
         onContinue = onContinue,
         modifier = modifier,
     )

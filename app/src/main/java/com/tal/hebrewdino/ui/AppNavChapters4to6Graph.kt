@@ -190,6 +190,7 @@ internal fun NavGraphBuilder.chapterFourToSixGraph(host: AppNavHostState) {
 
     composable(NavRoutes.Ch5MidBoost) {
         Chapter5MidBoostScreen(
+            companionCharacter = host.companionCharacter,
             onContinue = {
                 host.scope.launch { host.progress.markChapter5MidBoostSeen() }
                 host.navController.navigate(NavRoutes.Ch5Journey) {
@@ -201,6 +202,7 @@ internal fun NavGraphBuilder.chapterFourToSixGraph(host: AppNavHostState) {
 
     composable(NavRoutes.Ch5Intro) {
         Chapter5IntroScreen(
+            companionCharacter = host.companionCharacter,
             onContinue = {
                 host.scope.launch { host.progress.markChapter5IntroSeen() }
                 host.navController.navigate(NavRoutes.Ch5Letters) {
@@ -334,6 +336,7 @@ internal fun NavGraphBuilder.chapterFourToSixGraph(host: AppNavHostState) {
 
     composable(NavRoutes.Ch5Outro) {
         Chapter5OutroScreen(
+            companionCharacter = host.companionCharacter,
             onContinue = {
                 host.navController.navigate(NavRoutes.Chapters) {
                     popUpTo(NavRoutes.Ch5Outro) { inclusive = true }
@@ -344,6 +347,7 @@ internal fun NavGraphBuilder.chapterFourToSixGraph(host: AppNavHostState) {
 
     composable(NavRoutes.Ch6MidBoost) {
         Chapter6MidBoostScreen(
+            companionCharacter = host.companionCharacter,
             onContinue = {
                 host.scope.launch { host.progress.markChapter6MidBoostSeen() }
                 host.navController.navigate(NavRoutes.Ch6Journey) {
@@ -355,6 +359,7 @@ internal fun NavGraphBuilder.chapterFourToSixGraph(host: AppNavHostState) {
 
     composable(NavRoutes.Ch6Intro) {
         Chapter6IntroScreen(
+            companionCharacter = host.companionCharacter,
             onContinue = {
                 host.scope.launch { host.progress.markChapter6IntroSeen() }
                 host.navController.navigate(NavRoutes.Ch6Letters) {
@@ -484,6 +489,7 @@ internal fun NavGraphBuilder.chapterFourToSixGraph(host: AppNavHostState) {
 
     composable(NavRoutes.Ch6Outro) {
         Chapter6OutroScreen(
+            companionCharacter = host.companionCharacter,
             onContinue = {
                 host.navController.navigate(NavRoutes.Chapters) {
                     popUpTo(NavRoutes.Ch6Outro) { inclusive = true }

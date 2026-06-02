@@ -1,7 +1,7 @@
 package com.tal.hebrewdino.ui.domain
 
 import com.tal.hebrewdino.ui.NavRoutes
-import com.tal.hebrewdino.ui.audio.AudioClips
+import com.tal.hebrewdino.R
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
@@ -48,10 +48,13 @@ class Chapter6StationBehaviorTest {
     }
 
     @Test
-    fun chapter6_storyAudioClipPaths_areDefined() {
-        assertEquals("audio/story_ch6_intro.wav", AudioClips.StoryCh6Intro)
-        assertEquals("audio/story_ch6_mid_boost.wav", AudioClips.StoryCh6MidBoost)
-        assertEquals("audio/story_ch6_outro.wav", AudioClips.StoryCh6Outro)
+    fun chapter6_storyNarrationRawResIds_areDefined() {
+        assertTrue(R.raw.ch6_story_intro_dino != 0)
+        assertTrue(R.raw.ch6_story_intro_dina != 0)
+        assertTrue(R.raw.ch6_story_mid_dino != 0)
+        assertTrue(R.raw.ch6_story_mid_dina != 0)
+        assertTrue(R.raw.ch6_story_outro_dino != 0)
+        assertTrue(R.raw.ch6_story_outro_dina != 0)
     }
 
     @Test
