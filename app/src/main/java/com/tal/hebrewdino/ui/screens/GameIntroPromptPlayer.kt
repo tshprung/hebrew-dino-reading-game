@@ -549,11 +549,11 @@ internal suspend fun playIntroPrompt(
         if (rawVoice == null) {
             android.util.Log.e(
                 "MissingContent",
-                "Missing required station prompt audio. chapterId=$chapterId stationId=$stationId context=playIntroPrompt(TrainingPictureStartsWithLetter) stage=rawVoice=null expectedInstructionRawRes!=null",
+                "Missing required station prompt audio. chapterId=$chapterId stationId=$stationId context=playIntroPrompt(TrainingImageMatchWhichWordStartsWith) stage=rawVoice=null expectedInstructionRawRes!=null",
             )
             voice.playRequiredBlocking(
                 assetPath = "",
-                context = "playIntroPrompt(TrainingPictureStartsWithLetter,rawVoice=null)",
+                context = "playIntroPrompt(TrainingImageMatchWhichWordStartsWith,rawVoice=null)",
                 chapterId = chapterId,
                 stationId = stationId,
             )
@@ -562,14 +562,14 @@ internal suspend fun playIntroPrompt(
         if (chapter1PlayerAddress == null) {
             android.util.Log.e(
                 "MissingContent",
-                "Missing required station prompt audio. chapterId=$chapterId stationId=$stationId context=playIntroPrompt(TrainingPictureStartsWithLetter) stage=playerAddress=null expectedInstructionKind=PictureStartsWith",
+                "Missing required station prompt audio. chapterId=$chapterId stationId=$stationId context=playIntroPrompt(TrainingImageMatchWhichWordStartsWith) stage=playerAddress=null expectedInstructionKind=WhichWordStartsWith",
             )
             rawVoice.playRawBlocking(0)
             return
         }
         rawVoice.playRawBlocking(
             Chapter1AddressAwareAudio.instructionRawRes(
-                kind = Chapter1AddressAwareAudio.InstructionKind.PictureStartsWith,
+                kind = Chapter1AddressAwareAudio.InstructionKind.WhichWordStartsWith,
                 address = chapter1PlayerAddress,
             ),
         )
@@ -577,7 +577,7 @@ internal suspend fun playIntroPrompt(
         if (resId == null) {
             android.util.Log.e(
                 "MissingContent",
-                "Missing required letter-name audio. chapterId=$chapterId stationId=$stationId context=playIntroPrompt(TrainingPictureStartsWithLetter) stage=missing raw letter-name mapping letter='${q.targetLetter}'",
+                "Missing required letter-name audio. chapterId=$chapterId stationId=$stationId context=playIntroPrompt(TrainingImageMatchWhichWordStartsWith) stage=missing raw letter-name mapping letter='${q.targetLetter}'",
             )
             rawVoice?.playRawBlocking(0)
             return

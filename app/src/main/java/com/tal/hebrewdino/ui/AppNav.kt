@@ -1,7 +1,5 @@
 package com.tal.hebrewdino.ui
 
-import android.content.Context
-import android.os.Bundle
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -18,62 +16,12 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.rememberNavController
-import com.google.firebase.analytics.FirebaseAnalytics
 import com.tal.hebrewdino.ui.audio.BackgroundMusicPlayer
 import com.tal.hebrewdino.ui.audio.SoundPoolPlayer
 import com.tal.hebrewdino.ui.audio.VoicePlayer
 import com.tal.hebrewdino.ui.data.AudioPrefs
 import com.tal.hebrewdino.ui.data.DinoCharacter
 import kotlinx.coroutines.launch
-
-internal object AppAnalytics {
-    private var analytics: FirebaseAnalytics? = null
-
-    fun init(context: Context) {
-        if (analytics != null) return
-        val appContext = context.applicationContext
-        analytics = FirebaseAnalytics.getInstance(appContext).apply { setUserId(null) }
-    }
-
-    private fun levelName(
-        chapterId: Int,
-        stationId: Int,
-    ): String = "ch${chapterId}_st${stationId}"
-
-    fun logLevelStart(
-        chapterId: Int,
-        stationId: Int,
-    ) {
-        val a = analytics ?: return
-        val b = Bundle(1)
-        b.putString("level_name", levelName(chapterId, stationId))
-        a.logEvent("level_start", b)
-    }
-
-    fun logLevelComplete(
-        chapterId: Int,
-        stationId: Int,
-        timeTakenSeconds: Long,
-    ) {
-        val a = analytics ?: return
-        val b = Bundle(2)
-        b.putString("level_name", levelName(chapterId, stationId))
-        b.putLong("time_taken_seconds", timeTakenSeconds.coerceAtLeast(0L))
-        a.logEvent("level_complete", b)
-    }
-
-    fun logLevelRetry(
-        chapterId: Int,
-        stationId: Int,
-        mistakeType: String,
-    ) {
-        val a = analytics ?: return
-        val b = Bundle(2)
-        b.putString("level_name", levelName(chapterId, stationId))
-        b.putString("mistake_type", mistakeType)
-        a.logEvent("level_retry", b)
-    }
-}
 
 private val BackgroundMusicEligibleRoutes: Set<String> =
     setOf(

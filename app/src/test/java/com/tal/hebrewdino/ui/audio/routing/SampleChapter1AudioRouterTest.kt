@@ -151,11 +151,11 @@ class SampleChapter1AudioRouterTest {
                     listOf(
                         AudioStep(
                             lane = AudioLane.RawVoice,
-                            source = AudioSource.RawRes(R.raw.vo_praise_meule),
+                            source = AudioSource.RawRes(R.raw.praise_short_01),
                             blocking = true,
                         ),
                     ),
-                noImmediateRepeatKey = "ch1_praise_meule",
+                noImmediateRepeatKey = "ch1_praise_short_01",
             ),
             plan,
         )
@@ -176,7 +176,7 @@ class SampleChapter1AudioRouterTest {
                     listOf(
                         AudioStep(
                             lane = AudioLane.RawVoice,
-                            source = AudioSource.RawRes(R.raw.reward_success_neutral_05),
+                            source = AudioSource.RawRes(R.raw.reward_dino_05),
                             blocking = true,
                         ),
                     ),

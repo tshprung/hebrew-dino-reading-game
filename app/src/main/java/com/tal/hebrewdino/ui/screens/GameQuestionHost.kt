@@ -38,6 +38,13 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlin.random.Random
 
+/** Chapter 2 station 6 and Training rounds 6/10 — same match-letter behavior path. */
+private fun isChapter2StyleMatchLetterStation(chapterId: Int, stationId: Int): Boolean =
+    ((chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) &&
+        stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH) ||
+        (chapterId == TrainingV1Config.CHAPTER_ID &&
+            stationId == TrainingV1Config.STATION_MATCH_LETTER_TO_WORD)
+
 private val MatchPraiseClips =
     arrayOf(
         AudioClips.VoPraiseMetzuyan,
@@ -623,13 +630,13 @@ internal fun GameQuestionHost(
                         contentKey = deps.session.currentIndex,
                         enabled = state.enabled,
                         entryPulseScale = state.entryPulseScale,
-                        letterTileSizeMultiplier = if (ui.chapterId == TrainingV1Config.CHAPTER_ID) 1.10f else 1f,
+                        letterTileSizeMultiplier = 1f,
                         onWordPressed = { choiceId -> handleMatchWordPressed(choiceId) },
                         onLetterPressed = { letter -> handleMatchLetterPressed(letter) },
                         onCorrectMatch = { _ ->
                             if (ui.audioEnabled) {
                                 deps.scope.launch {
-                                    if (ui.chapterId == 1 || ui.chapterId == 2 || ui.chapterId == 4 || ui.chapterId == 5) {
+                                    if (isChapter2StyleMatchLetterStation(ui.chapterId, ui.stationId)) {
                                         GameAudioActions.awaitTrackedVoices(deps.audioRuntime, 4500L)
                                     }
                                     deps.sfx.playFirstAvailable(
@@ -640,9 +647,7 @@ internal fun GameQuestionHost(
                             }
                         },
                         onWrongMatch = { pickedLetter, pickedChoiceId ->
-                            if ((ui.chapterId == 1 || ui.chapterId == 2 || ui.chapterId == 4 || ui.chapterId == 5) &&
-                                ui.stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH
-                            ) {
+                            if (isChapter2StyleMatchLetterStation(ui.chapterId, ui.stationId)) {
                                 val alreadySpoken =
                                     if (ui.chapterId == 1 || ui.chapterId == 2 || ui.chapterId == 4 || ui.chapterId == 5) {
                                         AudioClips.letterNameRawResId(pickedLetter) != null

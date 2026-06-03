@@ -107,11 +107,11 @@ object SampleChapter1AudioRouter : GameAudioRouter {
                 listOf(
                     AudioStep(
                         lane = AudioLane.RawVoice,
-                        source = AudioSource.RawRes(R.raw.vo_praise_meule),
+                        source = AudioSource.RawRes(R.raw.praise_short_01),
                         blocking = true,
                     ),
                 ),
-            noImmediateRepeatKey = "ch1_praise_meule",
+            noImmediateRepeatKey = "ch1_praise_short_01",
         )
     }
 
@@ -120,13 +120,13 @@ object SampleChapter1AudioRouter : GameAudioRouter {
         val sid = event.stationId.coerceIn(1, 6)
         val rawResId =
             when (sid) {
-                1 -> R.raw.reward_success_neutral_01
-                2 -> R.raw.reward_success_neutral_02
-                3 -> R.raw.reward_success_neutral_03
-                4 -> R.raw.reward_success_neutral_04
-                5 -> R.raw.reward_success_neutral_05
-                6 -> R.raw.reward_success_neutral_06
-                else -> R.raw.reward_success_neutral_01
+                1 -> R.raw.reward_dino_01
+                2 -> R.raw.reward_dino_02
+                3 -> R.raw.reward_dino_03
+                4 -> R.raw.reward_dino_04
+                5 -> R.raw.reward_dino_05
+                6 -> R.raw.reward_dino_06
+                else -> R.raw.reward_dino_01
             }
         return AudioPlan(
             steps =

@@ -20,7 +20,6 @@ class InStationPraiseAudioTest {
     @Test
     fun pool_doesNotIncludeLegacyMeuleOrFeedbackGreat() {
         val pool = InStationPraiseAudio.pool().toSet()
-        assertFalse(pool.contains(R.raw.vo_praise_meule))
         assertFalse(pool.contains(R.raw.feedback_great_boy))
         assertFalse(pool.contains(R.raw.feedback_great_girl))
     }

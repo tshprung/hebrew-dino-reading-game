@@ -6,6 +6,7 @@ import com.tal.hebrewdino.R
 import com.tal.hebrewdino.ui.data.DinoCharacter
 import com.tal.hebrewdino.ui.data.PlayerAddress
 import com.tal.hebrewdino.ui.domain.StationQuizPlans
+import com.tal.hebrewdino.ui.companion.displayNameHebrew
 import com.tal.hebrewdino.ui.domain.TrainingV1Config
 import com.tal.hebrewdino.ui.domain.TrainingV1LetterPoolSpec
 
@@ -38,9 +39,11 @@ fun TrainingV1IntroScreen(
         companion = ChapterLobbyCompanion.DinoOnly,
         chapterId = TrainingV1Config.CHAPTER_ID,
         storyContext = "TrainingV1IntroScreen",
-        showStoryCharacterArt = false,
+        useCompanionDinoArt = true,
+        companionCharacter = companionCharacter,
+        showStoryCharacterArt = true,
         voiceRawResId = voiceRawResId,
-        dinoContentDescription = "",
+        dinoContentDescription = companionCharacter.displayNameHebrew(),
         onContinue = onContinue,
         modifier = modifier,
     )
@@ -49,6 +52,7 @@ fun TrainingV1IntroScreen(
 @Composable
 fun TrainingV1RoundScreen(
     roundIndex: Int,
+    companionCharacter: DinoCharacter,
     onBack: () -> Unit,
     onRoundComplete: () -> Unit,
     playerAddress: PlayerAddress?,
@@ -79,6 +83,7 @@ fun TrainingV1RoundScreen(
         backgroundRes = R.drawable.forest_bg_journey_road,
         onBack = onBack,
         onComplete = { _, _, _ -> onRoundComplete() },
+        chapter1CompanionCharacter = companionCharacter,
         chapter1PlayerAddress = playerAddress,
         modifier = modifier,
     )
@@ -111,9 +116,11 @@ fun TrainingV1CompleteScreen(
         companion = ChapterLobbyCompanion.DinoOnly,
         chapterId = TrainingV1Config.CHAPTER_ID,
         storyContext = "TrainingV1CompleteScreen",
-        showStoryCharacterArt = false,
+        useCompanionDinoArt = true,
+        companionCharacter = companionCharacter,
+        showStoryCharacterArt = true,
         voiceRawResId = voiceRawResId,
-        dinoContentDescription = "",
+        dinoContentDescription = companionCharacter.displayNameHebrew(),
         onContinue = onContinue,
         modifier = modifier,
     )

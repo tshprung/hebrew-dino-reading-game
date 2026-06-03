@@ -1,6 +1,7 @@
 package com.tal.hebrewdino.ui.screens
 
 import android.annotation.SuppressLint
+import android.util.Log
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -56,6 +57,7 @@ import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
@@ -77,7 +79,9 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.ui.draw.scale
 import com.tal.hebrewdino.R
+import com.tal.hebrewdino.ui.companion.CompanionAssets
 import com.tal.hebrewdino.ui.components.ChapterNavChipStyles
+import com.tal.hebrewdino.ui.data.DinoCharacter
 import com.tal.hebrewdino.ui.components.learning.DinoNestMark
 import com.tal.hebrewdino.ui.domain.ChaptersPathLayout
 import com.tal.hebrewdino.ui.domain.TrainingV1Config
@@ -173,8 +177,25 @@ fun ChaptersScreen(
     onBackToSeasons: () -> Unit,
     onOpenSettings: () -> Unit,
     onOpenChapter: (Int) -> Unit,
+    /** Selected companion for the current-chapter hub marker (Dino/Dina idle art). */
+    companionCharacter: DinoCharacter? = null,
     modifier: Modifier = Modifier,
 ) {
+    val ctx = LocalContext.current
+    val isDebuggable =
+        remember {
+            (ctx.applicationContext.applicationInfo.flags and 0x2) != 0
+        }
+    if (companionCharacter == null) {
+        val msg =
+            "Missing selected companion for ChaptersScreen (hub marker). companionCharacter=null"
+        Log.e("MissingContent", msg)
+        if (isDebuggable) throw IllegalStateException(msg)
+    }
+    val hubCompanionIdleRes =
+        remember(companionCharacter) {
+            CompanionAssets.forCharacter(companionCharacter ?: DinoCharacter.Dino).poseIdle
+        }
     val scroll = rememberScrollState()
 
     val chapters =
@@ -224,6 +245,7 @@ fun ChaptersScreen(
                 unlockedChapter = unlockedChapter,
                 chaptersProgress = chaptersProgress,
                 maxSelectableChapterId = maxSelectableChapterId,
+                hubCompanionIdleRes = hubCompanionIdleRes,
                 onOpenChapter = onOpenChapter,
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -378,9 +400,11 @@ private fun ChaptersHexHoneycomb(
     unlockedChapter: Int,
     chaptersProgress: ChaptersProgress,
     maxSelectableChapterId: Int,
+    hubCompanionIdleRes: Int,
     onOpenChapter: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val dinoMapSize = 64.dp
     BoxWithConstraints(modifier = modifier) {
         val tile = (maxWidth / 3.25f).coerceIn(128.dp, 190.dp)
         val w = tile
@@ -409,22 +433,50 @@ private fun ChaptersHexHoneycomb(
                                 progress = chaptersProgress,
                             )
                         val openable = state != ChapterEggState.Locked && ch.id <= maxSelectableChapterId
-                        ChapterHexTile(
-                            title = ch.title,
-                            imageRes =
-                                when (ch.id) {
-                                    2 -> R.drawable.chapter2_journey_road
-                                    3 -> R.drawable.ch3_journey_bg
-                                    4 -> R.drawable.forest_bg_journey_road
-                                    5 -> R.drawable.forest_bg_journey_road
-                                    6 -> R.drawable.forest_bg_journey_road
-                                    else -> R.drawable.forest_bg_journey_road
-                                },
-                            state = state,
-                            enabled = openable,
-                            size = w,
-                            onClick = { if (openable) onOpenChapter(ch.id) },
-                        )
+                        val isCurrent = ch.id == unlockedChapter && state == ChapterEggState.Unlocked
+                        Box {
+                            ChapterHexTile(
+                                title = ch.title,
+                                imageRes =
+                                    when (ch.id) {
+                                        2 -> R.drawable.chapter2_journey_road
+                                        3 -> R.drawable.ch3_journey_bg
+                                        4 -> R.drawable.forest_bg_journey_road
+                                        5 -> R.drawable.forest_bg_journey_road
+                                        6 -> R.drawable.forest_bg_journey_road
+                                        else -> R.drawable.forest_bg_journey_road
+                                    },
+                                state = state,
+                                enabled = openable,
+                                size = w,
+                                onClick = { if (openable) onOpenChapter(ch.id) },
+                            )
+                            if (isCurrent) {
+                                val breath by rememberInfiniteTransition(label = "hexHubCompanionBreath")
+                                    .animateFloat(
+                                        initialValue = 0.97f,
+                                        targetValue = 1.03f,
+                                        animationSpec =
+                                            infiniteRepeatable(
+                                                animation = tween(720, easing = FastOutSlowInEasing),
+                                                repeatMode = RepeatMode.Reverse,
+                                            ),
+                                        label = "hexHubCompanionBreathScale",
+                                    )
+                                Image(
+                                    painter = painterResource(id = hubCompanionIdleRes),
+                                    contentDescription = null,
+                                    modifier =
+                                        Modifier
+                                            .align(Alignment.TopEnd)
+                                            .offset(x = (-6).dp, y = (-22).dp)
+                                            .zIndex(3f)
+                                            .size(dinoMapSize)
+                                            .scale(breath),
+                                    contentScale = ContentScale.Fit,
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -567,6 +619,7 @@ private fun ChapterVerticalPath(
     unlockedChapter: Int,
     chaptersProgress: ChaptersProgress,
     maxSelectableChapterId: Int,
+    hubCompanionIdleRes: Int,
     onOpenChapter: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -778,7 +831,7 @@ private fun ChapterVerticalPath(
                             label = "mapDinoBreathScale",
                         )
                         Image(
-                            painter = painterResource(id = R.drawable.dino_idle),
+                            painter = painterResource(id = hubCompanionIdleRes),
                             contentDescription = null,
                             modifier =
                                 Modifier

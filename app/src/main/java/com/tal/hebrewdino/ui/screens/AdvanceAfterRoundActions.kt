@@ -1,6 +1,5 @@
 package com.tal.hebrewdino.ui.screens
 
-import android.os.SystemClock
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.AnimationVector1D
 import androidx.compose.animation.core.spring
@@ -8,9 +7,9 @@ import androidx.compose.animation.core.tween
 import com.tal.hebrewdino.ui.audio.AudioClips
 import com.tal.hebrewdino.ui.audio.RawVoicePlayer
 import com.tal.hebrewdino.ui.audio.VoicePlayer
-import com.tal.hebrewdino.ui.AppAnalytics
 import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
 import com.tal.hebrewdino.ui.domain.LevelSession
+import com.tal.hebrewdino.ui.domain.TrainingV1Config
 import com.tal.hebrewdino.ui.feedback.GameFeedback
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
@@ -65,12 +64,17 @@ internal object AdvanceAfterRoundActions {
     ) {
         gameViewModel.inputLocked = true
         if (audioEnabled && !ch3SpellMidWord) onLevelCompleteHook()
+        val trainingMatchLetterStation =
+            chapterId == TrainingV1Config.CHAPTER_ID &&
+                stationId == TrainingV1Config.STATION_MATCH_LETTER_TO_WORD
+        val finaleMatchLetterStation =
+            sagaEpisode && stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH
         if (audioEnabled) {
             when {
                 sagaUsesPickLetterAudioStaging && isLast && chapterId != 3 -> gameFeedback.playCorrect()
                 sagaUsesPopBalloonsAudioStaging -> Unit
                 sagaUsesFindGridAudioStaging -> Unit
-                sagaEpisode && stationId == 6 -> Unit
+                finaleMatchLetterStation || trainingMatchLetterStation -> Unit
                 isLast -> gameFeedback.playSuccessBig()
                 else -> gameFeedback.playCorrect()
             }
@@ -85,11 +89,23 @@ internal object AdvanceAfterRoundActions {
                 stationId != Chapter1StationOrder.PICTURE_PICK_ONE &&
                 !isChapter3AudioLetterRecognitionStation &&
                 Random.nextFloat() < Episode1PraiseChance
+        /** Ch3/Ch6 st5, Ch6 st6, and Training st1/2/3 already play praise in action handlers. */
+        val trainingInStationPraiseAlreadyPlayed =
+            chapterId == TrainingV1Config.CHAPTER_ID &&
+                (stationId == TrainingV1Config.STATION_HEAR_LETTER_CHOOSE ||
+                    stationId == TrainingV1Config.STATION_WHICH_WORD_STARTS_WITH_LETTER ||
+                    stationId == TrainingV1Config.STATION_PICTURE_CHOOSE_WORD)
+        val inStationPraiseAlreadyPlayed =
+            isChapter3AudioLetterRecognitionStation ||
+                (chapterId == 6 && stationId == 6) ||
+                trainingInStationPraiseAlreadyPlayed
         val otherPraiseEligible =
             audioEnabled &&
-                !(sagaEpisode && stationId == 6) &&
+                !finaleMatchLetterStation &&
+                !trainingMatchLetterStation &&
                 !(sagaUsesPickLetterAudioStaging) &&
                 !(sagaEpisode && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) &&
+                !inStationPraiseAlreadyPlayed &&
                 !episode1PraiseEligible
 
         if (episode1PraiseEligible) {
@@ -143,7 +159,8 @@ internal object AdvanceAfterRoundActions {
             (sagaEpisode &&
                 (stationId == Chapter1StationOrder.PICTURE_PICK_ONE ||
                     stationId == Chapter1StationOrder.PICTURE_PICK_ALL ||
-                    stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH))
+                    stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH)) ||
+                trainingMatchLetterStation
         if (!(isChapter3HighlightedLetterInWordStation && ch3SpellMidWord)) {
             playSuccessPulse(
                 scope,
@@ -187,14 +204,6 @@ internal object AdvanceAfterRoundActions {
         session.nextQuestion()
         if (session.currentQuestion == null && !gameViewModel.completionCallbackFired) {
             gameViewModel.completionCallbackFired = true
-            val timeTakenSeconds =
-                ((SystemClock.elapsedRealtime() - gameViewModel.stationStartMs) / 1000L)
-                    .coerceAtLeast(0L)
-            AppAnalytics.logLevelComplete(
-                chapterId = chapterId,
-                stationId = stationId,
-                timeTakenSeconds = timeTakenSeconds,
-            )
             if (audioEnabled) {
                 GameAudioActions.finishStationVoiceBeforeReward(
                     audioRuntime = audioRuntime,

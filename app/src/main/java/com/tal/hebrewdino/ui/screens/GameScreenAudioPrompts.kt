@@ -618,11 +618,11 @@ internal suspend fun speakPromptForQuestion(
                 if (rawVoice == null) {
                     android.util.Log.e(
                         "MissingContent",
-                        "Missing required station prompt audio. chapterId=$chapterId stationId=$stationId context=speakPromptForQuestion(TrainingImageMatchPictureStartsWith) stage=rawVoice=null expectedInstructionRawRes!=null",
+                        "Missing required station prompt audio. chapterId=$chapterId stationId=$stationId context=speakPromptForQuestion(TrainingImageMatchWhichWordStartsWith) stage=rawVoice=null expectedInstructionRawRes!=null",
                     )
                     voice.playRequiredBlocking(
                         assetPath = "",
-                        context = "speakPromptForQuestion(TrainingImageMatchPictureStartsWith,rawVoice=null)",
+                        context = "speakPromptForQuestion(TrainingImageMatchWhichWordStartsWith,rawVoice=null)",
                         chapterId = chapterId,
                         stationId = stationId,
                     )
@@ -631,7 +631,7 @@ internal suspend fun speakPromptForQuestion(
                 if (playerAddress == null) {
                     android.util.Log.e(
                         "MissingContent",
-                        "Missing required station prompt audio. chapterId=$chapterId stationId=$stationId context=speakPromptForQuestion(TrainingImageMatchPictureStartsWith) stage=playerAddress=null expectedInstructionKind=PictureStartsWith",
+                        "Missing required station prompt audio. chapterId=$chapterId stationId=$stationId context=speakPromptForQuestion(TrainingImageMatchWhichWordStartsWith) stage=playerAddress=null expectedInstructionKind=WhichWordStartsWith",
                     )
                     rawVoice.playRawBlocking(0)
                     return
@@ -640,14 +640,14 @@ internal suspend fun speakPromptForQuestion(
                 if (letterResId == null) {
                     android.util.Log.e(
                         "MissingContent",
-                        "Missing required station prompt audio. chapterId=$chapterId stationId=$stationId context=speakPromptForQuestion(TrainingImageMatchPictureStartsWith) stage=missing raw letter-name mapping targetLetter='${q.targetLetter}'",
+                        "Missing required station prompt audio. chapterId=$chapterId stationId=$stationId context=speakPromptForQuestion(TrainingImageMatchWhichWordStartsWith) stage=missing raw letter-name mapping targetLetter='${q.targetLetter}'",
                     )
                     rawVoice.playRawBlocking(0)
                     return
                 }
                 rawVoice.playRawBlocking(
                     Chapter1AddressAwareAudio.instructionRawRes(
-                        kind = Chapter1AddressAwareAudio.InstructionKind.PictureStartsWith,
+                        kind = Chapter1AddressAwareAudio.InstructionKind.WhichWordStartsWith,
                         address = playerAddress,
                     ),
                 )

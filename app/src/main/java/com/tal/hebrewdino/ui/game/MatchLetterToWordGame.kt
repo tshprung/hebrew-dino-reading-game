@@ -80,18 +80,12 @@ private fun Modifier.offsetYIfNonZero(y: Dp): Modifier =
         this
     }
 
-/** Training rounds 6 and 10: header + picture cards only (~6 mm ≈ 23 dp). */
-private fun trainingMatchLetterHeaderExtraDownDp(chapterId: Int?, stationId: Int?): Dp =
-    if (chapterId == TrainingV1Config.CHAPTER_ID &&
-        stationId == TrainingV1Config.STATION_MATCH_LETTER_TO_WORD
-    ) {
-        23.dp
-    } else {
-        0.dp
-    }
-
-/** Training rounds 6 and 10: letter row stays at default vertical position. */
-private fun trainingMatchLetterLetterRowExtraDownDp(chapterId: Int?, stationId: Int?): Dp = 0.dp
+/** Saga finale st6 and Training rounds 6/10 — same layout tuning as Chapter 2 station 6. */
+private fun isFinalePictureLetterMatchLayout(chapterId: Int?, stationId: Int?): Boolean =
+    (chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) &&
+        stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH ||
+        (chapterId == TrainingV1Config.CHAPTER_ID &&
+            stationId == TrainingV1Config.STATION_MATCH_LETTER_TO_WORD)
 
 @Composable
 fun MatchLetterToWordGame(
@@ -264,14 +258,12 @@ fun MatchLetterToWordGame(
                 )
         val headerAndCardsExtraDownDp =
             when {
-                (chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) &&
-                    stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH ->
-                    20.dp
+                isFinalePictureLetterMatchLayout(chapterId, stationId) -> 20.dp
                 chapterId == 3 && stationId == 2 -> 20.dp
                 chapterId == 6 && stationId == 2 -> 28.dp
-                else -> trainingMatchLetterHeaderExtraDownDp(chapterId, stationId)
+                else -> 0.dp
             }
-        val letterRowExtraDownDp = trainingMatchLetterLetterRowExtraDownDp(chapterId, stationId)
+        val letterRowExtraDownDp = 0.dp
         val chapter6Station2CaptionBoost = if (chapterId == 6 && stationId == 2) 1.30f else 1f
 
         // Header stays pinned; content below scales down if needed so nothing is clipped.
@@ -500,9 +492,7 @@ fun MatchLetterToWordGame(
                     val cardH =
                         cardW *
                             LessonChoiceCardPictureAspect *
-                            if ((chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) &&
-                                stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH
-                            ) {
+                            if (isFinalePictureLetterMatchLayout(chapterId, stationId)) {
                                 0.70f
                             } else if (isChapter3Station2MatchLetterToWord) {
                                 0.70f
@@ -806,9 +796,7 @@ fun MatchLetterToWordGame(
                             val cardH =
                                 cardW *
                                     LessonChoiceCardPictureAspect *
-                                    if ((chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) &&
-                                        stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH
-                                    ) {
+                                    if (isFinalePictureLetterMatchLayout(chapterId, stationId)) {
                                         0.70f
                                     } else if (isChapter3Station2MatchLetterToWord) {
                                         0.70f
@@ -939,14 +927,12 @@ private fun SixStationArcStation6Board(
     val topGroupOffsetY = (-24).dp
     val headerAndCardsExtraDownDp =
         when {
-            (chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) &&
-                stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH ->
-                20.dp
+            isFinalePictureLetterMatchLayout(chapterId, stationId) -> 20.dp
             chapterId == 3 && stationId == 2 -> 20.dp
             chapterId == 6 && stationId == 2 -> 28.dp
-            else -> trainingMatchLetterHeaderExtraDownDp(chapterId, stationId)
+            else -> 0.dp
         }
-    val letterRowExtraDownDp = trainingMatchLetterLetterRowExtraDownDp(chapterId, stationId)
+    val letterRowExtraDownDp = 0.dp
     val topGroupOffsetEffectiveY = topGroupOffsetY + headerAndCardsExtraDownDp
     val columns = wordColumn.size.coerceIn(1, 6)
     val rowInnerW = (innerW - boardHorizontalPadding * 2f).coerceAtLeast(1.dp)
@@ -971,14 +957,7 @@ private fun SixStationArcStation6Board(
             showWordCaption = true,
         )
     val cardWidthBoostForStation =
-        if ((chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) &&
-            stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH
-        ) {
-            1.20f
-        } else if (
-            chapterId == TrainingV1Config.CHAPTER_ID &&
-                stationId == TrainingV1Config.STATION_MATCH_LETTER_TO_WORD
-        ) {
+        if (isFinalePictureLetterMatchLayout(chapterId, stationId)) {
             1.20f
         } else if (isChapter3Station2MatchLetterToWord) {
             1.20f
@@ -990,14 +969,7 @@ private fun SixStationArcStation6Board(
     val cardH =
         cardW *
             LessonChoiceCardPictureAspect *
-            if ((chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) &&
-                stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH
-            ) {
-                0.70f
-            } else if (
-                chapterId == TrainingV1Config.CHAPTER_ID &&
-                    stationId == TrainingV1Config.STATION_MATCH_LETTER_TO_WORD
-            ) {
+            if (isFinalePictureLetterMatchLayout(chapterId, stationId)) {
                 0.70f
             } else if (isChapter3Station2MatchLetterToWord) {
                 0.70f

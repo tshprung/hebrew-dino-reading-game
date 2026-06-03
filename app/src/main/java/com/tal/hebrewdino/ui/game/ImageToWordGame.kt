@@ -98,8 +98,10 @@ fun ImageToWordGame(
             chapterId == TrainingV1Config.CHAPTER_ID && stationId == TrainingV1Config.STATION_PICTURE_CHOOSE_WORD
         val isTrainingImageToWordRound38 =
             isTrainingStation3 && trainingRoundIndex in setOf(3, 8)
+        val isChapter3Station6ImageToWord = chapterId == 3 && stationId == 6
+        val isChapter6Station6ImageToWord = chapterId == 6 && stationId == 6
         val isChapter3Or6Station6ImageToWord =
-            (chapterId == 3 || chapterId == 6) && stationId == 6
+            isChapter3Station6ImageToWord || isChapter6Station6ImageToWord
         val isInstructionWrapContent = isTrainingImageToWordRound38 || isChapter3Or6Station6ImageToWord
 
         // Match the same card sizing math as PictureStartsWith/ImageMatch (Episode 1/2 station 4).
@@ -117,6 +119,9 @@ fun ImageToWordGame(
         }
         if (isChapter3Or6Station6ImageToWord) {
             pictureCardW = (pictureCardW * 1.40f).coerceAtMost(w - 48.dp)
+        }
+        if (isTrainingImageToWordRound38) {
+            pictureCardW = (pictureCardW * 1.30f).coerceAtMost(w - 48.dp)
         }
         val pictureCardH = pictureCardW * LessonChoiceCardPictureAspect
         val chapter3Station6ExtraDown = if (chapterId == 3 && stationId == 6) 19.dp else 0.dp
@@ -184,8 +189,8 @@ fun ImageToWordGame(
                     val innerScale =
                         innerPictureScaleForChoice(correctChoice) *
                             when {
-                                isTrainingImageToWordRound38 -> 0.70f
-                                isChapter3Or6Station6ImageToWord -> 1.40f
+                                isChapter3Station6ImageToWord -> 1.40f
+                                isChapter6Station6ImageToWord -> 1.40f * 0.70f
                                 isCompactLandscapePhone -> 1.50f
                                 else -> 1f
                             }

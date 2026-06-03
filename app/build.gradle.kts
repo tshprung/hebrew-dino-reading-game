@@ -3,10 +3,6 @@
     alias(libs.plugins.kotlin.compose)
 }
 
-if (file("google-services.json").exists()) {
-    apply(plugin = "com.google.gms.google-services")
-}
-
 android {
     namespace = "com.tal.hebrewdino"
     compileSdk = 37
@@ -15,8 +11,8 @@ android {
         applicationId = "com.talshprung.dinoreadinghebrew"
         minSdk = 26
         targetSdk = 37
-        versionCode = 10
-        versionName = "1.0.9"
+        versionCode = 11
+        versionName = "1.1.0"
     }
 
     buildTypes {
@@ -58,7 +54,4 @@ dependencies {
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.kotlinx.coroutines.android)
-
-    implementation(platform(libs.firebase.bom))
-    implementation(libs.firebase.analytics)
 }

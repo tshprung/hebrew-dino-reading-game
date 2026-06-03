@@ -11,22 +11,6 @@ import org.junit.Before
 import org.junit.Test
 
 class RewardSuccessAudioTest {
-    private val legacyNeutralClips =
-        intArrayOf(
-            R.raw.reward_success_neutral_01,
-            R.raw.reward_success_neutral_02,
-            R.raw.reward_success_neutral_03,
-            R.raw.reward_success_neutral_04,
-            R.raw.reward_success_neutral_05,
-            R.raw.reward_success_neutral_06,
-            R.raw.reward_success_neutral_07,
-            R.raw.reward_success_neutral_08,
-            R.raw.reward_success_neutral_09,
-            R.raw.reward_success_neutral_10,
-            R.raw.reward_success_neutral_11,
-            R.raw.reward_success_neutral_12,
-        )
-
     @Before
     fun resetSession() {
         RewardSuccessAudioSession.resetForTests()
@@ -51,16 +35,33 @@ class RewardSuccessAudioTest {
     }
 
     @Test
-    fun activePools_excludeNeutralAndLegacyRewardClips() {
+    fun activePools_useOnlyCompanionRewardClips() {
         val dinoPool = RewardSuccessAudio.poolFor(DinoCharacter.Dino).toSet()
         val dinaPool = RewardSuccessAudio.poolFor(DinoCharacter.Dina).toSet()
-        legacyNeutralClips.forEach { assertFalse(dinoPool.contains(it)) }
-        legacyNeutralClips.forEach { assertFalse(dinaPool.contains(it)) }
-        assertFalse(dinoPool.contains(R.raw.reward_success_dino_01))
-        assertFalse(dinoPool.contains(R.raw.reward_success_dina_01))
-        assertFalse(dinoPool.contains(R.raw.reward_dina_01) && dinoPool.contains(R.raw.reward_dina_01))
-        assertTrue(dinoPool.none { it == R.raw.reward_dina_01 })
-        assertTrue(dinaPool.none { it == R.raw.reward_dino_01 })
+        val expectedDino =
+            setOf(
+                R.raw.reward_dino_01,
+                R.raw.reward_dino_02,
+                R.raw.reward_dino_03,
+                R.raw.reward_dino_04,
+                R.raw.reward_dino_05,
+                R.raw.reward_dino_06,
+                R.raw.reward_dino_07,
+                R.raw.reward_dino_08,
+            )
+        val expectedDina =
+            setOf(
+                R.raw.reward_dina_01,
+                R.raw.reward_dina_02,
+                R.raw.reward_dina_03,
+                R.raw.reward_dina_04,
+                R.raw.reward_dina_05,
+                R.raw.reward_dina_06,
+                R.raw.reward_dina_07,
+                R.raw.reward_dina_08,
+            )
+        assertEquals(expectedDino, dinoPool)
+        assertEquals(expectedDina, dinaPool)
     }
 
     @Test

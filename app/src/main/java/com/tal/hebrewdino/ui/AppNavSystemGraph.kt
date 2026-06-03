@@ -197,6 +197,7 @@ internal fun NavGraphBuilder.systemAndTrainingGraph(host: AppNavHostState) {
             chapter6ComingSoon = host.chapter6ComingSoon,
             maxSelectableChapterId = host.maxSelectableChapterId,
             chaptersProgress = host.chaptersProgress,
+            companionCharacter = host.companionCharacter,
             onBackToSeasons = {
                 host.navController.navigate(NavRoutes.Seasons) {
                     popUpTo(NavRoutes.Seasons) { inclusive = false }
@@ -272,6 +273,7 @@ internal fun NavGraphBuilder.systemAndTrainingGraph(host: AppNavHostState) {
         val roundIndex = backStackEntry.arguments?.getInt("roundIndex") ?: 1
         TrainingV1RoundScreen(
             roundIndex = roundIndex,
+            companionCharacter = host.companionCharacter,
             onBack = {
                 host.navController.navigate(NavRoutes.Chapters) {
                     popUpTo(NavRoutes.Chapters) { inclusive = false }

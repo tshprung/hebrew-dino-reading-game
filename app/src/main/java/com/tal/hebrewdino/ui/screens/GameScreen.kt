@@ -44,7 +44,6 @@ import com.tal.hebrewdino.ui.audio.GameAudioEngine
 import com.tal.hebrewdino.ui.audio.RawVoicePlayer
 import com.tal.hebrewdino.ui.audio.SoundPoolPlayer
 import com.tal.hebrewdino.ui.audio.VoicePlayer
-import com.tal.hebrewdino.ui.AppAnalytics
 import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
 import com.tal.hebrewdino.ui.domain.DevTools
 import com.tal.hebrewdino.ui.domain.Episode4Help
@@ -374,10 +373,6 @@ fun GameScreen(
             plan.mode == StationQuizMode.PopBalloons &&
             plan.popAllLettersInWord
 
-    LaunchedEffect(chapterId, stationId) {
-        AppAnalytics.logLevelStart(chapterId = chapterId, stationId = stationId)
-    }
-
     if (chapterId == TrainingV1Config.CHAPTER_ID) {
         topChromeProgressOverride?.first
     } else {
@@ -395,7 +390,13 @@ fun GameScreen(
     val devToolsEnabled = DevTools.enabled(context)
 
     val expectsSelectedCompanion =
-        chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5
+        chapterId == 1 ||
+            chapterId == 2 ||
+            chapterId == 3 ||
+            chapterId == 4 ||
+            chapterId == 5 ||
+            chapterId == 6 ||
+            chapterId == TrainingV1Config.CHAPTER_ID
     if (expectsSelectedCompanion && chapter1CompanionCharacter == null) {
         val msg =
             "Missing selected companion for station gameplay. chapterId=$chapterId stationId=$stationId context=GameScreen chapter1CompanionCharacter=null"
@@ -500,7 +501,13 @@ fun GameScreen(
         )
     }
     val useSagaSelectedCompanionDino =
-        (chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) &&
+        (chapterId == 1 ||
+            chapterId == 2 ||
+            chapterId == 3 ||
+            chapterId == 4 ||
+            chapterId == 5 ||
+            chapterId == 6 ||
+            chapterId == TrainingV1Config.CHAPTER_ID) &&
             chapter1CompanionCharacter != null
     val chapter1CompanionAssets =
         remember(chapter1CompanionCharacter) {
@@ -644,17 +651,6 @@ fun GameScreen(
         wrongPickedLetterAlreadySpoken: Boolean = false,
         wrongWordAlreadySpoken: Boolean = false,
     ) {
-        val mistakeType =
-            when {
-                wrongWordCatalogId != null -> "wrong_word"
-                wrongPickedLetter != null -> "wrong_letter"
-                else -> "wrong_choice"
-            }
-        AppAnalytics.logLevelRetry(
-            chapterId = chapterId,
-            stationId = stationId,
-            mistakeType = mistakeType,
-        )
         WrongFeedbackActions.trigger(
             scope = scope,
             gameViewModel = gameViewModel,

@@ -314,6 +314,7 @@ internal fun NavGraphBuilder.chapterOneToThreeGraph(host: AppNavHostState) {
             stationId = stationId,
             onBack = { host.navController.popBackStack() },
             suppressInGameDinoProgress = host.chapter3CompletedStations.contains(stationId),
+            companionCharacter = host.companionCharacter,
             playerAddress = host.playerAddress,
             onComplete = { completedStationId, correctCount, mistakeCount ->
                 host.scope.launch {
