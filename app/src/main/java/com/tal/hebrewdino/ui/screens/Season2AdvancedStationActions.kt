@@ -46,7 +46,7 @@ internal object Season2AdvancedStationActions {
     }
 
     fun handleWordPartsPick(
-        picked: String,
+        picked: Question.WordPartsSplitOption,
         gameViewModel: GameViewModel,
         cancelFeedbackVoice: () -> Unit,
         audioEnabled: Boolean,
@@ -64,7 +64,7 @@ internal object Season2AdvancedStationActions {
                 val q = session.currentQuestion as? Question.WordPartsQuestion
                 if (q != null) {
                     gameViewModel.wordPartsCompletedEquation =
-                        "${q.firstPart} + ${q.correctPart} = ${q.word}"
+                        "${q.word} = ${q.firstPart} + ${q.correctPart}"
                 }
                 scope.launch {
                     delay(1_400)

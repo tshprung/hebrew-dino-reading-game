@@ -5,15 +5,16 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -33,8 +34,54 @@ import com.tal.hebrewdino.ui.domain.Question
 import com.tal.hebrewdino.ui.domain.Season2WordPartsPresentationMode
 import com.tal.hebrewdino.ui.layout.ScreenFit
 
+@Composable
+private fun WordPartsSplitOptionRow(
+    firstPart: String,
+    secondPart: String,
+    highlighted: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    val bg =
+        if (highlighted) {
+            Color(0xFFFFF8E1).copy(alpha = 0.98f)
+        } else {
+            Color.White.copy(alpha = 0.94f)
+        }
+    Row(
+        modifier =
+            modifier
+                .background(bg, RoundedCornerShape(14.dp))
+                .padding(horizontal = 14.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        SplitPartChip(firstPart)
+        Text(
+            text = "+",
+            fontSize = 26.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFF0B2B3D),
+        )
+        SplitPartChip(secondPart)
+    }
+}
+
+@Composable
+private fun SplitPartChip(text: String) {
+    Text(
+        text = text,
+        fontSize = 28.sp,
+        fontWeight = FontWeight.ExtraBold,
+        color = Color(0xFF0B2B3D),
+        textAlign = TextAlign.Center,
+        modifier =
+            Modifier
+                .background(Color(0xFFE3F2FD).copy(alpha = 0.95f), RoundedCornerShape(10.dp))
+                .padding(horizontal = 12.dp, vertical = 6.dp),
+    )
+}
+
 @SuppressLint("UnusedBoxWithConstraintsScope")
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun Season2WordPartsGame(
     question: Question.WordPartsQuestion,
@@ -44,23 +91,19 @@ fun Season2WordPartsGame(
     completedEquation: String? = null,
     hintRevealWord: String? = null,
     onPictureTapReplayWord: (() -> Unit)?,
-    onPickPart: (String) -> Unit,
+    onPickSplit: (Question.WordPartsSplitOption) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val isCompact = ScreenFit.isCompactLandscapePhone()
     val mode = question.presentationMode
+    val isHidden = mode == Season2WordPartsPresentationMode.HiddenWordPartsChallenge
     val showFullWord =
         completedEquation != null ||
             hintRevealWord != null ||
             mode == Season2WordPartsPresentationMode.VisibleWordParts ||
             mode == Season2WordPartsPresentationMode.GuidedWordParts
-    val splitText =
-        when {
-            completedEquation != null -> completedEquation
-            hintRevealWord != null || showFullWord ->
-                "${question.firstPart} + ${question.correctPart}"
-            else -> "${question.firstPart} + ___"
-        }
+    val showHintEquation = hintRevealWord != null || completedEquation != null
+    val correctSplit = Question.WordPartsSplitOption(question.firstPart, question.correctPart)
 
     val choice =
         LessonChoice(
@@ -79,8 +122,8 @@ fun Season2WordPartsGame(
                     rowInnerWidth = contentWidth,
                     count = 1,
                     gap = 0.dp,
-                    minEach = 100.dp,
-                    maxEach = if (isCompact) 156.dp else 176.dp,
+                    minEach = 88.dp,
+                    maxEach = if (isCompact) 132.dp else 148.dp,
                 )
             val cardH = cardW * LessonChoiceCardPictureAspect
 
@@ -91,7 +134,7 @@ fun Season2WordPartsGame(
                         .padding(
                             start = 12.dp,
                             end = 80.dp,
-                            top = if (isCompact) 2.dp else 6.dp,
+                            top = if (isCompact) 20.dp else 26.dp,
                             bottom = if (isCompact) 4.dp else 8.dp,
                         ),
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -105,7 +148,7 @@ fun Season2WordPartsGame(
                     textAlign = TextAlign.Center,
                     modifier =
                         Modifier
-                            .fillMaxWidth()
+                            .wrapContentWidth(Alignment.CenterHorizontally)
                             .padding(bottom = if (isCompact) 6.dp else 8.dp)
                             .background(Color.White.copy(alpha = 0.82f), RoundedCornerShape(14.dp))
                             .padding(horizontal = 12.dp, vertical = if (isCompact) 5.dp else 7.dp),
@@ -119,62 +162,80 @@ fun Season2WordPartsGame(
                     cardWidth = cardW,
                     cardHeight = cardH,
                     captionFontSize = 1.sp,
-                    innerPictureScale = if (isCompact) 1.22f else 1.08f,
+                    innerPictureScale = if (isCompact) 1.18f else 1.06f,
                     onClick = { onPictureTapReplayWord?.invoke() },
                 )
 
-                Spacer(modifier = Modifier.height(if (isCompact) 8.dp else 10.dp))
+                Spacer(modifier = Modifier.height(if (isCompact) 6.dp else 8.dp))
 
                 if (showFullWord) {
                     Text(
                         text = question.word,
-                        fontSize = if (isCompact) 32.sp else 36.sp,
+                        fontSize = if (isCompact) 30.sp else 34.sp,
                         fontWeight = FontWeight.ExtraBold,
                         color = Color(0xFF1B5E20),
                         textAlign = TextAlign.Center,
                         modifier =
                             Modifier
+                                .wrapContentWidth(Alignment.CenterHorizontally)
                                 .background(
                                     Color(0xFFE8F5E9).copy(alpha = 0.92f),
                                     RoundedCornerShape(16.dp),
                                 )
-                                .padding(horizontal = 20.dp, vertical = if (isCompact) 6.dp else 8.dp),
+                                .padding(horizontal = 18.dp, vertical = if (isCompact) 5.dp else 7.dp),
                     )
-                    Spacer(modifier = Modifier.height(if (isCompact) 6.dp else 8.dp))
+                    Spacer(modifier = Modifier.height(if (isCompact) 4.dp else 6.dp))
                 }
 
-                Text(
-                    text = splitText,
-                    fontSize = if (isCompact) 28.sp else 32.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF0B2B3D),
-                    textAlign = TextAlign.Center,
-                    modifier =
-                        Modifier
-                            .background(
-                                Color(0xFFFFF8E1).copy(alpha = if (hintRevealWord != null) 0.95f else 0.88f),
-                                RoundedCornerShape(18.dp),
-                            )
-                            .padding(horizontal = 18.dp, vertical = if (isCompact) 8.dp else 10.dp),
-                )
+                if (showHintEquation) {
+                    val equationText =
+                        completedEquation
+                            ?: "${question.word} = ${question.firstPart} + ${question.correctPart}"
+                    Text(
+                        text = equationText,
+                        fontSize = if (isCompact) 24.sp else 28.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF0B2B3D),
+                        textAlign = TextAlign.Center,
+                        modifier =
+                            Modifier
+                                .wrapContentWidth(Alignment.CenterHorizontally)
+                                .background(
+                                    Color(0xFFFFF8E1).copy(alpha = 0.95f),
+                                    RoundedCornerShape(18.dp),
+                                )
+                                .padding(horizontal = 16.dp, vertical = if (isCompact) 6.dp else 8.dp),
+                    )
+                    Spacer(modifier = Modifier.height(if (isCompact) 6.dp else 8.dp))
+                } else if (!isHidden) {
+                    Spacer(modifier = Modifier.height(if (isCompact) 2.dp else 4.dp))
+                }
 
-                Spacer(modifier = Modifier.height(if (isCompact) 10.dp else 12.dp))
-
-                FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally),
-                    verticalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterVertically),
+                Column(
                     modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(if (isCompact) 8.dp else 10.dp),
                 ) {
-                    question.partOptions.forEach { part ->
+                    question.splitOptions.forEach { option ->
+                        val isCorrectSplit =
+                            option.firstPart == correctSplit.firstPart &&
+                                option.secondPart == correctSplit.secondPart
+                        val highlightOption = hintRevealWord != null && isCorrectSplit
                         Button(
-                            onClick = { if (enabled) onPickPart(part) },
+                            onClick = { if (enabled) onPickSplit(option) },
                             enabled = enabled,
-                            modifier = Modifier.padding(2.dp),
+                            colors =
+                                ButtonDefaults.buttonColors(
+                                    containerColor = Color(0xFFE8F5E9).copy(alpha = 0.92f),
+                                    contentColor = Color(0xFF0B2B3D),
+                                ),
+                            shape = RoundedCornerShape(16.dp),
+                            modifier = Modifier.wrapContentWidth(Alignment.CenterHorizontally),
                         ) {
-                            Text(
-                                text = part,
-                                fontSize = if (isCompact) 26.sp else 30.sp,
-                                fontWeight = FontWeight.Bold,
+                            WordPartsSplitOptionRow(
+                                firstPart = option.firstPart,
+                                secondPart = option.secondPart,
+                                highlighted = highlightOption,
                             )
                         }
                     }

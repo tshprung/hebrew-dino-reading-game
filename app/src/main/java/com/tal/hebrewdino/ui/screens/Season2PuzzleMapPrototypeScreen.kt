@@ -118,6 +118,7 @@ fun Season2PuzzleMapPrototypeScreen(
     onChapterIntroConsumed: () -> Unit = {},
     requestChapterCelebration: Boolean = false,
     onChapterCelebrationConsumed: () -> Unit = {},
+    onRewardContinue: () -> Unit = onBack,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -353,7 +354,10 @@ fun Season2PuzzleMapPrototypeScreen(
                 chapterId = chapterId,
                 posterResId = posterResId,
                 companionCharacter = companionCharacter,
-                onContinue = { showCompletionCelebration = false },
+                onContinue = {
+                    showCompletionCelebration = false
+                    onRewardContinue()
+                },
                 modifier = Modifier.zIndex(30f),
             )
         }

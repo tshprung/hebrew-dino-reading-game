@@ -162,7 +162,7 @@ internal data class GameQuestionHostHandlers(
     val handleImageToWordAttempt: (choiceId: String) -> Boolean,
     val handleImageMatchAttempt: (choiceId: String) -> Boolean,
     val handleMissingFirstLetterPick: (picked: String) -> Unit,
-    val handleWordPartsPick: (picked: String) -> Unit,
+    val handleWordPartsPick: (picked: Question.WordPartsSplitOption) -> Unit,
     val handleRhymingPick: (choiceId: String) -> Unit,
     val handleAdvancedReplayWord: () -> Unit,
     val handleFinaleWrongPlacement: () -> Unit,
@@ -867,7 +867,7 @@ internal fun GameQuestionHost(
                     } else {
                         null
                     },
-                onPickPart = { part -> handlers.handleWordPartsPick(part) },
+                onPickSplit = { split -> handlers.handleWordPartsPick(split) },
                 modifier =
                     Modifier
                         .fillMaxWidth()

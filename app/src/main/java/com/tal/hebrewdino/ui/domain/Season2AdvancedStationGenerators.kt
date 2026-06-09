@@ -79,23 +79,26 @@ object Season2AdvancedStationGenerators {
         )
     }
 
-    fun wordPartsPickSecondPart(
+    fun wordPartsChooseCorrectSplit(
         rnd: Random,
         spec: Season2WordPartsEntry,
-        distractorSecondParts: List<String>,
-        optionCount: Int = 3,
+        distractorSpecs: List<Season2WordPartsEntry>,
         presentationMode: Season2WordPartsPresentationMode = Season2WordPartsPresentationMode.GuidedWordParts,
     ): Question.WordPartsQuestion {
         Season2StationContentValidator.requireValidatedWord(spec.catalogId)
         val entry = LessonWordCatalog.entries.first { it.id == spec.catalogId }
-        val pool =
-            (listOf(spec.secondPart) + distractorSecondParts)
-                .distinct()
-                .filter { it.isNotEmpty() && it != spec.secondPart }
-        val desired = optionCount.coerceIn(2, 6)
-        val distractors = pool.shuffled(rnd).take((desired - 1).coerceAtLeast(1))
-        val options = (listOf(spec.secondPart) + distractors).distinct().take(desired).shuffled(rnd)
-        require(spec.secondPart in options)
+        val correct = Question.WordPartsSplitOption(spec.firstPart, spec.secondPart)
+        val distractors =
+            distractorSpecs
+                .filter { it.catalogId != spec.catalogId }
+                .distinctBy { "${it.firstPart}|${it.secondPart}" }
+                .shuffled(rnd)
+                .take(2)
+                .map { Question.WordPartsSplitOption(it.firstPart, it.secondPart) }
+        require(distractors.size == 2) {
+            "word-parts choose-split needs 2 distractor splits for ${spec.catalogId}"
+        }
+        val options = (listOf(correct) + distractors).shuffled(rnd)
         return Question.WordPartsQuestion(
             word = entry.word,
             catalogEntryId = entry.id,
@@ -103,8 +106,7 @@ object Season2AdvancedStationGenerators {
             tintArgb = entry.tintArgb,
             firstPart = spec.firstPart,
             correctPart = spec.secondPart,
-            partOptions = options,
-            promptKind = Question.WordPartsPromptKind.PickSecondPart,
+            splitOptions = options,
             presentationMode = presentationMode,
         )
     }
@@ -175,17 +177,13 @@ object Season2AdvancedStationGenerators {
                     Season2WordPartsCatalog.entriesForPresentationMode(wordCatalogIds, presentation)
                 require(specs.isNotEmpty()) { "no validated word-parts entries" }
                 val spec = specs[roundIndex % specs.size]
-                val otherSecondParts =
-                    specs
-                        .filter { it.catalogId != spec.catalogId }
-                        .map { it.secondPart }
-                val optionCount =
-                    if (presentation == Season2WordPartsPresentationMode.VisibleWordParts) 4 else 3
-                return wordPartsPickSecondPart(
+                require(specs.size >= 3) {
+                    "word-parts choose-split needs at least 3 validated splits in scope"
+                }
+                return wordPartsChooseCorrectSplit(
                     rnd = rnd,
                     spec = spec,
-                    distractorSecondParts = otherSecondParts,
-                    optionCount = optionCount,
+                    distractorSpecs = specs.filter { it.catalogId != spec.catalogId },
                     presentationMode = presentation,
                 )
             }

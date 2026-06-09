@@ -24,7 +24,7 @@ class Season2StationAudioTest {
     @Test
     fun stationThemeCopy_usesShortKidFriendlyInstructions() {
         val theme = Season2StationTheme.StegosaurusPlates
-        assertTrue(Season2StationThemeCopy.pictureToWordInstruction(theme).contains("בחרו"))
+        assertTrue(Season2StationThemeCopy.pictureToWordInstruction(theme).contains("איזו מילה"))
         assertTrue(Season2StationThemeCopy.missingFirstLetterInstruction(theme).contains("איזו אות חסרה"))
         assertFalse(Season2StationThemeCopy.missingFirstLetterInstruction(theme).contains("בהתחלה"))
         assertTrue(Season2StationThemeCopy.rhymingInstruction(theme).contains("מתחרזת"))
@@ -32,17 +32,20 @@ class Season2StationAudioTest {
     }
 
     @Test
-    fun wordPartsQuestion_doesNotExposeFullWordInPartialDisplay() {
+    fun wordPartsQuestion_splitOptionsAreFullSplits() {
         val spec = Season2WordPartsCatalog.curatedEntries.first { it.catalogId == "w_ש_1" }
         val q =
-            Season2AdvancedStationGenerators.wordPartsPickSecondPart(
+            Season2AdvancedStationGenerators.wordPartsChooseCorrectSplit(
                 rnd = Random(1),
                 spec = spec,
-                distractorSecondParts = listOf("חל", "פר"),
+                distractorSpecs =
+                    Season2WordPartsCatalog.curatedEntries.filter {
+                        it.catalogId in setOf("w_ג_1", "w_ח_3")
+                    },
             )
         assertEquals("ש", q.firstPart)
         assertEquals("מש", q.correctPart)
-        assertFalse(q.partOptions.contains(q.word))
+        assertFalse(q.splitOptions.any { it.secondPart == q.word })
     }
 
     @Test
@@ -61,8 +64,11 @@ class Season2StationAudioTest {
     @Test
     fun advancedInstructionAssets_useExpectedPaths() {
         assertEquals(
-            AudioClips.Season2WordPartsInstructions,
-            Season2StationAudio.instructionAssetPath(Season2AdvancedStationMode.WordParts),
+            AudioClips.Season2WordPartsChooseSplitInstructions,
+            Season2StationAudio.instructionAssetPath(
+                Season2AdvancedStationMode.WordParts,
+                Season2WordPartsPresentationMode.GuidedWordParts,
+            ),
         )
         assertEquals(
             AudioClips.Season2RhymingInstructions,

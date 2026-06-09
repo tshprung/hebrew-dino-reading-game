@@ -39,18 +39,25 @@ class Season2AdvancedStationGeneratorsTest {
     }
 
     @Test
-    fun wordParts_generatesPickSecondPartQuestion() {
+    fun wordParts_generatesChooseCorrectSplitQuestion() {
         val spec = Season2WordPartsCatalog.curatedEntries.first { it.catalogId == "w_ש_1" }
+        val distractors =
+            Season2WordPartsCatalog.curatedEntries.filter {
+                it.catalogId in setOf("w_ג_1", "w_ח_3")
+            }
         val q =
-            Season2AdvancedStationGenerators.wordPartsPickSecondPart(
+            Season2AdvancedStationGenerators.wordPartsChooseCorrectSplit(
                 rnd = rnd,
                 spec = spec,
-                distractorSecondParts = listOf("חל", "פר", "לון"),
+                distractorSpecs = distractors,
             )
         assertEquals("שמש", q.word)
         assertEquals("ש", q.firstPart)
         assertEquals("מש", q.correctPart)
-        assertTrue(q.correctPart in q.partOptions)
+        assertEquals(3, q.splitOptions.size)
+        assertTrue(
+            q.splitOptions.any { it.firstPart == "ש" && it.secondPart == "מש" },
+        )
     }
 
     @Test

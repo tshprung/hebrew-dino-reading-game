@@ -135,6 +135,7 @@ fun ImageToWordGame(
             when {
                 chapterId == 6 && stationId == 6 -> 38.dp
                 isSeason2ImageToWord && chapterId == Season2ChapterIds.Chapter6Mosasaurus -> 24.dp
+                isSeason2ImageToWord && chapterId == Season2ChapterIds.Chapter1Tyrannosaurus -> 19.dp
                 isSeason2ImageToWord -> 12.dp
                 else -> 0.dp
             }

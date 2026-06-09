@@ -18,8 +18,8 @@ object Season2StationThemeCopy {
 
     fun pictureToWordInstruction(theme: Season2StationTheme): String =
         when (theme) {
-            Season2StationTheme.HighLeaves -> "\u200Fבחרו את המילה שמתאימה לתמונה"
-            else -> "\u200Fבחרו את המילה שמתאימה לתמונה"
+            Season2StationTheme.HighLeaves -> "\u200Fאיזו מילה מתאימה לתמונה?"
+            else -> "\u200Fאיזו מילה מתאימה לתמונה?"
         }
 
     fun missingFirstLetterInstruction(theme: Season2StationTheme): String =
@@ -33,9 +33,10 @@ object Season2StationThemeCopy {
         presentationMode: Season2WordPartsPresentationMode = Season2WordPartsPresentationMode.GuidedWordParts,
     ): String =
         when (presentationMode) {
-            Season2WordPartsPresentationMode.VisibleWordParts -> "\u200Fמצאו את חלקי המילה"
-            Season2WordPartsPresentationMode.GuidedWordParts -> "\u200Fאיזה חלק משלים את המילה?"
-            Season2WordPartsPresentationMode.HiddenWordPartsChallenge -> "\u200Fאיזה חלק משלים את המילה?"
+            Season2WordPartsPresentationMode.VisibleWordParts -> "\u200Fאיך מחלקים את המילה?"
+            Season2WordPartsPresentationMode.GuidedWordParts -> "\u200Fאיך מחלקים את המילה?"
+            Season2WordPartsPresentationMode.HiddenWordPartsChallenge ->
+                "\u200Fאיזה פירוק מתאים למילה ששמעתם?"
         }
 
     fun rhymingInstruction(theme: Season2StationTheme): String =

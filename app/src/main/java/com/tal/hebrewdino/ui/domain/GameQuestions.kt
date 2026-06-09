@@ -81,10 +81,17 @@ sealed class Question {
     }
 
     enum class WordPartsPromptKind {
-        PickSecondPart,
+        ChooseCorrectSplit,
     }
 
-    /** Connect beginning letter + rest of word (Season 2 word-parts station). */
+    data class WordPartsSplitOption(
+        val firstPart: String,
+        val secondPart: String,
+    ) {
+        val key: String get() = "$firstPart|$secondPart"
+    }
+
+    /** Picture + word split recognition (Season 2 word-parts stations). */
     data class WordPartsQuestion(
         val word: String,
         val catalogEntryId: String,
@@ -92,14 +99,17 @@ sealed class Question {
         @param:ColorInt val tintArgb: Int,
         val firstPart: String,
         val correctPart: String,
-        val partOptions: List<String>,
-        val promptKind: WordPartsPromptKind,
+        val splitOptions: List<WordPartsSplitOption>,
+        val promptKind: WordPartsPromptKind = WordPartsPromptKind.ChooseCorrectSplit,
         val presentationMode: Season2WordPartsPresentationMode = Season2WordPartsPresentationMode.GuidedWordParts,
     ) : Question() {
         init {
             require(firstPart.isNotEmpty() && correctPart.isNotEmpty())
-            require(correctPart in partOptions)
-            require(word == firstPart + correctPart || promptKind == WordPartsPromptKind.PickSecondPart)
+            require(word == firstPart + correctPart)
+            require(splitOptions.size == 3)
+            require(
+                splitOptions.any { it.firstPart == firstPart && it.secondPart == correctPart },
+            ) { "correct split must appear in splitOptions for $word" }
         }
     }
 

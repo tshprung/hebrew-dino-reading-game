@@ -67,7 +67,15 @@ object AudioClips {
     /** Season 2 MissingFirstLetter: "איזו אות חסרה?". */
     const val Season2MissingFirstLetterInstructions = "audio/season2_missing_first_letter_instructions.wav"
 
-    /** Season 2 WordParts: "איזה חלק משלים את המילה?". */
+    /** Season 2 WordParts visible/guided: "איך מחלקים את המילה?". */
+    const val Season2WordPartsChooseSplitInstructions =
+        "audio/season2_word_parts_choose_split_instructions.wav"
+
+    /** Season 2 WordParts hidden challenge: "איזה פירוק מתאים למילה ששמעתם?". */
+    const val Season2WordPartsHiddenSplitInstructions =
+        "audio/season2_word_parts_hidden_split_instructions.wav"
+
+    /** @deprecated Legacy word-parts instruction clip. */
     const val Season2WordPartsInstructions = "audio/season2_word_parts_instructions.wav"
 
     /** Season 2 Rhyming: "איזו מילה מתחרזת?". */

@@ -310,6 +310,7 @@ object StationBehaviorRegistry {
                 !isPopAllLetters &&
                     !(isSagaEpisode && stationId == BALLOON_POP) &&
                     !((chapterId == 3 || chapterId == 6) && stationId == 3) &&
+                    !Season2StationAudio.isSeason2GameplayChapter(chapterId) &&
                     chapterId != TrainingV1Config.CHAPTER_ID,
             findGridMaxTargetCount = plan.findLetterGridMaxTargetCount,
             helpControlsEnabled = listenOnly,

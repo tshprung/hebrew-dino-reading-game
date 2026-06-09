@@ -204,6 +204,12 @@ internal fun NavGraphBuilder.systemAndTrainingGraph(host: AppNavHostState) {
             onChapterCelebrationConsumed = {
                 backStackEntry.savedStateHandle[Season2NavKeys.REQUEST_CHAPTER_CELEBRATION] = false
             },
+            onRewardContinue = {
+                host.navController.navigate(NavRoutes.Season2ChapterSelect) {
+                    popUpTo(NavRoutes.Season2ChapterSelect) { inclusive = false }
+                    launchSingleTop = true
+                }
+            },
         )
     }
 

@@ -11,9 +11,11 @@ object Season2ChapterContent {
             "w_נ_1", "w_נ_2", "w_נ_4",
             "w_פ_1", "w_פ_2",
             "w_צ_1", "w_צ_2",
+            "w_ש_1", "w_ש_4",
         )
 
-    val ch3Letters = listOf("ג", "נ", "פ", "צ")
+    /** ג נ פ צ + ש (review/reinforcement from earlier chapters). */
+    val ch3Letters = listOf("ג", "נ", "פ", "צ", "ש")
 
     val ch4Words =
         listOf(

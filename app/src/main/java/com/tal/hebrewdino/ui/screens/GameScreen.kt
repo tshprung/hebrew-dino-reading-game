@@ -1148,7 +1148,7 @@ fun GameScreen(
                         )
                     }
 
-                    fun handleWordPartsPick(picked: String) {
+                    fun handleWordPartsPick(picked: Question.WordPartsSplitOption) {
                         Season2AdvancedStationActions.handleWordPartsPick(
                             picked = picked,
                             gameViewModel = gameViewModel,

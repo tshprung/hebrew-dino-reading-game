@@ -83,16 +83,18 @@ class Season2Chapter3StationMappingTest {
     }
 
     @Test
-    fun wordParts_doesNotRevealFullWordBeforeAnswer_ch3Catalog() {
-        val spec = Season2WordPartsCatalog.entriesForWordIds(Season2ChapterContent.ch3Words).first()
+    fun wordParts_splitOptionsAreDistinctFullSplits_ch3Catalog() {
+        val specs = Season2WordPartsCatalog.entriesForWordIds(Season2ChapterContent.ch3Words)
+        require(specs.size >= 3)
+        val spec = specs.first()
         val q =
-            Season2AdvancedStationGenerators.wordPartsPickSecondPart(
+            Season2AdvancedStationGenerators.wordPartsChooseCorrectSplit(
                 rnd = Random(3),
                 spec = spec,
-                distractorSecondParts = listOf("על", "ור"),
+                distractorSpecs = specs.filter { it.catalogId != spec.catalogId }.take(2),
             )
-        assertFalse(q.partOptions.contains(q.word))
-        assertFalse(q.partOptions.any { it == q.word.drop(1) && it.length > q.correctPart.length })
+        assertEquals(3, q.splitOptions.size)
+        assertEquals(3, q.splitOptions.map { it.key }.distinct().size)
         assertTrue(q.word.startsWith(q.firstPart))
         assertTrue(q.word.endsWith(q.correctPart))
     }

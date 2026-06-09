@@ -63,11 +63,19 @@ object Season2StationAudio {
             else -> null
         }
 
-    fun instructionAssetPath(mode: Season2AdvancedStationMode): String =
+    fun instructionAssetPath(
+        mode: Season2AdvancedStationMode,
+        wordPartsPresentationMode: Season2WordPartsPresentationMode? = null,
+    ): String =
         when (mode) {
             Season2AdvancedStationMode.PictureToWord -> AudioClips.Season2PictureToWordInstructions
             Season2AdvancedStationMode.MissingFirstLetter -> AudioClips.Season2MissingFirstLetterInstructions
-            Season2AdvancedStationMode.WordParts -> AudioClips.Season2WordPartsInstructions
+            Season2AdvancedStationMode.WordParts ->
+                when (wordPartsPresentationMode) {
+                    Season2WordPartsPresentationMode.HiddenWordPartsChallenge ->
+                        AudioClips.Season2WordPartsHiddenSplitInstructions
+                    else -> AudioClips.Season2WordPartsChooseSplitInstructions
+                }
             Season2AdvancedStationMode.Rhyming -> AudioClips.Season2RhymingInstructions
         }
 
@@ -115,6 +123,7 @@ object Season2StationAudio {
         stationId: Int,
         voice: VoicePlayer,
         rawVoice: RawVoicePlayer?,
+        wordPartsPresentationMode: Season2WordPartsPresentationMode? = null,
     ) {
         when (mode) {
             Season2AdvancedStationMode.PictureToWord -> {
@@ -130,7 +139,7 @@ object Season2StationAudio {
                 rawVoice.playRawBlocking(R.raw.instruction_image_to_word)
             }
             else -> {
-                val path = instructionAssetPath(mode)
+                val path = instructionAssetPath(mode, wordPartsPresentationMode)
                 if (!voice.hasAsset(path)) {
                     Log.e(
                         MISSING_TAG,
@@ -169,12 +178,15 @@ object Season2StationAudio {
             is RhymingQuestion,
             -> {
                 val mode = advancedModeForQuestion(q) ?: return
+                val wordPartsMode =
+                    (q as? WordPartsQuestion)?.presentationMode
                 speakAdvancedModeInstruction(
                     mode = mode,
                     chapterId = chapterId,
                     stationId = stationId,
                     voice = voice,
                     rawVoice = rawVoice,
+                    wordPartsPresentationMode = wordPartsMode,
                 )
                 if (rawVoice == null) return
                 val catalogId =

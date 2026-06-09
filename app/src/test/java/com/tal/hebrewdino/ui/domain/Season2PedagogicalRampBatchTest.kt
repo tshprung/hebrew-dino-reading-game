@@ -59,38 +59,44 @@ class Season2PedagogicalRampBatchTest {
     }
 
     @Test
-    fun visibleWordParts_showsFullWordInPresentationMode() {
-        val spec = Season2WordPartsCatalog.entriesForPresentationMode(
-            Season2ChapterRegistry.chapter(2)!!.wordCatalogIds,
-            Season2WordPartsPresentationMode.VisibleWordParts,
-        ).first()
+    fun visibleWordParts_usesChooseCorrectSplit() {
+        val specs =
+            Season2WordPartsCatalog.entriesForPresentationMode(
+                Season2ChapterRegistry.chapter(2)!!.wordCatalogIds,
+                Season2WordPartsPresentationMode.VisibleWordParts,
+            )
+        require(specs.size >= 3)
+        val spec = specs.first()
         val q =
-            Season2AdvancedStationGenerators.wordPartsPickSecondPart(
+            Season2AdvancedStationGenerators.wordPartsChooseCorrectSplit(
                 rnd = Random(1),
                 spec = spec,
-                distractorSecondParts = listOf("מש", "לון"),
+                distractorSpecs = specs.filter { it.catalogId != spec.catalogId }.take(2),
                 presentationMode = Season2WordPartsPresentationMode.VisibleWordParts,
             )
         assertEquals(Season2WordPartsPresentationMode.VisibleWordParts, q.presentationMode)
+        assertEquals(3, q.splitOptions.size)
     }
 
     @Test
-    fun hiddenWordParts_defaultHidesFullWordUntilHint() {
+    fun hiddenWordParts_usesChooseCorrectSplitWithThreeOptions() {
         val specs =
             Season2WordPartsCatalog.entriesForPresentationMode(
                 Season2ChapterContent.ch3Words,
                 Season2WordPartsPresentationMode.HiddenWordPartsChallenge,
             )
         assertTrue(specs.all { it.catalogId !in setOf("w_נ_2", "w_צ_2") })
+        require(specs.size >= 3)
+        val spec = specs.first()
         val q =
-            Season2AdvancedStationGenerators.wordPartsPickSecondPart(
+            Season2AdvancedStationGenerators.wordPartsChooseCorrectSplit(
                 rnd = Random(2),
-                spec = specs.first(),
-                distractorSecondParts = listOf("דר", "יל"),
+                spec = spec,
+                distractorSpecs = specs.filter { it.catalogId != spec.catalogId }.take(2),
                 presentationMode = Season2WordPartsPresentationMode.HiddenWordPartsChallenge,
             )
         assertEquals(Season2WordPartsPresentationMode.HiddenWordPartsChallenge, q.presentationMode)
-        assertEquals(3, q.partOptions.size)
+        assertEquals(3, q.splitOptions.size)
     }
 
     @Test

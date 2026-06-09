@@ -499,9 +499,11 @@ class LevelSession(
         return applyOutcome(letter == q.correctLetter)
     }
 
-    fun submitWordParts(part: String): AnswerResult {
+    fun submitWordParts(picked: Question.WordPartsSplitOption): AnswerResult {
         val q = currentQuestion as? Question.WordPartsQuestion ?: return AnswerResult.Finished
-        return applyOutcome(part == q.correctPart)
+        return applyOutcome(
+            picked.firstPart == q.firstPart && picked.secondPart == q.correctPart,
+        )
     }
 
     fun submitRhyming(choiceId: String): AnswerResult {

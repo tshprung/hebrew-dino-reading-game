@@ -104,16 +104,18 @@ internal object SideHelpActions {
                         rawVoice.playRawBlocking(resId)
                     }
                     StationReplayMode.TargetWordOnly -> {
-                        if (q is Question.WordPartsQuestion &&
-                            q.presentationMode == Season2WordPartsPresentationMode.HiddenWordPartsChallenge
-                        ) {
-                            val path = Season2StationAudio.instructionAssetPath(Season2AdvancedStationMode.WordParts)
+                        if (q is Question.WordPartsQuestion) {
+                            val path =
+                                Season2StationAudio.instructionAssetPath(
+                                    Season2AdvancedStationMode.WordParts,
+                                    q.presentationMode,
+                                )
                             if (voice.hasAsset(path)) {
                                 voice.playFirstAvailableBlocking(path)
                             } else {
                                 android.util.Log.e(
                                     "MissingContent",
-                                    "Missing required help replay instruction audio. chapterId=$chapterId stationId=$stationId context=SideHelpActions.startReplay(HiddenWordParts) path='$path'",
+                                    "Missing required help replay instruction audio. chapterId=$chapterId stationId=$stationId context=SideHelpActions.startReplay(WordParts) path='$path'",
                                 )
                             }
                         }
