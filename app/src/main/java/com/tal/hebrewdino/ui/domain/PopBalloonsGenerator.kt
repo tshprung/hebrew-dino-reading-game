@@ -89,21 +89,24 @@ class PopBalloonsGenerator(
         require(correctAnswer in group)
         require(optionCount in 3..9)
         val base = group.distinct()
+        val effectiveCount = optionCount.coerceAtMost(base.size)
         val others = base.filter { it != correctAnswer }.shuffled(rnd)
-        val distractorCount = (optionCount - 1).coerceAtLeast(2)
-        val picks = others.take(distractorCount.coerceAtMost(others.size))
-        val options =
-            buildList {
-                add(correctAnswer)
-                addAll(picks)
-                while (size < optionCount) {
-                    add(base.random(rnd))
-                }
-            }
-                .shuffled(rnd)
-                .shuffled(rnd)
+        val options = linkedSetOf(correctAnswer)
+        for (letter in others) {
+            if (options.size >= effectiveCount) break
+            options.add(letter)
+        }
+        while (options.size < effectiveCount) {
+            val remaining = base.filter { it !in options }
+            if (remaining.isEmpty()) break
+            options.add(remaining.random(rnd))
+        }
         require(correctAnswer in options)
-        return Question.PopBalloonsQuestion(correctAnswer = correctAnswer, options = options)
+        require(options.size == options.distinct().size)
+        return Question.PopBalloonsQuestion(
+            correctAnswer = correctAnswer,
+            options = options.shuffled(rnd).toList(),
+        )
     }
 }
 

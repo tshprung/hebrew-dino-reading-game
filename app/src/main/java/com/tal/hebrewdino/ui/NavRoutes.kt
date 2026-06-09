@@ -8,7 +8,7 @@ object NavRoutes {
     const val Seasons = "seasons"
     /** Season 2: select a dinosaur chapter (6 chapters). */
     const val Season2ChapterSelect = "season2_chapter_select"
-    /** UX prototype: Season 2 T-Rex puzzle chapter map. */
+    /** Season 2: mystery dinosaur puzzle chapter map. */
     const val Season2PuzzleMapPrototype = "season2_puzzle_map_prototype/{chapterId}"
     fun season2PuzzleMapPrototype(chapterId: Int): String = "season2_puzzle_map_prototype/$chapterId"
     /** Season 2: chapter station gameplay (chapterId is UX index 1..6). */

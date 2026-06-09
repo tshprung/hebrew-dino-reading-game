@@ -61,6 +61,62 @@ sealed class Question {
             require(words.size == 2)
         }
     }
+
+    /** Picture + partial word with missing first letter; tap the correct first letter. */
+    data class MissingFirstLetterQuestion(
+        val word: String,
+        val catalogEntryId: String,
+        val tileDrawable: Int,
+        @param:ColorInt val tintArgb: Int,
+        /** RTL display, e.g. "_מש" for שמש. */
+        val partialWord: String,
+        val correctLetter: String,
+        val optionLetters: List<String>,
+    ) : Question() {
+        init {
+            require(word.isNotEmpty() && correctLetter.length == 1)
+            require(correctLetter in optionLetters)
+            require(partialWord.startsWith("_"))
+        }
+    }
+
+    enum class WordPartsPromptKind {
+        PickSecondPart,
+    }
+
+    /** Connect beginning letter + rest of word (Season 2 word-parts station). */
+    data class WordPartsQuestion(
+        val word: String,
+        val catalogEntryId: String,
+        val tileDrawable: Int,
+        @param:ColorInt val tintArgb: Int,
+        val firstPart: String,
+        val correctPart: String,
+        val partOptions: List<String>,
+        val promptKind: WordPartsPromptKind,
+        val presentationMode: Season2WordPartsPresentationMode = Season2WordPartsPresentationMode.GuidedWordParts,
+    ) : Question() {
+        init {
+            require(firstPart.isNotEmpty() && correctPart.isNotEmpty())
+            require(correctPart in partOptions)
+            require(word == firstPart + correctPart || promptKind == WordPartsPromptKind.PickSecondPart)
+        }
+    }
+
+    /** Target picture/word + picture choices; pick the rhyming match. */
+    data class RhymingQuestion(
+        val targetWord: String,
+        val targetCatalogEntryId: String,
+        val targetTileDrawable: Int,
+        @param:ColorInt val targetTintArgb: Int,
+        val choices: List<LessonChoice>,
+        val correctChoiceId: String,
+    ) : Question() {
+        init {
+            require(choices.size in 2..6)
+            require(choices.any { it.id == correctChoiceId })
+        }
+    }
 }
 
 data class LessonChoice(

@@ -1,15 +1,17 @@
 package com.tal.hebrewdino.ui.domain
 
 /**
- * Season 2 — Chapter 1 (Tyrannosaurus) station order.
+ * Season 2 — Chapters 1–2 station order (shared UX numbering).
  *
  * Product order:
  * 1. Pop Balloons
  * 2. Pick Letter
  * 3. Picture Starts With
- * 4. Memory Match (custom screen; not a [StationQuizPlan])
+ * 4. Memory Match (custom screen)
  * 5. Which Word Starts With Letter (ImageMatch)
- * 6. Match Letter To Word (MatchLetterToWord template backed by ImageMatch questions)
+ * 6. Chapter finale ramp:
+ *    - Ch1: Picture → written word ([Season2AdvancedStationMode.PictureToWord])
+ *    - Ch2: Visible word parts tutorial ([Season2AdvancedStationMode.WordParts] + [Season2WordPartsPresentationMode.VisibleWordParts])
  */
 object Season2Chapter1StationOrder {
     const val POP_BALLOONS: Int = 1
@@ -17,12 +19,56 @@ object Season2Chapter1StationOrder {
     const val PICTURE_STARTS_WITH: Int = 3
     const val MEMORY_MATCH: Int = 4
     const val WHICH_WORD_STARTS_WITH: Int = 5
-    const val MATCH_LETTER_TO_WORD: Int = 6
+    /** UX station 6 — finale; kind varies by chapter (see [quizPlan]). */
+    const val FINALE_STATION: Int = 6
+    /** @deprecated Use [FINALE_STATION]; kept for call-site compatibility. */
+    const val MATCH_LETTER_TO_WORD: Int = FINALE_STATION
+    const val PICTURE_TO_WORD: Int = FINALE_STATION
+    const val VISIBLE_WORD_PARTS: Int = FINALE_STATION
 
     const val STATION_COUNT: Int = 6
 
-    fun quizPlan(stationId: Int): StationQuizPlan {
-        return when (stationId.coerceIn(1, STATION_COUNT)) {
+    fun quizPlan(chapterIndex: Int, stationId: Int): StationQuizPlan {
+        val sid = stationId.coerceIn(1, STATION_COUNT)
+        if (sid == FINALE_STATION) {
+            return finaleQuizPlan(chapterIndex)
+        }
+        return sharedWarmupQuizPlan(sid)
+    }
+
+    /** Legacy single-arg plan (chapter 1 defaults). */
+    fun quizPlan(stationId: Int): StationQuizPlan = quizPlan(chapterIndex = 1, stationId = stationId)
+
+    private fun finaleQuizPlan(chapterIndex: Int): StationQuizPlan {
+        val chapterDef =
+            Season2ChapterRegistry.chapter(chapterIndex)
+                ?: error("Season2 chapter $chapterIndex not in registry")
+        return when (chapterIndex) {
+            1 ->
+                Season2AdvancedStationPlans.toStationQuizPlan(
+                    Season2AdvancedStationPlan(
+                        mode = Season2AdvancedStationMode.PictureToWord,
+                        wordCatalogIds = chapterDef.wordCatalogIds,
+                        questionCount = 4,
+                        theme = chapterDef.stationTheme,
+                    ),
+                )
+            2 ->
+                Season2AdvancedStationPlans.toStationQuizPlan(
+                    Season2AdvancedStationPlan(
+                        mode = Season2AdvancedStationMode.WordParts,
+                        wordCatalogIds = chapterDef.wordCatalogIds,
+                        questionCount = 4,
+                        theme = chapterDef.stationTheme,
+                        wordPartsPresentationMode = Season2WordPartsPresentationMode.VisibleWordParts,
+                    ),
+                )
+            else -> error("Finale plan only for Season2 chapters 1–2")
+        }
+    }
+
+    private fun sharedWarmupQuizPlan(stationId: Int): StationQuizPlan =
+        when (stationId) {
             POP_BALLOONS ->
                 StationQuizPlan(
                     mode = StationQuizMode.PopBalloons,
@@ -47,7 +93,6 @@ object Season2Chapter1StationOrder {
                     sortOptionLetters = true,
                 )
             MEMORY_MATCH ->
-                // Custom memory game screen; the plan isn't used but we keep a safe default.
                 StationQuizPlan(
                     mode = StationQuizMode.PickLetter,
                     questionCount = 1,
@@ -63,18 +108,6 @@ object Season2Chapter1StationOrder {
                     imageMatchPictureSizeMultiplier = 1f,
                     imageMatchChoiceCount = 3,
                 )
-            MATCH_LETTER_TO_WORD ->
-                StationQuizPlan(
-                    mode = StationQuizMode.ImageMatch,
-                    questionCount = 4,
-                    initialGroupIndex = 0,
-                    imageMatchAlwaysThreeChoices = true,
-                    imageMatchCaptionSizeMultiplier = 1.5f,
-                    imageMatchPictureSizeMultiplier = 1f,
-                    imageMatchChoiceCount = 3,
-                )
             else -> error("Unexpected Season2 stationId=$stationId")
         }
-    }
 }
-

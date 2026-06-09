@@ -32,8 +32,13 @@ object StationBehaviorRegistry {
                 4 -> StationQuizPlans.chapter4(sid)
                 5 -> StationQuizPlans.chapter5(sid)
                 6 -> StationQuizPlans.chapter6(stationId.coerceIn(1, Chapter6Config.STATION_COUNT))
-                // Season 2 Chapter 1 reuses the same station mechanics as Season 1 Chapter 1; only letters differ.
-                Season2ChapterIds.Chapter1Tyrannosaurus -> StationQuizPlans.chapter1(sid)
+                Season2ChapterIds.Chapter1Tyrannosaurus -> season2EarlyChapterQuizPlan(chapterIndex = 1, uxStationId = sid)
+                Season2ChapterIds.Chapter2Triceratops -> season2EarlyChapterQuizPlan(chapterIndex = 2, uxStationId = sid)
+                Season2ChapterIds.Chapter3Stegosaurus,
+                Season2ChapterIds.Chapter4Brachiosaurus,
+                Season2ChapterIds.Chapter5Ankylosaurus,
+                Season2ChapterIds.Chapter6Mosasaurus,
+                -> season2ChapterQuizPlan(chapterId, sid)
                 TrainingV1Config.CHAPTER_ID -> StationQuizPlans.trainingV1(sid)
                 else -> error("Unsupported chapterId=$chapterId")
             }
@@ -46,14 +51,40 @@ object StationBehaviorRegistry {
             5 -> sixStationUiSpec(chapterId = 5, sid, plan)
             6 -> chapter6UiSpec(stationId.coerceIn(1, Chapter6Config.STATION_COUNT), plan)
             TrainingV1Config.CHAPTER_ID -> trainingV1UiSpec(sid, plan)
-            Season2ChapterIds.Chapter1Tyrannosaurus -> sixStationUiSpec(chapterId = Season2ChapterIds.Chapter1Tyrannosaurus, stationId = sid, plan = plan)
+            Season2ChapterIds.Chapter1Tyrannosaurus ->
+                season2EarlyChapterUiSpec(
+                    chapterId = Season2ChapterIds.Chapter1Tyrannosaurus,
+                    chapterIndex = 1,
+                    stationId = sid,
+                    plan = plan,
+                )
+            Season2ChapterIds.Chapter2Triceratops ->
+                season2EarlyChapterUiSpec(
+                    chapterId = Season2ChapterIds.Chapter2Triceratops,
+                    chapterIndex = 2,
+                    stationId = sid,
+                    plan = plan,
+                )
+            Season2ChapterIds.Chapter3Stegosaurus,
+            Season2ChapterIds.Chapter4Brachiosaurus,
+            Season2ChapterIds.Chapter5Ankylosaurus,
+            Season2ChapterIds.Chapter6Mosasaurus,
+            -> season2ArcUiSpec(chapterId = chapterId, stationId = sid, plan = plan)
             else -> error("Unsupported chapterId=$chapterId")
         }
 
         val isSagaEpisode = chapterId in 1..5 || chapterId == Season2ChapterIds.Chapter1Tyrannosaurus
-        val audioStagingPickLetter = isSagaEpisode && plan.mode == StationQuizMode.PickLetter
-        val audioStagingPopBalloons = isSagaEpisode && plan.mode == StationQuizMode.PopBalloons
-        val audioStagingFindGrid = isSagaEpisode && plan.mode == StationQuizMode.FindLetterGrid
+        val season2WarmupAudio = Season2StationAudio.isSeason2WarmupChapter(chapterId)
+        val addressAwareArcAudio = isSagaEpisode || season2WarmupAudio
+        val audioStagingPickLetter =
+            addressAwareArcAudio &&
+                plan.mode == StationQuizMode.PickLetter &&
+                plan.season2AdvancedMode == null
+        val audioStagingPopBalloons =
+            addressAwareArcAudio &&
+                plan.mode == StationQuizMode.PopBalloons &&
+                plan.season2AdvancedMode == null
+        val audioStagingFindGrid = addressAwareArcAudio && plan.mode == StationQuizMode.FindLetterGrid
         val popBalloonsUseSoundPoolPrompt =
             plan.mode == StationQuizMode.PopBalloons &&
                 (
@@ -95,6 +126,7 @@ object StationBehaviorRegistry {
         val isSagaEpisode = chapterId in 1..5
         val showBetweenRoundIntroPulse =
             !(isSagaEpisode && stationId == TAP_LETTER) &&
+                !Season2StationAudio.isSeason2GameplayChapter(chapterId) &&
                 !listenOnly &&
                 !plan.highlightedLetterInWordPickLetter &&
                 !plan.chapter3AudioLetterRecognition
@@ -125,15 +157,19 @@ object StationBehaviorRegistry {
     ): StationUiSpec {
         val listenOnly = plan.listenOnlyTargetPrompt
         val isSagaEpisode = chapterId in 1..5
+        val isSeason2MatchFinale =
+            Season2StationUx.isMatchLetterFinale(chapterId, stationId)
         val matchLetterCompactWideSpread =
             ((chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) &&
                 stationId == FINALE_PICTURE_LETTER_MATCH) ||
                 ((chapterId == 3 || chapterId == 6) && stationId == 2) ||
+                isSeason2MatchFinale ||
                 (chapterId == TrainingV1Config.CHAPTER_ID && stationId == TrainingV1Config.STATION_MATCH_LETTER_TO_WORD)
         val matchLetterVerticalNudgeDp = 19f
         val showBetweenRoundIntroPulse =
             !(isSagaEpisode && stationId == FINALE_PICTURE_LETTER_MATCH) &&
                 !((chapterId == 3 || chapterId == 6) && stationId == 2) &&
+                !isSeason2MatchFinale &&
                 chapterId != TrainingV1Config.CHAPTER_ID
         return StationUiSpec(
             chapterId = chapterId,
@@ -204,19 +240,22 @@ object StationBehaviorRegistry {
     ): StationUiSpec {
         val listenOnly = plan.listenOnlyTargetPrompt
         val isSagaEpisode = chapterId in 1..5 || chapterId == Season2ChapterIds.Chapter1Tyrannosaurus
+        val isSeason2WarmupPictureStartsWith = Season2StationUx.isWarmupPictureStartsWith(chapterId, stationId)
         val isLearningSixStationArc =
-            (chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5 || chapterId == Season2ChapterIds.Chapter1Tyrannosaurus)
+            (chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5 || chapterId == Season2ChapterIds.Chapter1Tyrannosaurus) ||
+                isSeason2WarmupPictureStartsWith
         val pictureStartsWithCompactLandscapeRtlWrapInstruction =
             isLearningSixStationArc &&
-                stationId == PICTURE_PICK_ONE
+                (stationId == PICTURE_PICK_ONE || isSeason2WarmupPictureStartsWith)
         val pictureStartsWithVerticalNudgeDp =
             if (isLearningSixStationArc &&
-                stationId == PICTURE_PICK_ONE
+                (stationId == PICTURE_PICK_ONE || isSeason2WarmupPictureStartsWith)
             ) {
                 19f
             } else {
                 0f
             }
+        val pictureStartsWithHelp = listenOnly || isSeason2WarmupPictureStartsWith
         return StationUiSpec(
             chapterId = chapterId,
             stationId = stationId,
@@ -225,12 +264,13 @@ object StationBehaviorRegistry {
             quizMode = plan.mode,
             showBetweenRoundIntroPulse =
                 !(isSagaEpisode && stationId == PICTURE_PICK_ONE) &&
-                    !((chapterId == 3 || chapterId == 6) && stationId == 1),
+                    !((chapterId == 3 || chapterId == 6) && stationId == 1) &&
+                    !isSeason2WarmupPictureStartsWith,
             findGridMaxTargetCount = plan.findLetterGridMaxTargetCount,
-            helpControlsEnabled = listenOnly,
-            replayMode = if (listenOnly) StationReplayMode.TargetWordOnly else StationReplayMode.None,
-            hintMode = if (listenOnly) StationHintMode.TemporaryStartingLetter else StationHintMode.None,
-            hintDurationMs = if (listenOnly) 2100L else null,
+            helpControlsEnabled = pictureStartsWithHelp,
+            replayMode = if (pictureStartsWithHelp) StationReplayMode.TargetWordOnly else StationReplayMode.None,
+            hintMode = if (pictureStartsWithHelp) StationHintMode.TemporaryStartingLetter else StationHintMode.None,
+            hintDurationMs = if (pictureStartsWithHelp) 2100L else null,
             pictureStartsWithInstructionOverride = "באיזו אות מתחילה המילה:",
             pictureStartsWithCompactLandscapeRtlWrapInstruction = pictureStartsWithCompactLandscapeRtlWrapInstruction,
             pictureStartsWithReadablePanel = true,
@@ -251,6 +291,10 @@ object StationBehaviorRegistry {
         val popBalloonsCompactLandscapePhoneTuning =
             (chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) && stationId == BALLOON_POP ||
                 ((chapterId == 3 || chapterId == 6) && stationId == 3) ||
+                (
+                    Season2StationAudio.isSeason2WarmupChapter(chapterId) &&
+                        stationId == Season2Chapter1StationOrder.POP_BALLOONS
+                ) ||
                 (chapterId == TrainingV1Config.CHAPTER_ID && stationId == TrainingV1Config.STATION_WORD_BALLOONS)
         return StationUiSpec(
             chapterId = chapterId,
@@ -651,4 +695,144 @@ object StationBehaviorRegistry {
         }
     }
 
+    private fun season2ChapterIndex(gameplayChapterId: Int): Int = gameplayChapterId - 100
+
+    private fun season2EarlyChapterQuizPlan(chapterIndex: Int, uxStationId: Int): StationQuizPlan {
+        if (uxStationId == Season2Chapter1StationOrder.FINALE_STATION) {
+            return Season2Chapter1StationOrder.quizPlan(chapterIndex, uxStationId)
+        }
+        val gameplayStationId =
+            when (uxStationId) {
+                Season2Chapter1StationOrder.POP_BALLOONS -> BALLOON_POP
+                Season2Chapter1StationOrder.PICK_LETTER -> TAP_LETTER
+                Season2Chapter1StationOrder.PICTURE_STARTS_WITH -> 1
+                Season2Chapter1StationOrder.WHICH_WORD_STARTS_WITH -> PICTURE_PICK_ALL
+                else -> uxStationId
+            }
+        return when (uxStationId) {
+            Season2Chapter1StationOrder.PICTURE_STARTS_WITH -> StationQuizPlans.chapter3(gameplayStationId)
+            else -> StationQuizPlans.chapter1(gameplayStationId)
+        }
+    }
+
+    private fun season2EarlyChapterUiSpec(
+        chapterId: Int,
+        chapterIndex: Int,
+        stationId: Int,
+        plan: StationQuizPlan,
+    ): StationUiSpec =
+        if (plan.season2AdvancedMode != null) {
+            season2AdvancedUiSpec(chapterId, stationId, plan)
+        } else {
+            sixStationUiSpec(chapterId = chapterId, stationId = stationId, plan = plan)
+        }
+
+    private fun season2ChapterQuizPlan(gameplayChapterId: Int, stationId: Int): StationQuizPlan {
+        val chapterIndex = season2ChapterIndex(gameplayChapterId)
+        val ctx =
+            Season2ChapterStationPlans.contextFor(chapterIndex)
+                ?: error("No Season2 station context for gameplayChapterId=$gameplayChapterId")
+        return Season2ChapterStationPlans.quizPlan(ctx, stationId)
+    }
+
+    /** Season 2 chapters 3–6: per-chapter [Season2ChapterStationPlans.stationKind] layout. */
+    private fun season2ArcUiSpec(chapterId: Int, stationId: Int, plan: StationQuizPlan): StationUiSpec {
+        if (plan.season2AdvancedMode != null) {
+            return season2AdvancedUiSpec(chapterId, stationId, plan)
+        }
+        val chapterIndex = season2ChapterIndex(chapterId)
+        return when (Season2ChapterStationPlans.stationKind(chapterIndex, stationId)) {
+            Season2ChapterStationPlans.StationKind.PopBalloons ->
+                popBalloonsSpec(chapterId, stationId, plan)
+            Season2ChapterStationPlans.StationKind.PickLetter ->
+                pickLetterSpec(chapterId, stationId, plan)
+            Season2ChapterStationPlans.StationKind.PictureStartsWith ->
+                pictureStartsWithSpec(chapterId, stationId, plan)
+            Season2ChapterStationPlans.StationKind.WhichWordStartsWith ->
+                whichWordStartsWithImageMatchSpec(chapterId, stationId, plan)
+            Season2ChapterStationPlans.StationKind.MatchLetterToWord ->
+                matchLetterToWordSpec(
+                    chapterId = chapterId,
+                    stationId = stationId,
+                    plan = plan,
+                    extraVariants = arrayOf(StationVariant.Finale),
+                ).copy(riskNotes = "Season 2 match-letter-to-word finale.")
+            Season2ChapterStationPlans.StationKind.MemoryMatch ->
+                error("Memory match uses dedicated screen (chapterId=$chapterId stationId=$stationId)")
+            else ->
+                error("Unexpected Season2 arc kind for chapterId=$chapterId stationId=$stationId")
+        }
+    }
+
+    private fun whichWordStartsWithImageMatchSpec(
+        chapterId: Int,
+        stationId: Int,
+        plan: StationQuizPlan,
+    ): StationUiSpec {
+        val enableHelp =
+            Season2StationUx.stationKindForGameplayChapter(chapterId, stationId) ==
+                Season2ChapterStationPlans.StationKind.WhichWordStartsWith &&
+                chapterId == Season2ChapterIds.Chapter3Stegosaurus
+        return StationUiSpec(
+            chapterId = chapterId,
+            stationId = stationId,
+            templateId = StationTemplateId.ImageMatch,
+            variants =
+                if (enableHelp) {
+                    variantsFor(listenOnly = false, StationVariant.HelpColumn)
+                } else {
+                    variantsFor(listenOnly = false)
+                },
+            quizMode = plan.mode,
+            showBetweenRoundIntroPulse = false,
+            findGridMaxTargetCount = plan.findLetterGridMaxTargetCount,
+            helpControlsEnabled = enableHelp,
+            replayMode = if (enableHelp) StationReplayMode.TargetLetterOnly else StationReplayMode.None,
+            hintMode = if (enableHelp) StationHintMode.TemporaryTargetLetter else StationHintMode.None,
+            hintDurationMs = if (enableHelp) 2100L else null,
+            imageMatchShowTargetLetterChip = true,
+            imageMatchHeaderInstructionOverride = StationInstructionCopy.ImageMatchFindWordStartingWithLetter,
+            imageMatchHeaderReadablePanel = true,
+            imageMatchCompactLandscapeRtlWrapHeaderInstruction = true,
+            imageMatchVerticalNudgeDp = 19f,
+            imageMatchSuppressEntryPulseEpoch = true,
+            riskNotes = "Season 2 which-word-starts-with.",
+        )
+    }
+
+    private fun season2AdvancedUiSpec(chapterId: Int, stationId: Int, plan: StationQuizPlan): StationUiSpec {
+        val isWordParts = plan.season2AdvancedMode == Season2AdvancedStationMode.WordParts
+        val isPictureToWord = plan.season2AdvancedMode == Season2AdvancedStationMode.PictureToWord
+        val helpEnabled = isWordParts || isPictureToWord
+        val templateId =
+            when (plan.season2AdvancedMode) {
+                Season2AdvancedStationMode.PictureToWord -> StationTemplateId.ImageToWord
+                Season2AdvancedStationMode.WordParts -> StationTemplateId.WordParts
+                else -> StationTemplateId.PickLetter
+            }
+        return StationUiSpec(
+            chapterId = chapterId,
+            stationId = stationId,
+            templateId = templateId,
+            variants =
+                if (helpEnabled) {
+                    variantsFor(listenOnly = false, StationVariant.HelpColumn)
+                } else {
+                    variantsFor(listenOnly = false)
+                },
+            quizMode = plan.mode,
+            showBetweenRoundIntroPulse = false,
+            helpControlsEnabled = helpEnabled,
+            replayMode = if (helpEnabled) StationReplayMode.TargetWordOnly else StationReplayMode.None,
+            hintMode = if (isWordParts) StationHintMode.TemporaryFullWord else StationHintMode.None,
+            hintDurationMs = if (isWordParts) 2500L else null,
+            imageToWordInstructionText =
+                if (isPictureToWord) {
+                    Season2StationThemeCopy.pictureToWordInstruction(plan.season2StationTheme)
+                } else {
+                    null
+                },
+            riskNotes = "Season 2 advanced mode ${plan.season2AdvancedMode}.",
+        )
+    }
 }

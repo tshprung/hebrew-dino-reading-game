@@ -8,6 +8,7 @@ import com.tal.hebrewdino.ui.audio.VoicePlayer
 import com.tal.hebrewdino.ui.companion.Chapter1AddressAwareAudio
 import com.tal.hebrewdino.ui.data.PlayerAddress
 import com.tal.hebrewdino.ui.domain.Season2ChapterIds
+import com.tal.hebrewdino.ui.domain.Season2StationAudio
 import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
 import com.tal.hebrewdino.ui.domain.Question
 import com.tal.hebrewdino.ui.domain.TrainingV1Config
@@ -582,34 +583,17 @@ internal suspend fun speakPromptForQuestion(
         }
         is Question.ImageMatchQuestion -> {
             if (
-                ((chapterId == 3 || chapterId == 6) && stationId == 6) ||
+                Season2StationAudio.isPictureToWordStation(chapterId, stationId) ||
                     (chapterId == TrainingV1Config.CHAPTER_ID &&
                         stationId == TrainingV1Config.STATION_PICTURE_CHOOSE_WORD)
             ) {
-                if (rawVoice == null) {
-                    android.util.Log.e(
-                        "MissingContent",
-                        "Missing required station prompt audio. chapterId=$chapterId stationId=$stationId context=speakPromptForQuestion(ImageToWord) stage=rawVoice=null expectedInstructionRawRes=${R.raw.instruction_image_to_word}",
-                    )
-                    voice.playRequiredBlocking(
-                        assetPath = "",
-                        context = "speakPromptForQuestion(ImageToWord,rawVoice=null)",
-                        chapterId = chapterId,
-                        stationId = stationId,
-                    )
-                    return
-                }
-                rawVoice.playRawBlocking(R.raw.instruction_image_to_word)
-                val wordResId = AudioClips.wordRawResIdByCatalogId(q.correctChoiceId)
-                if (wordResId == null) {
-                    android.util.Log.e(
-                        "MissingContent",
-                        "Missing required station prompt audio. chapterId=$chapterId stationId=$stationId context=speakPromptForQuestion(ImageToWord) stage=missing raw word mapping catalogId='${q.correctChoiceId}'",
-                    )
-                    rawVoice.playRawBlocking(0)
-                    return
-                }
-                rawVoice.playRawBlocking(wordResId)
+                Season2StationAudio.speakPictureToWordRoundPrompt(
+                    chapterId = chapterId,
+                    stationId = stationId,
+                    catalogId = q.correctChoiceId,
+                    rawVoice = rawVoice,
+                    voice = voice,
+                )
                 return
             }
             if (chapterId == TrainingV1Config.CHAPTER_ID &&
@@ -735,6 +719,18 @@ internal suspend fun speakPromptForQuestion(
                     rawVoice = rawVoice,
                 )
             }
+        }
+        is Question.MissingFirstLetterQuestion,
+        is Question.WordPartsQuestion,
+        is Question.RhymingQuestion,
+        -> {
+            Season2StationAudio.speakAdvancedRoundPrompt(
+                chapterId = chapterId,
+                stationId = stationId,
+                q = q,
+                voice = voice,
+                rawVoice = rawVoice,
+            )
         }
         is Question.FinaleSlotQuestion -> {
             if (!requiredChapters) return

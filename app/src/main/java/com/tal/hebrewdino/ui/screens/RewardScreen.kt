@@ -50,6 +50,7 @@ import com.tal.hebrewdino.ui.audio.RawVoicePlayer
 import com.tal.hebrewdino.ui.audio.RewardSuccessAudio
 import com.tal.hebrewdino.ui.audio.VoicePlayer
 import com.tal.hebrewdino.ui.companion.Chapter1DinoCompanionPilot
+import com.tal.hebrewdino.ui.companion.CompanionVisualPolicy
 import com.tal.hebrewdino.ui.data.DinoCharacter
 import com.tal.hebrewdino.ui.companion.CompanionDinoRewardCelebration
 import com.tal.hebrewdino.ui.companion.CompanionRewardCelebrationStyle
@@ -59,25 +60,6 @@ import com.tal.hebrewdino.ui.layout.ScreenFit
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlin.random.Random
-
-/** Random celebratory dino pose on the stage-complete screen (not a single static "nice" moment). */
-private val RewardStageMascotDrawables =
-    intArrayOf(
-        R.drawable.dino_idle,
-        R.drawable.dino_jump_0,
-        R.drawable.dino_jump_1,
-        R.drawable.dino_jump_2,
-        R.drawable.dino_talk_0,
-        R.drawable.dino_talk_1,
-        R.drawable.dino_talk_2,
-        R.drawable.dino_talk_3,
-        R.drawable.dino_walk_0,
-        R.drawable.dino_walk_1,
-        R.drawable.dino_walk_2,
-        R.drawable.dino_walk_3,
-    )
-
 @Composable
 private fun PilotRewardSparklesLayer(
     modifier: Modifier = Modifier,
@@ -154,6 +136,9 @@ fun RewardScreen(
         )
         if (isDebuggable) throw IllegalStateException("Missing selected companion for RewardScreen. chapterId=$rewardChapterId stationId=$levelId detail=$detail")
     }
+    if (!chapter1DinoCompanionPilot && !showSelectedCompanionPortrait) {
+        reportMissingSelectedCompanion("legacy reward mascot disabled; require companion portrait flags")
+    }
     if (chapter1DinoCompanionPilot && chapter1CompanionCharacter == null) {
         reportMissingSelectedCompanion("chapter1DinoCompanionPilot=true chapter1CompanionCharacter=null")
     }
@@ -184,9 +169,21 @@ fun RewardScreen(
     val showCompanionPortrait = chapter1DinoCompanionPilot || showSelectedCompanionPortrait
     val portraitCharacter =
         if (chapter1DinoCompanionPilot) {
-            chapter1CompanionCharacter ?: DinoCharacter.Dino
+            CompanionVisualPolicy.requireSelectedCompanion(
+                character = chapter1CompanionCharacter,
+                context = "RewardScreen.chapter1Pilot",
+                devToolsEnabled = isDebuggable,
+                chapterId = rewardChapterId,
+                stationId = levelId,
+            )
         } else {
-            selectedCompanionCharacter ?: DinoCharacter.Dino
+            CompanionVisualPolicy.requireSelectedCompanion(
+                character = selectedCompanionCharacter,
+                context = "RewardScreen.selectedPortrait",
+                devToolsEnabled = isDebuggable,
+                chapterId = rewardChapterId,
+                stationId = levelId,
+            )
         }
     val companionRewardStyle =
         remember(levelId, chapter1DinoCompanionPilot, showSelectedCompanionPortrait) {
@@ -203,10 +200,6 @@ fun RewardScreen(
             (companionRewardStyle == CompanionRewardCelebrationStyle.Sparkle ||
                 companionRewardStyle == CompanionRewardCelebrationStyle.GrandFinale)
     val isCompactLandscapePhone = ScreenFit.isCompactLandscapePhone()
-    val mascotRes =
-        remember(levelId) {
-            RewardStageMascotDrawables[Random.nextInt(RewardStageMascotDrawables.size)]
-        }
     val companionPortraitW =
         if (!chapter1DinoCompanionPilot) {
             if (isCompactLandscapePhone) 160.dp else Chapter1DinoCompanionPilot.portraitWidthDp.dp
@@ -363,36 +356,27 @@ fun RewardScreen(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(14.dp, Alignment.CenterHorizontally),
             ) {
-                if (showCompanionPortrait) {
-                    Box(
-                        modifier =
-                            Modifier
-                                .size(width = companionPortraitW, height = companionPortraitH)
-                                .drawBehind {
-                                    val base = size.minDimension * 0.55f
-                                    drawCircle(
-                                        color = Color(0xFFFFF59D).copy(alpha = 0.16f),
-                                        radius = base * 1.18f,
-                                    )
-                                    drawCircle(
-                                        color = Color(0xFFFFD54F).copy(alpha = 0.12f),
-                                        radius = base,
-                                    )
-                                },
-                    ) {
-                        CompanionDinoRewardCelebration(
-                            style = companionRewardStyle,
-                            isTalking = (chapter1DinoCompanionPilot || rewardSuccessRawResId != null) && companionVoicePlaying,
-                            companionCharacter = portraitCharacter,
-                            modifier = Modifier.fillMaxSize(),
-                        )
-                    }
-                } else {
-                    Image(
-                        painter = painterResource(id = mascotRes),
-                        contentDescription = null,
-                        modifier = Modifier.width(160.dp).height(160.dp),
-                        contentScale = ContentScale.Fit,
+                Box(
+                    modifier =
+                        Modifier
+                            .size(width = companionPortraitW, height = companionPortraitH)
+                            .drawBehind {
+                                val base = size.minDimension * 0.55f
+                                drawCircle(
+                                    color = Color(0xFFFFF59D).copy(alpha = 0.16f),
+                                    radius = base * 1.18f,
+                                )
+                                drawCircle(
+                                    color = Color(0xFFFFD54F).copy(alpha = 0.12f),
+                                    radius = base,
+                                )
+                            },
+                ) {
+                    CompanionDinoRewardCelebration(
+                        style = companionRewardStyle,
+                        isTalking = (chapter1DinoCompanionPilot || rewardSuccessRawResId != null) && companionVoicePlaying,
+                        companionCharacter = portraitCharacter,
+                        modifier = Modifier.fillMaxSize(),
                     )
                 }
                 if (chapter1DinoCompanionPilot) {
@@ -494,39 +478,27 @@ fun RewardScreen(
                     )
                 }
                 Spacer(modifier = Modifier.height(8.dp))
-                if (showCompanionPortrait) {
-                    Box(
-                        modifier =
-                            Modifier
-                                .size(width = companionPortraitW, height = companionPortraitH)
-                                .drawBehind {
-                                    val base = size.minDimension * 0.56f
-                                    drawCircle(
-                                        color = Color(0xFFFFF59D).copy(alpha = 0.15f),
-                                        radius = base * 1.22f,
-                                    )
-                                    drawCircle(
-                                        color = Color(0xFFFFD54F).copy(alpha = 0.11f),
-                                        radius = base,
-                                    )
-                                },
-                    ) {
-                        CompanionDinoRewardCelebration(
-                            style = companionRewardStyle,
-                            isTalking = (chapter1DinoCompanionPilot || rewardSuccessRawResId != null) && companionVoicePlaying,
-                            companionCharacter = portraitCharacter,
-                            modifier = Modifier.fillMaxSize(),
-                        )
-                    }
-                } else {
-                    Image(
-                        painter = painterResource(id = mascotRes),
-                        contentDescription = null,
-                        modifier =
-                            Modifier
-                                .height(168.dp)
-                                .fillMaxWidth(),
-                        contentScale = ContentScale.Fit,
+                Box(
+                    modifier =
+                        Modifier
+                            .size(width = companionPortraitW, height = companionPortraitH)
+                            .drawBehind {
+                                val base = size.minDimension * 0.56f
+                                drawCircle(
+                                    color = Color(0xFFFFF59D).copy(alpha = 0.15f),
+                                    radius = base * 1.22f,
+                                )
+                                drawCircle(
+                                    color = Color(0xFFFFD54F).copy(alpha = 0.11f),
+                                    radius = base,
+                                )
+                            },
+                ) {
+                    CompanionDinoRewardCelebration(
+                        style = companionRewardStyle,
+                        isTalking = (chapter1DinoCompanionPilot || rewardSuccessRawResId != null) && companionVoicePlaying,
+                        companionCharacter = portraitCharacter,
+                        modifier = Modifier.fillMaxSize(),
                     )
                 }
                 Spacer(modifier = Modifier.height(6.dp))

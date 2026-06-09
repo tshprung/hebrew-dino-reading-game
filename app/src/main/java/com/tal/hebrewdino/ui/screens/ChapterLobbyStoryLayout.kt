@@ -71,22 +71,6 @@ private enum class ChapterIntroNarrationPhase {
     Story,
 }
 
-private val dinoTalkFrames =
-    listOf(
-        R.drawable.dino_talk_0,
-        R.drawable.dino_talk_1,
-        R.drawable.dino_talk_2,
-        R.drawable.dino_talk_3,
-    )
-
-private val momTalkFrames =
-    listOf(
-        R.drawable.mom_talk_0,
-        R.drawable.mom_talk_1,
-        R.drawable.mom_talk_2,
-        R.drawable.mom_talk_3_flipped,
-    )
-
 @SuppressLint("UnusedBoxWithConstraintsScope")
 @Composable
 fun ChapterLobbyStoryLayout(
@@ -127,6 +111,16 @@ fun ChapterLobbyStoryLayout(
     val lifecycleOwner = LocalLifecycleOwner.current
     val isDebuggable = remember {
         (context.applicationContext.applicationInfo.flags and 0x2) != 0
+    }
+    if (!useCompanionDinoArt) {
+        val msg = "Legacy dino story art disabled. context=$storyContext useCompanionDinoArt=false"
+        Log.e("MissingContent", msg)
+        if (isDebuggable) throw IllegalStateException(msg)
+    }
+    if (companion == ChapterLobbyCompanion.DinoAndMom && !useCompanionMomArt) {
+        val msg = "Legacy mom story art disabled. context=$storyContext useCompanionMomArt=false"
+        Log.e("MissingContent", msg)
+        if (isDebuggable) throw IllegalStateException(msg)
     }
     val voicePlayer = remember(voiceAssetPath) { voiceAssetPath?.let { VoicePlayer(context = context) } }
     val rawVoice =
@@ -231,25 +225,10 @@ fun ChapterLobbyStoryLayout(
         remember(companionCharacter) {
             CompanionAssets.forCharacter(companionCharacter)
         }
-    val dinoIdleRes =
-        if (useCompanionDinoArt) {
-            companionAssets.poseIdle
-        } else {
-            R.drawable.dino_idle
-        }
-    val dinoTalkResIds =
-        if (useCompanionDinoArt) {
-            companionAssets.talkFrameResIds
-        } else {
-            dinoTalkFrames
-        }
-    val momIdleRes =
-        if (useCompanionMomArt) {
-            Chapter1DinoCompanionPilot.poseMomIdle
-        } else {
-            R.drawable.mom_idle
-        }
-    val momTalkResIds = if (useCompanionMomArt) emptyList() else momTalkFrames
+    val dinoIdleRes = companionAssets.poseIdle
+    val dinoTalkResIds = companionAssets.talkFrameResIds
+    val momIdleRes = Chapter1DinoCompanionPilot.poseMomIdle
+    val momTalkResIds = emptyList<Int>()
     val momCharacterScale =
         if (useCompanionMomArt) {
             1f

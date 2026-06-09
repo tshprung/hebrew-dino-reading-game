@@ -39,6 +39,7 @@ import com.tal.hebrewdino.ui.components.learning.captionFontSizeForWordCard
 import com.tal.hebrewdino.ui.domain.Chapter1Station4To6LessonChoiceCardSpec
 import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
 import com.tal.hebrewdino.ui.domain.HebrewLetterOrder
+import com.tal.hebrewdino.ui.domain.Season2StationUx
 import com.tal.hebrewdino.ui.domain.LessonChoice
 import com.tal.hebrewdino.ui.domain.Question
 import com.tal.hebrewdino.ui.layout.ScreenFit
@@ -94,9 +95,15 @@ fun PictureStartsWithGame(
     modifier: Modifier = Modifier,
 ) {
     val isCompactLandscapePhone = ScreenFit.isCompactLandscapePhone()
+    val isSeason2WarmupPictureStartsWith =
+        chapterId != null &&
+            stationId != null &&
+            Season2StationUx.isWarmupPictureStartsWith(chapterId, stationId)
     val isSagaStation4 =
-        (chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) &&
-            stationId == Chapter1StationOrder.PICTURE_PICK_ONE
+        (
+            (chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) &&
+                stationId == Chapter1StationOrder.PICTURE_PICK_ONE
+        ) || isSeason2WarmupPictureStartsWith
     val pictureCardExtraDownDp =
         if (isSagaStation4) {
             19.dp
@@ -113,8 +120,12 @@ fun PictureStartsWithGame(
     val instructionPanelPadV = if (isSagaStation4) 4.dp else 8.dp
     val useTwoColumn =
         isCompactLandscapePhone &&
-            (chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) &&
-            stationId == Chapter1StationOrder.PICTURE_PICK_ONE
+            (
+                (
+                    (chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) &&
+                        stationId == Chapter1StationOrder.PICTURE_PICK_ONE
+                ) || isSeason2WarmupPictureStartsWith
+            )
     val instructionScale = if (isCompactLandscapePhone) 1.1f else 2f
     val phoneCardTextMultiplier =
         if (useTwoColumn) {

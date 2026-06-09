@@ -45,6 +45,19 @@ data class StationQuizPlan(
      * Does not affect [LevelSession] or question generation.
      */
     val sortOptionLetters: Boolean = false,
+    /**
+     * When set, [LevelSession] generates Season 2 advanced questions instead of the legacy path.
+     * Season 1 and Season 2 Chapters 1–2 never set this flag.
+     */
+    val season2AdvancedMode: Season2AdvancedStationMode? = null,
+    /** Validated catalog ids for [season2AdvancedMode] question generation. */
+    val season2WordCatalogIds: List<String>? = null,
+    /** Letter pool for missing-first-letter distractors. */
+    val season2AdvancedDistractorLetters: List<String> = emptyList(),
+    /** Lightweight theme hook for advanced-station copy. */
+    val season2StationTheme: Season2StationTheme = Season2StationTheme.Standard,
+    /** Word-parts presentation ramp (visible / guided / hidden). */
+    val season2WordPartsPresentationMode: Season2WordPartsPresentationMode? = null,
 )
 
 object StationQuizPlans {

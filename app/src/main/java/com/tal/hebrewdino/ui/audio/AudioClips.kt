@@ -52,6 +52,27 @@ object AudioClips {
     /** Season 2 Chapter 1 station 4 (memory match): "מצא זוגות של אותיות זהות". */
     const val Season2Ch1St4MemoryMatchInstructions = "audio/season2_ch1_st4_memory_match_instructions.wav"
 
+    /** Season 2 puzzle map: "עוד חלק מהמפה התגלה!" */
+    const val Season2MapPartRevealed = "audio/season2_map_part_revealed.wav"
+
+    /** Season 2 puzzle map after station 5: "אנחנו מתקרבים!" */
+    const val Season2MapAlmostDone = "audio/season2_map_almost_done.wav"
+
+    /** Season 2 completed chapter replay hint: "לחצו על ריבוע כדי לשחק שוב". */
+    const val Season2ReplayTileInstruction = "audio/season2_replay_tile_instruction.wav"
+
+    /** Season 2 Picture→Word: "בחרו את המילה שמתאימה לתמונה". */
+    const val Season2PictureToWordInstructions = "audio/season2_picture_to_word_instructions.wav"
+
+    /** Season 2 MissingFirstLetter: "איזו אות חסרה?". */
+    const val Season2MissingFirstLetterInstructions = "audio/season2_missing_first_letter_instructions.wav"
+
+    /** Season 2 WordParts: "איזה חלק משלים את המילה?". */
+    const val Season2WordPartsInstructions = "audio/season2_word_parts_instructions.wav"
+
+    /** Season 2 Rhyming: "איזו מילה מתחרזת?". */
+    const val Season2RhymingInstructions = "audio/season2_rhyming_instructions.wav"
+
     // SFX (optional). If missing from assets, playback will be skipped.
     const val SfxBalloonPop = "audio/sfx_pop.wav"
     /** Softer balloon pop/plop for kids (optional). */

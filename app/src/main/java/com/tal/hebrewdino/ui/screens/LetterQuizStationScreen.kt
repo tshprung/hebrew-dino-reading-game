@@ -23,6 +23,7 @@ fun LetterQuizStationScreen(
     suppressInGameDinoProgress: Boolean = false,
     chapter1CompanionCharacter: DinoCharacter? = null,
     chapter1PlayerAddress: PlayerAddress? = null,
+    season2Chapter1StationId: Int? = null,
     modifier: Modifier = Modifier,
 ) {
     GameScreen(
@@ -41,6 +42,7 @@ fun LetterQuizStationScreen(
         suppressInGameDinoProgress = suppressInGameDinoProgress,
         chapter1CompanionCharacter = chapter1CompanionCharacter,
         chapter1PlayerAddress = chapter1PlayerAddress,
+        season2Chapter1StationId = season2Chapter1StationId,
         modifier = modifier,
     )
 }

@@ -2,6 +2,7 @@ package com.tal.hebrewdino.ui.screens
 
 import android.util.Log
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,9 +16,12 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -40,7 +44,9 @@ import com.tal.hebrewdino.ui.companion.CompanionAssets
 import com.tal.hebrewdino.ui.data.DinoCharacter
 import com.tal.hebrewdino.ui.data.PlayerAddress
 import com.tal.hebrewdino.ui.audio.AudioClips
+import com.tal.hebrewdino.ui.audio.InStationPraiseAudio
 import com.tal.hebrewdino.ui.audio.GameAudioEngine
+import com.tal.hebrewdino.ui.audio.LocalBackgroundMusic
 import com.tal.hebrewdino.ui.audio.RawVoicePlayer
 import com.tal.hebrewdino.ui.audio.SoundPoolPlayer
 import com.tal.hebrewdino.ui.audio.VoicePlayer
@@ -48,6 +54,14 @@ import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
 import com.tal.hebrewdino.ui.domain.DevTools
 import com.tal.hebrewdino.ui.domain.Episode4Help
 import com.tal.hebrewdino.ui.domain.LetterPoolSpec
+import com.tal.hebrewdino.ui.domain.Season2Chapter1LetterPoolSpec
+import com.tal.hebrewdino.ui.domain.Season2Chapter2LetterPoolSpec
+import com.tal.hebrewdino.ui.domain.Season2GuessingCoach
+import com.tal.hebrewdino.ui.domain.Season2GuessingDetector
+import com.tal.hebrewdino.ui.domain.Season2GuessingHintCopy
+import com.tal.hebrewdino.ui.domain.Season2Station6FeedbackPolicy
+import com.tal.hebrewdino.ui.companion.CompanionVisualPolicy
+import com.tal.hebrewdino.ui.domain.Season2StationUx
 import com.tal.hebrewdino.ui.domain.Question
 import com.tal.hebrewdino.ui.domain.StationBehaviorRegistry
 import com.tal.hebrewdino.ui.domain.StationQuizMode
@@ -60,6 +74,7 @@ import com.tal.hebrewdino.ui.feedback.GameFeedback
 import com.tal.hebrewdino.ui.game.ChildGameAudioHooks
 import com.tal.hebrewdino.ui.layout.ScreenFit
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 internal enum class GamePhase { Intro, Play }
@@ -330,6 +345,8 @@ fun GameScreen(
     suppressInGameDinoProgress: Boolean = false,
     chapter1CompanionCharacter: DinoCharacter? = null,
     chapter1PlayerAddress: PlayerAddress? = null,
+    /** Season 2 Chapter 1 UX station index (1..6); enables anti-guessing coach when set. */
+    season2Chapter1StationId: Int? = null,
     modifier: Modifier = Modifier,
 ) {
     // UX: no audio for now (per request).
@@ -341,6 +358,28 @@ fun GameScreen(
             factory = remember(plan, letterPoolSpec) { GameViewModel.Factory(plan = plan, letterPoolSpec = letterPoolSpec) },
         )
     val session = gameViewModel.session
+    val isSeason2QuizChapter =
+        season2Chapter1StationId != null &&
+            (
+                letterPoolSpec === Season2Chapter1LetterPoolSpec ||
+                    letterPoolSpec === Season2Chapter2LetterPoolSpec ||
+                    letterPoolSpec is com.tal.hebrewdino.ui.domain.Season2ChapterLetterPool
+            )
+    val season2GuessingDetector =
+        remember(letterPoolSpec, season2Chapter1StationId) {
+            if (isSeason2QuizChapter) {
+                Season2GuessingDetector()
+            } else {
+                null
+            }
+        }
+    var season2HintText by remember(stationId) { mutableStateOf<String?>(null) }
+    var season2HadCoachIntervention by remember(stationId) { mutableStateOf(false) }
+    var season2CoachJob by remember(stationId) { mutableStateOf<Job?>(null) }
+    val isSeason2BalloonStation =
+        isSeason2QuizChapter && plan.mode == StationQuizMode.PopBalloons
+    var season2SkipBalloonStagingAwait by remember(stationId) { mutableStateOf(false) }
+    var season2Station6ConsecutiveWrongs by remember(stationId) { mutableIntStateOf(0) }
     val listenOnly = plan.listenOnlyTargetPrompt
     val stationUiSpec = remember(chapterId, stationId) { StationBehaviorRegistry.getStationUiSpec(chapterId, stationId) }
     val helpColumnEnabled = Episode4Help.isHelpColumnActive(stationUiSpec)
@@ -386,17 +425,11 @@ fun GameScreen(
     val voice = audio.voice
     val sfx = audio.sfx
     val rawVoice = remember { RawVoicePlayer(context = context) }
+    val backgroundMusic = LocalBackgroundMusic.current
     val gameFeedback = remember(stationId, sfx, view) { GameFeedback(scope, sfx, view) }
     val devToolsEnabled = DevTools.enabled(context)
 
-    val expectsSelectedCompanion =
-        chapterId == 1 ||
-            chapterId == 2 ||
-            chapterId == 3 ||
-            chapterId == 4 ||
-            chapterId == 5 ||
-            chapterId == 6 ||
-            chapterId == TrainingV1Config.CHAPTER_ID
+    val expectsSelectedCompanion = CompanionVisualPolicy.expectsSelectedCompanion(chapterId)
     if (expectsSelectedCompanion && chapter1CompanionCharacter == null) {
         val msg =
             "Missing selected companion for station gameplay. chapterId=$chapterId stationId=$stationId context=GameScreen chapter1CompanionCharacter=null"
@@ -501,30 +534,22 @@ fun GameScreen(
         )
     }
     val useSagaSelectedCompanionDino =
-        (chapterId == 1 ||
-            chapterId == 2 ||
-            chapterId == 3 ||
-            chapterId == 4 ||
-            chapterId == 5 ||
-            chapterId == 6 ||
-            chapterId == TrainingV1Config.CHAPTER_ID) &&
+        expectsSelectedCompanion &&
             chapter1CompanionCharacter != null
     val chapter1CompanionAssets =
         remember(chapter1CompanionCharacter) {
-            chapter1CompanionCharacter?.let { CompanionAssets.forCharacter(it) }
-        }
-    val jumpFrames =
-        remember(stationId, useSagaSelectedCompanionDino, chapter1CompanionAssets) {
-            if (useSagaSelectedCompanionDino && chapter1CompanionAssets != null) {
-                chapter1CompanionAssets.talkFrameResIds
-            } else {
-                listOf(R.drawable.dino_jump_0, R.drawable.dino_jump_1, R.drawable.dino_jump_2)
-            }
+            chapter1CompanionCharacter?.let { CompanionVisualPolicy.assetsFor(it) }
         }
     val companionTalkFrames = chapter1CompanionAssets?.talkFrameResIds.orEmpty()
-    val legacyTalkFrames =
-        listOf(R.drawable.dino_talk_0, R.drawable.dino_talk_1, R.drawable.dino_talk_2, R.drawable.dino_talk_3)
-    val forwardDir = if (LocalLayoutDirection.current == LayoutDirection.Rtl) -1f else 1f
+    val jumpFrames = companionTalkFrames
+    val forwardDir =
+        if (isSeason2QuizChapter) {
+            1f
+        } else if (LocalLayoutDirection.current == LayoutDirection.Rtl) {
+            -1f
+        } else {
+            1f
+        }
 
     GameAudioPreloadEffects(
         stationId = stationId,
@@ -562,7 +587,11 @@ fun GameScreen(
         return
     }
 
-    LaunchedEffect(stationId, session.currentIndex) {
+    LaunchedEffect(stationId, session.currentIndex, isSeason2QuizChapter) {
+        if (isSeason2QuizChapter) {
+            season2GuessingDetector?.onNewRound()
+            season2HadCoachIntervention = false
+        }
         GameRoundStartActions.run(
             gameViewModel = gameViewModel,
             audioEnabled = audioEnabled,
@@ -595,6 +624,7 @@ fun GameScreen(
             audioRuntime = audioRuntime,
             chapter1PlayerAddress = chapter1PlayerAddress,
             rawVoice = rawVoice,
+            backgroundMusic = backgroundMusic,
         )
     }
 
@@ -615,6 +645,16 @@ fun GameScreen(
     )
 
     suspend fun advanceAfterRound(isLast: Boolean, ch3SpellMidWord: Boolean = false) {
+        season2Station6ConsecutiveWrongs = 0
+        if (isSeason2QuizChapter && season2HadCoachIntervention && chapter1PlayerAddress != null) {
+            season2HintText = Season2GuessingHintCopy.processPraise(chapter1PlayerAddress)
+            val praiseRes = InStationPraiseAudio.pick()
+            rawVoice.playRawBlocking(praiseRes)
+            delay(900)
+            season2HintText = null
+            season2HadCoachIntervention = false
+        }
+        season2GuessingDetector?.onCorrect()
         AdvanceAfterRoundActions.run(
             scope = scope,
             gameViewModel = gameViewModel,
@@ -651,6 +691,78 @@ fun GameScreen(
         wrongPickedLetterAlreadySpoken: Boolean = false,
         wrongWordAlreadySpoken: Boolean = false,
     ) {
+        val detector = season2GuessingDetector
+        val s2StationId = season2Chapter1StationId
+        if (
+            detector != null &&
+                s2StationId != null &&
+                chapter1PlayerAddress != null &&
+                Season2Station6FeedbackPolicy.shouldSkipCoachBubble(s2StationId, isSeason2QuizChapter)
+        ) {
+            season2Station6ConsecutiveWrongs++
+            if (
+                Season2Station6FeedbackPolicy.shouldReplayInstructionAfterWrong(
+                    consecutiveWrongInRound = season2Station6ConsecutiveWrongs,
+                    season2UxStationId = s2StationId,
+                    isSeason2Quiz = isSeason2QuizChapter,
+                )
+            ) {
+                season2Station6ConsecutiveWrongs = 0
+                scope.launch {
+                    cancelFeedbackVoice()
+                    gameViewModel.inputLocked = true
+                    Season2GuessingCoach.replayTargetAudio(
+                        season2StationId = s2StationId,
+                        session = session,
+                        playerAddress = chapter1PlayerAddress,
+                        rawVoice = rawVoice,
+                        gameplayChapterId = chapterId,
+                    )
+                    gameViewModel.inputLocked = false
+                }
+            } else {
+                scope.launch {
+                    HintPulseActions.registerWrongTapForHintPulse(gameViewModel)
+                    if (audioEnabled) ChildGameAudioHooks.onWrong()
+                    optionsShake.animateTo(7f, tween(70))
+                    optionsShake.animateTo(0f, tween(140))
+                }
+            }
+            return
+        }
+        if (detector != null && s2StationId != null && chapter1PlayerAddress != null) {
+            val shouldCoach = detector.recordWrongAttempt()
+            if (shouldCoach) {
+                season2CoachJob?.cancel()
+                season2CoachJob =
+                    scope.launch {
+                        cancelFeedbackVoice()
+                        gameViewModel.inputLocked = true
+                        gameViewModel.dinoVisual = DinoVisual.TryAgain
+                        optionsShake.animateTo(7f, tween(70))
+                        optionsShake.animateTo(0f, tween(140))
+                        season2HintText =
+                            Season2GuessingHintCopy.coachBubbleText(
+                                season2StationId = s2StationId,
+                                playerAddress = chapter1PlayerAddress,
+                            )
+                        season2HadCoachIntervention = true
+                        Season2GuessingCoach.replayTargetAudio(
+                            season2StationId = s2StationId,
+                            session = session,
+                            playerAddress = chapter1PlayerAddress,
+                            rawVoice = rawVoice,
+                            gameplayChapterId = chapterId,
+                        )
+                        delay(350)
+                        season2HintText = null
+                        detector.onInterventionAcknowledged()
+                        gameViewModel.dinoVisual = DinoVisual.Idle
+                        gameViewModel.inputLocked = false
+                    }
+                return
+            }
+        }
         WrongFeedbackActions.trigger(
             scope = scope,
             gameViewModel = gameViewModel,
@@ -714,44 +826,11 @@ fun GameScreen(
                     .zIndex(4f),
         )
 
-        if (isCompactLandscapePhone) {
-            val dinoDrawable =
-                if (useSagaSelectedCompanionDino) {
-                    when (gameViewModel.dinoVisual) {
-                        DinoVisual.Idle -> chapter1CompanionAssets!!.poseIdle
-                        DinoVisual.TryAgain -> chapter1CompanionAssets!!.poseEncourage
-                        DinoVisual.Jump ->
-                            jumpFrames[gameViewModel.jumpFrameIndex.coerceIn(0, jumpFrames.lastIndex.coerceAtLeast(0))]
-                    }
-                } else {
-                    when (gameViewModel.dinoVisual) {
-                        DinoVisual.Idle -> R.drawable.dino_idle
-                        DinoVisual.TryAgain -> R.drawable.dino_try_again
-                        DinoVisual.Jump -> jumpFrames[gameViewModel.jumpFrameIndex.coerceIn(0, jumpFrames.lastIndex)]
-                    }
-                }
-            val talkFrames = if (useSagaSelectedCompanionDino) companionTalkFrames else legacyTalkFrames
-            CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
-                Box(modifier = Modifier.fillMaxSize()) {
-                    GameScreenDinoLayer(
-                        idleRes = dinoDrawable,
-                        talkFrameResIds = talkFrames,
-                        isTalking =
-                            gameViewModel.dinoTalking ||
-                                (isSagaEpisode(chapterId) && gameViewModel.inputLocked && gameViewModel.dinoVisual == DinoVisual.Jump),
-                        dinoForward = dinoForward,
-                        dinoSlip = dinoSlip,
-                        dinoTilt = dinoTilt,
-                        dinoScale = dinoScale,
-                        modifier =
-                            Modifier
-                                .align(Alignment.BottomEnd)
-                                .padding(end = 6.dp, bottom = 8.dp)
-                                .scale(0.70f),
-                    )
-                }
-            }
-        }
+        val showSeason2CoachHint =
+            isSeason2QuizChapter &&
+                season2HintText != null &&
+                chapter1CompanionCharacter != null
+        val season2CompanionLayoutScale = if (isSeason2QuizChapter) 0.80f else 0.70f
 
         Column(
             modifier =
@@ -862,6 +941,20 @@ fun GameScreen(
                         finalCorrectBalloon: Boolean,
                         balloonIndex: Int,
                     ) {
+                        val playedCoachRecoveryPraise =
+                            isCorrect &&
+                                isSeason2BalloonStation &&
+                                season2HadCoachIntervention &&
+                                chapter1PlayerAddress != null
+                        if (playedCoachRecoveryPraise) {
+                            cancelFeedbackVoiceCb()
+                            season2HintText =
+                                Season2GuessingHintCopy.processPraise(chapter1PlayerAddress!!)
+                            rawVoice.playRawBlocking(InStationPraiseAudio.pick())
+                            season2HintText = null
+                            season2HadCoachIntervention = false
+                            season2SkipBalloonStagingAwait = true
+                        }
                         PopBalloonsActions.handlePopSfx(
                             audioEnabled = audioEnabled,
                             sagaUsesPopBalloonsAudioStaging = sagaUsesPopBalloonsAudioStaging,
@@ -885,10 +978,18 @@ fun GameScreen(
                             },
                             station2PopTailPaddingMs = Station2PopTailPaddingMs,
                             station2PopFallbackDurationMs = Station2PopFallbackDurationMs,
+                            skipProgressPraise = playedCoachRecoveryPraise,
                         )
                     }
 
                     fun handlePopBalloonsWrongPick() {
+                        if (isSeason2QuizChapter) {
+                            if (!gameViewModel.consumeTapCooldown()) return
+                            session.wrongTap()
+                            gameViewModel.shakeEpoch += 1
+                            onWrongFeedback()
+                            return
+                        }
                         PopBalloonsActions.handleWrongPick(
                             gameViewModel = gameViewModel,
                             sagaUsesPopBalloonsAudioStaging = sagaUsesPopBalloonsAudioStaging,
@@ -907,6 +1008,23 @@ fun GameScreen(
                         poppedBalloonColor: Color,
                         popAll: Boolean,
                     ) {
+                        val coachPraiseNow =
+                            isSeason2BalloonStation &&
+                                season2HadCoachIntervention &&
+                                chapter1PlayerAddress != null
+                        if (coachPraiseNow) {
+                            scope.launch {
+                                cancelFeedbackVoiceCb()
+                                season2HintText =
+                                    Season2GuessingHintCopy.processPraise(chapter1PlayerAddress!!)
+                                rawVoice.playRawBlocking(InStationPraiseAudio.pick())
+                                season2HintText = null
+                                season2HadCoachIntervention = false
+                            }
+                        }
+                        val skipStagingAwait =
+                            season2SkipBalloonStagingAwait || coachPraiseNow
+                        season2SkipBalloonStagingAwait = false
                         PopBalloonsActions.handleAllCorrectPopped(
                             lastLetter = lastLetter,
                             poppedBalloonColor = poppedBalloonColor,
@@ -921,6 +1039,7 @@ fun GameScreen(
                             scope = scope,
                             audioRuntime = audioRuntime,
                             advanceAfterRound = { isLast -> advanceAfterRound(isLast) },
+                            skipStagingVoiceAwait = skipStagingAwait,
                         )
                     }
 
@@ -986,6 +1105,70 @@ fun GameScreen(
                             voice = voice,
                             rawVoice = rawVoice,
                             audioRuntime = audioRuntime,
+                            advanceAfterRound = { isLast -> advanceAfterRound(isLast) },
+                            onWrongFeedback = { wrongWordCatalogId ->
+                                onWrongFeedback(wrongWordCatalogId = wrongWordCatalogId)
+                            },
+                        )
+                    }
+
+                    fun handleAdvancedReplayWord() {
+                        val q = session.currentQuestion ?: return
+                        val catalogId = Season2AdvancedStationActions.catalogIdForReplay(q) ?: return
+                        Season2AdvancedStationActions.replayWordByCatalogId(
+                            catalogId = catalogId,
+                            chapterId = chapterId,
+                            stationId = stationId,
+                            rawVoice = rawVoice,
+                            scope = scope,
+                            audioRuntime = audioRuntime,
+                            audioEnabled = audioEnabled,
+                        )
+                    }
+
+                    fun handleMissingFirstLetterPick(picked: String) {
+                        Season2AdvancedStationActions.handleMissingFirstLetterPick(
+                            picked = picked,
+                            gameViewModel = gameViewModel,
+                            cancelFeedbackVoice = cancelFeedbackVoiceCb,
+                            audioEnabled = audioEnabled,
+                            chapterId = chapterId,
+                            stationId = stationId,
+                            session = session,
+                            scope = scope,
+                            rawVoice = rawVoice,
+                            audioRuntime = audioRuntime,
+                            advanceAfterRound = { isLast -> advanceAfterRound(isLast) },
+                            onWrongFeedback = { wrongPickedLetter, wrongPickedLetterAlreadySpoken ->
+                                onWrongFeedback(
+                                    wrongPickedLetter = wrongPickedLetter,
+                                    wrongPickedLetterAlreadySpoken = wrongPickedLetterAlreadySpoken,
+                                )
+                            },
+                        )
+                    }
+
+                    fun handleWordPartsPick(picked: String) {
+                        Season2AdvancedStationActions.handleWordPartsPick(
+                            picked = picked,
+                            gameViewModel = gameViewModel,
+                            cancelFeedbackVoice = cancelFeedbackVoiceCb,
+                            audioEnabled = audioEnabled,
+                            session = session,
+                            scope = scope,
+                            advanceAfterRound = { isLast -> advanceAfterRound(isLast) },
+                            onWrongFeedback = { onWrongFeedback() },
+                        )
+                    }
+
+                    fun handleRhymingPick(choiceId: String) {
+                        Season2AdvancedStationActions.handleRhymingPick(
+                            choiceId = choiceId,
+                            gameViewModel = gameViewModel,
+                            cancelFeedbackVoice = cancelFeedbackVoiceCb,
+                            audioEnabled = audioEnabled,
+                            session = session,
+                            scope = scope,
                             advanceAfterRound = { isLast -> advanceAfterRound(isLast) },
                             onWrongFeedback = { wrongWordCatalogId ->
                                 onWrongFeedback(wrongWordCatalogId = wrongWordCatalogId)
@@ -1072,6 +1255,8 @@ fun GameScreen(
                                 station4WrongFlashLetter = gameViewModel.station4WrongFlashLetter,
                                 station4WrongFlashEpoch = gameViewModel.station4WrongFlashEpoch,
                                 station4PinnedCorrectLetter = gameViewModel.station4PinnedCorrectLetter,
+                                wordPartsCompletedEquation = gameViewModel.wordPartsCompletedEquation,
+                                wordPartsHintRevealWord = gameViewModel.wordPartsHintRevealWord,
                                 entryPulseEpoch = gameViewModel.entryPulseEpoch,
                                 entryPulseScale = entryPulseScale.value,
                                 optionsShakePx = optionsShake.value,
@@ -1102,6 +1287,10 @@ fun GameScreen(
                                 handleImageToWordWordPressed = ::handleImageToWordWordPressed,
                                 handleImageToWordAttempt = ::handleImageToWordAttempt,
                                 handleImageMatchAttempt = ::handleImageMatchAttempt,
+                                handleMissingFirstLetterPick = ::handleMissingFirstLetterPick,
+                                handleWordPartsPick = ::handleWordPartsPick,
+                                handleRhymingPick = ::handleRhymingPick,
+                                handleAdvancedReplayWord = ::handleAdvancedReplayWord,
                                 handleFinaleWrongPlacement = ::handleFinaleWrongPlacement,
                                 onWrongFeedback = { wrongPickedLetter, wrongWordCatalogId, wrongPickedLetterAlreadySpoken, wrongWordAlreadySpoken ->
                                     onWrongFeedback(
@@ -1116,26 +1305,24 @@ fun GameScreen(
                     )
                 }
             }
-            val dinoDrawable =
-                if (useSagaSelectedCompanionDino) {
+            if (
+                !isCompactLandscapePhone &&
+                    !isSeason2QuizChapter &&
+                    useSagaSelectedCompanionDino &&
+                    chapter1CompanionAssets != null &&
+                    jumpFrames.isNotEmpty()
+            ) {
+                val assets = chapter1CompanionAssets
+                val dinoDrawable =
                     when (gameViewModel.dinoVisual) {
-                        DinoVisual.Idle -> chapter1CompanionAssets!!.poseIdle
-                        DinoVisual.TryAgain -> chapter1CompanionAssets!!.poseEncourage
+                        DinoVisual.Idle -> assets.poseIdle
+                        DinoVisual.TryAgain -> assets.poseEncourage
                         DinoVisual.Jump ->
-                            jumpFrames[gameViewModel.jumpFrameIndex.coerceIn(0, jumpFrames.lastIndex.coerceAtLeast(0))]
+                            jumpFrames[gameViewModel.jumpFrameIndex.coerceIn(0, jumpFrames.lastIndex)]
                     }
-                } else {
-                    when (gameViewModel.dinoVisual) {
-                        DinoVisual.Idle -> R.drawable.dino_idle
-                        DinoVisual.TryAgain -> R.drawable.dino_try_again
-                        DinoVisual.Jump -> jumpFrames[gameViewModel.jumpFrameIndex.coerceIn(0, jumpFrames.lastIndex)]
-                    }
-                }
-            val talkFrames = if (useSagaSelectedCompanionDino) companionTalkFrames else legacyTalkFrames
-            if (!isCompactLandscapePhone) {
                 GameScreenDinoLayer(
                     idleRes = dinoDrawable,
-                    talkFrameResIds = talkFrames,
+                    talkFrameResIds = companionTalkFrames,
                     isTalking =
                         gameViewModel.dinoTalking ||
                             (isSagaEpisode(chapterId) && gameViewModel.inputLocked && gameViewModel.dinoVisual == DinoVisual.Jump),
@@ -1167,6 +1354,60 @@ fun GameScreen(
             audioRuntime = audioRuntime,
             chapter1PlayerAddress = chapter1PlayerAddress,
         )
+
+        if ((isCompactLandscapePhone || isSeason2QuizChapter) &&
+            useSagaSelectedCompanionDino &&
+            chapter1CompanionAssets != null &&
+            jumpFrames.isNotEmpty()
+        ) {
+            val assets = chapter1CompanionAssets
+            val s2DinoDrawable =
+                when (gameViewModel.dinoVisual) {
+                    DinoVisual.Idle -> assets.poseIdle
+                    DinoVisual.TryAgain -> assets.poseEncourage
+                    DinoVisual.Jump ->
+                        jumpFrames[gameViewModel.jumpFrameIndex.coerceIn(0, jumpFrames.lastIndex)]
+                }
+            CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+                Box(
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .zIndex(20f),
+                ) {
+                    GameScreenDinoLayer(
+                        idleRes = s2DinoDrawable,
+                        talkFrameResIds = companionTalkFrames,
+                        isTalking =
+                            gameViewModel.dinoTalking ||
+                                (isSagaEpisode(chapterId) && gameViewModel.inputLocked && gameViewModel.dinoVisual == DinoVisual.Jump),
+                        dinoForward = dinoForward,
+                        dinoSlip = dinoSlip,
+                        dinoTilt = dinoTilt,
+                        dinoScale = dinoScale,
+                        modifier =
+                            Modifier
+                                .align(Alignment.BottomEnd)
+                                .padding(end = 6.dp, bottom = 8.dp)
+                                .scale(season2CompanionLayoutScale),
+                    )
+                    if (showSeason2CoachHint) {
+                        Season2CompanionSpeechHint(
+                            text = season2HintText!!,
+                            companionCharacter = chapter1CompanionCharacter,
+                            isTalking = true,
+                            showCompanionPortrait = false,
+                            companionSizeDp = 70.dp,
+                            modifier =
+                                Modifier
+                                    .align(Alignment.BottomEnd)
+                                    .padding(end = 76.dp, bottom = 10.dp)
+                                    .zIndex(21f),
+                        )
+                    }
+                }
+            }
+        }
 
         StationDebugSkipButton(
             onSkip = { debugSkipToReward() },

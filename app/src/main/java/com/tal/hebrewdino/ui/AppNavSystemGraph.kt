@@ -26,6 +26,8 @@ import com.tal.hebrewdino.ui.data.AudioPrefs
 import com.tal.hebrewdino.ui.data.DinoCharacter
 import com.tal.hebrewdino.ui.data.Season2ProgressPrefs
 import com.tal.hebrewdino.ui.domain.Season2Chapter1StationOrder
+import com.tal.hebrewdino.ui.domain.Season2ChapterRegistry
+import com.tal.hebrewdino.ui.domain.Season2NavKeys
 import com.tal.hebrewdino.ui.screens.ChaptersScreen
 import com.tal.hebrewdino.ui.screens.OnboardingCompanionScreen
 import com.tal.hebrewdino.ui.screens.OnboardingPlayerAddressScreen
@@ -116,6 +118,7 @@ internal fun NavGraphBuilder.systemAndTrainingGraph(host: AppNavHostState) {
 
     composable(NavRoutes.Seasons) {
         SeasonsScreen(
+            companionCharacter = host.companionCharacter,
             onOpenSeason1 = {
                 host.navController.navigate(NavRoutes.Chapters) { launchSingleTop = true }
             },
@@ -123,8 +126,12 @@ internal fun NavGraphBuilder.systemAndTrainingGraph(host: AppNavHostState) {
                 if (BuildConfig.DEBUG) {
                     {
                         host.navController.navigate(NavRoutes.Season2ChapterSelect) {
+                            popUpTo(NavRoutes.Season2ChapterSelect) { inclusive = true }
                             launchSingleTop = true
                         }
+                        host.navController.currentBackStackEntry
+                            ?.savedStateHandle
+                            ?.set(Season2NavKeys.SHOW_SEASON_INTRO, true)
                     }
                 } else {
                     {}
@@ -138,13 +145,26 @@ internal fun NavGraphBuilder.systemAndTrainingGraph(host: AppNavHostState) {
         )
     }
 
-    composable(NavRoutes.Season2ChapterSelect) {
+    composable(NavRoutes.Season2ChapterSelect) { backStackEntry ->
+        val requestSeasonIntro by
+            backStackEntry.savedStateHandle
+                .getStateFlow(Season2NavKeys.SHOW_SEASON_INTRO, false)
+                .collectAsState()
         Season2ChapterSelectScreen(
+            companionCharacter = host.companionCharacter,
+            requestSeasonIntro = requestSeasonIntro,
+            onSeasonIntroConsumed = {
+                backStackEntry.savedStateHandle[Season2NavKeys.SHOW_SEASON_INTRO] = false
+            },
             onBack = { host.navController.popBackStack() },
             onOpenChapter = { chapterId ->
+                if (!Season2ChapterRegistry.isPlayable(chapterId)) return@Season2ChapterSelectScreen
                 host.navController.navigate(NavRoutes.season2PuzzleMapPrototype(chapterId)) {
                     launchSingleTop = true
                 }
+                host.navController.currentBackStackEntry
+                    ?.savedStateHandle
+                    ?.set(Season2NavKeys.SHOW_CHAPTER_INTRO, true)
             },
         )
     }
@@ -154,13 +174,35 @@ internal fun NavGraphBuilder.systemAndTrainingGraph(host: AppNavHostState) {
         arguments = listOf(navArgument("chapterId") { type = NavType.IntType }),
     ) { backStackEntry ->
         val chapterId = backStackEntry.arguments?.getInt("chapterId") ?: 1
+        if (!Season2ChapterRegistry.isPlayable(chapterId)) {
+            host.navController.popBackStack()
+            return@composable
+        }
+        val celebrateRequest by
+            backStackEntry.savedStateHandle
+                .getStateFlow(Season2NavKeys.REQUEST_CHAPTER_CELEBRATION, false)
+                .collectAsState()
+        val requestChapterIntro by
+            backStackEntry.savedStateHandle
+                .getStateFlow(Season2NavKeys.SHOW_CHAPTER_INTRO, false)
+                .collectAsState()
         Season2PuzzleMapPrototypeScreen(
             chapterId = chapterId,
+            companionCharacter = host.companionCharacter,
+            playerAddress = host.playerAddress,
             onBack = { host.navController.popBackStack() },
             onOpenStation = { stationId ->
                 host.navController.navigate(NavRoutes.season2ChapterStation(chapterId, stationId)) {
                     launchSingleTop = true
                 }
+            },
+            requestChapterIntro = requestChapterIntro,
+            onChapterIntroConsumed = {
+                backStackEntry.savedStateHandle[Season2NavKeys.SHOW_CHAPTER_INTRO] = false
+            },
+            requestChapterCelebration = celebrateRequest,
+            onChapterCelebrationConsumed = {
+                backStackEntry.savedStateHandle[Season2NavKeys.REQUEST_CHAPTER_CELEBRATION] = false
             },
         )
     }
@@ -174,13 +216,23 @@ internal fun NavGraphBuilder.systemAndTrainingGraph(host: AppNavHostState) {
             ),
     ) { backStackEntry ->
         val chapterId = backStackEntry.arguments?.getInt("chapterId") ?: 1
+        if (!Season2ChapterRegistry.isPlayable(chapterId)) {
+            host.navController.popBackStack()
+            return@composable
+        }
         val stationId = backStackEntry.arguments?.getInt("stationId") ?: Season2Chapter1StationOrder.POP_BALLOONS
         Season2ChapterStationScreen(
             chapterId = chapterId,
             stationId = stationId,
+            companionCharacter = host.companionCharacter,
+            playerAddress = host.playerAddress,
             onBack = { host.navController.popBackStack() },
-            onComplete = {
-                // Return to the puzzle board; it will reveal the next piece based on saved progress.
+            onComplete = { requestChapterCelebration ->
+                if (requestChapterCelebration) {
+                    host.navController.previousBackStackEntry
+                        ?.savedStateHandle
+                        ?.set(Season2NavKeys.REQUEST_CHAPTER_CELEBRATION, true)
+                }
                 host.navController.popBackStack()
             },
         )

@@ -7,13 +7,14 @@ import com.tal.hebrewdino.ui.domain.AnswerResult
 import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
 import com.tal.hebrewdino.ui.domain.LevelSession
 import com.tal.hebrewdino.ui.domain.Question
+import com.tal.hebrewdino.ui.domain.Season2StationAudio
 import com.tal.hebrewdino.ui.domain.TrainingV1Config
 import com.tal.hebrewdino.ui.game.ChildGameAudioHooks
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 private fun usesImageToWordRawWordClips(chapterId: Int): Boolean =
-    chapterId == 3 || chapterId == 6 || chapterId == TrainingV1Config.CHAPTER_ID
+    Season2StationAudio.usesImageToWordRawWordClips(chapterId)
 
 private val ImageToWordPraiseCandidates =
     arrayOf(

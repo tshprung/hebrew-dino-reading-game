@@ -20,16 +20,17 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -47,90 +48,128 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ColorMatrix
-import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import com.tal.hebrewdino.R
+import com.tal.hebrewdino.ui.data.DinoCharacter
+import com.tal.hebrewdino.ui.data.PlayerAddress
 import com.tal.hebrewdino.ui.data.Season2ProgressPrefs
+import com.tal.hebrewdino.ui.domain.Season2Chapter1RevealOrder
+import com.tal.hebrewdino.ui.domain.Season2ChapterRegistry
+import com.tal.hebrewdino.ui.audio.GameAudioEngine
+import com.tal.hebrewdino.ui.audio.LocalBackgroundMusic
+import com.tal.hebrewdino.ui.audio.withVoiceDuck
+import com.tal.hebrewdino.ui.domain.Season2Copy
+import com.tal.hebrewdino.ui.domain.Season2IntroFlow
 import com.tal.hebrewdino.ui.layout.topChromeInsetsPadding
+import androidx.compose.ui.text.style.TextAlign
 import kotlinx.coroutines.launch
 import kotlin.math.PI
-import kotlin.math.max
 import kotlin.math.sin
 
 private const val TILE_COLUMNS = 3
 private const val TILE_ROWS = 2
 private const val TILE_COUNT = TILE_COLUMNS * TILE_ROWS
 
-private val MuseumWallTop = Color(0xFFF4EDE3)
-private val MuseumWallBottom = Color(0xFFE6D9C8)
 private val TitleBrown = Color(0xFF4A3A2E)
-private val TitlePlum = Color(0xFF4A2A4E)
 private val GlowAmber = Color(0xFF2E7D32)
 private val SparkleGold = Color(0xFFFFF2D6)
 private val GridLineColor = Color.Black.copy(alpha = 0.12f)
+private val MarkerGold = Color(0xFFCF9D4A)
+private val MarkerGreen = Color(0xFF2E7D32)
 
 private const val LOCKED_SATURATION = 0.02f
 private val FossilDust = Color(0xFFB8AFA5)
 private val FossilShade = Color(0xFF2B2724)
+private val FrostOverlay = Color(0xFFF8F4EE)
+private val FrostMist = Color(0xFFE8E0D4)
 
-private data class Season2ChapterPoster(
-    val title: String,
-    val posterResId: Int,
-)
-
-private fun season2PosterForChapter(chapterId: Int): Season2ChapterPoster =
-    when (chapterId) {
-        1 -> Season2ChapterPoster(title = "פרק 1 · טירנוזאורוס", posterResId = R.drawable.season2_trex_puzzle_full)
-        2 ->
-            Season2ChapterPoster(
-                title = "פרק 2 · טריצרטופס",
-                posterResId = R.drawable.season2_triceratops_puzzle_full,
-            )
-        // Fallback until other posters are added.
-        3 -> Season2ChapterPoster(title = "פרק 3 · סטגוזאורוס", posterResId = R.drawable.season2_trex_puzzle_full)
-        4 -> Season2ChapterPoster(title = "פרק 4 · ברכיוזאורוס", posterResId = R.drawable.season2_trex_puzzle_full)
-        5 -> Season2ChapterPoster(title = "פרק 5 · אנקילוזאורוס", posterResId = R.drawable.season2_trex_puzzle_full)
-        6 -> Season2ChapterPoster(title = "פרק 6 · פטרנודון", posterResId = R.drawable.season2_trex_puzzle_full)
-        else -> Season2ChapterPoster(title = "פרק · דינוזאור", posterResId = R.drawable.season2_trex_puzzle_full)
-    }
+private fun season2PosterResForChapter(chapterId: Int): Int {
+    val posterResId =
+        Season2ChapterRegistry.posterResId(chapterId)
+            ?: error("Chapter $chapterId has no poster — must not open puzzle map")
+    return posterResId
+}
 
 /**
- * Season 2 puzzle map UX prototype — one continuous poster, per-tile color reveal on top.
+ * Season 2 puzzle map — manual reveal order, frosted mystery, station markers on completion.
  */
 @Composable
 fun Season2PuzzleMapPrototypeScreen(
     chapterId: Int,
+    companionCharacter: DinoCharacter,
+    playerAddress: PlayerAddress,
     onBack: () -> Unit,
     onOpenStation: (Int) -> Unit,
+    requestChapterIntro: Boolean = false,
+    onChapterIntroConsumed: () -> Unit = {},
+    requestChapterCelebration: Boolean = false,
+    onChapterCelebrationConsumed: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
     val season2Progress = remember(context) { Season2ProgressPrefs(context.applicationContext) }
     val completedChapters by season2Progress.completedChaptersFlow.collectAsState(initial = emptySet())
     val completedStations by season2Progress.completedStationsFlow(chapterId).collectAsState(initial = emptySet())
-    val chapterPoster = remember(chapterId) { season2PosterForChapter(chapterId) }
-    val posterPainter = painterResource(id = chapterPoster.posterResId)
+    val posterResId = remember(chapterId) { season2PosterResForChapter(chapterId) }
+    val posterPainter = painterResource(id = posterResId)
+    val mapIntroLines =
+        remember(chapterId, playerAddress) {
+            Season2ChapterRegistry.chapter(chapterId)?.mapIntroStoryLines?.invoke(playerAddress)
+                ?: Season2Copy.mapIntroStoryLines(playerAddress)
+        }
+    val isChapterCompleted =
+        Season2Copy.isChapterComplete(
+            chapterIndex = chapterId,
+            completedChapters = completedChapters,
+            completedStations = completedStations,
+        )
 
-    var coloredThrough by remember { mutableIntStateOf(0) }
-    var nextPlayableTile by remember { mutableIntStateOf(1) }
+    val revealedTiles =
+        remember(completedStations) {
+            Season2Chapter1RevealOrder.revealedPosterTiles(completedStations)
+        }
+    val nextStation =
+        remember(completedStations) {
+            Season2Chapter1RevealOrder.nextStation(completedStations)
+        }
+    val nextPlayablePosterTile =
+        remember(nextStation) {
+            nextStation?.let { Season2Chapter1RevealOrder.posterTileForStation(it) }
+        }
+
     var revealingTile by remember { mutableStateOf<Int?>(null) }
     val revealProgress = remember { Animatable(0f) }
     val scope = rememberCoroutineScope()
     val isRevealing = revealingTile != null
 
-    fun startReveal(tile: Int) {
+    var showIntro by remember(chapterId) { mutableStateOf(false) }
+
+    LaunchedEffect(requestChapterIntro) {
+        if (Season2IntroFlow.shouldShowChapterIntro(requestChapterIntro)) {
+            showIntro = true
+            onChapterIntroConsumed()
+        }
+    }
+    var showCompletionCelebration by remember(chapterId) { mutableStateOf(false) }
+    var returnCaption by remember { mutableStateOf<String?>(null) }
+    var previousStations by remember(chapterId) { mutableStateOf<Set<Int>?>(null) }
+    var progressHydrated by remember(chapterId) { mutableStateOf(false) }
+
+    fun startReveal(tile: Int, triggerCelebrationOnFinish: Boolean) {
         if (isRevealing) return
         revealingTile = tile
         scope.launch {
@@ -141,6 +180,76 @@ fun Season2PuzzleMapPrototypeScreen(
             )
             revealingTile = null
             revealProgress.snapTo(0f)
+            if (triggerCelebrationOnFinish) {
+                showCompletionCelebration = true
+            }
+        }
+    }
+
+    LaunchedEffect(requestChapterCelebration) {
+        if (requestChapterCelebration) {
+            showCompletionCelebration = true
+            onChapterCelebrationConsumed()
+        }
+    }
+
+    LaunchedEffect(chapterId, completedStations, isChapterCompleted, showIntro) {
+        if (!progressHydrated) {
+            previousStations = completedStations
+            progressHydrated = true
+            return@LaunchedEffect
+        }
+
+        val prev = previousStations ?: completedStations
+        if (prev == completedStations) return@LaunchedEffect
+
+        val added = completedStations - prev
+        previousStations = completedStations
+
+        if (added.isEmpty()) return@LaunchedEffect
+
+        // Ignore bulk DataStore hydration (e.g. opening an already-completed chapter).
+        if (added.size != 1) return@LaunchedEffect
+
+        val newStation = added.single()
+        val tile = Season2Chapter1RevealOrder.posterTileForStation(newStation)
+        val triggerCelebration =
+            Season2IntroFlow.shouldCelebrateFromStationProgress(
+                addedStationCount = added.size,
+                newStationId = newStation,
+                previousCompletedCount = prev.size,
+            )
+        startReveal(tile, triggerCelebrationOnFinish = triggerCelebration)
+
+        if (triggerCelebration) {
+            season2Progress.markChapterCompleted(chapterId)
+        }
+
+        if (!showIntro) {
+            Season2Copy.returnCaptionAfterStation(completedStations.size)?.let { caption ->
+                returnCaption = caption
+            }
+        }
+    }
+
+    val mapTitle = Season2Copy.puzzleMapTitle(chapterId, isChapterCompleted)
+    val bgm = LocalBackgroundMusic.current
+    val audio = remember(context) { GameAudioEngine(context = context.applicationContext) }
+    val voice = audio.voice
+    var replayInstructionSpoken by remember(chapterId) { mutableStateOf(false) }
+
+    DisposableEffect(Unit) {
+        onDispose { audio.release() }
+    }
+
+    LaunchedEffect(isChapterCompleted, showIntro, replayInstructionSpoken) {
+        if (!isChapterCompleted || showIntro || replayInstructionSpoken) return@LaunchedEffect
+        val asset = Season2Copy.replayTileInstructionVoiceAsset()
+        if (voice.hasAsset(asset)) {
+            replayInstructionSpoken = true
+            bgm?.withVoiceDuck {
+                voice.playFirstAvailableBlocking(asset)
+            }
         }
     }
 
@@ -148,87 +257,105 @@ fun Season2PuzzleMapPrototypeScreen(
         modifier =
             modifier
                 .fillMaxSize()
-                .background(Brush.verticalGradient(listOf(MuseumWallTop, MuseumWallBottom))),
+                .background(FossilShade),
     ) {
         Box(
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .topChromeInsetsPadding()
-                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                    .topChromeInsetsPadding(),
         ) {
-            Box(modifier = Modifier.fillMaxSize()) {
-                BoxWithConstraints(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    val boardWidth = maxWidth
-                    val boardHeight = maxHeight
-                    val cellWidth = boardWidth / TILE_COLUMNS
-                    val cellHeight = boardHeight / TILE_ROWS
+            BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+                val boardWidth = maxWidth
+                val boardHeight = maxHeight
+                val cellWidth = boardWidth / TILE_COLUMNS
+                val cellHeight = boardHeight / TILE_ROWS
 
+                Box(modifier = Modifier.fillMaxSize()) {
                     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
                         ContinuousPosterBoard(
                             posterPainter = posterPainter,
-                            boardWidth = boardWidth,
-                            boardHeight = boardHeight,
                             cellWidth = cellWidth,
                             cellHeight = cellHeight,
-                            coloredThrough = coloredThrough,
-                            nextPlayableTile = nextPlayableTile,
+                            revealedTiles = revealedTiles,
+                            nextPlayablePosterTile = nextPlayablePosterTile,
+                            chapterFullyRevealed = isChapterCompleted,
                             revealingTile = revealingTile,
                             revealProgress = revealProgress.value,
                             isRevealing = isRevealing,
-                            onTileTap = { tile -> if (!isRevealing) onOpenStation(tile) },
+                            onPosterTileTap = { posterTile ->
+                                if (!isRevealing) {
+                                    val stationId =
+                                        Season2Chapter1RevealOrder.stationForPosterTile(posterTile)
+                                    onOpenStation(stationId)
+                                }
+                            },
+                            modifier = Modifier.fillMaxSize(),
                         )
                     }
+                    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+                        Surface(
+                            modifier =
+                                Modifier
+                                    .align(Alignment.TopEnd)
+                                    .padding(top = 10.dp, end = 10.dp)
+                                    .zIndex(3f),
+                            shape = RoundedCornerShape(999.dp),
+                            color = Color(0xFF1A1512).copy(alpha = 0.58f),
+                            shadowElevation = 4.dp,
+                        ) {
+                            Text(
+                                text = mapTitle,
+                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp),
+                                style =
+                                    MaterialTheme.typography.labelLarge.copy(
+                                        fontWeight = FontWeight.ExtraBold,
+                                        fontSize = 13.sp,
+                                    ),
+                                color = Color.White.copy(alpha = 0.96f),
+                                textAlign = TextAlign.Start,
+                                maxLines = 1,
+                            )
+                        }
+                    }
                 }
-
-                FloatingMapChrome(
-                    onBack = onBack,
-                    title = rtl(chapterPoster.title),
-                    modifier =
-                        Modifier
-                            .align(Alignment.TopCenter)
-                            .fillMaxWidth()
-                            .padding(horizontal = 4.dp, vertical = 2.dp),
-                )
             }
+            FloatingMapChrome(
+                onBack = onBack,
+                emphasizeBack = isChapterCompleted,
+                modifier =
+                    Modifier
+                        .align(Alignment.TopStart)
+                        .padding(start = 4.dp, top = 2.dp)
+                        .zIndex(4f),
+            )
         }
-    }
 
-    val isChapterCompleted = chapterId in completedChapters
-    LaunchedEffect(chapterId, isChapterCompleted, completedStations) {
-        if (isChapterCompleted) {
-            // Re-entering a completed chapter: full dinosaur in color; all stations remain replayable.
-            coloredThrough = TILE_COUNT
-            nextPlayableTile = TILE_COUNT + 1
-            revealingTile = null
-            revealProgress.snapTo(0f)
-        } else {
-            val completedCount = completedStations.size.coerceIn(0, TILE_COUNT)
-            coloredThrough = completedCount
-            nextPlayableTile =
-                if (completedCount >= TILE_COUNT) {
-                    TILE_COUNT + 1
-                } else {
-                    (completedCount + 1).coerceAtMost(TILE_COUNT)
-                }
-            revealingTile = null
-            revealProgress.snapTo(0f)
+        if (showIntro) {
+            Season2MapIntroOverlay(
+                companionCharacter = companionCharacter,
+                playerAddress = playerAddress,
+                storyLines = mapIntroLines,
+                onContinue = { showIntro = false },
+            )
         }
-    }
 
-    var lastRevealedThrough by remember(chapterId) { mutableIntStateOf(0) }
-    LaunchedEffect(chapterId, coloredThrough) {
-        if (coloredThrough > lastRevealedThrough && coloredThrough in 1..TILE_COUNT) {
-            startReveal(coloredThrough)
-            lastRevealedThrough = coloredThrough
-        } else if (coloredThrough <= 0) {
-            lastRevealedThrough = 0
+        returnCaption?.let { caption ->
+            Season2MapReturnCaptionOverlay(
+                caption = caption,
+                voiceAssetPath = Season2Copy.returnCaptionVoiceAsset(completedStations.size),
+                onDismiss = { returnCaption = null },
+            )
         }
-        if (coloredThrough >= TILE_COUNT) {
-            season2Progress.markChapterCompleted(chapterId)
+
+        if (showCompletionCelebration) {
+            Season2ChapterCompleteOverlay(
+                chapterId = chapterId,
+                posterResId = posterResId,
+                companionCharacter = companionCharacter,
+                onContinue = { showCompletionCelebration = false },
+                modifier = Modifier.zIndex(30f),
+            )
         }
     }
 }
@@ -236,9 +363,30 @@ fun Season2PuzzleMapPrototypeScreen(
 @Composable
 private fun FloatingMapChrome(
     onBack: () -> Unit,
-    title: String,
+    emphasizeBack: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
+    val pulseTransition = rememberInfiniteTransition(label = "completedMapBackPulse")
+    val backGlowAlpha by pulseTransition.animateFloat(
+        initialValue = 0.35f,
+        targetValue = 0.72f,
+        animationSpec =
+            infiniteRepeatable(
+                animation = tween(1_400, easing = FastOutSlowInEasing),
+                repeatMode = RepeatMode.Reverse,
+            ),
+        label = "backGlowAlpha",
+    )
+    val backScale by pulseTransition.animateFloat(
+        initialValue = 0.97f,
+        targetValue = 1.03f,
+        animationSpec =
+            infiniteRepeatable(
+                animation = tween(1_400, easing = FastOutSlowInEasing),
+                repeatMode = RepeatMode.Reverse,
+            ),
+        label = "backScale",
+    )
     Row(
         modifier = modifier,
         verticalAlignment = Alignment.CenterVertically,
@@ -246,84 +394,78 @@ private fun FloatingMapChrome(
         Surface(
             onClick = onBack,
             shape = RoundedCornerShape(999.dp),
-            color = Color.White.copy(alpha = 0.55f),
+            modifier =
+                if (emphasizeBack) {
+                    Modifier
+                        .drawBehind {
+                            val glow = 6.dp.toPx() * backScale
+                            drawRoundRect(
+                                color = Color(0xFF66BB6A).copy(alpha = backGlowAlpha),
+                                topLeft = Offset(-glow, -glow),
+                                size = Size(size.width + glow * 2, size.height + glow * 2),
+                                cornerRadius = CornerRadius(size.height),
+                            )
+                        }
+                } else {
+                    Modifier
+                },
+            color =
+                if (emphasizeBack) {
+                    Color(0xFF2E7D32)
+                } else {
+                    Color.White.copy(alpha = 0.55f)
+                },
+            shadowElevation = if (emphasizeBack) 8.dp else 0.dp,
         ) {
             Text(
-                text = rtl("חזור"),
-                modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
-                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold),
-                color = TitleBrown,
+                text = if (emphasizeBack) "\u200Fחזרה לפרקים" else "\u200Fחזור",
+                modifier =
+                    Modifier
+                        .padding(
+                            horizontal = if (emphasizeBack) 16.dp else 10.dp,
+                            vertical = if (emphasizeBack) 9.dp else 5.dp,
+                        ),
+                style =
+                    MaterialTheme.typography.labelLarge.copy(
+                        fontWeight = if (emphasizeBack) FontWeight.ExtraBold else FontWeight.SemiBold,
+                        fontSize = if (emphasizeBack) 15.sp else 14.sp,
+                    ),
+                color = if (emphasizeBack) Color.White else TitleBrown,
             )
         }
-        Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
-            // Title sits as high as possible; smallest white wrap behind it (no bar).
-            Surface(
-                shape = RoundedCornerShape(999.dp),
-                color = Color.White.copy(alpha = 0.45f),
-                tonalElevation = 0.dp,
-                shadowElevation = 0.dp,
-            ) {
-                Text(
-                    text = title,
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                    style =
-                        MaterialTheme.typography.titleSmall.copy(
-                            fontWeight = FontWeight.ExtraBold,
-                            shadow =
-                                Shadow(
-                                    color = Color.White.copy(alpha = 0.35f),
-                                    offset = Offset(0f, 1f),
-                                    blurRadius = 6f,
-                                ),
-                        ),
-                    color = TitlePlum,
-                )
-            }
-        }
-        Spacer(modifier = Modifier.size(44.dp))
     }
 }
 
-/**
- * One [season2_trex_puzzle_full] poster (Crop = fills board), drawn once; color is clipped per tile only.
- * Tile 1 = top-left (head), then 2…6 left-to-right, top-to-bottom.
- */
 @Composable
 private fun ContinuousPosterBoard(
     posterPainter: Painter,
-    boardWidth: Dp,
-    boardHeight: Dp,
     cellWidth: Dp,
     cellHeight: Dp,
-    coloredThrough: Int,
-    nextPlayableTile: Int,
+    revealedTiles: Set<Int>,
+    nextPlayablePosterTile: Int?,
+    chapterFullyRevealed: Boolean,
     revealingTile: Int?,
     revealProgress: Float,
     isRevealing: Boolean,
-    onTileTap: (Int) -> Unit,
+    onPosterTileTap: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val painter = posterPainter
     val grayFilter = remember { ColorFilter.colorMatrix(saturationColorMatrix(LOCKED_SATURATION)) }
 
-    Box(
-        modifier =
-            modifier
-                .size(boardWidth, boardHeight)
-                .clip(RoundedCornerShape(8.dp)),
-    ) {
+    Box(modifier = modifier.fillMaxSize()) {
         Canvas(modifier = Modifier.fillMaxSize()) {
             val boardSize = size
-            // Locked = sleeping fossil: near-zero saturation, slightly lower opacity, dusty mist on top.
-            drawPosterCrop(painter, boardSize, grayFilter, alpha = 0.84f)
-            drawRect(FossilShade.copy(alpha = 0.10f))
-            drawRect(FossilDust.copy(alpha = 0.18f))
-            drawRect(Color.White.copy(alpha = 0.08f))
+            drawPosterCrop(painter, boardSize, grayFilter, alpha = 0.76f)
+            drawRect(FossilShade.copy(alpha = 0.14f))
+            drawRect(FossilDust.copy(alpha = 0.22f))
+            drawRect(FrostOverlay.copy(alpha = 0.30f))
+            drawRect(Color.White.copy(alpha = 0.14f))
 
             for (tile in 1..TILE_COUNT) {
-                val isColored = tile <= coloredThrough
+                val isRevealed = tile in revealedTiles
                 val isThisRevealing = revealingTile == tile
-                if (!isColored && !isThisRevealing) continue
+                if (!isRevealed && !isThisRevealing) continue
 
                 val saturation =
                     if (isThisRevealing) {
@@ -336,6 +478,25 @@ private fun ContinuousPosterBoard(
                 val clip = tileClipRect(tile, boardSize)
                 clipRect(clip.left, clip.top, clip.right, clip.bottom) {
                     drawPosterCrop(painter, boardSize, tileFilter, alpha = 1f)
+                }
+            }
+
+            for (tile in 1..TILE_COUNT) {
+                val isRevealed = tile in revealedTiles
+                val isThisRevealing = revealingTile == tile
+                if (isRevealed || isThisRevealing) continue
+                val clip = tileClipRect(tile, boardSize)
+                val isHead = tile == Season2Chapter1RevealOrder.HEAD_POSTER_TILE
+                clipRect(clip.left, clip.top, clip.right, clip.bottom) {
+                    val frostA = if (isHead) 0.68f else 0.52f
+                    val mistA = if (isHead) 0.52f else 0.38f
+                    val whiteA = if (isHead) 0.42f else 0.30f
+                    drawRect(FrostOverlay.copy(alpha = frostA))
+                    drawRect(FrostMist.copy(alpha = mistA))
+                    drawRect(Color.White.copy(alpha = whiteA))
+                    if (isHead) {
+                        drawRect(Color.White.copy(alpha = 0.22f))
+                    }
                 }
             }
         }
@@ -356,32 +517,28 @@ private fun ContinuousPosterBoard(
 
         GridDividerOverlay(modifier = Modifier.fillMaxSize())
 
-        for (tile in 1..TILE_COUNT) {
-            val row = (tile - 1) / TILE_COLUMNS
-            val col = (tile - 1) % TILE_COLUMNS
-            val isNext = tile == (coloredThrough + 1).coerceIn(1, TILE_COUNT)
-            val chapterFullyRevealed = coloredThrough >= TILE_COUNT
-            // UX: replay any completed tile; pulse only the next uncompleted station while in progress.
+        for (posterTile in 1..TILE_COUNT) {
+            val row = (posterTile - 1) / TILE_COLUMNS
+            val col = (posterTile - 1) % TILE_COLUMNS
+            val isRevealed = posterTile in revealedTiles
+            val isNext = posterTile == nextPlayablePosterTile
             val enabled =
                 !isRevealing &&
                     (
                         chapterFullyRevealed ||
-                            tile <= coloredThrough ||
-                            (tile == nextPlayableTile && isNext)
+                            isRevealed ||
+                            isNext
                     )
+            val stationNumber = Season2Chapter1RevealOrder.stationForPosterTile(posterTile)
             TileInteractionLayer(
-                tileIndex = tile,
                 row = row,
                 col = col,
                 cellWidth = cellWidth,
                 cellHeight = cellHeight,
-                highlighted =
-                    enabled &&
-                        !chapterFullyRevealed &&
-                        isNext &&
-                        tile == nextPlayableTile,
+                highlighted = enabled && !chapterFullyRevealed && isNext,
                 enabled = enabled,
-                onTap = { onTileTap(tile) },
+                replayStationNumber = if (chapterFullyRevealed) stationNumber else null,
+                onTap = { onPosterTileTap(posterTile) },
             )
         }
     }
@@ -402,13 +559,13 @@ private fun GridDividerOverlay(modifier: Modifier = Modifier) {
 
 @Composable
 private fun TileInteractionLayer(
-    tileIndex: Int,
     row: Int,
     col: Int,
     cellWidth: Dp,
     cellHeight: Dp,
     highlighted: Boolean,
     enabled: Boolean,
+    replayStationNumber: Int?,
     onTap: () -> Unit,
 ) {
     val pulseTransition = rememberInfiniteTransition(label = "highlightPulse")
@@ -431,6 +588,16 @@ private fun TileInteractionLayer(
                 repeatMode = RepeatMode.Reverse,
             ),
         label = "borderPulse",
+    )
+    val markerPulse by pulseTransition.animateFloat(
+        initialValue = 0.85f,
+        targetValue = 1f,
+        animationSpec =
+            infiniteRepeatable(
+                animation = tween(1_800, easing = FastOutSlowInEasing),
+                repeatMode = RepeatMode.Reverse,
+            ),
+        label = "markerPulse",
     )
 
     Box(
@@ -463,7 +630,7 @@ private fun TileInteractionLayer(
                                 topLeft = Offset(stroke / 2, stroke / 2),
                                 size = Size(size.width - stroke, size.height - stroke),
                                 cornerRadius = CornerRadius(2.dp.toPx()),
-                                style = androidx.compose.ui.graphics.drawscope.Stroke(width = stroke),
+                                style = Stroke(width = stroke),
                             )
                         }
                     } else {
@@ -476,18 +643,43 @@ private fun TileInteractionLayer(
                     indication = null,
                     onClick = onTap,
                 ),
-        contentAlignment = Alignment.TopStart,
+        contentAlignment = Alignment.BottomEnd,
+    ) {
+        replayStationNumber?.let { station ->
+            ReplayStationNumberBadge(
+                stationNumber = station,
+                pulse = markerPulse,
+                modifier = Modifier.padding(bottom = 4.dp, end = 4.dp),
+            )
+        }
+    }
+}
+
+@Composable
+private fun ReplayStationNumberBadge(
+    stationNumber: Int,
+    pulse: Float,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier =
+            modifier
+                .size(30.dp)
+                .clip(CircleShape)
+                .background(Color.White.copy(alpha = 0.9f * pulse))
+                .drawBehind {
+                    drawCircle(
+                        color = MarkerGreen.copy(alpha = 0.22f * pulse),
+                        radius = size.minDimension * 0.55f,
+                    )
+                },
+        contentAlignment = Alignment.Center,
     ) {
         Text(
-            text = tileIndex.toString(),
-            modifier =
-                Modifier
-                    .padding(5.dp)
-                    .background(Color.Black.copy(alpha = 0.22f), RoundedCornerShape(5.dp))
-                    .padding(horizontal = 5.dp, vertical = 2.dp),
-            color = Color.White.copy(alpha = 0.9f),
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Bold,
+            text = "\u200F$stationNumber",
+            fontSize = 15.sp,
+            fontWeight = FontWeight.Black,
+            color = MarkerGold.copy(alpha = 0.98f),
         )
     }
 }
@@ -529,7 +721,6 @@ private fun TileSparkleOverlay(
 private fun saturationColorMatrix(saturation: Float): ColorMatrix =
     ColorMatrix().apply { setToSaturation(saturation.coerceIn(0f, 1f)) }
 
-/** Same Crop math for grayscale base and every tile clip — avoids a second misaligned dinosaur. */
 private fun DrawScope.drawPosterCrop(
     painter: Painter,
     dstSize: Size,
@@ -539,7 +730,8 @@ private fun DrawScope.drawPosterCrop(
     val intrinsic = painter.intrinsicSize
     if (!intrinsic.isSpecified || intrinsic.width <= 0f || intrinsic.height <= 0f) return
 
-    val scale = max(dstSize.width / intrinsic.width, dstSize.height / intrinsic.height)
+    // Cover-crop wide posters into the full map area — colorful fill, center crop, sides OK to trim.
+    val scale = maxOf(dstSize.width / intrinsic.width, dstSize.height / intrinsic.height)
     val scaledW = intrinsic.width * scale
     val scaledH = intrinsic.height * scale
     val offsetX = (dstSize.width - scaledW) / 2f
@@ -564,5 +756,3 @@ private fun tileClipRect(tile: Int, boardSize: Size): Rect {
         bottom = cellH * (row + 1),
     )
 }
-
-private fun rtl(text: String): String = "\u200F$text"

@@ -96,13 +96,6 @@ private val JourneySpaceBelowBackBeforeEggs = 38.dp
 /** Space between journey header row and title (matches chapters top breathing room). */
 private val JourneyHeaderToBodyGap = 8.dp
 
-private val walkFrames =
-    listOf(
-        R.drawable.dino_walk_0,
-        R.drawable.dino_walk_1,
-        R.drawable.dino_walk_2,
-    )
-
 /** More “snake-like” road points for drawing + walking. */
 private val roadFractions: List<Pair<Float, Float>> =
     listOf(
@@ -214,29 +207,25 @@ fun JourneyScreen(
             (ctx.applicationContext.applicationInfo.flags and 0x2) != 0
         }
     val useSelectedCompanionSprites = useCompanionDinoOnMap || useSelectedCompanionOnMap
-    if (useSelectedCompanionSprites && companionCharacter == null) {
+    if (!useSelectedCompanionSprites) {
+        val msg =
+            "Legacy journey dino sprites disabled. useCompanionDinoOnMap=$useCompanionDinoOnMap useSelectedCompanionOnMap=$useSelectedCompanionOnMap"
+        Log.e("MissingContent", msg)
+        if (isDebuggable) throw IllegalStateException(msg)
+    }
+    if (companionCharacter == null) {
         val msg =
             "Missing selected companion for JourneyScreen. useCompanionDinoOnMap=$useCompanionDinoOnMap useSelectedCompanionOnMap=$useSelectedCompanionOnMap companionCharacter=null"
         Log.e("MissingContent", msg)
         if (isDebuggable) throw IllegalStateException(msg)
     }
-    val effectiveCompanionCharacter = companionCharacter ?: DinoCharacter.Dino
+    val effectiveCompanionCharacter = companionCharacter!!
     val chapter1CompanionAssets =
         remember(effectiveCompanionCharacter) {
             CompanionAssets.forCharacter(effectiveCompanionCharacter)
         }
-    val mapWalkFrameResIds =
-        if (useSelectedCompanionSprites) {
-            chapter1CompanionAssets.talkFrameResIds
-        } else {
-            walkFrames
-        }
-    val mapDinoIdleRes =
-        if (useSelectedCompanionSprites) {
-            chapter1CompanionAssets.poseIdle
-        } else {
-            R.drawable.dino_idle
-        }
+    val mapWalkFrameResIds = chapter1CompanionAssets.talkFrameResIds
+    val mapDinoIdleRes = chapter1CompanionAssets.poseIdle
     /** Ch.1 pilot: progress clue on stations; egg only at road-end / finale. */
     val completedStationMarkerRes =
         if (useCompanionDinoOnMap) {
@@ -559,7 +548,7 @@ private fun JourneyRoadStrip(
     navigationLocked: Boolean = false,
     dinoProgress: Float,
     walkDrawable: Int,
-    dinoIdleRes: Int = R.drawable.dino_idle,
+    dinoIdleRes: Int,
     companionImageRes: Int?,
     endMarker: JourneyEndMarker,
     completedStationMarkerRes: Int = R.drawable.egg_found,
@@ -734,7 +723,7 @@ private fun JourneyRoadStrip(
                         }
                     JourneyEndMarker.Mom ->
                         Image(
-                            painter = painterResource(id = R.drawable.mom_idle),
+                            painter = painterResource(id = Chapter1DinoCompanionPilot.poseMomIdle),
                             contentDescription = null,
                             modifier = Modifier.size(110.dp).scale(goalPulse),
                             contentScale = ContentScale.Fit,
@@ -920,7 +909,7 @@ private fun JourneyStationMarker(
                 when (endMarker) {
                     JourneyEndMarker.Egg -> R.drawable.egg_white
                     JourneyEndMarker.HomeCave -> R.drawable.egg_found
-                    JourneyEndMarker.Mom -> R.drawable.mom_idle
+                    JourneyEndMarker.Mom -> Chapter1DinoCompanionPilot.poseMomIdle
                     JourneyEndMarker.PinkEgg -> R.drawable.egg_pink
                     JourneyEndMarker.PurpleEgg -> R.drawable.egg_purple
                     JourneyEndMarker.Tracks -> R.drawable.finish_marker_tracks

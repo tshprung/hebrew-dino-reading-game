@@ -63,6 +63,8 @@ internal class GameViewModel(
     var episode4Station3GridHintEpoch: Int by mutableIntStateOf(0)
     var balloonHelpLocksChoices: Boolean by mutableStateOf(false)
     var balloonHelpHintLetter: String? by mutableStateOf(null)
+    var wordPartsCompletedEquation: String? by mutableStateOf(null)
+    var wordPartsHintRevealWord: String? by mutableStateOf(null)
 
     var episode4HelpClearJob: Job? = null
     var balloonHelpClearJob: Job? = null
@@ -72,6 +74,7 @@ internal class GameViewModel(
         episode4HelpClearJob = null
         episode4HelpLocksChoices = false
         episode4HelpActiveHintLetter = null
+        wordPartsHintRevealWord = null
     }
 
     fun resetBalloonHelpForNewQuestion() {

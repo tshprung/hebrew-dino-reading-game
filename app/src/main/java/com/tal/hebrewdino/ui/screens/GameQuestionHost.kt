@@ -29,19 +29,27 @@ import com.tal.hebrewdino.ui.domain.LevelSession
 import com.tal.hebrewdino.ui.domain.Question
 import com.tal.hebrewdino.ui.domain.StationBehaviorRegistry
 import com.tal.hebrewdino.ui.domain.StationInstructionCopy
+import com.tal.hebrewdino.ui.domain.Season2AdvancedStationMode
+import com.tal.hebrewdino.ui.domain.Season2ChapterStationPlans
+import com.tal.hebrewdino.ui.domain.Season2StationThemeCopy
+import com.tal.hebrewdino.ui.domain.Season2StationUx
 import com.tal.hebrewdino.ui.domain.StationQuizMode
 import com.tal.hebrewdino.ui.domain.StationQuizPlan
 import com.tal.hebrewdino.ui.domain.StationTemplateId
 import com.tal.hebrewdino.ui.domain.TrainingV1Config
 import com.tal.hebrewdino.ui.game.ChildGameAudioHooks
+import com.tal.hebrewdino.ui.game.Season2MissingFirstLetterGame
+import com.tal.hebrewdino.ui.game.Season2RhymingGame
+import com.tal.hebrewdino.ui.game.Season2WordPartsGame
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlin.random.Random
 
-/** Chapter 2 station 6 and Training rounds 6/10 — same match-letter behavior path. */
+/** Chapter 2 station 6, Season 2 match-letter finale, and Training — same match-letter behavior path. */
 private fun isChapter2StyleMatchLetterStation(chapterId: Int, stationId: Int): Boolean =
     ((chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) &&
         stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH) ||
+        Season2StationUx.isMatchLetterFinale(chapterId, stationId) ||
         (chapterId == TrainingV1Config.CHAPTER_ID &&
             stationId == TrainingV1Config.STATION_MATCH_LETTER_TO_WORD)
 
@@ -121,6 +129,8 @@ internal data class GameQuestionHostState(
     val station4WrongFlashLetter: String?,
     val station4WrongFlashEpoch: Int,
     val station4PinnedCorrectLetter: String?,
+    val wordPartsCompletedEquation: String?,
+    val wordPartsHintRevealWord: String?,
     val entryPulseEpoch: Int,
     val entryPulseScale: Float,
     val optionsShakePx: Float,
@@ -151,6 +161,10 @@ internal data class GameQuestionHostHandlers(
     val handleImageToWordWordPressed: (choiceId: String) -> Unit,
     val handleImageToWordAttempt: (choiceId: String) -> Boolean,
     val handleImageMatchAttempt: (choiceId: String) -> Boolean,
+    val handleMissingFirstLetterPick: (picked: String) -> Unit,
+    val handleWordPartsPick: (picked: String) -> Unit,
+    val handleRhymingPick: (choiceId: String) -> Unit,
+    val handleAdvancedReplayWord: () -> Unit,
     val handleFinaleWrongPlacement: () -> Unit,
     val onWrongFeedback: (wrongPickedLetter: String?, wrongWordCatalogId: String?, wrongPickedLetterAlreadySpoken: Boolean, wrongWordAlreadySpoken: Boolean) -> Unit,
     val advanceAfterRound: suspend (isLast: Boolean) -> Unit,
@@ -377,7 +391,13 @@ internal fun GameQuestionHost(
                 instructionReadablePanel = pictureInstructionReadablePanel,
                 showWordCaption = pictureShowWordCaption,
                 onPictureTapReplayWord =
-                    if (ui.episode4HelpSt15 && ui.stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
+                    if (
+                        ui.episode4HelpSt15 &&
+                            (
+                                ui.stationId == Chapter1StationOrder.PICTURE_PICK_ONE ||
+                                    Season2StationUx.isWarmupPictureStartsWith(ui.chapterId, ui.stationId)
+                            )
+                    ) {
                         { handlers.performSideHelpReplay() }
                     } else if (ui.audioEnabled) {
                         {
@@ -385,6 +405,7 @@ internal fun GameQuestionHost(
                                 ((ui.chapterId == 3 || ui.chapterId == 6) && ui.stationId == 1) ||
                                     ((ui.chapterId == 1 || ui.chapterId == 2 || ui.chapterId == 4 || ui.chapterId == 5) &&
                                         ui.stationId == Chapter1StationOrder.PICTURE_PICK_ONE) ||
+                                    Season2StationUx.isWarmupPictureStartsWith(ui.chapterId, ui.stationId) ||
                                     (ui.chapterId == TrainingV1Config.CHAPTER_ID &&
                                         ui.stationId == TrainingV1Config.STATION_PICTURE_CHOOSE_WORD)
                             GameAudioActions.launchPromptVoice(
@@ -416,7 +437,13 @@ internal fun GameQuestionHost(
                         null
                     },
                 temporaryStartingLetterHint =
-                    if (ui.episode4HelpSt15 && ui.stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
+                    if (
+                        ui.episode4HelpSt15 &&
+                            (
+                                ui.stationId == Chapter1StationOrder.PICTURE_PICK_ONE ||
+                                    Season2StationUx.isWarmupPictureStartsWith(ui.chapterId, ui.stationId)
+                            )
+                    ) {
                         ui.episode4HelpActiveHintLetter
                     } else {
                         null
@@ -433,7 +460,10 @@ internal fun GameQuestionHost(
                 enabled = state.enabled,
                 shakePx = state.optionsShakePx,
                 entryPulseEpoch =
-                    if (ui.chapterId == 6 && ui.stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
+                    if (
+                        (ui.chapterId == 6 && ui.stationId == Chapter1StationOrder.PICTURE_PICK_ONE) ||
+                            Season2StationUx.isWarmupPictureStartsWith(ui.chapterId, ui.stationId)
+                    ) {
                         0
                     } else {
                         state.entryPulseEpoch
@@ -462,8 +492,30 @@ internal fun GameQuestionHost(
             )
         }
         is Question.ImageMatchQuestion ->
-            when (ui.stationUiSpec.templateId) {
-                StationTemplateId.ImageToWord -> {
+            when {
+                ui.plan.season2AdvancedMode == Season2AdvancedStationMode.PictureToWord -> {
+                    ImageToWordQuestionRenderer(
+                        current = current,
+                        contentKey = deps.session.currentIndex,
+                        enabled = state.enabled,
+                        entryPulseScale = state.entryPulseScale,
+                        optionsShakePx = state.optionsShakePx,
+                        instructionText =
+                            Season2StationThemeCopy.pictureToWordInstruction(ui.plan.season2StationTheme),
+                        chapterId = ui.chapterId,
+                        stationId = ui.stationId,
+                        trainingRoundIndex = ui.trainingRoundIndex,
+                        onPictureTapReplayWord =
+                            if (ui.audioEnabled) {
+                                { handlers.handleAdvancedReplayWord() }
+                            } else {
+                                null
+                            },
+                        onWordPressed = { choiceId -> handlers.handleImageToWordWordPressed(choiceId) },
+                        onAttempt = { choiceId -> handlers.handleImageToWordAttempt(choiceId) },
+                    )
+                }
+                ui.stationUiSpec.templateId == StationTemplateId.ImageToWord -> {
                     ImageToWordQuestionRenderer(
                         current = current,
                         contentKey = deps.session.currentIndex,
@@ -487,8 +539,7 @@ internal fun GameQuestionHost(
                     )
                 }
 
-                StationTemplateId.MatchLetterToWord
-                    -> {
+                ui.stationUiSpec.templateId == StationTemplateId.MatchLetterToWord -> {
                     val matchChoices = current.choices
 
                     var lastSpokenMatchWordChoiceId by remember(ui.chapterId, ui.stationId, deps.session.currentIndex) {
@@ -500,6 +551,7 @@ internal fun GameQuestionHost(
                             ((ui.chapterId == 3 || ui.chapterId == 6) && ui.stationId == 2) ||
                                 ((ui.chapterId == 1 || ui.chapterId == 2 || ui.chapterId == 4 || ui.chapterId == 5) &&
                                     ui.stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH) ||
+                                Season2StationUx.isMatchLetterFinale(ui.chapterId, ui.stationId) ||
                                 (ui.chapterId == TrainingV1Config.CHAPTER_ID &&
                                     ui.stationId == TrainingV1Config.STATION_MATCH_LETTER_TO_WORD)
                         val rawResId =
@@ -726,7 +778,13 @@ internal fun GameQuestionHost(
                         chapter1PlayerAddress = ui.chapter1PlayerAddress,
                         isCompactLandscapePhone = ui.isCompactLandscapePhone,
                         headerInstructionFontScale =
-                            (if (ui.chapterId == TrainingV1Config.CHAPTER_ID) 1.35f else 1.35f * 2f),
+                            when {
+                                Season2StationUx.stationKindForGameplayChapter(ui.chapterId, ui.stationId) ==
+                                    Season2ChapterStationPlans.StationKind.WhichWordStartsWith ->
+                                    1.15f
+                                ui.chapterId == TrainingV1Config.CHAPTER_ID -> 1.35f
+                                else -> 1.35f * 2f
+                            },
                         listenOnlyTemporaryHintLetter = listenOnlyTemporaryHintLetter,
                         contentKey = deps.session.currentIndex,
                         enabled = state.enabled,
@@ -742,11 +800,93 @@ internal fun GameQuestionHost(
                         chapterId = ui.chapterId,
                         stationId = ui.stationId,
                         onAttempt = { choiceId -> handlers.handleImageMatchAttempt(choiceId) },
+                        onChoiceWordPreview =
+                            if (ui.audioEnabled &&
+                                Season2StationUx.isWhichWordStartsWithStation(ui.chapterId, ui.stationId)
+                            ) {
+                                { choiceId ->
+                                    ImageMatchActions.handleImageToWordWordPressed(
+                                        choiceId = choiceId,
+                                        audioEnabled = ui.audioEnabled,
+                                        cancelFeedbackVoice = deps.cancelFeedbackVoice,
+                                        chapterId = ui.chapterId,
+                                        scope = deps.scope,
+                                        voice = deps.voice,
+                                        rawVoice = deps.rawVoice,
+                                        audioRuntime = deps.audioRuntime,
+                                    )
+                                }
+                            } else {
+                                null
+                            },
                         entryPulseScale = state.entryPulseScale,
                         modifier = Modifier.fillMaxSize(),
                     )
                 }
             }
+        is Question.MissingFirstLetterQuestion ->
+            Season2MissingFirstLetterGame(
+                question = current,
+                instructionText =
+                    Season2StationThemeCopy.missingFirstLetterInstruction(ui.plan.season2StationTheme),
+                enabled = state.enabled,
+                shakePx = state.optionsShakePx,
+                onPictureTapReplayWord =
+                    if (ui.audioEnabled) {
+                        { handlers.handleAdvancedReplayWord() }
+                    } else {
+                        null
+                    },
+                hintCorrectLetter = current.correctLetter.takeIf { state.wrongTapsThisQuestion >= 2 },
+                hintPulseEpoch = state.hintPulseEpoch,
+                correctPulseLetter = state.correctTapPulseLetter,
+                correctPulseEpoch = state.correctTapPulseEpoch,
+                wrongFlashLetter = state.station4WrongFlashLetter,
+                wrongFlashEpoch = state.station4WrongFlashEpoch,
+                onPickLetter = { picked -> handlers.handleMissingFirstLetterPick(picked) },
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .offset { IntOffset(state.optionsShakePx.toInt(), 0) },
+            )
+        is Question.WordPartsQuestion ->
+            Season2WordPartsGame(
+                question = current,
+                instructionText =
+                    Season2StationThemeCopy.wordPartsInstruction(
+                        theme = ui.plan.season2StationTheme,
+                        presentationMode = current.presentationMode,
+                    ),
+                enabled = state.enabled,
+                shakePx = state.optionsShakePx,
+                completedEquation = state.wordPartsCompletedEquation,
+                hintRevealWord = state.wordPartsHintRevealWord,
+                onPictureTapReplayWord =
+                    if (ui.audioEnabled) {
+                        { handlers.handleAdvancedReplayWord() }
+                    } else {
+                        null
+                    },
+                onPickPart = { part -> handlers.handleWordPartsPick(part) },
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .offset { IntOffset(state.optionsShakePx.toInt(), 0) },
+            )
+        is Question.RhymingQuestion ->
+            Season2RhymingGame(
+                question = current,
+                instructionText = Season2StationThemeCopy.rhymingInstruction(ui.plan.season2StationTheme),
+                enabled = state.enabled,
+                onTargetTapReplayWord =
+                    if (ui.audioEnabled) {
+                        { handlers.handleAdvancedReplayWord() }
+                    } else {
+                        null
+                    },
+                onPickChoice = { choiceId -> handlers.handleRhymingPick(choiceId) },
+                modifier = Modifier.fillMaxWidth(),
+            )
         is Question.FinaleSlotQuestion ->
             FinaleSlotQuestionRenderer(
                 current = current,

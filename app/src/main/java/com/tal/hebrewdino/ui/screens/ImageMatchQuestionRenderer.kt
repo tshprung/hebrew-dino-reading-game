@@ -33,6 +33,7 @@ internal fun ImageMatchQuestionRenderer(
     chapterId: Int?,
     stationId: Int?,
     onAttempt: (String) -> Boolean,
+    onChoiceWordPreview: ((String) -> Unit)? = null,
     entryPulseScale: Float,
     modifier: Modifier = Modifier,
 ) {
@@ -84,6 +85,7 @@ internal fun ImageMatchQuestionRenderer(
         chapterId = chapterId,
         stationId = stationId,
         onAttempt = onAttempt,
+        onChoiceWordPreview = onChoiceWordPreview,
         entryPulseScale = entryPulseScale,
         verticalNudgeDp = stationUiSpec.imageMatchVerticalNudgeDp.dp,
         modifier = modifier,

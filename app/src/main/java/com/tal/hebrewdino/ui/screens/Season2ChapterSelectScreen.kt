@@ -6,7 +6,6 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -17,7 +16,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -33,15 +31,17 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.CornerRadius
@@ -49,18 +49,21 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.graphics.ColorMatrix
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.tal.hebrewdino.R
+import com.tal.hebrewdino.ui.data.DinoCharacter
 import com.tal.hebrewdino.ui.data.Season2ProgressPrefs
+import com.tal.hebrewdino.ui.domain.Season2Chapter1RevealOrder
+import com.tal.hebrewdino.ui.domain.Season2ChapterRegistry
+import com.tal.hebrewdino.ui.domain.Season2IntroFlow
+import com.tal.hebrewdino.ui.domain.Season2Copy
+import com.tal.hebrewdino.ui.domain.Season2StandardRevealOrder
 import com.tal.hebrewdino.ui.layout.topChromeInsetsPadding
 import kotlin.math.max
+import kotlinx.coroutines.launch
 
 private val MuseumWallTop = Color(0xFFF4EDE3)
 private val MuseumWallBottom = Color(0xFFE6D9C8)
@@ -70,76 +73,106 @@ private val CardIvoryBottom = Color(0xFFF2E8DA)
 private val CardOutline = Color(0xFF7B6858).copy(alpha = 0.35f)
 private val PremiumGold = Color(0xFFCF9D4A)
 private val NextGlow = Color(0xFF2E7D32)
+private val SoonGlow = Color(0xFF7B5BA8)
+
+private const val DISPLAY_CHAPTER_COUNT = Season2ChapterRegistry.CHAPTER_COUNT
 
 private enum class ChapterState { Locked, Unlocked, Completed }
 
 private data class Season2ChapterCard(
     val chapterIndex: Int,
-    val hebName: String,
-    val thumbRes: Int,
+    val displayLabel: String,
+    val posterResId: Int?,
     val state: ChapterState,
-    val isFlying: Boolean = false,
+    val isComingSoon: Boolean = false,
+    val isPrerequisiteLocked: Boolean = false,
 )
 
 @Composable
 fun Season2ChapterSelectScreen(
+    companionCharacter: DinoCharacter,
+    requestSeasonIntro: Boolean = false,
+    onSeasonIntroConsumed: () -> Unit = {},
     onBack: () -> Unit,
     onOpenChapter: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     val season2Progress = remember(context) { Season2ProgressPrefs(context.applicationContext) }
     val completedChapters by season2Progress.completedChaptersFlow.collectAsState(initial = emptySet())
+    val chapter1Stations by season2Progress.completedStationsFlow(1).collectAsState(initial = emptySet())
+    val chapter2Stations by season2Progress.completedStationsFlow(2).collectAsState(initial = emptySet())
+    var showSeasonIntro by remember { mutableStateOf(false) }
 
-    val nextSuggestedChapter: Int? = (1..6).firstOrNull { it !in completedChapters }
+    LaunchedEffect(requestSeasonIntro) {
+        if (Season2IntroFlow.shouldShowSeasonIntro(requestSeasonIntro)) {
+            showSeasonIntro = true
+            onSeasonIntroConsumed()
+        }
+    }
+
+    fun stationsForChapter(index: Int): Set<Int> =
+        when (index) {
+            1 -> chapter1Stations
+            2 -> chapter2Stations
+            else -> emptySet()
+        }
+
+    LaunchedEffect(chapter1Stations, chapter2Stations, completedChapters) {
+        for (index in Season2ChapterRegistry.playableChapterIndices()) {
+            val stations = stationsForChapter(index)
+            if (
+                stations.size >= Season2StandardRevealOrder.STATION_COUNT &&
+                index !in completedChapters
+            ) {
+                season2Progress.markChapterCompleted(index)
+            }
+        }
+    }
+
+    val nextSuggestedChapter =
+        remember(completedChapters, chapter1Stations, chapter2Stations) {
+            Season2ChapterRegistry.playableChapterIndices().firstOrNull { index ->
+                Season2ChapterRegistry.isChapterUnlocked(index, completedChapters) &&
+                    !Season2Copy.isChapterComplete(
+                        chapterIndex = index,
+                        completedChapters = completedChapters,
+                        completedStations = stationsForChapter(index),
+                    )
+            }
+        }
 
     val chapters =
-        listOf(
-            Season2ChapterCard(
-                1,
-                "טירנוזאורוס",
-                R.drawable.season2_trex_thumb,
-                if (1 in completedChapters) ChapterState.Completed else if (nextSuggestedChapter == 1) ChapterState.Unlocked else ChapterState.Locked,
-            ),
-            Season2ChapterCard(
-                2,
-                "טריצרטופס",
-                R.drawable.season2_triceratops_thumb,
-                if (2 in completedChapters) ChapterState.Completed else if (nextSuggestedChapter == 2) ChapterState.Unlocked else ChapterState.Locked,
-            ),
-            Season2ChapterCard(
-                3,
-                "סטגוזאורוס",
-                R.drawable.season2_stegosaurus_thumb,
-                if (3 in completedChapters) ChapterState.Completed else if (nextSuggestedChapter == 3) ChapterState.Unlocked else ChapterState.Locked,
-            ),
-            Season2ChapterCard(
-                4,
-                "ברכיוזאורוס",
-                R.drawable.season2_brachiosaurus_thumb,
-                if (4 in completedChapters) ChapterState.Completed else if (nextSuggestedChapter == 4) ChapterState.Unlocked else ChapterState.Locked,
-            ),
-            Season2ChapterCard(
-                5,
-                "אנקילוזאורוס",
-                R.drawable.season2_ankylosaurus_thumb,
-                if (5 in completedChapters) ChapterState.Completed else if (nextSuggestedChapter == 5) ChapterState.Unlocked else ChapterState.Locked,
-            ),
-            Season2ChapterCard(
-                6,
-                "פטרנודון",
-                R.drawable.season2_pteranodon_thumb,
-                if (6 in completedChapters) ChapterState.Completed else if (nextSuggestedChapter == 6) ChapterState.Unlocked else ChapterState.Locked,
-                isFlying = true,
-            ),
-        )
+        remember(completedChapters, chapter1Stations, chapter2Stations) {
+            (1..DISPLAY_CHAPTER_COUNT).map { index ->
+                val isPlayable = Season2ChapterRegistry.isPlayable(index)
+                val isUnlocked = Season2ChapterRegistry.isChapterUnlocked(index, completedChapters)
+                val completed =
+                    Season2Copy.isChapterComplete(
+                        chapterIndex = index,
+                        completedChapters = completedChapters,
+                        completedStations = stationsForChapter(index),
+                    )
+                val state =
+                    when {
+                        !isPlayable || !isUnlocked -> ChapterState.Locked
+                        completed -> ChapterState.Completed
+                        else -> ChapterState.Unlocked
+                    }
+                Season2ChapterCard(
+                    chapterIndex = index,
+                    displayLabel = Season2Copy.chapterSelectLabel(index, completed),
+                    posterResId = Season2ChapterRegistry.posterResId(index),
+                    state = state,
+                    isComingSoon = !isPlayable,
+                    isPrerequisiteLocked = isPlayable && !isUnlocked,
+                )
+            }
+        }
 
-    Box(
-        modifier =
-            modifier
-                .fillMaxSize()
-                .background(Brush.verticalGradient(listOf(MuseumWallTop, MuseumWallBottom))),
-    ) {
+    Box(modifier = modifier.fillMaxSize()) {
+        Season2TreasureMapBackground()
         Column(
             modifier =
                 Modifier
@@ -153,11 +186,18 @@ fun Season2ChapterSelectScreen(
             ) {
                 BackPill(onClick = onBack)
                 Spacer(modifier = Modifier.width(10.dp))
-                Text(
-                    text = rtl("עונה 2 · בחר דינוזאור"),
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold),
-                    color = TitleBrown,
-                )
+                Column {
+                    Text(
+                        text = "\u200F${Season2Copy.ChapterSelectTitle}",
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold),
+                        color = TitleBrown,
+                    )
+                    Text(
+                        text = "\u200F${Season2Copy.SeasonSubtitle}",
+                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
+                        color = TitleBrown.copy(alpha = 0.78f),
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -185,7 +225,12 @@ fun Season2ChapterSelectScreen(
                             onClick = {
                                 if (chapter.state != ChapterState.Locked) onOpenChapter(chapter.chapterIndex)
                             },
-                            isNextSuggested = chapter.state == ChapterState.Unlocked && chapter.chapterIndex == nextSuggestedChapter,
+                            isNextSuggested =
+                                chapter.state == ChapterState.Unlocked &&
+                                    chapter.chapterIndex == nextSuggestedChapter,
+                            isComingSoonTeaser =
+                                chapter.isComingSoon &&
+                                    chapter.chapterIndex == Season2ChapterRegistry.playableChapterIndices().maxOrNull()?.plus(1),
                             modifier =
                                 Modifier
                                     .width(cellW)
@@ -194,6 +239,13 @@ fun Season2ChapterSelectScreen(
                     }
                 }
             }
+        }
+
+        if (showSeasonIntro) {
+            Season2SeasonIntroOverlay(
+                companionCharacter = companionCharacter,
+                onContinue = { showSeasonIntro = false },
+            )
         }
     }
 }
@@ -212,7 +264,7 @@ private fun BackPill(
         shadowElevation = 0.dp,
     ) {
         Text(
-            text = rtl("חזור"),
+            text = "\u200Fחזור",
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
             style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold),
             color = TitleBrown,
@@ -225,23 +277,13 @@ private fun ChapterCardView(
     chapter: Season2ChapterCard,
     onClick: () -> Unit,
     isNextSuggested: Boolean,
+    isComingSoonTeaser: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     val shape = RoundedCornerShape(18.dp)
     val enabled = chapter.state != ChapterState.Locked
-    val cardAlpha = if (enabled) 1f else 0.72f
-
-    val cardBg =
-        if (chapter.isFlying) {
-            Brush.verticalGradient(
-                listOf(
-                    Color(0xFFFBF6EA),
-                    Color(0xFFE9F1FF).copy(alpha = 0.95f),
-                ),
-            )
-        } else {
-            Brush.verticalGradient(listOf(CardIvoryTop, CardIvoryBottom))
-        }
+    val cardAlpha = if (enabled) 1f else 0.78f
+    val cardBg = Brush.verticalGradient(listOf(CardIvoryTop, CardIvoryBottom))
 
     val outline =
         when (chapter.state) {
@@ -281,22 +323,34 @@ private fun ChapterCardView(
                 .background(cardBg)
                 .border(1.5.dp, outline, shape)
                 .then(
-                    if (enabled && isNextSuggested) {
-                        // Draw pulse ON TOP (not under border/clip) so it's obvious to kids.
-                        Modifier.drawWithContent {
-                            drawContent()
-                            val stroke = glowWidth.dp.toPx()
-                            val inset = stroke / 2f
-                            drawRoundRect(
-                                color = NextGlow.copy(alpha = glowAlpha),
-                                topLeft = Offset(inset, inset),
-                                size = Size(size.width - stroke, size.height - stroke),
-                                cornerRadius = CornerRadius(18.dp.toPx() - inset),
-                                style = androidx.compose.ui.graphics.drawscope.Stroke(width = stroke),
-                            )
-                        }
-                    } else {
-                        Modifier
+                    when {
+                        enabled && isNextSuggested ->
+                            Modifier.drawWithContent {
+                                drawContent()
+                                val stroke = glowWidth.dp.toPx()
+                                val inset = stroke / 2f
+                                drawRoundRect(
+                                    color = NextGlow.copy(alpha = glowAlpha),
+                                    topLeft = Offset(inset, inset),
+                                    size = Size(size.width - stroke, size.height - stroke),
+                                    cornerRadius = CornerRadius(18.dp.toPx() - inset),
+                                    style = androidx.compose.ui.graphics.drawscope.Stroke(width = stroke),
+                                )
+                            }
+                        isComingSoonTeaser ->
+                            Modifier.drawWithContent {
+                                drawContent()
+                                val stroke = (glowWidth * 0.65f).dp.toPx()
+                                val inset = stroke / 2f
+                                drawRoundRect(
+                                    color = SoonGlow.copy(alpha = glowAlpha * 0.55f),
+                                    topLeft = Offset(inset, inset),
+                                    size = Size(size.width - stroke, size.height - stroke),
+                                    cornerRadius = CornerRadius(18.dp.toPx() - inset),
+                                    style = androidx.compose.ui.graphics.drawscope.Stroke(width = stroke),
+                                )
+                            }
+                        else -> Modifier
                     },
                 )
                 .alpha(cardAlpha)
@@ -307,7 +361,6 @@ private fun ChapterCardView(
         shadowElevation = 0.dp,
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
-            // Reserve space: image takes remaining height, labels stay visible.
             Box(
                 modifier =
                     Modifier
@@ -317,43 +370,18 @@ private fun ChapterCardView(
                         .background(Color.Black.copy(alpha = 0.04f)),
                 contentAlignment = Alignment.Center,
             ) {
-                val lockedFilter =
-                    rememberLockedThumbFilter()
-                val shouldGray = chapter.state != ChapterState.Completed
-                val colorFilter = if (shouldGray) lockedFilter else null
-
-                if (chapter.chapterIndex == 1) {
-                    // T-Rex: use the real poster image (grayed) instead of the abstract placeholder.
-                    val trexGray =
-                        remember {
-                            ColorFilter.colorMatrix(
-                                ColorMatrix().apply { setToSaturation(0.08f) },
-                            )
-                        }
-                    Image(
-                        painter = painterResource(id = R.drawable.season2_trex_puzzle_full),
-                        contentDescription = null,
-                        modifier = Modifier.fillMaxSize().padding(6.dp),
-                        contentScale = ContentScale.Fit,
-                        colorFilter = if (shouldGray) trexGray else null,
-                    )
-                } else if (chapter.chapterIndex == 2) {
-                    // Triceratops: use the real poster image as the thumb (fixes "missing" thumbnail).
-                    Image(
-                        painter = painterResource(id = R.drawable.season2_triceratops_puzzle_full),
-                        contentDescription = null,
-                        modifier = Modifier.fillMaxSize().padding(6.dp),
-                        contentScale = ContentScale.Fit,
-                        colorFilter = colorFilter,
-                    )
-                } else {
-                    Image(
-                        painter = painterResource(id = chapter.thumbRes),
-                        contentDescription = null,
-                        modifier = Modifier.fillMaxSize().padding(10.dp),
-                        contentScale = ContentScale.Fit,
-                        colorFilter = colorFilter,
-                    )
+                when {
+                    chapter.isComingSoon -> {
+                        Season2MysteryPlaceholderCard(modifier = Modifier.fillMaxSize())
+                    }
+                    chapter.posterResId != null -> {
+                        Season2FrostedPosterPreview(
+                            posterResId = chapter.posterResId,
+                            revealed = chapter.state == ChapterState.Completed,
+                            modifier = Modifier.fillMaxSize(),
+                            showMysteryGlyph = chapter.state != ChapterState.Completed,
+                        )
+                    }
                 }
 
                 Surface(
@@ -364,7 +392,7 @@ private fun ChapterCardView(
                     shadowElevation = 0.dp,
                 ) {
                     Text(
-                        text = rtl("פרק ${chapter.chapterIndex}"),
+                        text = "\u200F${Season2Copy.ChapterLabelPrefix} ${chapter.chapterIndex}",
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
                         color = TitleBrown,
                         fontSize = 12.sp,
@@ -372,30 +400,18 @@ private fun ChapterCardView(
                     )
                 }
 
-                if (chapter.isFlying) {
-                    Text(
-                        text = rtl("מעופף"),
-                        modifier =
-                            Modifier
-                                .align(Alignment.TopEnd)
-                                .padding(8.dp)
-                                .background(Color(0xFF243B53).copy(alpha = 0.32f), RoundedCornerShape(999.dp))
-                                .padding(horizontal = 10.dp, vertical = 5.dp),
-                        color = Color.White.copy(alpha = 0.92f),
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                    )
-                }
-
                 CompletionTag(
+                    chapterIndex = chapter.chapterIndex,
                     state = chapter.state,
+                    isComingSoon = chapter.isComingSoon,
+                    isPrerequisiteLocked = chapter.isPrerequisiteLocked,
                     modifier = Modifier.align(Alignment.BottomStart).padding(8.dp),
                 )
             }
 
             Spacer(modifier = Modifier.height(6.dp))
             Text(
-                text = rtl(chapter.hebName),
+                text = chapter.displayLabel,
                 style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.ExtraBold),
                 color = TitleBrown,
                 maxLines = 1,
@@ -408,11 +424,37 @@ private fun ChapterCardView(
 
 @Composable
 private fun CompletionTag(
+    chapterIndex: Int,
     state: ChapterState,
+    isComingSoon: Boolean,
+    isPrerequisiteLocked: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
-    when (state) {
-        ChapterState.Completed -> {
+    when {
+        isComingSoon -> {
+            Surface(
+                modifier = modifier,
+                shape = RoundedCornerShape(999.dp),
+                color = Color(0xFF243B53).copy(alpha = 0.30f),
+                tonalElevation = 0.dp,
+                shadowElevation = 0.dp,
+            ) {
+                Text(
+                    text =
+                        "\u200F${
+                            if (chapterIndex == 2) {
+                                Season2Copy.NextChapterComingSoon
+                            } else {
+                                Season2Copy.ComingSoon
+                            }
+                        }",
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                    color = Color.White.copy(alpha = 0.92f),
+                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                )
+            }
+        }
+        state == ChapterState.Completed -> {
             Surface(
                 modifier = modifier,
                 shape = RoundedCornerShape(999.dp),
@@ -433,14 +475,14 @@ private fun CompletionTag(
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = rtl("הושלם"),
+                        text = "\u200F${Season2Copy.ChapterRevealedBadge}",
                         color = TitleBrown,
                         style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
                     )
                 }
             }
         }
-        ChapterState.Locked -> {
+        state == ChapterState.Locked && (isPrerequisiteLocked || !isComingSoon) -> {
             Surface(
                 modifier = modifier,
                 shape = RoundedCornerShape(999.dp),
@@ -449,36 +491,13 @@ private fun CompletionTag(
                 shadowElevation = 0.dp,
             ) {
                 Text(
-                    text = rtl("נעול"),
+                    text = "\u200Fנעול",
                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
                     color = Color.White.copy(alpha = 0.92f),
                     style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
                 )
             }
         }
-        ChapterState.Unlocked -> Unit
+        else -> Unit
     }
 }
-
-@Composable
-private fun rememberLockedThumbFilter(): ColorFilter {
-    // Locked = calm fossil: very low saturation + slight darkening.
-    val m =
-        ColorMatrix().apply {
-            setToSaturation(0.12f)
-            // Multiply RGB a little darker (simple, stable).
-            val darken = ColorMatrix(
-                floatArrayOf(
-                    0.82f, 0f, 0f, 0f, 0f,
-                    0f, 0.82f, 0f, 0f, 0f,
-                    0f, 0f, 0.82f, 0f, 0f,
-                    0f, 0f, 0f, 1f, 0f,
-                ),
-            )
-            timesAssign(darken)
-        }
-    return ColorFilter.colorMatrix(m)
-}
-
-private fun rtl(text: String): String = "\u200F$text"
-

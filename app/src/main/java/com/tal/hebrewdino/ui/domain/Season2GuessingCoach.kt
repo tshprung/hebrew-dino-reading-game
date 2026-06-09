@@ -1,0 +1,552 @@
+package com.tal.hebrewdino.ui.domain
+
+
+
+import android.util.Log
+
+import com.tal.hebrewdino.ui.audio.AudioClips
+
+import com.tal.hebrewdino.ui.audio.RawVoicePlayer
+
+import com.tal.hebrewdino.ui.companion.Chapter1AddressAwareAudio
+
+import com.tal.hebrewdino.ui.data.PlayerAddress
+
+import kotlinx.coroutines.delay
+
+
+
+/** Replays the current learning target for Season 2 Chapter 1 coach interventions. */
+
+object Season2GuessingCoach {
+
+    suspend fun replayTargetAudio(
+
+        season2StationId: Int,
+
+        session: LevelSession,
+
+        playerAddress: PlayerAddress?,
+
+        rawVoice: RawVoicePlayer,
+
+        gameplayChapterId: Int? = null,
+
+    ) {
+
+        val question = session.currentQuestion ?: return
+
+        val arcKind =
+
+            if (gameplayChapterId != null) {
+
+                Season2StationUx.stationKindForGameplayChapter(gameplayChapterId, season2StationId)
+
+            } else {
+
+                null
+
+            }
+
+        if (arcKind != null) {
+
+            replayForArcStationKind(
+
+                kind = arcKind,
+
+                season2StationId = season2StationId,
+
+                question = question,
+
+                playerAddress = playerAddress,
+
+                rawVoice = rawVoice,
+
+                gameplayChapterId = gameplayChapterId ?: 0,
+
+            )
+
+        } else {
+
+            replayByLegacyStationOrder(
+
+                season2StationId = season2StationId,
+
+                question = question,
+
+                playerAddress = playerAddress,
+
+                rawVoice = rawVoice,
+
+                gameplayChapterId = gameplayChapterId,
+
+            )
+
+        }
+
+        delay(280)
+
+    }
+
+
+
+    private suspend fun replayForArcStationKind(
+
+        kind: Season2ChapterStationPlans.StationKind,
+
+        season2StationId: Int,
+
+        question: Question,
+
+        playerAddress: PlayerAddress?,
+
+        rawVoice: RawVoicePlayer,
+
+        gameplayChapterId: Int,
+
+    ) {
+
+        when (kind) {
+
+            Season2ChapterStationPlans.StationKind.PopBalloons,
+
+            Season2ChapterStationPlans.StationKind.PickLetter,
+
+            -> playTargetLetter(question, rawVoice, season2StationId)
+
+
+
+            Season2ChapterStationPlans.StationKind.PictureStartsWith ->
+
+                playInstructionThenLetter(
+
+                    season2StationId = season2StationId,
+
+                    question = question,
+
+                    playerAddress = playerAddress,
+
+                    rawVoice = rawVoice,
+
+                    kind = Chapter1AddressAwareAudio.InstructionKind.PictureStartsWith,
+
+                )
+
+
+
+            Season2ChapterStationPlans.StationKind.WhichWordStartsWith ->
+
+                playInstructionThenLetter(
+
+                    season2StationId = season2StationId,
+
+                    question = question,
+
+                    playerAddress = playerAddress,
+
+                    rawVoice = rawVoice,
+
+                    kind = Chapter1AddressAwareAudio.InstructionKind.WhichWordStartsWith,
+
+                )
+
+
+
+            Season2ChapterStationPlans.StationKind.MatchLetterToWord ->
+
+                playInstructionThenLetter(
+
+                    season2StationId = season2StationId,
+
+                    question = question,
+
+                    playerAddress = playerAddress,
+
+                    rawVoice = rawVoice,
+
+                    kind = Chapter1AddressAwareAudio.InstructionKind.MatchLetterToWord,
+
+                )
+
+
+
+            Season2ChapterStationPlans.StationKind.MemoryMatch ->
+
+                playMemoryInstruction(playerAddress, rawVoice)
+
+
+
+            Season2ChapterStationPlans.StationKind.WordParts,
+
+            Season2ChapterStationPlans.StationKind.MissingFirstLetter,
+
+            Season2ChapterStationPlans.StationKind.Rhyming,
+
+            Season2ChapterStationPlans.StationKind.PictureToWord,
+
+            ->
+
+                        replayAdvancedTargetAudio(
+
+                            question = question,
+
+                            rawVoice = rawVoice,
+
+                            chapterId = gameplayChapterId ?: Season2ChapterIds.Chapter1Tyrannosaurus,
+
+                            stationId = season2StationId,
+
+                        )
+
+        }
+
+    }
+
+
+
+    private suspend fun replayByLegacyStationOrder(
+
+        season2StationId: Int,
+
+        question: Question,
+
+        playerAddress: PlayerAddress?,
+
+        rawVoice: RawVoicePlayer,
+
+        gameplayChapterId: Int?,
+
+    ) {
+
+        when (season2StationId) {
+
+            Season2Chapter1StationOrder.POP_BALLOONS,
+
+            Season2Chapter1StationOrder.PICK_LETTER,
+
+            -> playTargetLetter(question, rawVoice, season2StationId)
+
+
+
+            Season2Chapter1StationOrder.PICTURE_STARTS_WITH -> {
+
+                playInstructionThenLetter(
+
+                    season2StationId = Season2Chapter1StationOrder.PICTURE_STARTS_WITH,
+
+                    question = question,
+
+                    playerAddress = playerAddress,
+
+                    rawVoice = rawVoice,
+
+                    kind = Chapter1AddressAwareAudio.InstructionKind.PictureStartsWith,
+
+                )
+
+            }
+
+
+
+            Season2Chapter1StationOrder.WHICH_WORD_STARTS_WITH ->
+
+                playInstructionThenLetter(
+
+                    season2StationId = season2StationId,
+
+                    question = question,
+
+                    playerAddress = playerAddress,
+
+                    rawVoice = rawVoice,
+
+                    kind = Chapter1AddressAwareAudio.InstructionKind.WhichWordStartsWith,
+
+                )
+
+
+
+            Season2Chapter1StationOrder.FINALE_STATION,
+            Season2Chapter1StationOrder.MATCH_LETTER_TO_WORD,
+            ->
+                when (question) {
+                    is Question.WordPartsQuestion,
+                    is Question.ImageMatchQuestion,
+                    ->
+                        replayAdvancedTargetAudio(
+                            question = question,
+                            rawVoice = rawVoice,
+                            chapterId = gameplayChapterId ?: Season2ChapterIds.Chapter1Tyrannosaurus,
+                            stationId = season2StationId,
+                        )
+                    else ->
+                        playInstructionThenLetter(
+                            season2StationId = season2StationId,
+                            question = question,
+                            playerAddress = playerAddress,
+                            rawVoice = rawVoice,
+                            kind = Chapter1AddressAwareAudio.InstructionKind.MatchLetterToWord,
+                        )
+                }
+
+
+
+            Season2Chapter1StationOrder.MEMORY_MATCH -> {
+
+                playMemoryInstruction(playerAddress, rawVoice)
+
+            }
+
+
+
+            else -> {
+
+                if (question is Question.MissingFirstLetterQuestion ||
+
+                    question is Question.WordPartsQuestion ||
+
+                    question is Question.RhymingQuestion ||
+
+                    (
+
+                        question is Question.ImageMatchQuestion &&
+
+                            season2StationId in
+
+                                listOf(
+
+                                    Season2Chapter1StationOrder.WHICH_WORD_STARTS_WITH,
+
+                                    5,
+
+                                    6,
+
+                                )
+
+                    )
+
+                ) {
+
+                    replayAdvancedTargetAudio(
+
+                        question = question,
+
+                        rawVoice = rawVoice,
+
+                        chapterId = 0,
+
+                        stationId = season2StationId,
+
+                    )
+
+                } else {
+
+                    playTargetLetter(question, rawVoice, season2StationId)
+
+                }
+
+            }
+
+        }
+
+    }
+
+
+
+    private suspend fun playTargetLetter(
+
+        question: Question,
+
+        rawVoice: RawVoicePlayer,
+
+        season2StationId: Int,
+
+    ) {
+
+        val letter = targetLetterFromQuestion(question) ?: return
+
+        val resId = AudioClips.letterNameRawResId(letter)
+
+        if (resId == null) {
+
+            Log.e(
+
+                "MissingContent",
+
+                "Missing Season2 coach letter audio. stationId=$season2StationId letter='$letter'",
+
+            )
+
+            return
+
+        }
+
+        rawVoice.playRawBlocking(resId)
+
+    }
+
+
+
+    private suspend fun playInstructionThenLetter(
+
+        season2StationId: Int,
+
+        question: Question,
+
+        playerAddress: PlayerAddress?,
+
+        rawVoice: RawVoicePlayer,
+
+        kind: Chapter1AddressAwareAudio.InstructionKind,
+
+    ) {
+
+        if (playerAddress != null) {
+
+            val instructionRes =
+
+                Chapter1AddressAwareAudio.instructionRawRes(kind, playerAddress)
+
+            if (instructionRes != 0) {
+
+                rawVoice.playRawBlocking(instructionRes)
+
+                delay(200)
+
+            }
+
+        }
+
+        playTargetLetter(question, rawVoice, season2StationId)
+
+    }
+
+
+
+    private suspend fun playMemoryInstruction(
+
+        playerAddress: PlayerAddress?,
+
+        rawVoice: RawVoicePlayer,
+
+    ) {
+
+        if (playerAddress == null) return
+
+        val resId =
+
+            Chapter1AddressAwareAudio.instructionRawRes(
+
+                Chapter1AddressAwareAudio.InstructionKind.MemoryMatch,
+
+                playerAddress,
+
+            )
+
+        if (resId == 0) {
+
+            Log.e(
+
+                "MissingContent",
+
+                "Missing Season2 coach memory-match instruction. expected instruction_memory_match_boy/girl.mp3",
+
+            )
+
+            return
+
+        }
+
+        rawVoice.playRawBlocking(resId)
+
+    }
+
+
+
+    suspend fun replayAdvancedTargetAudio(
+
+        question: Question,
+
+        rawVoice: RawVoicePlayer,
+
+        chapterId: Int,
+
+        stationId: Int,
+
+    ) {
+
+        val catalogId =
+
+            when (question) {
+
+                is Question.MissingFirstLetterQuestion -> question.catalogEntryId
+
+                is Question.WordPartsQuestion -> question.catalogEntryId
+
+                is Question.RhymingQuestion -> question.targetCatalogEntryId
+
+                is Question.ImageMatchQuestion -> question.correctChoiceId
+
+                else -> null
+
+            }
+
+        if (catalogId == null) {
+
+            playTargetLetter(question, rawVoice, stationId)
+
+            return
+
+        }
+
+        val resId = AudioClips.wordRawResIdByCatalogId(catalogId)
+
+        if (resId == null) {
+
+            Log.e(
+
+                "MissingContent",
+
+                "Missing Season2 coach word audio. chapterId=$chapterId stationId=$stationId catalogId='$catalogId'",
+
+            )
+
+            return
+
+        }
+
+        rawVoice.playRawBlocking(resId)
+
+        delay(280)
+
+    }
+
+
+
+    private fun targetLetterFromQuestion(question: Question): String? =
+
+        when (question) {
+
+            is Question.PopBalloonsQuestion -> question.correctAnswer
+
+            is Question.FindLetterGridQuestion -> question.targetLetter
+
+            is Question.PictureStartsWithQuestion -> question.correctLetter
+
+            is Question.ImageMatchQuestion -> question.targetLetter
+
+            is Question.MissingFirstLetterQuestion -> question.correctLetter
+
+            is Question.WordPartsQuestion -> question.word.first().toString()
+
+            is Question.RhymingQuestion ->
+
+                question.choices.firstOrNull { it.id == question.correctChoiceId }?.letter
+
+            else -> null
+
+        }
+
+}
+
+

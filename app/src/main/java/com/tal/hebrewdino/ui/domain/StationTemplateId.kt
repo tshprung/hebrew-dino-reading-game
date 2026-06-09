@@ -17,5 +17,6 @@ enum class StationTemplateId {
     ImageMatch,
     MatchLetterToWord,
     ImageToWord,
+    WordParts,
 }
 

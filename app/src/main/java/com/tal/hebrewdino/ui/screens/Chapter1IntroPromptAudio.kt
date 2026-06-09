@@ -8,6 +8,7 @@ import com.tal.hebrewdino.ui.companion.Chapter1AddressAwareAudio
 import com.tal.hebrewdino.ui.data.PlayerAddress
 import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
 import com.tal.hebrewdino.ui.domain.Question
+import com.tal.hebrewdino.ui.domain.Season2StationAudio
 import com.tal.hebrewdino.ui.domain.StationTemplateId
 import kotlinx.coroutines.delay
 
@@ -38,7 +39,7 @@ internal suspend fun playChapter1AddressAwareIntro(
     station4IntroToWordGapBoost: Float,
     station4IntroToWordExtraPauseMs: Long,
 ): Boolean {
-    if ((chapterId != 1 && chapterId != 2 && chapterId != 4 && chapterId != 5) || playerAddress == null) return false
+    if (!Season2StationAudio.usesChapter1StyleAddressAwareIntro(chapterId) || playerAddress == null) return false
     val kind =
         Chapter1AddressAwareAudio.instructionKindFor(
             stationId = stationId,
@@ -55,6 +56,9 @@ internal suspend fun playChapter1AddressAwareIntro(
                 is Question.PictureStartsWithQuestion -> q.correctLetter
                 is Question.ImageMatchQuestion -> q.targetLetter
                 is Question.FinaleSlotQuestion -> null
+                is Question.MissingFirstLetterQuestion -> q.correctLetter
+                is Question.WordPartsQuestion -> q.word.first().toString()
+                is Question.RhymingQuestion -> q.targetWord.first().toString()
             } ?: return false
         sfx.stopAllStreams()
         rawVoice.playRawBlocking(instructionRaw)
@@ -89,10 +93,7 @@ internal suspend fun playChapter1AddressAwareIntro(
         return true
     }
 
-    if (stationTemplateId == StationTemplateId.ImageMatch &&
-        stationId == Chapter1StationOrder.PICTURE_PICK_ALL &&
-        q is Question.ImageMatchQuestion
-    ) {
+    if (stationTemplateId == StationTemplateId.ImageMatch && q is Question.ImageMatchQuestion) {
         sfx.stopAllStreams()
         rawVoice.playRawBlocking(instructionRaw)
         delay(Chapter1InstructionToTargetGapMs)
@@ -115,7 +116,11 @@ internal suspend fun playChapter1AddressAwareIntro(
         return true
     }
 
-    if (isSagaEpisode && stationId == Chapter1StationOrder.PICTURE_PICK_ONE && q is Question.PictureStartsWithQuestion) {
+    if (
+        Season2StationAudio.usesPictureStartsWithAddressAwareIntro(chapterId, isSagaEpisode) &&
+        stationTemplateId == StationTemplateId.PictureStartsWith &&
+        q is Question.PictureStartsWithQuestion
+    ) {
         sfx.stopAllStreams()
         rawVoice.playRawBlocking(instructionRaw)
         delay(Chapter1InstructionToTargetGapMs)

@@ -31,6 +31,7 @@ class BackgroundMusicPlayer(
     private val positionMsByAssetPath: HashMap<String, Int> = hashMapOf()
     private var targetVolume: Float = 0.28f
     private var muted: Boolean = false
+    private var voiceDuckDepth: Int = 0
 
     fun playLoopFromAssets(
         assetPath: String,
@@ -63,7 +64,8 @@ class BackgroundMusicPlayer(
             mp.setDataSource(afd.fileDescriptor, afd.startOffset, afd.length)
             afd.close()
             mp.isLooping = true
-            mp.setVolume(if (muted) 0f else v, if (muted) 0f else v)
+            val initialMuted = muted || voiceDuckDepth > 0
+            mp.setVolume(if (initialMuted) 0f else v, if (initialMuted) 0f else v)
             mp.setOnErrorListener { _, _, _ ->
                 stop()
                 true
@@ -89,9 +91,20 @@ class BackgroundMusicPlayer(
         applyVolume()
     }
 
+    fun beginVoiceDuck() {
+        voiceDuckDepth++
+        applyVolume()
+    }
+
+    fun endVoiceDuck() {
+        voiceDuckDepth = (voiceDuckDepth - 1).coerceAtLeast(0)
+        applyVolume()
+    }
+
     private fun applyVolume() {
         val p = player ?: return
-        val v = if (muted) 0f else targetVolume.coerceIn(0f, 1f)
+        val effectiveMuted = muted || voiceDuckDepth > 0
+        val v = if (effectiveMuted) 0f else targetVolume.coerceIn(0f, 1f)
         try {
             p.setVolume(v, v)
         } catch (_: Throwable) {

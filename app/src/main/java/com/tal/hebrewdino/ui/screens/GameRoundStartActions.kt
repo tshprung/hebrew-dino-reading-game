@@ -1,9 +1,11 @@
 package com.tal.hebrewdino.ui.screens
 
 import com.tal.hebrewdino.ui.audio.AudioClips
+import com.tal.hebrewdino.ui.audio.BackgroundMusicPlayer
 import com.tal.hebrewdino.ui.audio.RawVoicePlayer
 import com.tal.hebrewdino.ui.audio.SoundPoolPlayer
 import com.tal.hebrewdino.ui.audio.VoicePlayer
+import com.tal.hebrewdino.ui.audio.withVoiceDuck
 import com.tal.hebrewdino.ui.data.PlayerAddress
 import com.tal.hebrewdino.ui.domain.LevelSession
 import com.tal.hebrewdino.ui.domain.Question
@@ -45,6 +47,7 @@ internal object GameRoundStartActions {
         audioRuntime: GameAudioRuntimeState,
         chapter1PlayerAddress: PlayerAddress? = null,
         rawVoice: RawVoicePlayer? = null,
+        backgroundMusic: BackgroundMusicPlayer? = null,
     ) {
         gameViewModel.phase = GamePhase.Intro
         gameViewModel.inputLocked = true
@@ -59,6 +62,7 @@ internal object GameRoundStartActions {
         gameViewModel.station1PinnedCorrectLetter = null
         gameViewModel.station2PinnedBalloonLetter = null
         gameViewModel.station2PinnedBalloonColor = null
+        gameViewModel.wordPartsCompletedEquation = null
         gameViewModel.dinoTalking = false
         cancelFeedbackVoice()
         val q: Question = session.currentQuestion ?: return
@@ -70,36 +74,43 @@ internal object GameRoundStartActions {
         ) {
             gameViewModel.dinoTalking = true
             try {
-                playIntroPrompt(
-                    audioEnabled = true,
-                    chapterId = chapterId,
-                    stationId = stationId,
-                    listenOnlyTargetPrompt = listenOnlyTargetPrompt,
-                    stationTemplateId = stationTemplateId,
-                    planPopAllLettersInWord = planPopAllLettersInWord,
-                    isSagaEpisode = isSagaEpisode(chapterId),
-                    sagaUsesPickLetterAudioStaging = sagaUsesPickLetterAudioStaging,
-                    sagaUsesPopBalloonsAudioStaging = sagaUsesPopBalloonsAudioStaging,
-                    sagaUsesFindGridAudioStaging = sagaUsesFindGridAudioStaging,
-                    isChapter3HighlightedLetterInWordStation = isChapter3HighlightedLetterInWordStation,
-                    isChapter3AudioLetterRecognitionStation = isChapter3AudioLetterRecognitionStation,
-                    session = session,
-                    q = q,
-                    voice = voice,
-                    sfx = sfx,
-                    station1IntroLetterLeadFraction = station1IntroLetterLeadFraction,
-                    station1IntroToLetterLeadScale = station1IntroToLetterLeadScale,
-                    station2BalloonIntroLetterLeadFraction = station2BalloonIntroLetterLeadFraction,
-                    station2IntroToLetterLeadScale = station2IntroToLetterLeadScale,
-                    station2BalloonIntroToLetterGapBoost = station2BalloonIntroToLetterGapBoost,
-                    station2BalloonIntroToLetterExtraPauseMs = station2BalloonIntroToLetterExtraPauseMs,
-                    station4IntroWordLeadFraction = station4IntroWordLeadFraction,
-                    station4IntroToWordLeadScale = station4IntroToWordLeadScale,
-                    station4IntroToWordGapBoost = station4IntroToWordGapBoost,
-                    station4IntroToWordExtraPauseMs = station4IntroToWordExtraPauseMs,
-                    chapter1PlayerAddress = chapter1PlayerAddress,
-                    rawVoice = rawVoice,
-                )
+                val playBlock: suspend () -> Unit = {
+                    playIntroPrompt(
+                        audioEnabled = true,
+                        chapterId = chapterId,
+                        stationId = stationId,
+                        listenOnlyTargetPrompt = listenOnlyTargetPrompt,
+                        stationTemplateId = stationTemplateId,
+                        planPopAllLettersInWord = planPopAllLettersInWord,
+                        isSagaEpisode = isSagaEpisode(chapterId),
+                        sagaUsesPickLetterAudioStaging = sagaUsesPickLetterAudioStaging,
+                        sagaUsesPopBalloonsAudioStaging = sagaUsesPopBalloonsAudioStaging,
+                        sagaUsesFindGridAudioStaging = sagaUsesFindGridAudioStaging,
+                        isChapter3HighlightedLetterInWordStation = isChapter3HighlightedLetterInWordStation,
+                        isChapter3AudioLetterRecognitionStation = isChapter3AudioLetterRecognitionStation,
+                        session = session,
+                        q = q,
+                        voice = voice,
+                        sfx = sfx,
+                        station1IntroLetterLeadFraction = station1IntroLetterLeadFraction,
+                        station1IntroToLetterLeadScale = station1IntroToLetterLeadScale,
+                        station2BalloonIntroLetterLeadFraction = station2BalloonIntroLetterLeadFraction,
+                        station2IntroToLetterLeadScale = station2IntroToLetterLeadScale,
+                        station2BalloonIntroToLetterGapBoost = station2BalloonIntroToLetterGapBoost,
+                        station2BalloonIntroToLetterExtraPauseMs = station2BalloonIntroToLetterExtraPauseMs,
+                        station4IntroWordLeadFraction = station4IntroWordLeadFraction,
+                        station4IntroToWordLeadScale = station4IntroToWordLeadScale,
+                        station4IntroToWordGapBoost = station4IntroToWordGapBoost,
+                        station4IntroToWordExtraPauseMs = station4IntroToWordExtraPauseMs,
+                        chapter1PlayerAddress = chapter1PlayerAddress,
+                        rawVoice = rawVoice,
+                    )
+                }
+                if (backgroundMusic != null) {
+                    backgroundMusic.withVoiceDuck { playBlock() }
+                } else {
+                    playBlock()
+                }
             } finally {
                 gameViewModel.dinoTalking = false
             }

@@ -331,6 +331,9 @@ internal fun IntroPulse(
                     else -> question.targetWord
                 }
             is Question.FinaleSlotQuestion -> "★"
+            is Question.MissingFirstLetterQuestion -> question.partialWord
+            is Question.WordPartsQuestion -> question.word
+            is Question.RhymingQuestion -> question.targetWord
         }
     BoxWithConstraints(modifier = modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
         val narrow = maxWidth < 380.dp

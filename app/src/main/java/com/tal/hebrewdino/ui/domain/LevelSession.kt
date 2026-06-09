@@ -22,18 +22,33 @@ class LevelSession(
     /** Correct catalog entry ids already used per letter (picture stations 4–5). */
     private val lessonWordUsedCorrectIdsByLetter: MutableMap<String, MutableSet<String>> = mutableMapOf()
 
+    /** Season 2 advanced modes: track correct catalog ids already shown this session. */
+    private val season2AdvancedUsedCorrectIds: MutableSet<String> = mutableSetOf()
+
     /** Season 2 content: avoid words outside the curated easy-to-draw sets. */
     private fun season2BannedCatalogIdsForLetter(letter: String): Set<String> {
-        if (letterPoolSpec !== Season2Chapter1LetterPoolSpec) return emptySet()
         val allow: Set<String> =
-            when (letter) {
-                // Pick 4 easiest-to-draw words per your list.
-                "ז" -> setOf("w_ז_1", "w_ז_2", "w_ז_3", "w_ז_4") // זברה, זיקית, זחל, זר
-                "י" -> setOf("w_י_2", "w_י_3", "w_י_4", "w_י_5") // ילד, יד, יונה, ירח
-                "ס" -> setOf("w_ס_1", "w_ס_2", "w_ס_3", "w_ס_4") // סוס, סירה, סוכריה, ספר
-                "ע" -> setOf("w_ע_1", "w_ע_4", "w_ע_5", "w_ע_7") // עין, עוגה, עץ, עלה
-                "מ" -> emptySet() // keep existing catalog for mem
-                else -> emptySet()
+            when (letterPoolSpec) {
+                Season2Chapter1LetterPoolSpec ->
+                    when (letter) {
+                        "ז" -> setOf("w_ז_1", "w_ז_2", "w_ז_3", "w_ז_4")
+                        "י" -> setOf("w_י_2", "w_י_3", "w_י_4", "w_י_5")
+                        "ס" -> setOf("w_ס_1", "w_ס_2", "w_ס_3", "w_ס_4")
+                        "ע" -> setOf("w_ע_1", "w_ע_4", "w_ע_5", "w_ע_7")
+                        "מ" -> emptySet()
+                        else -> emptySet()
+                    }
+                Season2Chapter2LetterPoolSpec ->
+                    when (letter) {
+                        "ח" -> setOf("w_ח_1", "w_ח_2", "w_ח_3")
+                        "ר" -> setOf("w_ר_1", "w_ר_3", "w_ר_4")
+                        "ק" -> setOf("w_ק_1", "w_ק_2", "w_ק_3")
+                        "ש" -> setOf("w_ש_1", "w_ש_2", "w_ש_4")
+                        else -> emptySet()
+                    }
+                is Season2ChapterLetterPool ->
+                    season2ChapterWordAllowlist(letterPoolSpec, letter)
+                else -> return emptySet()
             }
         if (allow.isEmpty()) return emptySet()
         val allIdsForLetter =
@@ -103,7 +118,10 @@ class LevelSession(
             Chapter3LetterPoolSpec -> Chapter3Config.letters
             Chapter4LetterPoolSpec -> Chapter4Config.letters
             Chapter5LetterPoolSpec -> Chapter5Config.letters
-            Season2Chapter1LetterPoolSpec -> letterPoolSpec.groups.flatten().distinct()
+            Season2Chapter1LetterPoolSpec,
+            Season2Chapter2LetterPoolSpec,
+            is Season2ChapterLetterPool,
+            -> letterPoolSpec.groups.flatten().distinct()
             else -> letterPoolSpec.groups.flatten().distinct()
         }
 
@@ -140,6 +158,21 @@ class LevelSession(
         return r.slotIndex == r.word.lastIndex
     }
 
+    private fun season2ChapterWordAllowlist(pool: Season2ChapterLetterPool, letter: String): Set<String> {
+        val allowed =
+            pool.wordCatalogIds.mapNotNull { id -> LessonWordCatalog.entries.find { it.id == id } }
+                .filter { it.letter == letter }
+                .map { it.id }
+                .toSet()
+        if (allowed.isEmpty()) return emptySet()
+        val allIdsForLetter =
+            LessonWordCatalog.entries.asSequence()
+                .filter { it.letter == letter }
+                .map { it.id }
+                .toSet()
+        return allIdsForLetter - allowed
+    }
+
     private fun pictureStartsWithOptionLetters(correctLetter: String): List<String> {
         val pool = episodeOptionLetters().distinct()
         val desired =
@@ -161,6 +194,33 @@ class LevelSession(
             if (currentIndex >= questionCount) return null
             if (_currentQuestion == null) {
                 val group = letterGroup()
+                if (plan.season2AdvancedMode != null) {
+                    val wordIds =
+                        plan.season2WordCatalogIds
+                            ?: error("season2WordCatalogIds required when season2AdvancedMode is set")
+                    val q =
+                        Season2AdvancedStationGenerators.generateForMode(
+                            rnd = rnd,
+                            mode = plan.season2AdvancedMode,
+                            wordCatalogIds = wordIds,
+                            roundIndex = currentIndex,
+                            excludeCorrectIds = season2AdvancedUsedCorrectIds,
+                            distractorLetters =
+                                plan.season2AdvancedDistractorLetters.ifEmpty {
+                                    episodeOptionLetters()
+                                },
+                            wordPartsPresentationMode = plan.season2WordPartsPresentationMode,
+                        )
+                    when (q) {
+                        is Question.ImageMatchQuestion -> season2AdvancedUsedCorrectIds.add(q.correctChoiceId)
+                        is Question.MissingFirstLetterQuestion -> season2AdvancedUsedCorrectIds.add(q.catalogEntryId)
+                        is Question.WordPartsQuestion -> season2AdvancedUsedCorrectIds.add(q.catalogEntryId)
+                        is Question.RhymingQuestion -> season2AdvancedUsedCorrectIds.add(q.targetCatalogEntryId)
+                        else -> {}
+                    }
+                    _currentQuestion = q
+                    return _currentQuestion
+                }
                 _currentQuestion =
                     when (plan.mode) {
                         StationQuizMode.FindLetterGrid -> {
@@ -403,8 +463,11 @@ class LevelSession(
                 is Question.ImageMatchQuestion,
                 is Question.PictureStartsWithQuestion,
                 is Question.FinaleSlotQuestion,
+                is Question.MissingFirstLetterQuestion,
+                is Question.WordPartsQuestion,
+                is Question.RhymingQuestion,
                 ->
-                    error("Use grid / imageMatch / pictureStartsWith / finale APIs")
+                    error("Use grid / imageMatch / pictureStartsWith / finale / advanced APIs")
             }
         return applyOutcome(correct)
     }
@@ -429,6 +492,21 @@ class LevelSession(
         val q = currentQuestion as? Question.FinaleSlotQuestion ?: return AnswerResult.Finished
         val ok = filled == q.words
         return applyOutcome(ok)
+    }
+
+    fun submitMissingFirstLetter(letter: String): AnswerResult {
+        val q = currentQuestion as? Question.MissingFirstLetterQuestion ?: return AnswerResult.Finished
+        return applyOutcome(letter == q.correctLetter)
+    }
+
+    fun submitWordParts(part: String): AnswerResult {
+        val q = currentQuestion as? Question.WordPartsQuestion ?: return AnswerResult.Finished
+        return applyOutcome(part == q.correctPart)
+    }
+
+    fun submitRhyming(choiceId: String): AnswerResult {
+        val q = currentQuestion as? Question.RhymingQuestion ?: return AnswerResult.Finished
+        return applyOutcome(choiceId == q.correctChoiceId)
     }
 
     private fun applyOutcome(correct: Boolean): AnswerResult {

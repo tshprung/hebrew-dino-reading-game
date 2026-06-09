@@ -11,11 +11,13 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import com.tal.hebrewdino.ui.layout.topChromeInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -26,6 +28,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -40,6 +43,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.tal.hebrewdino.R
 import com.tal.hebrewdino.BuildConfig
+import com.tal.hebrewdino.ui.companion.CompanionAssets
+import com.tal.hebrewdino.ui.companion.CompanionDinoPortrait
+import com.tal.hebrewdino.ui.data.DinoCharacter
 
 private data class SeasonCardConfig(
     val seasonId: Int,
@@ -47,15 +53,24 @@ private data class SeasonCardConfig(
     val subtitle: String,
     val status: String? = null,
     val enabled: Boolean,
+    val heroKind: SeasonHeroKind = SeasonHeroKind.None,
 )
+
+private enum class SeasonHeroKind {
+    None,
+    SelectedCompanion,
+    MysteryMap,
+}
 
 @Composable
 fun SeasonsScreen(
+    companionCharacter: DinoCharacter,
     onOpenSeason1: () -> Unit,
     onOpenSeason2: () -> Unit = {},
     onBackToOpening: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val companionAssets = remember(companionCharacter) { CompanionAssets.forCharacter(companionCharacter) }
     val scroll = rememberScrollState()
     val seasons =
         if (BuildConfig.DEBUG) {
@@ -65,13 +80,14 @@ fun SeasonsScreen(
                     title = "עונה 1: המסע הראשון",
                     subtitle = "6 פרקים + אימון",
                     enabled = true,
+                    heroKind = SeasonHeroKind.SelectedCompanion,
                 ),
                 SeasonCardConfig(
                     seasonId = 2,
-                    title = "עונה 2: דינוזאורים",
-                    subtitle = "פרוטוטיפ — לוח פאזל T-Rex",
-                    status = "פרוטוטיפ (Debug)",
+                    title = "עונה 2: מגלים דינוזאורים",
+                    subtitle = "מפה מסתורית — גלו דינוזאורים חבויים",
                     enabled = true,
+                    heroKind = SeasonHeroKind.MysteryMap,
                 ),
                 SeasonCardConfig(
                     seasonId = 3,
@@ -95,6 +111,7 @@ fun SeasonsScreen(
                     title = "עונה 1: המסע הראשון",
                     subtitle = "6 פרקים + אימון",
                     enabled = true,
+                    heroKind = SeasonHeroKind.SelectedCompanion,
                 ),
             )
         }
@@ -135,6 +152,7 @@ fun SeasonsScreen(
                 seasons.forEach { season ->
                     SeasonCard(
                         config = season,
+                        companionAssets = companionAssets,
                         onClick =
                             when {
                                 season.seasonId == 1 -> onOpenSeason1
@@ -183,6 +201,7 @@ private fun TopPillButton(
 @Composable
 private fun SeasonCard(
     config: SeasonCardConfig,
+    companionAssets: CompanionAssets,
     onClick: (() -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
@@ -201,6 +220,7 @@ private fun SeasonCard(
         modifier =
             modifier
                 .fillMaxWidth()
+                .defaultMinSize(minHeight = 148.dp)
                 .shadow(elevation = if (enabled) 10.dp else 4.dp, shape = shape, clip = false)
                 .clip(shape)
                 .background(bg)
@@ -218,49 +238,97 @@ private fun SeasonCard(
         tonalElevation = 0.dp,
         shadowElevation = 0.dp,
     ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
-            if (config.status != null) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                if (config.status != null) {
+                    Text(
+                        text = config.status,
+                        modifier =
+                            Modifier
+                                .background(Color.Black.copy(alpha = 0.06f), RoundedCornerShape(999.dp))
+                                .padding(horizontal = 10.dp, vertical = 6.dp),
+                        style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                        color = Color(0xFF455A64),
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                }
+
                 Text(
-                    text = config.status,
-                    modifier =
-                        Modifier
-                            .align(Alignment.Start)
-                            .background(Color.Black.copy(alpha = 0.06f), RoundedCornerShape(999.dp))
-                            .padding(horizontal = 10.dp, vertical = 6.dp),
-                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-                    color = Color(0xFF455A64),
+                    text = config.title,
+                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.ExtraBold),
+                    color = Color(0xFF102A43),
+                    textAlign = TextAlign.Start,
                 )
-                Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = config.subtitle,
+                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+                    color = Color(0xFF334E68),
+                    textAlign = TextAlign.Start,
+                )
+                if (onClick != null) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Button(
+                        onClick = onClick,
+                        enabled = enabled,
+                        colors =
+                            ButtonDefaults.buttonColors(
+                                containerColor =
+                                    if (config.seasonId == 2) {
+                                        Color(0xFF4A2A4E)
+                                    } else {
+                                        Color(0xFF1B5E20)
+                                    },
+                                contentColor = Color.White,
+                                disabledContainerColor = Color(0xFF1B5E20).copy(alpha = 0.4f),
+                                disabledContentColor = Color.White.copy(alpha = 0.7f),
+                            ),
+                    ) {
+                        Text(
+                            "המשך",
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold),
+                        )
+                    }
+                }
             }
 
-            Text(
-                text = config.title,
-                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.ExtraBold),
-                color = Color(0xFF102A43),
-                textAlign = TextAlign.Start,
-            )
-            Spacer(modifier = Modifier.height(6.dp))
-            Text(
-                text = config.subtitle,
-                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
-                color = Color(0xFF334E68),
-                textAlign = TextAlign.Start,
-            )
-            if (config.seasonId == 1) {
-                Spacer(modifier = Modifier.height(12.dp))
-                Button(
-                    onClick = { onClick?.invoke() },
-                    enabled = enabled,
-                    colors =
-                        ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFF1B5E20),
-                            contentColor = Color.White,
-                            disabledContainerColor = Color(0xFF1B5E20).copy(alpha = 0.4f),
-                            disabledContentColor = Color.White.copy(alpha = 0.7f),
-                        ),
-                ) {
-                    Text("המשך", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold))
+            when (config.heroKind) {
+                SeasonHeroKind.SelectedCompanion -> {
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Box(
+                        modifier =
+                            Modifier
+                                .size(width = 96.dp, height = 108.dp),
+                        contentAlignment = Alignment.BottomCenter,
+                    ) {
+                        CompanionDinoPortrait(
+                            poseRes = companionAssets.poseIdle,
+                            talkFrameResIds = companionAssets.talkFrameResIds,
+                            isTalking = false,
+                            modifier = Modifier.fillMaxSize(),
+                        )
+                    }
                 }
+                SeasonHeroKind.MysteryMap -> {
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Box(
+                        modifier =
+                            Modifier
+                                .size(width = 96.dp, height = 108.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Season2FrostedPosterPreview(
+                            posterResId = R.drawable.season2_trex_puzzle_full,
+                            revealed = false,
+                            showMysteryGlyph = false,
+                            modifier = Modifier.fillMaxSize(),
+                        )
+                    }
+                }
+                SeasonHeroKind.None -> Unit
             }
         }
     }

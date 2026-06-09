@@ -51,6 +51,8 @@ import com.tal.hebrewdino.ui.components.learning.captionFontSizeForWordCard
 import com.tal.hebrewdino.ui.domain.Chapter1Station5And6ImageMatchInnerScale
 import com.tal.hebrewdino.ui.domain.LessonChoice
 import com.tal.hebrewdino.ui.domain.Question
+import com.tal.hebrewdino.ui.domain.Season2ChapterIds
+import com.tal.hebrewdino.ui.domain.Season2StationAudio
 import com.tal.hebrewdino.ui.domain.TrainingV1Config
 import com.tal.hebrewdino.ui.layout.ScreenFit
 import kotlin.math.roundToInt
@@ -100,8 +102,12 @@ fun ImageToWordGame(
             isTrainingStation3 && trainingRoundIndex in setOf(3, 8)
         val isChapter3Station6ImageToWord = chapterId == 3 && stationId == 6
         val isChapter6Station6ImageToWord = chapterId == 6 && stationId == 6
+        val isSeason2ImageToWord =
+            chapterId != null &&
+                stationId != null &&
+                Season2StationAudio.isSeason2ImageToWordLayout(chapterId, stationId)
         val isChapter3Or6Station6ImageToWord =
-            isChapter3Station6ImageToWord || isChapter6Station6ImageToWord
+            isChapter3Station6ImageToWord || isChapter6Station6ImageToWord || isSeason2ImageToWord
         val isInstructionWrapContent = isTrainingImageToWordRound38 || isChapter3Or6Station6ImageToWord
 
         // Match the same card sizing math as PictureStartsWith/ImageMatch (Episode 1/2 station 4).
@@ -125,7 +131,13 @@ fun ImageToWordGame(
         }
         val pictureCardH = pictureCardW * LessonChoiceCardPictureAspect
         val chapter3Station6ExtraDown = if (chapterId == 3 && stationId == 6) 19.dp else 0.dp
-        val chapter6Station6ExtraDown = if (chapterId == 6 && stationId == 6) 38.dp else 0.dp
+        val chapter6Station6ExtraDown =
+            when {
+                chapterId == 6 && stationId == 6 -> 38.dp
+                isSeason2ImageToWord && chapterId == Season2ChapterIds.Chapter6Mosasaurus -> 24.dp
+                isSeason2ImageToWord -> 12.dp
+                else -> 0.dp
+            }
         // Training rounds 3 and 8 (ImageToWord): ~5 mm lower than default (~19 dp).
         val trainingImageToWordExtraDown =
             if (isTrainingImageToWordRound38) {
@@ -142,7 +154,12 @@ fun ImageToWordGame(
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .padding(horizontal = 12.dp, vertical = if (isCompactLandscapePhone) 0.dp else 8.dp)
+                    .padding(
+                        start = 12.dp,
+                        end = if (isSeason2ImageToWord) 80.dp else 12.dp,
+                        top = if (isCompactLandscapePhone) 0.dp else 8.dp,
+                        bottom = if (isCompactLandscapePhone) 4.dp else 8.dp,
+                    )
                     .then(if (totalDown != 0.dp) Modifier.offset(y = totalDown) else Modifier),
         ) {
             Column(
@@ -160,12 +177,14 @@ fun ImageToWordGame(
                         },
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFF0B2B3D),
-                    textAlign = TextAlign.Center,
+                    textAlign = if (isSeason2ImageToWord) TextAlign.End else TextAlign.Center,
                     modifier =
                         Modifier
                             .then(
                                 if (isInstructionWrapContent) {
-                                    Modifier.wrapContentWidth(Alignment.CenterHorizontally)
+                                    Modifier.wrapContentWidth(
+                                        if (isSeason2ImageToWord) Alignment.End else Alignment.CenterHorizontally,
+                                    )
                                 } else {
                                     Modifier.fillMaxWidth()
                                 },
@@ -189,8 +208,9 @@ fun ImageToWordGame(
                     val innerScale =
                         innerPictureScaleForChoice(correctChoice) *
                             when {
-                                isChapter3Station6ImageToWord -> 1.40f
-                                isChapter6Station6ImageToWord -> 1.40f * 0.70f
+                                isChapter3Station6ImageToWord && !isSeason2ImageToWord -> 1.40f
+                                isChapter6Station6ImageToWord && !isSeason2ImageToWord -> 1.40f * 0.70f
+                                isSeason2ImageToWord -> 1.35f
                                 isCompactLandscapePhone -> 1.50f
                                 else -> 1f
                             }
@@ -221,7 +241,7 @@ fun ImageToWordGame(
                     maxEach = 168.dp,
                 )
             val optionW =
-                if ((chapterId == 3 || chapterId == 6) && stationId == 6) {
+                if (isChapter3Or6Station6ImageToWord) {
                     optionWBase * 0.80f
                 } else {
                     optionWBase
@@ -233,11 +253,7 @@ fun ImageToWordGame(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 val hasLockedCorrectChoice =
-                    (
-                        (chapterId == 3 && stationId == 6) ||
-                            (chapterId == 6 && stationId == 6) ||
-                            isTrainingStation3
-                    ) && successChoiceId != null
+                    (isChapter3Or6Station6ImageToWord || isTrainingStation3) && successChoiceId != null
                 question.choices.forEach { choice ->
                     val scale = remember(choice.id, contentKey) { Animatable(1f) }
                     val flash = remember(choice.id, contentKey) { Animatable(0f) }
@@ -257,7 +273,7 @@ fun ImageToWordGame(
                             sizeMultiplier =
                                 when {
                                     isTrainingStation3 && choice.word == "היפופוטם" -> 1.05f
-                                    (chapterId == 3 || chapterId == 6) && stationId == 6 -> 1.25f * 0.70f
+                                    isChapter3Or6Station6ImageToWord -> 1.25f * 0.70f
                                     else -> 1.25f
                                 },
                             chapterId = chapterId,

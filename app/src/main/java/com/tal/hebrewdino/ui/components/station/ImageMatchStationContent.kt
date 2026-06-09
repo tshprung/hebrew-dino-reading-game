@@ -92,6 +92,7 @@ fun SagaImageMatchGameStationContent(
     chapterId: Int?,
     stationId: Int?,
     onAttempt: (String) -> Boolean,
+    onChoiceWordPreview: ((String) -> Unit)? = null,
     entryPulseScale: Float,
     verticalNudgeDp: Dp,
     modifier: Modifier = Modifier,
@@ -119,6 +120,7 @@ fun SagaImageMatchGameStationContent(
         chapterId = chapterId,
         stationId = stationId,
         onAttempt = onAttempt,
+        onChoiceWordPreview = onChoiceWordPreview,
         modifier =
             modifier
                 .fillMaxSize()

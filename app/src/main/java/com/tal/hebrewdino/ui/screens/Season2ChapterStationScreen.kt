@@ -1,128 +1,371 @@
 package com.tal.hebrewdino.ui.screens
 
+
+
 import androidx.compose.runtime.Composable
+
 import androidx.compose.runtime.collectAsState
+
 import androidx.compose.runtime.getValue
+
 import androidx.compose.runtime.remember
+
 import androidx.compose.runtime.rememberCoroutineScope
+
 import androidx.compose.ui.Modifier
+
 import androidx.compose.ui.platform.LocalContext
+
 import com.tal.hebrewdino.R
+
+import com.tal.hebrewdino.ui.data.DinoCharacter
+
+import com.tal.hebrewdino.ui.data.PlayerAddress
+
 import com.tal.hebrewdino.ui.data.Season2ProgressPrefs
-import com.tal.hebrewdino.ui.domain.Season2Chapter1LetterPoolSpec
+
 import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
+
+import com.tal.hebrewdino.ui.domain.Season2Chapter1RevealOrder
 import com.tal.hebrewdino.ui.domain.Season2Chapter1StationOrder
-import com.tal.hebrewdino.ui.domain.Season2ChapterIds
-import kotlinx.coroutines.CoroutineScope
+
+import com.tal.hebrewdino.ui.domain.Season2ChapterRegistry
+
+import com.tal.hebrewdino.ui.domain.Season2ChapterStationPlans
+
+import com.tal.hebrewdino.ui.domain.Season2Copy
+import com.tal.hebrewdino.ui.domain.Season2IntroFlow
+
+import com.tal.hebrewdino.ui.domain.Season2StationTheme
+
+import com.tal.hebrewdino.ui.domain.Season2StationThemeCopy
+
+import com.tal.hebrewdino.ui.domain.StationQuizPlan
+
 import kotlinx.coroutines.launch
 
+
+
 @Composable
+
 fun Season2ChapterStationScreen(
+
     chapterId: Int,
+
     stationId: Int,
+
+    companionCharacter: DinoCharacter,
+
+    playerAddress: PlayerAddress,
+
     onBack: () -> Unit,
-    onComplete: () -> Unit,
+
+    onComplete: (requestChapterCelebration: Boolean) -> Unit,
+
     modifier: Modifier = Modifier,
+
 ) {
+
+    val chapterDef =
+
+        remember(chapterId) { Season2ChapterRegistry.chapter(chapterId) }
+
+            ?: return
+
+    require(chapterDef.isPlayable) { "Chapter $chapterId is not playable" }
+
+
+
     val context = LocalContext.current
+
     val season2Progress = remember(context) { Season2ProgressPrefs(context.applicationContext) }
+
     val completedStations by season2Progress.completedStationsFlow(chapterId).collectAsState(initial = emptySet())
+
     val alreadyCompleted = stationId in completedStations
+
     val scope = rememberCoroutineScope()
 
-    // For now: only Season 2 Chapter 1 is playable (Tyrannosaurus).
+
+
+    val routing =
+
+        remember(chapterId, stationId, chapterDef) {
+
+            resolveStationRouting(chapterId = chapterId, stationId = stationId, chapterDef = chapterDef)
+
+        }
+
+
+
+    fun markDoneAndExit() {
+
+        scope.launch {
+
+            val wasStationDone = stationId in completedStations
+
+            val chapterWasComplete =
+
+                completedStations.size >= Season2Chapter1RevealOrder.STATION_COUNT
+
+            season2Progress.markStationCompleted(chapterId, stationId)
+
+            val requestCelebration =
+                Season2IntroFlow.shouldRequestChapterCelebration(
+                    stationId = stationId,
+                    wasStationAlreadyDone = wasStationDone,
+                    chapterWasCompleteBefore = chapterWasComplete,
+                )
+
+            if (requestCelebration && !chapterWasComplete) {
+                season2Progress.markChapterCompleted(chapterId)
+            }
+
+            onComplete(requestCelebration)
+
+        }
+
+    }
+
+
+
+    val stageLabel = remember(chapterId, stationId, chapterDef.stationTheme) {
+
+        themedStageLabel(stationId = stationId, theme = chapterDef.stationTheme)
+
+    }
+
+
+
+    when (stationId) {
+
+        Season2Chapter1StationOrder.MEMORY_MATCH -> {
+
+            Season2MemoryMatchStationScreen(
+
+                letters = chapterDef.memoryMatchLetters,
+
+                rounds = 3,
+
+                companionCharacter = companionCharacter,
+
+                playerAddress = playerAddress,
+
+                onBack = onBack,
+
+                onMarkCompleted = { markDoneAndExit() },
+
+                modifier = modifier,
+
+            )
+
+        }
+
+        else -> {
+
+            Season2ScopedLetterStationScreen(
+
+                chapterId = chapterId,
+
+                stationId = stationId,
+
+                gameplayStationId = routing.gameplayStationId,
+
+                gameplayChapterId = routing.gameplayChapterId,
+
+                plan = routing.plan,
+
+                letterPoolSpec = chapterDef.letterPoolSpec,
+
+                stageLabel = stageLabel,
+
+                companionCharacter = companionCharacter,
+
+                playerAddress = playerAddress,
+
+                suppressInGameDinoProgress = alreadyCompleted,
+
+                onBack = onBack,
+
+                onMarkCompleted = { markDoneAndExit() },
+
+                modifier = modifier,
+
+            )
+
+        }
+
+    }
+
+}
+
+
+
+private data class Season2StationRouting(
+
+    val gameplayStationId: Int,
+
+    val gameplayChapterId: Int,
+
+    val plan: StationQuizPlan,
+
+)
+
+
+
+private fun resolveStationRouting(
+
+    chapterId: Int,
+
+    stationId: Int,
+
+    chapterDef: com.tal.hebrewdino.ui.domain.Season2ChapterDefinition,
+
+): Season2StationRouting {
+
+    if (chapterId >= 3) {
+
+        val ctx =
+
+            chapterDef.stationContext
+
+                ?: error("Chapter $chapterId missing station context")
+
+        return Season2StationRouting(
+
+            gameplayStationId = stationId,
+
+            gameplayChapterId = chapterDef.gameplayChapterId,
+
+            plan = Season2ChapterStationPlans.quizPlan(ctx, stationId),
+
+        )
+
+    }
+
+    if (stationId == Season2Chapter1StationOrder.FINALE_STATION) {
+        return Season2StationRouting(
+            gameplayStationId = stationId,
+            gameplayChapterId = chapterDef.gameplayChapterId,
+            plan = Season2Chapter1StationOrder.quizPlan(chapterId, stationId),
+        )
+    }
+
     val gameplayStationId =
         when (stationId) {
-            // Product order for Season 2, but station mechanics should match Season 1 Chapter 1:
-            // - S2 st1 = S1 ch1 st2 (balloons)
             Season2Chapter1StationOrder.POP_BALLOONS -> Chapter1StationOrder.BALLOON_POP
-            // - S2 st2 = S1 ch1 st1 (pick letter)
             Season2Chapter1StationOrder.PICK_LETTER -> Chapter1StationOrder.TAP_LETTER
-            // Station 3 uses the exact visuals of Season 1 Chapter 3 station 1.
             Season2Chapter1StationOrder.PICTURE_STARTS_WITH -> 1
-            // - S2 st5 = S1 ch1 st5 (which word starts with)
             Season2Chapter1StationOrder.WHICH_WORD_STARTS_WITH -> Chapter1StationOrder.PICTURE_PICK_ALL
-            // - S2 st6 = S1 ch1 st6 (match letter to word)
-            Season2Chapter1StationOrder.MATCH_LETTER_TO_WORD -> Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH
             else -> stationId
         }
-    // UX: some stations have chapter-specific layout tuning; map to the closest Season 1 station to reuse
-    // the exact same visuals (per request).
+
     val gameplayChapterId =
         when (stationId) {
-            // Season 1 Chapter 3 station 1 is the "gold standard" layout for this question type.
             Season2Chapter1StationOrder.PICTURE_STARTS_WITH -> 3
             else -> 1
         }
 
-    fun markDoneAndExit() {
-        scope.launch {
-            season2Progress.markStationCompleted(chapterId, stationId)
-            onComplete()
+    val plan =
+        when (gameplayChapterId) {
+            3 -> com.tal.hebrewdino.ui.domain.StationQuizPlans.chapter3(gameplayStationId)
+            else -> com.tal.hebrewdino.ui.domain.StationQuizPlans.chapter1(gameplayStationId)
         }
-    }
 
-    when (stationId) {
-        Season2Chapter1StationOrder.MEMORY_MATCH -> {
-            Season2MemoryMatchStationScreen(
-                // Include extra familiar letters so memory match can run 2–3 rounds without feeling repetitive.
-                letters = listOf("ז", "י", "ס", "ע", "מ", "ל"),
-                rounds = 3,
-                onBack = onBack,
-                onMarkCompleted = { markDoneAndExit() },
-                modifier = modifier,
-            )
-        }
-        else -> {
-            Season2ScopedLetterStationScreen(
-                chapterId = chapterId,
-                gameplayStationId = gameplayStationId,
-                gameplayChapterId = gameplayChapterId,
-                suppressInGameDinoProgress = alreadyCompleted,
-                onBack = onBack,
-                onMarkCompleted = { markDoneAndExit() },
-                modifier = modifier,
-            )
-        }
-    }
+    return Season2StationRouting(
+        gameplayStationId = gameplayStationId,
+        gameplayChapterId = gameplayChapterId,
+        plan = plan,
+    )
+
 }
+
+
+
+private fun themedStageLabel(stationId: Int, theme: Season2StationTheme): String {
+
+    val base = "\u200Fתחנה $stationId"
+
+    val suffix = Season2StationThemeCopy.stageLabelSuffix(theme, stationId)
+
+    return if (suffix != null) base + suffix else base
+
+}
+
+
 
 @Composable
-private fun Season2ScopedLetterStationScreen(
-    chapterId: Int,
-    gameplayStationId: Int,
-    gameplayChapterId: Int,
-    suppressInGameDinoProgress: Boolean,
-    onBack: () -> Unit,
-    onMarkCompleted: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val plan =
-        remember(gameplayChapterId, gameplayStationId) {
-            when (gameplayChapterId) {
-                3 -> com.tal.hebrewdino.ui.domain.StationQuizPlans.chapter3(gameplayStationId)
-                else -> com.tal.hebrewdino.ui.domain.StationQuizPlans.chapter1(gameplayStationId)
-            }
-        }
 
-    // Keep copy minimal; Season 2 UX is driven by the puzzle board + reveal.
-    val title = "\u200Fעונה 2 · פרק $chapterId"
-    val stage = "\u200Fתחנה $chapterId-$gameplayStationId"
+private fun Season2ScopedLetterStationScreen(
+
+    chapterId: Int,
+
+    stationId: Int,
+
+    gameplayStationId: Int,
+
+    gameplayChapterId: Int,
+
+    plan: StationQuizPlan,
+
+    letterPoolSpec: com.tal.hebrewdino.ui.domain.LetterPoolSpec,
+
+    stageLabel: String,
+
+    companionCharacter: DinoCharacter,
+
+    playerAddress: PlayerAddress,
+
+    suppressInGameDinoProgress: Boolean,
+
+    onBack: () -> Unit,
+
+    onMarkCompleted: () -> Unit,
+
+    modifier: Modifier = Modifier,
+
+) {
+
+    val title = "\u200F${Season2Copy.SeasonTitle} · ${Season2Copy.MysteryMapTitle}"
+
+
 
     LetterQuizStationScreen(
+
         stationId = gameplayStationId,
+
         chapterId = gameplayChapterId,
+
         chapterTitle = title,
-        stageLabel = stage,
+
+        stageLabel = stageLabel,
+
         plan = plan,
-        letterPoolSpec = Season2Chapter1LetterPoolSpec,
+
+        letterPoolSpec = letterPoolSpec,
+
         backgroundRes = R.drawable.forest_bg_level_overlay,
+
         onBack = onBack,
+
         onComplete = { _, _, _ ->
+
             onMarkCompleted()
+
         },
+
         suppressInGameDinoProgress = suppressInGameDinoProgress,
+
+        chapter1CompanionCharacter = companionCharacter,
+
+        chapter1PlayerAddress = playerAddress,
+
+        season2Chapter1StationId = stationId,
+
         modifier = modifier,
+
     )
+
 }
+
 

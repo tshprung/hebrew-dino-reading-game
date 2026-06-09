@@ -10,6 +10,7 @@ import com.tal.hebrewdino.ui.data.PlayerAddress
 import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
 import com.tal.hebrewdino.ui.domain.LevelSession
 import com.tal.hebrewdino.ui.domain.Question
+import com.tal.hebrewdino.ui.domain.Season2StationAudio
 import com.tal.hebrewdino.ui.domain.StationTemplateId
 import com.tal.hebrewdino.ui.domain.TrainingV1Config
 import kotlinx.coroutines.delay
@@ -54,7 +55,7 @@ internal suspend fun playIntroPrompt(
             chapterId == 6 ||
             chapterId == TrainingV1Config.CHAPTER_ID
 
-    if ((chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) && chapter1PlayerAddress != null && rawVoice != null) {
+    if (Season2StationAudio.usesChapter1StyleAddressAwareIntro(chapterId) && chapter1PlayerAddress != null && rawVoice != null) {
         if (
             playChapter1AddressAwareIntro(
                 chapterId = chapterId,
@@ -289,34 +290,16 @@ internal suspend fun playIntroPrompt(
     if (stationTemplateId == StationTemplateId.ImageToWord && q is Question.ImageMatchQuestion) {
         sfx.stopAllStreams()
         if (
-            chapterId == 3 ||
-                chapterId == 6 ||
+            Season2StationAudio.isPictureToWordStation(chapterId, stationId) ||
                 chapterId == TrainingV1Config.CHAPTER_ID
         ) {
-            if (rawVoice == null) {
-                android.util.Log.e(
-                    "MissingContent",
-                    "Missing required station prompt audio. chapterId=$chapterId stationId=$stationId context=playIntroPrompt(ImageToWord) stage=rawVoice=null expectedInstructionRawRes=${R.raw.instruction_image_to_word}",
-                )
-                voice.playRequiredBlocking(
-                    assetPath = "",
-                    context = "playIntroPrompt(ImageToWord,rawVoice=null)",
-                    chapterId = chapterId,
-                    stationId = stationId,
-                )
-                return
-            }
-            rawVoice.playRawBlocking(R.raw.instruction_image_to_word)
-            val wordResId = AudioClips.wordRawResIdByCatalogId(q.correctChoiceId)
-            if (wordResId == null) {
-                android.util.Log.e(
-                    "MissingContent",
-                    "Missing required station prompt audio. chapterId=$chapterId stationId=$stationId context=playIntroPrompt(ImageToWordWord) stage=missing raw word mapping catalogId='${q.correctChoiceId}'",
-                )
-                rawVoice.playRawBlocking(0)
-                return
-            }
-            rawVoice.playRawBlocking(wordResId)
+            Season2StationAudio.speakPictureToWordRoundPrompt(
+                chapterId = chapterId,
+                stationId = stationId,
+                catalogId = q.correctChoiceId,
+                rawVoice = rawVoice,
+                voice = voice,
+            )
             return
         }
         voice.playRequiredBlocking(
@@ -348,6 +331,9 @@ internal suspend fun playIntroPrompt(
                 is Question.PictureStartsWithQuestion -> q.correctLetter
                 is Question.ImageMatchQuestion -> q.targetLetter
                 is Question.FinaleSlotQuestion -> null
+                is Question.MissingFirstLetterQuestion -> q.correctLetter
+                is Question.WordPartsQuestion -> q.word.first().toString()
+                is Question.RhymingQuestion -> q.targetWord.first().toString()
             }
         if (target != null) {
             val letterResId = AudioClips.letterNameRawResId(target)
@@ -413,7 +399,11 @@ internal suspend fun playIntroPrompt(
         return
     }
 
-    if ((chapterId == 3 || chapterId == 6) && stationId == 1 && q is Question.PictureStartsWithQuestion) {
+    if (
+        (chapterId == 3 || chapterId == 6 || Season2StationAudio.isSeason2WarmupChapter(chapterId)) &&
+        stationId == 1 &&
+        q is Question.PictureStartsWithQuestion
+    ) {
         sfx.stopAllStreams()
         if (rawVoice == null) {
             android.util.Log.e(
@@ -464,7 +454,11 @@ internal suspend fun playIntroPrompt(
         return
     }
 
-    if ((chapterId == 3 || chapterId == 6) && stationId == 2 && q is Question.ImageMatchQuestion) {
+    if (
+        (chapterId == 3 || chapterId == 6 || Season2StationAudio.isSeason2WarmupChapter(chapterId)) &&
+        stationId == 2 &&
+        q is Question.ImageMatchQuestion
+    ) {
         sfx.stopAllStreams()
         if (rawVoice == null) {
             android.util.Log.e(
@@ -621,7 +615,11 @@ internal suspend fun playIntroPrompt(
         return
     }
 
-    if (isSagaEpisode && stationId == Chapter1StationOrder.PICTURE_PICK_ONE && q is Question.PictureStartsWithQuestion) {
+    if (
+        Season2StationAudio.usesPictureStartsWithAddressAwareIntro(chapterId, isSagaEpisode) &&
+        stationId == Chapter1StationOrder.PICTURE_PICK_ONE &&
+        q is Question.PictureStartsWithQuestion
+    ) {
         if (rawVoice == null) {
             android.util.Log.e(
                 "MissingContent",

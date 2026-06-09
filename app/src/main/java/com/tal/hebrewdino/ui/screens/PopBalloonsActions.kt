@@ -12,6 +12,8 @@ import com.tal.hebrewdino.ui.data.PlayerAddress
 import com.tal.hebrewdino.ui.domain.AnswerResult
 import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
 import com.tal.hebrewdino.ui.domain.LevelSession
+import com.tal.hebrewdino.ui.audio.InStationPraiseAudio
+import com.tal.hebrewdino.ui.domain.Season2StationAudio
 import com.tal.hebrewdino.ui.domain.TrainingV1Config
 import com.tal.hebrewdino.ui.game.ChildGameAudioHooks
 import kotlinx.coroutines.CoroutineScope
@@ -39,6 +41,7 @@ internal object PopBalloonsActions {
         nextStation2CorrectPopVariant: () -> Int,
         station2PopTailPaddingMs: Long,
         station2PopFallbackDurationMs: Long,
+        skipProgressPraise: Boolean = false,
     ) {
         if (!audioEnabled) return
         cancelFeedbackVoice()
@@ -175,8 +178,21 @@ internal object PopBalloonsActions {
                                     sfx.playReturningStreamId(letterClip, volume = 1f)
                                     val d = sfx.durationMs(letterClip) ?: 0L
                                     if (d > 0) delay(d)
+                                } else if (Season2StationAudio.isSeason2GameplayChapter(chapterId)) {
+                                    val resId = AudioClips.letterNameRawResId(letter)
+                                    if (resId != null && rawVoice != null) {
+                                        rawVoice.playRawBlocking(resId)
+                                    }
                                 }
                             }
+                        }
+                        if (!skipProgressPraise) {
+                            maybePlaySeason2BalloonProgressPraise(
+                                chapterId = chapterId,
+                                rawVoice = rawVoice,
+                                finalCorrectBalloon = finalCorrectBalloon,
+                                letterWasSpoken = speakLetter,
+                            )
                         }
                     } else {
                         val wrongPops =
@@ -507,6 +523,7 @@ internal object PopBalloonsActions {
         scope: CoroutineScope,
         audioRuntime: GameAudioRuntimeState,
         advanceAfterRound: suspend (isLast: Boolean) -> Unit,
+        skipStagingVoiceAwait: Boolean = false,
     ) {
         val ch1St2 = sagaUsesPopBalloonsAudioStaging
         if (ch1St2 ||
@@ -531,7 +548,7 @@ internal object PopBalloonsActions {
                 AnswerResult.Correct ->
                     scope.launch {
                         gameViewModel.inputLocked = true
-                        if (ch1St2) {
+                        if (ch1St2 && !skipStagingVoiceAwait) {
                             GameAudioActions.awaitFeedbackVoice(audioRuntime, 4000L)
                             cancelFeedbackVoice()
                         }
@@ -555,6 +572,20 @@ internal object PopBalloonsActions {
                 else -> {}
             }
         }
+    }
+
+    private suspend fun maybePlaySeason2BalloonProgressPraise(
+        chapterId: Int,
+        rawVoice: RawVoicePlayer?,
+        finalCorrectBalloon: Boolean,
+        letterWasSpoken: Boolean,
+    ) {
+        if (!Season2StationAudio.isSeason2GameplayChapter(chapterId) || rawVoice == null) return
+        if (!letterWasSpoken && !finalCorrectBalloon) return
+        val playPraise = finalCorrectBalloon || Random.nextFloat() < 0.45f
+        if (!playPraise) return
+        delay(90)
+        rawVoice.playRawBlocking(InStationPraiseAudio.pick())
     }
 }
 

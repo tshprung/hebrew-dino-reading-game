@@ -31,6 +31,8 @@ enum class StationHintMode {
     None,
     TemporaryTargetLetter,
     TemporaryStartingLetter,
+    /** Briefly reveal the full target word (Season 2 Word Parts רמז). */
+    TemporaryFullWord,
     ExistingStationSpecific,
 }
 

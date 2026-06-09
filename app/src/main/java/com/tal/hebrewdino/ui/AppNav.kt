@@ -17,6 +17,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.rememberNavController
 import com.tal.hebrewdino.ui.audio.BackgroundMusicPlayer
+import com.tal.hebrewdino.ui.audio.ProvideBackgroundMusic
 import com.tal.hebrewdino.ui.audio.SoundPoolPlayer
 import com.tal.hebrewdino.ui.audio.VoicePlayer
 import com.tal.hebrewdino.ui.data.AudioPrefs
@@ -34,15 +35,30 @@ private val BackgroundMusicEligibleRoutes: Set<String> =
         NavRoutes.Ch4Journey,
         NavRoutes.Ch5Journey,
         NavRoutes.Ch6Journey,
+        NavRoutes.Season2ChapterSelect,
     )
+
+private fun isSeason2Route(route: String?): Boolean {
+    if (route == null) return false
+    return route == NavRoutes.Season2ChapterSelect ||
+        route.startsWith("season2_puzzle_map_prototype/") ||
+        route.startsWith("season2_chapter/")
+}
+
+private fun isBackgroundMusicEligibleRoute(route: String?): Boolean {
+    if (route == null) return false
+    if (route in BackgroundMusicEligibleRoutes) return true
+    return route.startsWith("season2_puzzle_map_prototype/")
+}
 
 private const val BgmMenuAssetPath: String = "audio/bgm_menu.mp3"
 private const val BgmSeason1AssetPath: String = "audio/bgm_season1.mp3"
 private const val BgmSeason2AssetPath: String = "audio/bgm_season2.mp3"
 
 private fun bgmAssetPathForRoute(route: String?): String =
-    when (route) {
-        NavRoutes.Opening, NavRoutes.Seasons -> BgmMenuAssetPath
+    when {
+        route == NavRoutes.Opening || route == NavRoutes.Seasons -> BgmMenuAssetPath
+        isSeason2Route(route) -> BgmSeason2AssetPath
         else -> BgmSeason1AssetPath
     }
 
@@ -65,7 +81,7 @@ fun AppNav() {
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
 
-    val bgMusicEligible = currentRoute != null && currentRoute in BackgroundMusicEligibleRoutes
+    val bgMusicEligible = isBackgroundMusicEligibleRoute(currentRoute)
     val latestRoute by rememberUpdatedState(currentRoute)
     val latestBackgroundMusicEnabled by rememberUpdatedState(backgroundMusicEnabled)
 
@@ -89,7 +105,7 @@ fun AppNav() {
                     if (!latestBackgroundMusicEnabled) return@LifecycleEventObserver
                     val route = latestRoute
                     bgMusic.playLoopFromAssets(assetPath = bgmAssetPathForRoute(route))
-                    val eligible = route != null && route in BackgroundMusicEligibleRoutes
+                    val eligible = isBackgroundMusicEligibleRoute(route)
                     bgMusic.setMuted(!eligible)
                 }
             }
@@ -127,9 +143,11 @@ fun AppNav() {
         progress.repairChapter6ProgressIfNeeded()
     }
 
-    NavHost(navController = navController, startDestination = NavRoutes.Opening) {
-        systemAndTrainingGraph(host)
-        chapterOneToThreeGraph(host)
-        chapterFourToSixGraph(host)
+    ProvideBackgroundMusic(player = bgMusic) {
+        NavHost(navController = navController, startDestination = NavRoutes.Opening) {
+            systemAndTrainingGraph(host)
+            chapterOneToThreeGraph(host)
+            chapterFourToSixGraph(host)
+        }
     }
 }

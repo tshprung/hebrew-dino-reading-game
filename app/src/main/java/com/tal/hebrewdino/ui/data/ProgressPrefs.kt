@@ -788,6 +788,7 @@ class ProgressPrefs internal constructor(private val dataStore: DataStore<Prefer
             prefs.remove(season2CompletedChaptersKey)
             for (ch in 1..6) {
                 prefs.remove(season2CompletedStationsKeyForChapter(ch))
+                prefs.remove(stringPreferencesKey("season2_ch${ch}_intro_dismissed"))
             }
         }
     }

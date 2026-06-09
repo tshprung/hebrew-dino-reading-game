@@ -20,6 +20,12 @@ class Season2ProgressPrefs(private val context: Context) {
     private fun completedStationsKeyForChapter(chapterId: Int): Preferences.Key<String> =
         stringPreferencesKey("season2_ch${chapterId}_completed_stations")
 
+    private fun introDismissedKeyForChapter(chapterId: Int): Preferences.Key<String> =
+        stringPreferencesKey("season2_ch${chapterId}_intro_dismissed")
+
+    private val seasonIntroDismissedKey: Preferences.Key<String> =
+        stringPreferencesKey("season2_season_intro_dismissed")
+
     val completedChaptersFlow: Flow<Set<Int>> =
         context.dataStore.data.map { prefs ->
             val raw = prefs[completedChaptersKey].orEmpty()
@@ -57,6 +63,30 @@ class Season2ProgressPrefs(private val context: Context) {
         }
     }
 
+    val seasonIntroDismissedFlow: Flow<Boolean> =
+        context.dataStore.data.map { prefs ->
+            prefs[seasonIntroDismissedKey] == "1"
+        }
+
+    suspend fun markSeasonIntroDismissed() {
+        context.dataStore.edit { prefs ->
+            prefs[seasonIntroDismissedKey] = "1"
+        }
+    }
+
+    fun introDismissedFlow(chapterId: Int): Flow<Boolean> =
+        context.dataStore.data.map { prefs ->
+            if (chapterId !in 1..6) return@map false
+            prefs[introDismissedKeyForChapter(chapterId)] == "1"
+        }
+
+    suspend fun markIntroDismissed(chapterId: Int) {
+        if (chapterId !in 1..6) return
+        context.dataStore.edit { prefs ->
+            prefs[introDismissedKeyForChapter(chapterId)] = "1"
+        }
+    }
+
     suspend fun markChapterCompleted(chapterId: Int) {
         if (chapterId !in 1..6) return
         context.dataStore.edit { prefs ->
@@ -74,8 +104,10 @@ class Season2ProgressPrefs(private val context: Context) {
     suspend fun resetSeason2() {
         context.dataStore.edit { prefs ->
             prefs[completedChaptersKey] = ""
+            prefs.remove(seasonIntroDismissedKey)
             for (ch in 1..6) {
                 prefs[completedStationsKeyForChapter(ch)] = ""
+                prefs.remove(introDismissedKeyForChapter(ch))
             }
         }
     }

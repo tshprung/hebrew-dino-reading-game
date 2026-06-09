@@ -108,8 +108,25 @@ object Chapter1AddressAwareAudio {
         stationId: Int,
         stationTemplateId: StationTemplateId,
         q: Question,
-    ): InstructionKind? =
-        when (stationId.coerceIn(1, Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH)) {
+    ): InstructionKind? {
+        // Template-first: Season 2 arc uses station ids 1=balloons, 2=pick-letter (not Ch.1 numbering).
+        when (stationTemplateId) {
+            StationTemplateId.PopBalloons -> return InstructionKind.PopBalloons
+            StationTemplateId.PickLetter -> return InstructionKind.PickLetter
+            StationTemplateId.FindLetterGrid -> return InstructionKind.FindLetter
+            StationTemplateId.PictureStartsWith ->
+                if (q is Question.PictureStartsWithQuestion) {
+                    return InstructionKind.PictureStartsWith
+                }
+            StationTemplateId.ImageMatch ->
+                if (q is Question.ImageMatchQuestion) {
+                    return InstructionKind.WhichWordStartsWith
+                }
+            StationTemplateId.MatchLetterToWord -> return InstructionKind.MatchLetterToWord
+            StationTemplateId.ImageToWord -> return InstructionKind.FindWordStartsWith
+            else -> Unit
+        }
+        return when (stationId.coerceIn(1, Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH)) {
             Chapter1StationOrder.TAP_LETTER -> InstructionKind.PickLetter
             Chapter1StationOrder.BALLOON_POP -> InstructionKind.PopBalloons
             Chapter1StationOrder.REVEAL_THEN_CHOOSE -> InstructionKind.FindLetter
@@ -133,4 +150,5 @@ object Chapter1AddressAwareAudio {
                 }
             else -> null
         }
+    }
 }

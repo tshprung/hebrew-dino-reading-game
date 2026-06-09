@@ -8,6 +8,10 @@ import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
 import com.tal.hebrewdino.ui.domain.Episode4Help
 import com.tal.hebrewdino.ui.domain.LevelSession
 import com.tal.hebrewdino.ui.domain.Question
+import com.tal.hebrewdino.ui.domain.Season2AdvancedStationMode
+import com.tal.hebrewdino.ui.domain.Season2StationAudio
+import com.tal.hebrewdino.ui.domain.Season2WordPartsPresentationMode
+import com.tal.hebrewdino.ui.domain.StationHintMode
 import com.tal.hebrewdino.ui.domain.StationReplayMode
 import com.tal.hebrewdino.ui.domain.StationUiSpec
 import com.tal.hebrewdino.ui.domain.StationQuizPlan
@@ -100,12 +104,32 @@ internal object SideHelpActions {
                         rawVoice.playRawBlocking(resId)
                     }
                     StationReplayMode.TargetWordOnly -> {
-                        if (q is Question.PictureStartsWithQuestion) {
-                            val resId = AudioClips.wordRawResIdByCatalogId(q.catalogEntryId)
+                        if (q is Question.WordPartsQuestion &&
+                            q.presentationMode == Season2WordPartsPresentationMode.HiddenWordPartsChallenge
+                        ) {
+                            val path = Season2StationAudio.instructionAssetPath(Season2AdvancedStationMode.WordParts)
+                            if (voice.hasAsset(path)) {
+                                voice.playFirstAvailableBlocking(path)
+                            } else {
+                                android.util.Log.e(
+                                    "MissingContent",
+                                    "Missing required help replay instruction audio. chapterId=$chapterId stationId=$stationId context=SideHelpActions.startReplay(HiddenWordParts) path='$path'",
+                                )
+                            }
+                        }
+                        val catalogId =
+                            when (q) {
+                                is Question.PictureStartsWithQuestion -> q.catalogEntryId
+                                is Question.WordPartsQuestion -> q.catalogEntryId
+                                is Question.ImageMatchQuestion -> q.correctChoiceId
+                                else -> null
+                            }
+                        if (catalogId != null) {
+                            val resId = AudioClips.wordRawResIdByCatalogId(catalogId)
                             if (resId == null) {
                                 android.util.Log.e(
                                     "MissingContent",
-                                    "Missing required help replay word audio. chapterId=$chapterId stationId=$stationId context=SideHelpActions.startReplay(TargetWordOnly) stage=missing raw word mapping catalogId='${q.catalogEntryId}'",
+                                    "Missing required help replay word audio. chapterId=$chapterId stationId=$stationId context=SideHelpActions.startReplay(TargetWordOnly) stage=missing raw word mapping catalogId='$catalogId'",
                                 )
                                 rawVoice.playRawBlocking(0)
                                 return@replay
@@ -163,8 +187,22 @@ internal object SideHelpActions {
         if (!isPlayPhase) return
         if (episode4HelpEnabled) {
             val q = session.currentQuestion ?: return
-            val letter = Episode4Help.targetLetterForHelpHint(q)
             if (gameViewModel.episode4HelpLocksChoices) return
+            if (q is Question.WordPartsQuestion && stationUiSpec.hintMode == StationHintMode.TemporaryFullWord) {
+                gameViewModel.episode4HelpLocksChoices = true
+                gameViewModel.wordPartsHintRevealWord = q.word
+                val duration = stationUiSpec.hintDurationMs ?: Episode4Help.HINT_REVEAL_FALLBACK_MS
+                gameViewModel.episode4HelpClearJob?.cancel()
+                gameViewModel.episode4HelpClearJob =
+                    scope.launch {
+                        delay(duration)
+                        gameViewModel.wordPartsHintRevealWord = null
+                        gameViewModel.episode4HelpLocksChoices = false
+                        gameViewModel.episode4HelpClearJob = null
+                    }
+                return
+            }
+            val letter = Episode4Help.targetLetterForHelpHint(q)
             gameViewModel.episode4HelpLocksChoices = true
             gameViewModel.episode4HelpActiveHintLetter = letter
             if (stationId == Chapter1StationOrder.BALLOON_POP) {

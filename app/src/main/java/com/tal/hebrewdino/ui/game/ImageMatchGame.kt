@@ -47,6 +47,7 @@ import com.tal.hebrewdino.ui.components.learning.LessonChoiceCardCaptionSpacerHe
 import com.tal.hebrewdino.ui.domain.LessonChoice
 import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
 import com.tal.hebrewdino.ui.domain.Chapter1Station4To6LessonChoiceCardSpec
+import com.tal.hebrewdino.ui.domain.Season2StationUx
 import com.tal.hebrewdino.ui.domain.Question
 import com.tal.hebrewdino.ui.components.learning.LessonChoiceCardPictureAspect
 import com.tal.hebrewdino.ui.components.learning.captionFontSizeForWordCard
@@ -66,6 +67,8 @@ fun ImageMatchGame(
     hintCorrectChoiceId: String? = null,
     hintPulseEpoch: Int = 0,
     onAttempt: (String) -> Boolean,
+    /** Optional: play word audio when a choice card is tapped (Season 2 which-word finale). */
+    onChoiceWordPreview: ((String) -> Unit)? = null,
     /** When false, cards show only the picture (for pre-readers). */
     showWordCaptions: Boolean = true,
     captionSizeMultiplier: Float = 1f,
@@ -98,10 +101,18 @@ fun ImageMatchGame(
     var wrongFlashChoiceId by remember(contentKey) { mutableStateOf<String?>(null) }
     var wrongFlashEpoch by remember(contentKey) { mutableStateOf(0) }
     val isCompactLandscapePhone = ScreenFit.isCompactLandscapePhone()
+    val isSeason2WhichWordFinale =
+        chapterId != null &&
+            stationId != null &&
+            Season2StationUx.isWhichWordStartsWithStation(chapterId, stationId)
     val isCompactLandscapePhoneSixStationArcStation5 =
         isCompactLandscapePhone &&
-            (chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) &&
-            stationId == Chapter1StationOrder.PICTURE_PICK_ALL
+            (
+                (
+                    (chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) &&
+                        stationId == Chapter1StationOrder.PICTURE_PICK_ALL
+                ) || isSeason2WhichWordFinale
+            )
     isCompactLandscapePhone &&
         chapterId == 1 &&
         stationId == Chapter1StationOrder.PICTURE_PICK_ALL
@@ -259,6 +270,7 @@ fun ImageMatchGame(
                                     captionFontSize = captionSp,
                                     innerPictureScale = innerScale,
                                     onClick = {
+                                        onChoiceWordPreview?.invoke(choice.id)
                                         val ok = onAttempt(choice.id)
                                         if (ok) {
                                             successChoiceId = choice.id
@@ -476,6 +488,7 @@ fun ImageMatchGame(
                                 captionFontSize = captionSp,
                                 innerPictureScale = innerScale,
                                 onClick = {
+                                    onChoiceWordPreview?.invoke(choice.id)
                                     val ok = onAttempt(choice.id)
                                     if (ok) {
                                         successChoiceId = choice.id
