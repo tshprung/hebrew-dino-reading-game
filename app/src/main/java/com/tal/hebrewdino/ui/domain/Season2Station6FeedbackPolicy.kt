@@ -10,16 +10,29 @@ object Season2Station6FeedbackPolicy {
     fun isSeason2FinaleStation(season2UxStationId: Int?): Boolean =
         season2UxStationId == Season2Chapter1StationOrder.MATCH_LETTER_TO_WORD
 
+    fun shouldUseLightWordChoiceFeedback(
+        season2UxStationId: Int?,
+        isSeason2Quiz: Boolean,
+        season2AdvancedMode: Season2AdvancedStationMode?,
+    ): Boolean =
+        isSeason2Quiz &&
+            (
+                isSeason2FinaleStation(season2UxStationId) ||
+                    season2AdvancedMode == Season2AdvancedStationMode.PictureToWord
+            )
+
     fun shouldSkipCoachBubble(
         season2UxStationId: Int?,
         isSeason2Quiz: Boolean,
-    ): Boolean = isSeason2Quiz && isSeason2FinaleStation(season2UxStationId)
+        season2AdvancedMode: Season2AdvancedStationMode? = null,
+    ): Boolean = shouldUseLightWordChoiceFeedback(season2UxStationId, isSeason2Quiz, season2AdvancedMode)
 
     fun shouldReplayInstructionAfterWrong(
         consecutiveWrongInRound: Int,
         season2UxStationId: Int?,
         isSeason2Quiz: Boolean,
+        season2AdvancedMode: Season2AdvancedStationMode? = null,
     ): Boolean =
-        shouldSkipCoachBubble(season2UxStationId, isSeason2Quiz) &&
+        shouldUseLightWordChoiceFeedback(season2UxStationId, isSeason2Quiz, season2AdvancedMode) &&
             consecutiveWrongInRound >= CONSECUTIVE_WRONG_INSTRUCTION_THRESHOLD
 }

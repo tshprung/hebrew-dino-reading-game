@@ -1,7 +1,7 @@
 package com.tal.hebrewdino.ui.domain
 
 import com.tal.hebrewdino.R
-import com.tal.hebrewdino.ui.audio.AudioClips
+import com.tal.hebrewdino.ui.audio.Season2RawAudio
 import com.tal.hebrewdino.ui.companion.CompanionAssets
 import com.tal.hebrewdino.ui.data.DinoCharacter
 import org.junit.Assert.assertEquals
@@ -31,9 +31,8 @@ class Season2WordPartsQaCorrectionBatchTest {
         val plan = Season2Chapter1StationOrder.quizPlan(chapterIndex = 2, stationId = 6)
         assertEquals(Season2WordPartsPresentationMode.VisibleWordParts, plan.season2WordPartsPresentationMode)
         assertEquals(
-            "\u200Fאיך מחלקים את המילה?",
+            "\u200Fמצאו את חלקי המילה",
             Season2StationThemeCopy.wordPartsInstruction(
-                Season2StationTheme.Footprints,
                 Season2WordPartsPresentationMode.VisibleWordParts,
             ),
         )
@@ -44,7 +43,8 @@ class Season2WordPartsQaCorrectionBatchTest {
         val ctx = Season2ChapterStationPlans.contextFor(3)!!
         val plan = Season2ChapterStationPlans.quizPlan(ctx, 5)
         assertEquals(Season2WordPartsPresentationMode.GuidedWordParts, plan.season2WordPartsPresentationMode)
-        val q = generateWordParts(Season2ChapterContent.ch3Words, Season2WordPartsPresentationMode.GuidedWordParts)
+        val ch3Scope = Season2WordPartsCatalog.wordCatalogIdsForChapter3WordParts(Season2ChapterContent.ch3Words)
+        val q = generateWordParts(ch3Scope, Season2WordPartsPresentationMode.GuidedWordParts)
         assertEquals(3, q.splitOptions.size)
         assertTrue(q.splitOptions.any { it.firstPart == q.firstPart && it.secondPart == q.correctPart })
     }
@@ -54,7 +54,8 @@ class Season2WordPartsQaCorrectionBatchTest {
         val ctx = Season2ChapterStationPlans.contextFor(3)!!
         val plan = Season2ChapterStationPlans.quizPlan(ctx, 6)
         assertEquals(Season2WordPartsPresentationMode.HiddenWordPartsChallenge, plan.season2WordPartsPresentationMode)
-        val q = generateWordParts(Season2ChapterContent.ch3Words, Season2WordPartsPresentationMode.HiddenWordPartsChallenge)
+        val ch3Scope = Season2WordPartsCatalog.wordCatalogIdsForChapter3WordParts(Season2ChapterContent.ch3Words)
+        val q = generateWordParts(ch3Scope, Season2WordPartsPresentationMode.HiddenWordPartsChallenge)
         assertEquals(Season2WordPartsPresentationMode.HiddenWordPartsChallenge, q.presentationMode)
         assertEquals(3, q.splitOptions.size)
     }
@@ -108,15 +109,15 @@ class Season2WordPartsQaCorrectionBatchTest {
     @Test
     fun wordPartsInstructionAssets_useModeSpecificPaths() {
         assertEquals(
-            AudioClips.Season2WordPartsChooseSplitInstructions,
-            Season2StationAudio.instructionAssetPath(
+            Season2RawAudio.WordPartsChooseSplitInstructions,
+            Season2StationAudio.instructionRawResId(
                 Season2AdvancedStationMode.WordParts,
                 Season2WordPartsPresentationMode.GuidedWordParts,
             ),
         )
         assertEquals(
-            AudioClips.Season2WordPartsHiddenSplitInstructions,
-            Season2StationAudio.instructionAssetPath(
+            Season2RawAudio.WordPartsHiddenSplitInstructions,
+            Season2StationAudio.instructionRawResId(
                 Season2AdvancedStationMode.WordParts,
                 Season2WordPartsPresentationMode.HiddenWordPartsChallenge,
             ),

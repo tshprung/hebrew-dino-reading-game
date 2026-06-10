@@ -60,10 +60,6 @@ class VoicePlayer(context: Context) {
         }
     }
 
-    suspend fun warmUp(vararg assetPaths: String) {
-        for (p in assetPaths) warmUp(p)
-    }
-
     /** True if [assetPath] exists under `assets/` (e.g. `audio/vo_choose_letter.wav`). */
     fun hasAsset(assetPath: String): Boolean = exists(assetPath)
 
@@ -158,102 +154,6 @@ class VoicePlayer(context: Context) {
         playBlocking(assetPath)
     }
 
-    suspend fun playSequenceRequiredBlocking(
-        assetPaths: List<String>,
-        context: String,
-        chapterId: Int? = null,
-        stationId: Int? = null,
-    ) {
-        val cleaned = assetPaths.filter { it.isNotBlank() }
-        if (cleaned.isEmpty()) {
-            reportRequiredFailure(
-                assetPath = "",
-                stage = "empty sequence",
-                context = context,
-                chapterId = chapterId,
-                stationId = stationId,
-                cause = null,
-            )
-            return
-        }
-        val missing = cleaned.filterNot { hasAsset(it) }
-        if (missing.isNotEmpty()) {
-            reportRequiredFailure(
-                assetPath = missing.first(),
-                stage = "missing required sequence assets: $missing",
-                context = context,
-                chapterId = chapterId,
-                stationId = stationId,
-                cause = null,
-            )
-            return
-        }
-        playSequenceBlocking(cleaned)
-    }
-
-    suspend fun playFirstAvailableRequiredBlocking(
-        assetPaths: Array<String>,
-        context: String,
-        chapterId: Int? = null,
-        stationId: Int? = null,
-    ): String? {
-        val cleaned = assetPaths.filter { it.isNotBlank() }
-        if (cleaned.isEmpty()) {
-            reportRequiredFailure(
-                assetPath = "",
-                stage = "empty candidate list",
-                context = context,
-                chapterId = chapterId,
-                stationId = stationId,
-                cause = null,
-            )
-            return null
-        }
-        val playable = cleaned.firstOrNull { hasAsset(it) }
-        if (playable == null) {
-            reportRequiredFailure(
-                assetPath = cleaned.first(),
-                stage = "no candidate exists: $cleaned",
-                context = context,
-                chapterId = chapterId,
-                stationId = stationId,
-                cause = null,
-            )
-            return null
-        }
-        playBlocking(playable)
-        return playable
-    }
-
-    suspend fun playFirstAvailableBlocking(vararg assetPaths: String) {
-        for (p in assetPaths) {
-            if (p.isBlank()) continue
-            val ok = exists(p)
-            if (ok) {
-                playBlocking(p)
-                return
-            }
-        }
-    }
-
-    suspend fun playFirstAvailableBlockingRandomized(
-        assetPaths: Array<String>,
-        random: Random = Random.Default,
-    ) {
-        val n = assetPaths.size
-        if (n == 0) return
-        val start = random.nextInt(n)
-        for (k in 0 until n) {
-            val p = assetPaths[(start + k) % n]
-            if (p.isBlank()) continue
-            val ok = exists(p)
-            if (ok) {
-                playBlocking(p)
-                return
-            }
-        }
-    }
-
     suspend fun playFirstAvailableBlockingRandomizedNoRepeat(
         assetPaths: Array<String>,
         avoidAssetPath: String?,
@@ -284,47 +184,6 @@ class VoicePlayer(context: Context) {
             }
         }
         return null
-    }
-
-    suspend fun playSequenceBlocking(assetPaths: List<String>) {
-        // Keep the mutex for the whole sequence so nothing else can interleave.
-        mutex.withLock {
-            for (p in assetPaths) {
-                if (p.isBlank()) continue
-                val ok = exists(p)
-                if (!ok) continue
-
-                stopLocked()
-                player = MediaPlayer()
-
-                val success = withContext(Dispatchers.IO) { prepareLocked(p) }
-                if (!success) {
-                    stopLocked()
-                    continue
-                }
-
-                val mp = player ?: continue
-                suspendCancellableCoroutine { cont ->
-                    activeWaiter = cont
-                    mp.setOnCompletionListener {
-                        if (activeWaiter === cont) activeWaiter = null
-                        if (cont.isActive) cont.resume(Unit)
-                    }
-                    mp.setOnErrorListener { _, _, _ ->
-                        if (activeWaiter === cont) activeWaiter = null
-                        if (cont.isActive) cont.resume(Unit)
-                        true
-                    }
-                    cont.invokeOnCancellation {
-                        if (activeWaiter === cont) activeWaiter = null
-                        stopLocked()
-                    }
-                    mp.start()
-                }
-
-                stopLocked()
-            }
-        }
     }
 
     /**

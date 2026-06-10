@@ -15,7 +15,6 @@ object SampleChapter1AudioRouter : GameAudioRouter {
             is AudioEvent.WrongFeedback -> planWrongFeedback(event)
             is AudioEvent.CorrectPraise -> planCorrectPraise(event)
             is AudioEvent.StationReward -> planStationReward(event)
-            else -> AudioPlan.Empty
         }
     }
 

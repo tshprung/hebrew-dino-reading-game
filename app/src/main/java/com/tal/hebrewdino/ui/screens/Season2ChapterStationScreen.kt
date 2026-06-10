@@ -60,7 +60,7 @@ fun Season2ChapterStationScreen(
 
     onBack: () -> Unit,
 
-    onComplete: (requestChapterCelebration: Boolean) -> Unit,
+    onComplete: (requestChapterCelebration: Boolean, mapReturnCaptionCompletedCount: Int?) -> Unit,
 
     modifier: Modifier = Modifier,
 
@@ -121,7 +121,13 @@ fun Season2ChapterStationScreen(
                 season2Progress.markChapterCompleted(chapterId)
             }
 
-            onComplete(requestCelebration)
+            val mapCaptionCount =
+                if (!wasStationDone) {
+                    (completedStations + stationId).size
+                } else {
+                    null
+                }
+            onComplete(requestCelebration, mapCaptionCount)
 
         }
 

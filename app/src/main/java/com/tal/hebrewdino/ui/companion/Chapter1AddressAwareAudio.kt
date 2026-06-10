@@ -97,13 +97,6 @@ object Chapter1AddressAwareAudio {
             PlayerAddress.Girl -> R.raw.feedback_try_again_girl
         }
 
-    @RawRes
-    fun greatRawRes(address: PlayerAddress): Int =
-        when (address) {
-            PlayerAddress.Boy -> R.raw.feedback_great_boy
-            PlayerAddress.Girl -> R.raw.feedback_great_girl
-        }
-
     fun instructionKindFor(
         stationId: Int,
         stationTemplateId: StationTemplateId,

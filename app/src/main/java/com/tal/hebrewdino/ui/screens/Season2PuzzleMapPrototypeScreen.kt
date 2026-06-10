@@ -31,6 +31,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -118,6 +119,9 @@ fun Season2PuzzleMapPrototypeScreen(
     onChapterIntroConsumed: () -> Unit = {},
     requestChapterCelebration: Boolean = false,
     onChapterCelebrationConsumed: () -> Unit = {},
+    mapReturnCaptionEvent: Long = 0L,
+    mapReturnCaptionCount: Int = 0,
+    onMapReturnCaptionConsumed: () -> Unit = {},
     onRewardContinue: () -> Unit = onBack,
     modifier: Modifier = Modifier,
 ) {
@@ -167,8 +171,27 @@ fun Season2PuzzleMapPrototypeScreen(
     }
     var showCompletionCelebration by remember(chapterId) { mutableStateOf(false) }
     var returnCaption by remember { mutableStateOf<String?>(null) }
+    var returnCaptionVoiceCount by remember { mutableIntStateOf(0) }
+    var returnCaptionVoiceResId by remember { mutableIntStateOf(0) }
+    var returnCaptionEpoch by remember { mutableIntStateOf(0) }
+    var lastMapPraiseRawResId by remember(chapterId) { mutableIntStateOf(0) }
     var previousStations by remember(chapterId) { mutableStateOf<Set<Int>?>(null) }
     var progressHydrated by remember(chapterId) { mutableStateOf(false) }
+
+    fun showReturnCaptionForCompletedCount(completedCount: Int) {
+        Season2Copy.returnCaptionAfterStation(completedCount)?.let { caption ->
+            val praiseRes =
+                com.tal.hebrewdino.ui.audio.Season2CompanionFeedbackAudio.pickMapReturnPraise(
+                    companion = companionCharacter,
+                    avoidRawResId = lastMapPraiseRawResId,
+                )
+            lastMapPraiseRawResId = praiseRes
+            returnCaption = caption
+            returnCaptionVoiceCount = completedCount
+            returnCaptionVoiceResId = praiseRes
+            returnCaptionEpoch += 1
+        }
+    }
 
     fun startReveal(tile: Int, triggerCelebrationOnFinish: Boolean) {
         if (isRevealing) return
@@ -225,32 +248,33 @@ fun Season2PuzzleMapPrototypeScreen(
         if (triggerCelebration) {
             season2Progress.markChapterCompleted(chapterId)
         }
+    }
 
-        if (!showIntro) {
-            Season2Copy.returnCaptionAfterStation(completedStations.size)?.let { caption ->
-                returnCaption = caption
-            }
+    LaunchedEffect(mapReturnCaptionEvent, showIntro) {
+        if (mapReturnCaptionEvent == 0L || showIntro) return@LaunchedEffect
+        if (mapReturnCaptionCount > 0) {
+            showReturnCaptionForCompletedCount(mapReturnCaptionCount)
+            onMapReturnCaptionConsumed()
         }
     }
 
     val mapTitle = Season2Copy.puzzleMapTitle(chapterId, isChapterCompleted)
     val bgm = LocalBackgroundMusic.current
-    val audio = remember(context) { GameAudioEngine(context = context.applicationContext) }
-    val voice = audio.voice
+    val rawVoice = remember(context) { com.tal.hebrewdino.ui.audio.RawVoicePlayer(context = context.applicationContext) }
     var replayInstructionSpoken by remember(chapterId) { mutableStateOf(false) }
 
     DisposableEffect(Unit) {
-        onDispose { audio.release() }
+        onDispose {
+            rawVoice.stopNow()
+            rawVoice.release()
+        }
     }
 
     LaunchedEffect(isChapterCompleted, showIntro, replayInstructionSpoken) {
         if (!isChapterCompleted || showIntro || replayInstructionSpoken) return@LaunchedEffect
-        val asset = Season2Copy.replayTileInstructionVoiceAsset()
-        if (voice.hasAsset(asset)) {
-            replayInstructionSpoken = true
-            bgm?.withVoiceDuck {
-                voice.playFirstAvailableBlocking(asset)
-            }
+        replayInstructionSpoken = true
+        bgm?.withVoiceDuck {
+            rawVoice.playRawBlocking(Season2Copy.replayTileInstructionVoiceRawRes())
         }
     }
 
@@ -344,7 +368,8 @@ fun Season2PuzzleMapPrototypeScreen(
         returnCaption?.let { caption ->
             Season2MapReturnCaptionOverlay(
                 caption = caption,
-                voiceAssetPath = Season2Copy.returnCaptionVoiceAsset(completedStations.size),
+                voiceRawResId = returnCaptionVoiceResId,
+                playEpoch = returnCaptionEpoch,
                 onDismiss = { returnCaption = null },
             )
         }

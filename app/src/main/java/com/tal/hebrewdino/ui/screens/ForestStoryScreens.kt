@@ -45,7 +45,7 @@ fun ForestOutroScreen(
         backgroundRes = R.drawable.forest_bg_story_outro_egg,
         dinoContentDescription = character.displayNameHebrew(),
         title = "יש!",
-        body = Chapter1CompanionCopy.finaleBody(character, playerAddress),
+        body = Chapter1CompanionCopy.finaleBody(character),
         chapterId = 1,
         storyContext = "ForestOutroScreen",
         voiceRawResId = Chapter1AddressAwareAudio.storyOutroRawRes(character),

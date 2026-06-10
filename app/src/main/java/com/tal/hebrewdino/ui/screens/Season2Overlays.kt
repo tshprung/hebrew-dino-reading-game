@@ -106,25 +106,28 @@ fun Season2MapIntroOverlay(
 @Composable
 fun Season2MapReturnCaptionOverlay(
     caption: String,
-    voiceAssetPath: String?,
+    @androidx.annotation.RawRes voiceRawResId: Int?,
+    playEpoch: Int,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
     val bgm = LocalBackgroundMusic.current
-    val audio = remember { GameAudioEngine(context = context.applicationContext) }
-    val voice = audio.voice
+    val rawVoice = remember { com.tal.hebrewdino.ui.audio.RawVoicePlayer(context = context.applicationContext) }
 
     DisposableEffect(Unit) {
-        onDispose { audio.release() }
+        onDispose {
+            rawVoice.stopNow()
+            rawVoice.release()
+        }
     }
 
-    val hasVoice = voiceAssetPath != null && voice.hasAsset(voiceAssetPath)
+    val hasVoice = voiceRawResId != null && voiceRawResId != 0
 
-    LaunchedEffect(caption, voiceAssetPath, hasVoice) {
+    LaunchedEffect(playEpoch, caption, voiceRawResId, hasVoice) {
         if (hasVoice) {
             bgm?.withVoiceDuck {
-                voice.playFirstAvailableBlocking(voiceAssetPath!!)
+                rawVoice.playRawBlocking(voiceRawResId!!)
             }
         }
         delay(if (hasVoice) 2_600 else 2_200)

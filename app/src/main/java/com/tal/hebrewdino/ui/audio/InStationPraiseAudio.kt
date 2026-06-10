@@ -2,6 +2,7 @@ package com.tal.hebrewdino.ui.audio
 
 import androidx.annotation.RawRes
 import com.tal.hebrewdino.R
+import com.tal.hebrewdino.ui.domain.Season2StationAudio
 import com.tal.hebrewdino.ui.domain.TrainingV1Config
 import kotlin.random.Random
 
@@ -33,7 +34,8 @@ object InStationPraiseAudio {
             chapterId == 4 ||
             chapterId == 5 ||
             chapterId == 6 ||
-            chapterId == TrainingV1Config.CHAPTER_ID
+            chapterId == TrainingV1Config.CHAPTER_ID ||
+            (chapterId != null && Season2StationAudio.isSeason2GameplayChapter(chapterId))
 
     /** Tracking key stored in [com.tal.hebrewdino.ui.screens.GameAudioRuntimeState.lastPraiseAssetPath]. */
     fun trackingKey(@RawRes rawResId: Int): String = "raw:$rawResId"

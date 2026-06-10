@@ -137,7 +137,7 @@ fun Chapter1DinoCompanionEggOutroScreen(
 
         remember(companionCharacter, playerAddress) {
 
-            Chapter1CompanionCopy.finaleBody(companionCharacter, playerAddress)
+            Chapter1CompanionCopy.finaleBody(companionCharacter)
 
         }
 

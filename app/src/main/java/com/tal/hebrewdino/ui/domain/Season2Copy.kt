@@ -1,6 +1,7 @@
 package com.tal.hebrewdino.ui.domain
 
-import com.tal.hebrewdino.ui.audio.AudioClips
+import androidx.annotation.RawRes
+import com.tal.hebrewdino.ui.audio.Season2RawAudio
 import com.tal.hebrewdino.ui.data.PlayerAddress
 
 /** Kid-facing Hebrew copy for Season 2 — "מגלים דינוזאורים". */
@@ -14,7 +15,6 @@ object Season2Copy {
     const val ComingSoon: String = "בקרוב"
     const val NextChapterComingSoon: String = "הבא — בקרוב"
     const val ChapterRevealedBadge: String = "התגלה!"
-    const val PuzzleHint: String = "פתרו את המשחקים וגלו את הדינוזאור!"
     const val ReplayTileInstruction: String = "לחצו על ריבוע כדי לשחק שוב"
     const val ChapterLabelPrefix: String = "פרק"
 
@@ -53,8 +53,6 @@ object Season2Copy {
             rtl("בואו נפתור משחקים ונראה מי מסתתר!"),
         )
 
-    fun seasonIntroLines(): List<String> = seasonIntroStoryLines()
-
     fun seasonIntroContinueLabel(): String = rtl("בואו נגלה!")
 
     /** Shown only after chapter completion — identity reveal. */
@@ -73,8 +71,6 @@ object Season2Copy {
 
     fun mapIntroLinesCompact(playerAddress: PlayerAddress): List<String> = mapIntroStoryLines(playerAddress)
 
-    fun mapIntroNeutralFallback(): String = rtl("בואו נגלה מי מסתתר כאן.")
-
     fun isChapterComplete(
         chapterIndex: Int,
         completedChapters: Set<Int>,
@@ -86,8 +82,6 @@ object Season2Copy {
             completedStations = completedStations,
         )
 
-    fun mapIntroLines(playerAddress: PlayerAddress): List<String> = mapIntroLinesCompact(playerAddress)
-
     fun replayTileInstruction(): String = rtl(ReplayTileInstruction)
 
     /** Brief caption after returning from a station (not the full intro). */
@@ -98,15 +92,16 @@ object Season2Copy {
             else -> null
         }
 
-    /** Approved voice asset path for [returnCaptionAfterStation], when recorded. */
-    fun returnCaptionVoiceAsset(completedStationCount: Int): String? =
+    /** @deprecated Legacy single clip; map return uses [com.tal.hebrewdino.ui.audio.Season2CompanionFeedbackAudio]. */
+    @RawRes
+    fun returnCaptionVoiceRawRes(completedStationCount: Int): Int? =
         when (completedStationCount) {
-            in 1..4 -> AudioClips.Season2MapPartRevealed
-            5 -> AudioClips.Season2MapAlmostDone
+            in 1..5 -> Season2RawAudio.MapPartRevealed
             else -> null
         }
 
-    fun replayTileInstructionVoiceAsset(): String = AudioClips.Season2ReplayTileInstruction
+    @RawRes
+    fun replayTileInstructionVoiceRawRes(): Int = Season2RawAudio.ReplayTileInstruction
 
     private fun mapIntroDiscoverAskLine(playerAddress: PlayerAddress): String =
         when (playerAddress) {

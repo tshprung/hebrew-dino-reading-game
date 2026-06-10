@@ -49,7 +49,7 @@ object Season2Chapter1StationOrder {
                     Season2AdvancedStationPlan(
                         mode = Season2AdvancedStationMode.PictureToWord,
                         wordCatalogIds = chapterDef.wordCatalogIds,
-                        questionCount = 4,
+                        questionCount = 6,
                         theme = chapterDef.stationTheme,
                     ),
                 )
@@ -58,7 +58,12 @@ object Season2Chapter1StationOrder {
                     Season2AdvancedStationPlan(
                         mode = Season2AdvancedStationMode.WordParts,
                         wordCatalogIds = chapterDef.wordCatalogIds,
-                        questionCount = 4,
+                        questionCount =
+                            Season2WordPartsCatalog
+                                .maxUniqueRounds(
+                                    chapterDef.wordCatalogIds,
+                                    Season2WordPartsPresentationMode.VisibleWordParts,
+                                ).coerceAtMost(6),
                         theme = chapterDef.stationTheme,
                         wordPartsPresentationMode = Season2WordPartsPresentationMode.VisibleWordParts,
                     ),

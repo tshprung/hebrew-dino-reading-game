@@ -1,6 +1,7 @@
 package com.tal.hebrewdino.ui.domain
 
-import com.tal.hebrewdino.ui.audio.AudioClips
+import com.tal.hebrewdino.R
+import com.tal.hebrewdino.ui.audio.Season2RawAudio
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -25,10 +26,14 @@ class Season2StationAudioTest {
     fun stationThemeCopy_usesShortKidFriendlyInstructions() {
         val theme = Season2StationTheme.StegosaurusPlates
         assertTrue(Season2StationThemeCopy.pictureToWordInstruction(theme).contains("איזו מילה"))
-        assertTrue(Season2StationThemeCopy.missingFirstLetterInstruction(theme).contains("איזו אות חסרה"))
+        assertTrue(Season2StationThemeCopy.missingFirstLetterInstruction(theme).contains("איזו אות חסרה במילה"))
         assertFalse(Season2StationThemeCopy.missingFirstLetterInstruction(theme).contains("בהתחלה"))
-        assertTrue(Season2StationThemeCopy.rhymingInstruction(theme).contains("מתחרזת"))
+        assertTrue(Season2StationThemeCopy.rhymingInstruction(theme).contains("מתחרזת עם"))
         assertFalse(Season2StationThemeCopy.rhymingInstruction(theme).contains("מחרוזת"))
+        assertTrue(
+            Season2StationThemeCopy.wordPartsInstruction(Season2WordPartsPresentationMode.GuidedWordParts)
+                .contains("מצאו את חלקי המילה"),
+        )
     }
 
     @Test
@@ -62,17 +67,17 @@ class Season2StationAudioTest {
     }
 
     @Test
-    fun advancedInstructionAssets_useExpectedPaths() {
+    fun advancedInstructionAssets_useResRawIds() {
         assertEquals(
-            AudioClips.Season2WordPartsChooseSplitInstructions,
-            Season2StationAudio.instructionAssetPath(
+            Season2RawAudio.WordPartsChooseSplitInstructions,
+            Season2StationAudio.instructionRawResId(
                 Season2AdvancedStationMode.WordParts,
                 Season2WordPartsPresentationMode.GuidedWordParts,
             ),
         )
         assertEquals(
-            AudioClips.Season2RhymingInstructions,
-            Season2StationAudio.instructionAssetPath(Season2AdvancedStationMode.Rhyming),
+            R.raw.season2_rhyming_instructions,
+            Season2StationAudio.instructionRawResId(Season2AdvancedStationMode.Rhyming),
         )
     }
 

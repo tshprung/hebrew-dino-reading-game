@@ -213,8 +213,6 @@ object Chapter1Station4To6LessonChoiceCardSpec {
             innerPictureTransformOrigin = TransformOrigin(0.5f, 0.5f),
             innerPictureTranslateY = 0.dp,
             pictureContentAlignment = Alignment.Center,
-            captionContentAlignment = Alignment.TopCenter,
-            pictureCaptionOffsetFraction = -0.20f,
             isCorrectPick = isCorrectPick,
             isSelected = isSelected,
             wrongFlashAlpha = wrongFlashAlpha,

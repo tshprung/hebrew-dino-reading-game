@@ -19,7 +19,7 @@ fun Chapter1MidBoostScreen(
     ChapterLobbyStoryLayout(
         backgroundRes = R.drawable.forest_bg_story_intro,
         title = "ממשיכים!",
-        body = Chapter1CompanionCopy.chapter1MidBoostBody(companionCharacter, playerAddress),
+        body = Chapter1CompanionCopy.chapter1MidBoostBody(companionCharacter),
         companion = ChapterLobbyCompanion.DinoOnly,
         chapterId = 1,
         storyContext = "Chapter1MidBoostScreen",

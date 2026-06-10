@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -39,8 +38,6 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.tal.hebrewdino.R
-import com.tal.hebrewdino.ui.companion.Chapter1DinoCompanionPilot
-import com.tal.hebrewdino.ui.companion.CompanionAssets
 import com.tal.hebrewdino.ui.data.DinoCharacter
 import com.tal.hebrewdino.ui.data.PlayerAddress
 import com.tal.hebrewdino.ui.audio.AudioClips
@@ -60,8 +57,8 @@ import com.tal.hebrewdino.ui.domain.Season2GuessingCoach
 import com.tal.hebrewdino.ui.domain.Season2GuessingDetector
 import com.tal.hebrewdino.ui.domain.Season2GuessingHintCopy
 import com.tal.hebrewdino.ui.domain.Season2Station6FeedbackPolicy
+import com.tal.hebrewdino.ui.domain.Season2StationAudio
 import com.tal.hebrewdino.ui.companion.CompanionVisualPolicy
-import com.tal.hebrewdino.ui.domain.Season2StationUx
 import com.tal.hebrewdino.ui.domain.Question
 import com.tal.hebrewdino.ui.domain.StationBehaviorRegistry
 import com.tal.hebrewdino.ui.domain.StationQuizMode
@@ -76,6 +73,7 @@ import com.tal.hebrewdino.ui.layout.ScreenFit
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlin.time.Duration.Companion.milliseconds
 
 internal enum class GamePhase { Intro, Play }
 
@@ -179,12 +177,9 @@ private object GameAudioPreloader {
     suspend fun preloadFindGrid(
         audioEnabled: Boolean,
         sagaUsesFindGridAudioStaging: Boolean,
-        letterPoolSpec: LetterPoolSpec,
-        voice: VoicePlayer,
         sfx: SoundPoolPlayer,
     ) {
         if (!(audioEnabled && sagaUsesFindGridAudioStaging)) return
-        val letters = letterPoolSpec.groups.flatten().distinct()
         val paths = ArrayList<String>()
         paths.add(AudioClips.SfxWrong)
         paths.add(AudioClips.SfxCorrect)
@@ -255,8 +250,6 @@ private fun GameAudioPreloadEffects(
         GameAudioPreloader.preloadFindGrid(
             audioEnabled = audioEnabled,
             sagaUsesFindGridAudioStaging = sagaUsesFindGridAudioStaging,
-            letterPoolSpec = letterPoolSpec,
-            voice = voice,
             sfx = sfx,
         )
     }
@@ -380,6 +373,7 @@ fun GameScreen(
         isSeason2QuizChapter && plan.mode == StationQuizMode.PopBalloons
     var season2SkipBalloonStagingAwait by remember(stationId) { mutableStateOf(false) }
     var season2Station6ConsecutiveWrongs by remember(stationId) { mutableIntStateOf(0) }
+    var lastSeason2FocusRawResId by remember(stationId) { mutableIntStateOf(0) }
     val listenOnly = plan.listenOnlyTargetPrompt
     val stationUiSpec = remember(chapterId, stationId) { StationBehaviorRegistry.getStationUiSpec(chapterId, stationId) }
     val helpColumnEnabled = Episode4Help.isHelpColumnActive(stationUiSpec)
@@ -650,7 +644,7 @@ fun GameScreen(
             season2HintText = Season2GuessingHintCopy.processPraise(chapter1PlayerAddress)
             val praiseRes = InStationPraiseAudio.pick()
             rawVoice.playRawBlocking(praiseRes)
-            delay(900)
+            delay(900.milliseconds)
             season2HintText = null
             season2HadCoachIntervention = false
         }
@@ -697,7 +691,11 @@ fun GameScreen(
             detector != null &&
                 s2StationId != null &&
                 chapter1PlayerAddress != null &&
-                Season2Station6FeedbackPolicy.shouldSkipCoachBubble(s2StationId, isSeason2QuizChapter)
+                Season2Station6FeedbackPolicy.shouldSkipCoachBubble(
+                    s2StationId,
+                    isSeason2QuizChapter,
+                    plan.season2AdvancedMode,
+                )
         ) {
             season2Station6ConsecutiveWrongs++
             if (
@@ -705,12 +703,23 @@ fun GameScreen(
                     consecutiveWrongInRound = season2Station6ConsecutiveWrongs,
                     season2UxStationId = s2StationId,
                     isSeason2Quiz = isSeason2QuizChapter,
+                    season2AdvancedMode = plan.season2AdvancedMode,
                 )
             ) {
                 season2Station6ConsecutiveWrongs = 0
+                val companion = chapter1CompanionCharacter ?: DinoCharacter.Dino
                 scope.launch {
                     cancelFeedbackVoice()
                     gameViewModel.inputLocked = true
+                    if (audioEnabled) {
+                        val focusRes =
+                            com.tal.hebrewdino.ui.audio.Season2CompanionFeedbackAudio.pickFocusLine(
+                                companion = companion,
+                                avoidRawResId = lastSeason2FocusRawResId,
+                            )
+                        lastSeason2FocusRawResId = focusRes
+                        rawVoice.playRawBlocking(focusRes)
+                    }
                     Season2GuessingCoach.replayTargetAudio(
                         season2StationId = s2StationId,
                         session = session,
@@ -754,7 +763,7 @@ fun GameScreen(
                             rawVoice = rawVoice,
                             gameplayChapterId = chapterId,
                         )
-                        delay(350)
+                        delay(350.milliseconds)
                         season2HintText = null
                         detector.onInterventionAcknowledged()
                         gameViewModel.dinoVisual = DinoVisual.Idle
@@ -949,7 +958,7 @@ fun GameScreen(
                         if (playedCoachRecoveryPraise) {
                             cancelFeedbackVoiceCb()
                             season2HintText =
-                                Season2GuessingHintCopy.processPraise(chapter1PlayerAddress!!)
+                                Season2GuessingHintCopy.processPraise(chapter1PlayerAddress)
                             rawVoice.playRawBlocking(InStationPraiseAudio.pick())
                             season2HintText = null
                             season2HadCoachIntervention = false
@@ -1016,7 +1025,7 @@ fun GameScreen(
                             scope.launch {
                                 cancelFeedbackVoiceCb()
                                 season2HintText =
-                                    Season2GuessingHintCopy.processPraise(chapter1PlayerAddress!!)
+                                    Season2GuessingHintCopy.processPraise(chapter1PlayerAddress)
                                 rawVoice.playRawBlocking(InStationPraiseAudio.pick())
                                 season2HintText = null
                                 season2HadCoachIntervention = false
@@ -1107,13 +1116,43 @@ fun GameScreen(
                             audioRuntime = audioRuntime,
                             advanceAfterRound = { isLast -> advanceAfterRound(isLast) },
                             onWrongFeedback = { wrongWordCatalogId ->
-                                onWrongFeedback(wrongWordCatalogId = wrongWordCatalogId)
+                                onWrongFeedback(
+                                    wrongWordCatalogId = wrongWordCatalogId,
+                                    wrongWordAlreadySpoken = true,
+                                )
                             },
                         )
                     }
 
                     fun handleAdvancedReplayWord() {
                         val q = session.currentQuestion ?: return
+                        if (!audioEnabled) return
+                        if (
+                            q is Question.ImageMatchQuestion &&
+                                Season2StationAudio.isPictureToWordStation(chapterId, stationId)
+                        ) {
+                            scope.launch {
+                                Season2StationAudio.speakPictureToWordRoundPrompt(
+                                    chapterId = chapterId,
+                                    stationId = stationId,
+                                    catalogId = q.correctChoiceId,
+                                    rawVoice = rawVoice,
+                                    voice = voice,
+                                )
+                            }
+                            return
+                        }
+                        if (q is Question.WordPartsQuestion) {
+                            scope.launch {
+                                Season2StationAudio.replayAdvancedInstructionAndWord(
+                                    q = q,
+                                    chapterId = chapterId,
+                                    stationId = stationId,
+                                    rawVoice = rawVoice,
+                                )
+                            }
+                            return
+                        }
                         val catalogId = Season2AdvancedStationActions.catalogIdForReplay(q) ?: return
                         Season2AdvancedStationActions.replayWordByCatalogId(
                             catalogId = catalogId,
@@ -1124,6 +1163,25 @@ fun GameScreen(
                             audioRuntime = audioRuntime,
                             audioEnabled = audioEnabled,
                         )
+                    }
+
+                    fun handleWordPartsHintRevealAudio() {
+                        val q = session.currentQuestion as? Question.WordPartsQuestion ?: return
+                        if (!audioEnabled) return
+                        scope.launch {
+                            GameAudioActions.launchFeedbackVoiceNoCancel(
+                                audioEnabled = true,
+                                scope = scope,
+                                audioRuntime = audioRuntime,
+                            ) {
+                                com.tal.hebrewdino.ui.audio.Season2WordPartsAudio.playHintRevealSequence(
+                                    catalogId = q.catalogEntryId,
+                                    rawVoice = rawVoice,
+                                    chapterId = chapterId,
+                                    stationId = stationId,
+                                )
+                            }
+                        }
                     }
 
                     fun handleMissingFirstLetterPick(picked: String) {
@@ -1152,10 +1210,14 @@ fun GameScreen(
                         Season2AdvancedStationActions.handleWordPartsPick(
                             picked = picked,
                             gameViewModel = gameViewModel,
-                            cancelFeedbackVoice = cancelFeedbackVoiceCb,
                             audioEnabled = audioEnabled,
+                            chapterId = chapterId,
+                            stationId = stationId,
                             session = session,
                             scope = scope,
+                            voice = voice,
+                            rawVoice = rawVoice,
+                            audioRuntime = audioRuntime,
                             advanceAfterRound = { isLast -> advanceAfterRound(isLast) },
                             onWrongFeedback = { onWrongFeedback() },
                         )
@@ -1291,6 +1353,7 @@ fun GameScreen(
                                 handleWordPartsPick = ::handleWordPartsPick,
                                 handleRhymingPick = ::handleRhymingPick,
                                 handleAdvancedReplayWord = ::handleAdvancedReplayWord,
+                                handleWordPartsHintRevealAudio = ::handleWordPartsHintRevealAudio,
                                 handleFinaleWrongPlacement = ::handleFinaleWrongPlacement,
                                 onWrongFeedback = { wrongPickedLetter, wrongWordCatalogId, wrongPickedLetterAlreadySpoken, wrongWordAlreadySpoken ->
                                     onWrongFeedback(

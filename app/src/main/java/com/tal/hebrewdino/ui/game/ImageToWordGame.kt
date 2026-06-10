@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -24,7 +23,6 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.FilledTonalButton
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -55,9 +53,9 @@ import com.tal.hebrewdino.ui.domain.Season2ChapterIds
 import com.tal.hebrewdino.ui.domain.Season2StationAudio
 import com.tal.hebrewdino.ui.domain.TrainingV1Config
 import com.tal.hebrewdino.ui.layout.ScreenFit
-import kotlin.math.roundToInt
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlin.time.Duration.Companion.milliseconds
 
 private const val TrainingV1ImageToWordReplayButtonTag: String = "training_v1_image_to_word_replay"
 private const val TrainingV1ImageToWordHintButtonTag: String = "training_v1_image_to_word_hint"
@@ -74,7 +72,6 @@ fun ImageToWordGame(
     /** Training chapter: 1-based round index (e.g. 3 and 8 are ImageToWord). */
     trainingRoundIndex: Int? = null,
     onPictureTapReplayWord: (() -> Unit)? = null,
-    onWordPressed: ((choiceId: String) -> Unit)? = null,
     innerPictureScaleForChoice: (LessonChoice) -> Float = { choice -> Chapter1Station5And6ImageMatchInnerScale.innerScale(choice) },
     onAttempt: (choiceId: String) -> Boolean,
     modifier: Modifier = Modifier,
@@ -319,7 +316,6 @@ fun ImageToWordGame(
                                     shape = RoundedCornerShape(16.dp),
                                 )
                                 .clickable(enabled = enabled) {
-                                    onWordPressed?.invoke(choice.id)
                                     val ok = onAttempt(choice.id)
                                     if (ok) {
                                         successChoiceId = choice.id
@@ -386,7 +382,7 @@ fun ImageToWordGame(
                         hintEpoch += 1
                         val epoch = hintEpoch
                         scope.launch {
-                            delay(2100L)
+                            delay(2100L.milliseconds)
                             if (hintEpoch == epoch) hintLetter = null
                         }
                     },

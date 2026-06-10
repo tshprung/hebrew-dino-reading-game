@@ -4,6 +4,7 @@ import com.tal.hebrewdino.ui.data.PlayerAddress
 import com.tal.hebrewdino.ui.domain.Season2Chapter1RevealOrder
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -101,15 +102,9 @@ class Season2CopyTest {
     }
 
     @Test
-    fun returnCaptionVoiceAsset_mapsByProgress() {
-        assertEquals(
-            com.tal.hebrewdino.ui.audio.AudioClips.Season2MapPartRevealed,
-            Season2Copy.returnCaptionVoiceAsset(3),
-        )
-        assertEquals(
-            com.tal.hebrewdino.ui.audio.AudioClips.Season2MapAlmostDone,
-            Season2Copy.returnCaptionVoiceAsset(5),
-        )
-        assertNull(Season2Copy.returnCaptionVoiceAsset(6))
+    fun returnCaptionVoiceRawRes_legacyStillResolvable() {
+        assertNotNull(Season2Copy.returnCaptionVoiceRawRes(3))
+        assertNotNull(Season2Copy.returnCaptionVoiceRawRes(5))
+        assertNull(Season2Copy.returnCaptionVoiceRawRes(6))
     }
 }

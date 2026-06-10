@@ -9,12 +9,9 @@ object AudioClips {
     const val VoChooseLetter = "audio/vo_choose_letter.wav"
     /** Episode 4 station 1: spoken "בחור את האות" (then letter name clip). Add `assets/audio/vo_bachor_et_haot.wav`; falls back to [VoChooseLetter] if missing. */
     const val VoBachorEtHaot = "audio/vo_bachor_et_haot.wav"
-    /** Optional "מצא את האות"; station 1 intro may alternate with [VoChooseLetter]. */
-    const val VoFindLetter = "audio/vo_find_letter.wav"
     const val VoGoodJob1 = "audio/vo_good_job_1.wav"
     const val VoGoodJob2 = "audio/vo_good_job_2.wav"
-    const val VoTryAgain1 = "audio/vo_try_again_1.wav"
-    const val VoTryAgain2 = "audio/vo_try_again_2.wav"
+
     /** Short praise (optional): e.g. "יפה!". */
     const val VoNice1 = "audio/vo_nice_1.wav"
     /** Optional spoken "כל הכבוד!" — place at `assets/audio/vo_kol_hakavod.wav` (ASCII filename). */
@@ -25,61 +22,18 @@ object AudioClips {
     const val VoPraiseMetzuyan = "audio/vo_praise_metzuyan.wav" // "מצוין!"
     const val VoPraiseYofi = "audio/vo_praise_yofi.wav" // "יופי!"
     const val VoPraiseHitzlacht = "audio/vo_praise_hitzlacht.wav" // "הצלחת!"
-    const val VoLevelDone = "audio/vo_level_done.wav"
 
     /** Episode 1 station 5 prefix: "איזו מילה מתחילה באות". */
     const val WhichWordStartsWithLetter = "audio/which_word_starts_with_letter.wav"
-    const val ChoosePictureStartsWithLetter = "audio/choose_picture_starts_with_letter.wav"
 
-    /** Episode 1 station 4: "באיזו אות מתחילה המילה" (then play the word clip, e.g. "ברווז"). */
-    const val WhichLetterDoesWordStart = "audio/which_letter_does_word_start.wav"
-
-    /** Episode 1 station 6: "ליחצו על אות והמילה שמתחילה באותה האות". */
-    const val MatchLetterToWordInstructions = "audio/match_letter_to_word_instructions.wav"
     /** Station 6 (image → word): "איזו מילה מתאימה לתמונה?" (generic/shared). */
     const val ImageToWordInstructions = "audio/image_to_word_instructions.wav"
-    /** Episode 3 station 6: dedicated recording (optional). */
-    const val Ch3ImageToWordInstructions = "audio/ch3_image_to_word_instructions.wav"
 
-    const val Ch3St3PopAllLettersInWordInstruction = "audio/ch3_st3_pop_all_letters_in_word.wav"
-    const val Ch3St4FindHighlightedLetterInWordInstruction = "audio/ch3_st4_find_highlighted_letter_in_word.wav"
     // (Old ch3 instruction constants removed/renamed; keep files if you already recorded them — they just won't be used.)
 
-    /** Episode 1 station 2 prefix: "פוצץ את הבלונים עם האות". */
-    const val PopBalloonsWithLetter = "audio/pop_balloons_with_letter.wav"
     const val PopAllBalloonsWithLetter = "audio/pop_all_balloons_with_letter.wav"
 
-    /** Season 2 Chapter 1 station 4 (memory match): "מצא זוגות של אותיות זהות". */
-    const val Season2Ch1St4MemoryMatchInstructions = "audio/season2_ch1_st4_memory_match_instructions.wav"
-
-    /** Season 2 puzzle map: "עוד חלק מהמפה התגלה!" */
-    const val Season2MapPartRevealed = "audio/season2_map_part_revealed.wav"
-
-    /** Season 2 puzzle map after station 5: "אנחנו מתקרבים!" */
-    const val Season2MapAlmostDone = "audio/season2_map_almost_done.wav"
-
-    /** Season 2 completed chapter replay hint: "לחצו על ריבוע כדי לשחק שוב". */
-    const val Season2ReplayTileInstruction = "audio/season2_replay_tile_instruction.wav"
-
-    /** Season 2 Picture→Word: "בחרו את המילה שמתאימה לתמונה". */
-    const val Season2PictureToWordInstructions = "audio/season2_picture_to_word_instructions.wav"
-
-    /** Season 2 MissingFirstLetter: "איזו אות חסרה?". */
-    const val Season2MissingFirstLetterInstructions = "audio/season2_missing_first_letter_instructions.wav"
-
-    /** Season 2 WordParts visible/guided: "איך מחלקים את המילה?". */
-    const val Season2WordPartsChooseSplitInstructions =
-        "audio/season2_word_parts_choose_split_instructions.wav"
-
-    /** Season 2 WordParts hidden challenge: "איזה פירוק מתאים למילה ששמעתם?". */
-    const val Season2WordPartsHiddenSplitInstructions =
-        "audio/season2_word_parts_hidden_split_instructions.wav"
-
-    /** @deprecated Legacy word-parts instruction clip. */
-    const val Season2WordPartsInstructions = "audio/season2_word_parts_instructions.wav"
-
-    /** Season 2 Rhyming: "איזו מילה מתחרזת?". */
-    const val Season2RhymingInstructions = "audio/season2_rhyming_instructions.wav"
+    // Season 2 voice clips: see [Season2RawAudio] (`res/raw` MP3).
 
     // SFX (optional). If missing from assets, playback will be skipped.
     const val SfxBalloonPop = "audio/sfx_pop.wav"
@@ -284,34 +238,6 @@ object AudioClips {
         return wordClipByCatalogId(catalogEntryId)
     }
 
-    // Letter-specific
-    fun chooseLetterClip(letter: String): String? =
-        when (letter) {
-            "א" -> "audio/choose_alef.wav"
-            "ב" -> "audio/choose_bet.wav"
-            "ג" -> "audio/choose_gimel.wav"
-            "מ" -> "audio/choose_mem.wav"
-            "ל" -> "audio/choose_lamed.wav"
-            "ד" -> "audio/choose_dalet.wav"
-            "ה" -> "audio/choose_heh.wav"
-            "ו" -> "audio/choose_vav.wav"
-            "ח" -> "audio/choose_chet.wav"
-            "ט" -> "audio/choose_tet.wav"
-            "י" -> "audio/choose_yod.wav"
-            "ז" -> "audio/choose_zayin.wav"
-            "ס" -> "audio/choose_samech.wav"
-            "ע" -> "audio/choose_ayin.wav"
-            "כ" -> "audio/choose_kaf.wav"
-            "נ" -> "audio/choose_nun.wav"
-            "פ" -> "audio/choose_peh.wav"
-            "צ" -> "audio/choose_tsadi.wav"
-            "ק" -> "audio/choose_kuf.wav"
-            "ר" -> "audio/choose_reish.wav"
-            "ש" -> "audio/choose_shin.wav"
-            "ת" -> "audio/choose_taf.wav"
-            else -> null
-        }
-
     fun letterNameClip(letter: String): String? =
         when (letter) {
             "א" -> "audio/letter_alef.wav"
@@ -440,22 +366,5 @@ object AudioClips {
 
     fun station1CorrectPraiseTailCandidates(): Array<String> = Station1CorrectPraiseTailCandidates
 
-    /**
-     * After [VoLevelDone] on the "שלב הסתיים" reward screen — caller shuffles, then [VoicePlayer.playFirstAvailableBlocking].
-     * Wider than "יפה" alone so the tail feels varied.
-     */
-    private val RewardStagePraiseTailCandidates =
-        arrayOf(
-            VoKolHakavod,
-            VoNice1,
-            VoYafeMeod,
-            VoGoodJob2,
-            VoGoodJob1,
-            VoPraiseMetzuyan,
-            VoPraiseYofi,
-            VoPraiseHitzlacht,
-        )
-
-    fun rewardStagePraiseTailCandidates(): Array<String> = RewardStagePraiseTailCandidates
 }
 

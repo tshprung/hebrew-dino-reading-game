@@ -186,6 +186,14 @@ internal fun NavGraphBuilder.systemAndTrainingGraph(host: AppNavHostState) {
             backStackEntry.savedStateHandle
                 .getStateFlow(Season2NavKeys.SHOW_CHAPTER_INTRO, false)
                 .collectAsState()
+        val mapReturnCaptionEvent by
+            backStackEntry.savedStateHandle
+                .getStateFlow(Season2NavKeys.MAP_RETURN_CAPTION_EVENT, 0L)
+                .collectAsState()
+        val mapReturnCaptionCount by
+            backStackEntry.savedStateHandle
+                .getStateFlow(Season2NavKeys.MAP_RETURN_CAPTION_COUNT, 0)
+                .collectAsState()
         Season2PuzzleMapPrototypeScreen(
             chapterId = chapterId,
             companionCharacter = host.companionCharacter,
@@ -203,6 +211,12 @@ internal fun NavGraphBuilder.systemAndTrainingGraph(host: AppNavHostState) {
             requestChapterCelebration = celebrateRequest,
             onChapterCelebrationConsumed = {
                 backStackEntry.savedStateHandle[Season2NavKeys.REQUEST_CHAPTER_CELEBRATION] = false
+            },
+            mapReturnCaptionEvent = mapReturnCaptionEvent,
+            mapReturnCaptionCount = mapReturnCaptionCount,
+            onMapReturnCaptionConsumed = {
+                backStackEntry.savedStateHandle[Season2NavKeys.MAP_RETURN_CAPTION_EVENT] = 0L
+                backStackEntry.savedStateHandle[Season2NavKeys.MAP_RETURN_CAPTION_COUNT] = 0
             },
             onRewardContinue = {
                 host.navController.navigate(NavRoutes.Season2ChapterSelect) {
@@ -233,11 +247,15 @@ internal fun NavGraphBuilder.systemAndTrainingGraph(host: AppNavHostState) {
             companionCharacter = host.companionCharacter,
             playerAddress = host.playerAddress,
             onBack = { host.navController.popBackStack() },
-            onComplete = { requestChapterCelebration ->
-                if (requestChapterCelebration) {
-                    host.navController.previousBackStackEntry
-                        ?.savedStateHandle
-                        ?.set(Season2NavKeys.REQUEST_CHAPTER_CELEBRATION, true)
+            onComplete = { requestChapterCelebration, mapReturnCaptionCompletedCount ->
+                host.navController.previousBackStackEntry?.savedStateHandle?.let { mapHandle ->
+                    if (requestChapterCelebration) {
+                        mapHandle[Season2NavKeys.REQUEST_CHAPTER_CELEBRATION] = true
+                    }
+                    mapReturnCaptionCompletedCount?.let { count ->
+                        mapHandle[Season2NavKeys.MAP_RETURN_CAPTION_COUNT] = count
+                        mapHandle[Season2NavKeys.MAP_RETURN_CAPTION_EVENT] = System.nanoTime()
+                    }
                 }
                 host.navController.popBackStack()
             },

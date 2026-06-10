@@ -104,25 +104,35 @@ internal object SideHelpActions {
                         rawVoice.playRawBlocking(resId)
                     }
                     StationReplayMode.TargetWordOnly -> {
-                        if (q is Question.WordPartsQuestion) {
-                            val path =
-                                Season2StationAudio.instructionAssetPath(
-                                    Season2AdvancedStationMode.WordParts,
-                                    q.presentationMode,
-                                )
-                            if (voice.hasAsset(path)) {
-                                voice.playFirstAvailableBlocking(path)
-                            } else {
-                                android.util.Log.e(
-                                    "MissingContent",
-                                    "Missing required help replay instruction audio. chapterId=$chapterId stationId=$stationId context=SideHelpActions.startReplay(WordParts) path='$path'",
-                                )
-                            }
+                        if (
+                            q is Question.WordPartsQuestion ||
+                                q is Question.MissingFirstLetterQuestion ||
+                                q is Question.RhymingQuestion
+                        ) {
+                            Season2StationAudio.replayAdvancedInstructionAndWord(
+                                q = q,
+                                chapterId = chapterId,
+                                stationId = stationId,
+                                rawVoice = rawVoice,
+                            )
+                            return@replay
+                        }
+                        if (
+                            q is Question.ImageMatchQuestion &&
+                                Season2StationAudio.isPictureToWordStation(chapterId, stationId)
+                        ) {
+                            Season2StationAudio.speakPictureToWordRoundPrompt(
+                                chapterId = chapterId,
+                                stationId = stationId,
+                                catalogId = q.correctChoiceId,
+                                rawVoice = rawVoice,
+                                voice = voice,
+                            )
+                            return@replay
                         }
                         val catalogId =
                             when (q) {
                                 is Question.PictureStartsWithQuestion -> q.catalogEntryId
-                                is Question.WordPartsQuestion -> q.catalogEntryId
                                 is Question.ImageMatchQuestion -> q.correctChoiceId
                                 else -> null
                             }

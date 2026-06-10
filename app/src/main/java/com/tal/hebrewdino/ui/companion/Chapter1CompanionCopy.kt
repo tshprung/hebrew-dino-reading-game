@@ -61,7 +61,6 @@ object Chapter1CompanionCopy {
 
     fun chapter1MidBoostBody(
         character: DinoCharacter,
-        address: PlayerAddress,
     ): String {
         val foundCluesLine =
             when (character) {
@@ -75,7 +74,6 @@ object Chapter1CompanionCopy {
 
     fun finaleBody(
         character: DinoCharacter,
-        address: PlayerAddress,
     ): String {
         val foundLine =
             when (character) {

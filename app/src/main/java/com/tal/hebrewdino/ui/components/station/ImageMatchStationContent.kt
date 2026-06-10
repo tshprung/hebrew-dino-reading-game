@@ -42,7 +42,6 @@ fun Chapter3Station6ImageToWordStationContent(
         stationId = stationId,
         trainingRoundIndex = trainingRoundIndex,
         onPictureTapReplayWord = onPictureTapReplayWord,
-        onWordPressed = onWordPressed,
         innerPictureScaleForChoice = { choice ->
             val base = Chapter1Station5And6ImageMatchInnerScale.innerScale(choice)
             val scale =

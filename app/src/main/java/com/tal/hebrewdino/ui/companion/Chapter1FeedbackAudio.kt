@@ -1,13 +1,13 @@
 package com.tal.hebrewdino.ui.companion
 
-import com.tal.hebrewdino.ui.audio.AudioClips
+import com.tal.hebrewdino.R
 import com.tal.hebrewdino.ui.audio.RawVoicePlayer
 import com.tal.hebrewdino.ui.audio.SoundPoolPlayer
 import com.tal.hebrewdino.ui.audio.VoicePlayer
 import com.tal.hebrewdino.ui.data.PlayerAddress
-import com.tal.hebrewdino.R
 import com.tal.hebrewdino.ui.domain.TrainingV1Config
 import kotlinx.coroutines.delay
+import kotlin.time.Duration.Companion.milliseconds
 
 /** Season 1 Ch.1 address-aware wrong-answer feedback (try again). */
 internal suspend fun playAddressAwareTryAgainBlocking(
@@ -91,7 +91,7 @@ internal suspend fun playLetterThenAddressAwareTryAgain(
         (letterMs * followLeadFrac)
             .toLong()
             .coerceIn(16L, letterMs)
-    delay(lead)
+    delay(lead.milliseconds)
     playAddressAwareTryAgainBlocking(
         chapterId = chapterId,
         stationId = stationId,

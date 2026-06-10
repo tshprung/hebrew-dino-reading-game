@@ -165,6 +165,7 @@ internal data class GameQuestionHostHandlers(
     val handleWordPartsPick: (picked: Question.WordPartsSplitOption) -> Unit,
     val handleRhymingPick: (choiceId: String) -> Unit,
     val handleAdvancedReplayWord: () -> Unit,
+    val handleWordPartsHintRevealAudio: () -> Unit,
     val handleFinaleWrongPlacement: () -> Unit,
     val onWrongFeedback: (wrongPickedLetter: String?, wrongWordCatalogId: String?, wrongPickedLetterAlreadySpoken: Boolean, wrongWordAlreadySpoken: Boolean) -> Unit,
     val advanceAfterRound: suspend (isLast: Boolean) -> Unit,
@@ -854,16 +855,20 @@ internal fun GameQuestionHost(
                 question = current,
                 instructionText =
                     Season2StationThemeCopy.wordPartsInstruction(
-                        theme = ui.plan.season2StationTheme,
                         presentationMode = current.presentationMode,
                     ),
                 enabled = state.enabled,
-                shakePx = state.optionsShakePx,
                 completedEquation = state.wordPartsCompletedEquation,
                 hintRevealWord = state.wordPartsHintRevealWord,
                 onPictureTapReplayWord =
                     if (ui.audioEnabled) {
                         { handlers.handleAdvancedReplayWord() }
+                    } else {
+                        null
+                    },
+                onHintRevealAudio =
+                    if (ui.audioEnabled) {
+                        { handlers.handleWordPartsHintRevealAudio() }
                     } else {
                         null
                     },

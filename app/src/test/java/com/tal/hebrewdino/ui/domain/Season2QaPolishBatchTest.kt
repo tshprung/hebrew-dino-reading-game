@@ -47,6 +47,17 @@ class Season2QaPolishBatchTest {
     }
 
     @Test
+    fun pictureToWordFeedback_usesLightPolicyOnNonFinaleStations() {
+        assertTrue(
+            Season2Station6FeedbackPolicy.shouldUseLightWordChoiceFeedback(
+                season2UxStationId = 5,
+                isSeason2Quiz = true,
+                season2AdvancedMode = Season2AdvancedStationMode.PictureToWord,
+            ),
+        )
+    }
+
+    @Test
     fun rewardLayout_posterDominatesCompanionAndText() {
         assertTrue(Season2RewardLayout.POSTER_MAX_HEIGHT_COMPACT_DP >= 220)
         assertTrue(

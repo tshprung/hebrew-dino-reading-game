@@ -24,24 +24,23 @@ object Season2StationThemeCopy {
 
     fun missingFirstLetterInstruction(theme: Season2StationTheme): String =
         when (theme) {
-            Season2StationTheme.LetterArmor -> "\u200Fאיזו אות חסרה?"
-            else -> "\u200Fאיזו אות חסרה?"
+            Season2StationTheme.LetterArmor -> "\u200Fאיזו אות חסרה במילה?"
+            else -> "\u200Fאיזו אות חסרה במילה?"
         }
 
     fun wordPartsInstruction(
-        theme: Season2StationTheme,
         presentationMode: Season2WordPartsPresentationMode = Season2WordPartsPresentationMode.GuidedWordParts,
     ): String =
         when (presentationMode) {
-            Season2WordPartsPresentationMode.VisibleWordParts -> "\u200Fאיך מחלקים את המילה?"
-            Season2WordPartsPresentationMode.GuidedWordParts -> "\u200Fאיך מחלקים את המילה?"
+            Season2WordPartsPresentationMode.VisibleWordParts -> "\u200Fמצאו את חלקי המילה"
+            Season2WordPartsPresentationMode.GuidedWordParts -> "\u200Fמצאו את חלקי המילה"
             Season2WordPartsPresentationMode.HiddenWordPartsChallenge ->
-                "\u200Fאיזה פירוק מתאים למילה ששמעתם?"
+                "\u200Fמצאו את חלקי המילה ששמעתם"
         }
 
     fun rhymingInstruction(theme: Season2StationTheme): String =
         when (theme) {
-            Season2StationTheme.UnderwaterBubbles -> "\u200Fאיזו מילה מתחרזת?"
-            else -> "\u200Fאיזו מילה מתחרזת?"
+            Season2StationTheme.UnderwaterBubbles -> "\u200Fאיזו מילה מתחרזת עם?"
+            else -> "\u200Fאיזו מילה מתחרזת עם?"
         }
 }

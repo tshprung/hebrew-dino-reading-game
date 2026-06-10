@@ -1,9 +1,12 @@
 package com.tal.hebrewdino.ui.domain
 
 import android.util.Log
+import androidx.annotation.RawRes
 import com.tal.hebrewdino.R
 import com.tal.hebrewdino.ui.audio.AudioClips
 import com.tal.hebrewdino.ui.audio.RawVoicePlayer
+import com.tal.hebrewdino.ui.audio.Season2RawAudio
+import com.tal.hebrewdino.ui.audio.Season2WordPartsAudio
 import com.tal.hebrewdino.ui.audio.VoicePlayer
 import com.tal.hebrewdino.ui.domain.Question.MissingFirstLetterQuestion
 import com.tal.hebrewdino.ui.domain.Question.RhymingQuestion
@@ -63,21 +66,11 @@ object Season2StationAudio {
             else -> null
         }
 
-    fun instructionAssetPath(
+    @RawRes
+    fun instructionRawResId(
         mode: Season2AdvancedStationMode,
         wordPartsPresentationMode: Season2WordPartsPresentationMode? = null,
-    ): String =
-        when (mode) {
-            Season2AdvancedStationMode.PictureToWord -> AudioClips.Season2PictureToWordInstructions
-            Season2AdvancedStationMode.MissingFirstLetter -> AudioClips.Season2MissingFirstLetterInstructions
-            Season2AdvancedStationMode.WordParts ->
-                when (wordPartsPresentationMode) {
-                    Season2WordPartsPresentationMode.HiddenWordPartsChallenge ->
-                        AudioClips.Season2WordPartsHiddenSplitInstructions
-                    else -> AudioClips.Season2WordPartsChooseSplitInstructions
-                }
-            Season2AdvancedStationMode.Rhyming -> AudioClips.Season2RhymingInstructions
-        }
+    ): Int = Season2RawAudio.instructionRawResId(mode, wordPartsPresentationMode)
 
     suspend fun speakPictureToWordRoundPrompt(
         chapterId: Int,
@@ -103,55 +96,33 @@ object Season2StationAudio {
             return
         }
         rawVoice.playRawBlocking(R.raw.instruction_image_to_word)
-        val wordResId = AudioClips.wordRawResIdByCatalogId(catalogId)
-        if (wordResId == null) {
-            Log.e(
-                MISSING_TAG,
-                "Missing required station prompt audio. chapterId=$chapterId stationId=$stationId " +
-                    "context=Season2StationAudio.speakPictureToWordRoundPrompt stage=missing raw word mapping " +
-                    "catalogId='$catalogId'",
-            )
-            rawVoice.playRawBlocking(0)
-            return
-        }
-        rawVoice.playRawBlocking(wordResId)
+        playWordRawOrLog(
+            catalogId = catalogId,
+            rawVoice = rawVoice,
+            chapterId = chapterId,
+            stationId = stationId,
+            context = "Season2StationAudio.speakPictureToWordRoundPrompt",
+        )
     }
 
     suspend fun speakAdvancedModeInstruction(
         mode: Season2AdvancedStationMode,
         chapterId: Int,
         stationId: Int,
-        voice: VoicePlayer,
         rawVoice: RawVoicePlayer?,
         wordPartsPresentationMode: Season2WordPartsPresentationMode? = null,
     ) {
-        when (mode) {
-            Season2AdvancedStationMode.PictureToWord -> {
-                if (rawVoice == null) {
-                    Log.e(
-                        MISSING_TAG,
-                        "Missing required station prompt audio. chapterId=$chapterId stationId=$stationId " +
-                            "context=Season2StationAudio.speakAdvancedModeInstruction(PictureToWord) " +
-                            "stage=rawVoice=null expectedInstructionRawRes=${R.raw.instruction_image_to_word}",
-                    )
-                    return
-                }
-                rawVoice.playRawBlocking(R.raw.instruction_image_to_word)
-            }
-            else -> {
-                val path = instructionAssetPath(mode, wordPartsPresentationMode)
-                if (!voice.hasAsset(path)) {
-                    Log.e(
-                        MISSING_TAG,
-                        "Missing required station prompt audio. chapterId=$chapterId stationId=$stationId " +
-                            "context=Season2StationAudio.speakAdvancedModeInstruction($mode) " +
-                            "stage=missing asset path='$path'",
-                    )
-                } else {
-                    voice.playFirstAvailableBlocking(path)
-                }
-            }
+        val instructionRes = instructionRawResId(mode, wordPartsPresentationMode)
+        if (rawVoice == null) {
+            Log.e(
+                MISSING_TAG,
+                "Missing required station prompt audio. chapterId=$chapterId stationId=$stationId " +
+                    "context=Season2StationAudio.speakAdvancedModeInstruction($mode) " +
+                    "stage=rawVoice=null expectedInstructionRawRes=$instructionRes",
+            )
+            return
         }
+        rawVoice.playRawBlocking(instructionRes)
     }
 
     suspend fun speakAdvancedRoundPrompt(
@@ -178,13 +149,11 @@ object Season2StationAudio {
             is RhymingQuestion,
             -> {
                 val mode = advancedModeForQuestion(q) ?: return
-                val wordPartsMode =
-                    (q as? WordPartsQuestion)?.presentationMode
+                val wordPartsMode = (q as? WordPartsQuestion)?.presentationMode
                 speakAdvancedModeInstruction(
                     mode = mode,
                     chapterId = chapterId,
                     stationId = stationId,
-                    voice = voice,
                     rawVoice = rawVoice,
                     wordPartsPresentationMode = wordPartsMode,
                 )
@@ -194,22 +163,85 @@ object Season2StationAudio {
                         is MissingFirstLetterQuestion -> q.catalogEntryId
                         is WordPartsQuestion -> q.catalogEntryId
                         is RhymingQuestion -> q.targetCatalogEntryId
-                        else -> return
                     }
-                val wordResId = AudioClips.wordRawResIdByCatalogId(catalogId)
-                if (wordResId == null) {
-                    Log.e(
-                        MISSING_TAG,
-                        "Missing required station prompt audio. chapterId=$chapterId stationId=$stationId " +
-                            "context=Season2StationAudio.speakAdvancedRoundPrompt stage=missing raw word mapping " +
-                            "catalogId='$catalogId'",
+                playWordRawOrLog(
+                    catalogId = catalogId,
+                    rawVoice = rawVoice,
+                    chapterId = chapterId,
+                    stationId = stationId,
+                    context = "Season2StationAudio.speakAdvancedRoundPrompt",
+                )
+                if (q is WordPartsQuestion) {
+                    Season2WordPartsAudio.playPartsSequence(
+                        catalogId = catalogId,
+                        rawVoice = rawVoice,
+                        chapterId = chapterId,
+                        stationId = stationId,
                     )
-                    rawVoice.playRawBlocking(0)
-                    return
                 }
-                rawVoice.playRawBlocking(wordResId)
             }
             else -> Unit
         }
+    }
+
+    suspend fun replayAdvancedInstructionAndWord(
+        q: Question,
+        chapterId: Int,
+        stationId: Int,
+        rawVoice: RawVoicePlayer?,
+    ) {
+        val mode = advancedModeForQuestion(q) ?: return
+        val wordPartsMode = (q as? WordPartsQuestion)?.presentationMode
+        speakAdvancedModeInstruction(
+            mode = mode,
+            chapterId = chapterId,
+            stationId = stationId,
+            rawVoice = rawVoice,
+            wordPartsPresentationMode = wordPartsMode,
+        )
+        if (rawVoice == null) return
+        val catalogId =
+            when (q) {
+                is MissingFirstLetterQuestion -> q.catalogEntryId
+                is WordPartsQuestion -> q.catalogEntryId
+                is RhymingQuestion -> q.targetCatalogEntryId
+                is Question.ImageMatchQuestion -> q.correctChoiceId
+                else -> null
+            } ?: return
+        playWordRawOrLog(
+            catalogId = catalogId,
+            rawVoice = rawVoice,
+            chapterId = chapterId,
+            stationId = stationId,
+            context = "Season2StationAudio.replayAdvancedInstructionAndWord",
+        )
+        if (q is WordPartsQuestion) {
+            Season2WordPartsAudio.playPartsSequence(
+                catalogId = catalogId,
+                rawVoice = rawVoice,
+                chapterId = chapterId,
+                stationId = stationId,
+            )
+        }
+    }
+
+    private suspend fun playWordRawOrLog(
+        catalogId: String,
+        rawVoice: RawVoicePlayer,
+        chapterId: Int,
+        stationId: Int,
+        context: String,
+    ) {
+        val wordResId = AudioClips.wordRawResIdByCatalogId(catalogId)
+        if (wordResId == null) {
+            Log.e(
+                MISSING_TAG,
+                "Missing required station prompt audio. chapterId=$chapterId stationId=$stationId " +
+                    "context=$context stage=missing raw word mapping catalogId='$catalogId'",
+            )
+            rawVoice.playRawBlocking(0)
+            return
+        }
+        rawVoice.playRawBlocking(wordResId)
     }
 }

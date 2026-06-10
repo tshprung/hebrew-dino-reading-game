@@ -42,82 +42,107 @@ internal object ImageMatchActions {
         onWrongFeedback: (wrongWordCatalogId: String?) -> Unit,
     ): Boolean {
         if (!gameViewModel.consumeTapCooldown()) return false
-        cancelFeedbackVoice()
-        return when (session.submitImageMatch(choiceId)) {
-            AnswerResult.Correct -> {
-                if (audioEnabled) ChildGameAudioHooks.onCorrect()
-                gameViewModel.inputLocked = true
-                val audioJob =
-                    GameAudioActions.launchFeedbackVoiceNoCancel(
-                        audioEnabled = audioEnabled,
-                        scope = scope,
-                        audioRuntime = audioRuntime,
-                    ) {
-                        if (usesImageToWordRawWordClips(chapterId)) {
-                            val wordResId = AudioClips.wordRawResIdByCatalogId(choiceId)
-                            if (wordResId == null) {
-                                android.util.Log.e(
-                                    "MissingContent",
-                                    "Missing required word audio. chapterId=$chapterId stationId=null context=ImageMatchActions.handleImageToWordAttempt(correct) stage=missing raw word mapping catalogId='$choiceId'",
-                                )
-                                if (rawVoice != null) {
-                                    rawVoice.playRawBlocking(0)
-                                } else {
-                                    voice.playRequiredBlocking(
-                                        assetPath = "",
-                                        context = "ImageMatchActions.handleImageToWordAttempt(correct,missingWordMapping,rawVoice=null)",
-                                        chapterId = chapterId,
-                                        stationId = null,
-                                    )
-                                }
-                                return@launchFeedbackVoiceNoCancel
-                            }
-                            if (rawVoice == null) {
-                                android.util.Log.e(
-                                    "MissingContent",
-                                    "Missing required word audio. chapterId=$chapterId stationId=null context=ImageMatchActions.handleImageToWordAttempt(correct) stage=rawVoice=null expectedRawResId=$wordResId",
-                                )
-                                voice.playRequiredBlocking(
-                                    assetPath = "",
-                                    context = "ImageMatchActions.handleImageToWordAttempt(correct,rawVoice=null)",
-                                    chapterId = chapterId,
-                                    stationId = null,
-                                )
-                                return@launchFeedbackVoiceNoCancel
-                            }
-                            rawVoice.playRawBlocking(wordResId)
-                        } else {
-                            val clip =
-                                AudioClips.imageToWordClipByCatalogId(
-                                    catalogEntryId = choiceId,
-                                    chapterId = chapterId,
-                                    voiceHasAsset = { path -> voice.hasAsset(path) },
-                                )
-                            voice.playBlocking(clip)
-                        }
-                        GameAudioActions.playPraiseNoImmediateRepeat(
-                            voice = voice,
+        val result = session.submitImageMatch(choiceId)
+        scope.launch {
+            playImageToWordTappedOptionAudio(
+                choiceId = choiceId,
+                audioEnabled = audioEnabled,
+                chapterId = chapterId,
+                voice = voice,
+                rawVoice = rawVoice,
+            )
+            when (result) {
+                AnswerResult.Correct -> {
+                    cancelFeedbackVoice()
+                    if (audioEnabled) ChildGameAudioHooks.onCorrect()
+                    gameViewModel.inputLocked = true
+                    val audioJob =
+                        GameAudioActions.launchFeedbackVoiceNoCancel(
+                            audioEnabled = audioEnabled,
+                            scope = scope,
                             audioRuntime = audioRuntime,
-                            candidates = ImageToWordPraiseCandidates,
-                            chapterId = chapterId,
-                            rawVoice = rawVoice,
-                        )
-                    }
-                scope.launch {
+                        ) {
+                            GameAudioActions.playPraiseNoImmediateRepeat(
+                                voice = voice,
+                                audioRuntime = audioRuntime,
+                                candidates = ImageToWordPraiseCandidates,
+                                chapterId = chapterId,
+                                rawVoice = rawVoice,
+                            )
+                        }
                     GameAudioActions.joinSilently(audioJob)
                     val isLast = session.currentIndex >= session.totalQuestions - 1
                     advanceAfterRound(isLast)
                 }
-                true
+                AnswerResult.Wrong -> {
+                    if (audioEnabled) ChildGameAudioHooks.onWrong()
+                    HintPulseActions.registerWrongTapForHintPulse(gameViewModel)
+                    onWrongFeedback(choiceId)
+                }
+                else -> Unit
             }
-            AnswerResult.Wrong -> {
-                if (audioEnabled) ChildGameAudioHooks.onWrong()
-                HintPulseActions.registerWrongTapForHintPulse(gameViewModel)
-                onWrongFeedback(choiceId)
-                false
-            }
+        }
+        return when (result) {
+            AnswerResult.Correct -> true
+            AnswerResult.Wrong -> false
             AnswerResult.Finished -> false
         }
+    }
+
+    private suspend fun playImageToWordTappedOptionAudio(
+        choiceId: String,
+        audioEnabled: Boolean,
+        chapterId: Int,
+        voice: VoicePlayer,
+        rawVoice: RawVoicePlayer?,
+    ) {
+        if (!audioEnabled) return
+        if (usesImageToWordRawWordClips(chapterId)) {
+            val wordResId = AudioClips.wordRawResIdByCatalogId(choiceId)
+            if (wordResId == null) {
+                android.util.Log.e(
+                    "MissingContent",
+                    "Missing required word audio. chapterId=$chapterId stationId=null " +
+                        "context=ImageMatchActions.playImageToWordTappedOptionAudio stage=missing raw word mapping " +
+                        "catalogId='$choiceId'",
+                )
+                if (rawVoice != null) {
+                    rawVoice.playRawBlocking(0)
+                } else {
+                    voice.playRequiredBlocking(
+                        assetPath = "",
+                        context = "ImageMatchActions.playImageToWordTappedOptionAudio(missingWordMapping,rawVoice=null)",
+                        chapterId = chapterId,
+                        stationId = null,
+                    )
+                }
+                return
+            }
+            if (rawVoice == null) {
+                android.util.Log.e(
+                    "MissingContent",
+                    "Missing required word audio. chapterId=$chapterId stationId=null " +
+                        "context=ImageMatchActions.playImageToWordTappedOptionAudio stage=rawVoice=null " +
+                        "expectedRawResId=$wordResId",
+                )
+                voice.playRequiredBlocking(
+                    assetPath = "",
+                    context = "ImageMatchActions.playImageToWordTappedOptionAudio(rawVoice=null)",
+                    chapterId = chapterId,
+                    stationId = null,
+                )
+                return
+            }
+            rawVoice.playRawBlocking(wordResId)
+            return
+        }
+        val clip =
+            AudioClips.imageToWordClipByCatalogId(
+                catalogEntryId = choiceId,
+                chapterId = chapterId,
+                voiceHasAsset = { path -> voice.hasAsset(path) },
+            )
+        voice.playBlocking(clip)
     }
 
     fun handleImageToWordReplayCorrectChoice(

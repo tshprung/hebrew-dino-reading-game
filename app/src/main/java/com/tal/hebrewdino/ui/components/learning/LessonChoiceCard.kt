@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -69,8 +68,6 @@ fun LessonChoiceCard(
     innerPictureTransformOrigin: TransformOrigin = TransformOrigin(0.5f, 0.5f),
     innerPictureTranslateY: Dp = 0.dp,
     pictureContentAlignment: Alignment = Alignment.Center,
-    captionContentAlignment: Alignment = Alignment.TopCenter,
-    pictureCaptionOffsetFraction: Float = -0.20f,
     isCorrectPick: Boolean = false,
     isSelected: Boolean = false,
     /** 0..1 red flash overlay for wrong pick feedback. */

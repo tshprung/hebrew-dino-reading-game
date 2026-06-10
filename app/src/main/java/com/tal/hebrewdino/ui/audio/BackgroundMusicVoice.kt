@@ -4,7 +4,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.staticCompositionLocalOf
-import androidx.compose.ui.platform.LocalContext
 import kotlinx.coroutines.CoroutineScope
 
 val LocalBackgroundMusic = staticCompositionLocalOf<BackgroundMusicPlayer?> { null }

@@ -80,9 +80,11 @@ class Season2PedagogicalRampBatchTest {
 
     @Test
     fun hiddenWordParts_usesChooseCorrectSplitWithThreeOptions() {
+        val ch3Scope =
+            Season2WordPartsCatalog.wordCatalogIdsForChapter3WordParts(Season2ChapterContent.ch3Words)
         val specs =
             Season2WordPartsCatalog.entriesForPresentationMode(
-                Season2ChapterContent.ch3Words,
+                ch3Scope,
                 Season2WordPartsPresentationMode.HiddenWordPartsChallenge,
             )
         assertTrue(specs.all { it.catalogId !in setOf("w_נ_2", "w_צ_2") })

@@ -18,7 +18,6 @@ import kotlin.coroutines.resume
 
 class SoundPoolPlayer(context: Context) {
     companion object {
-        private const val TAG: String = "SoundPoolPlayer"
         private const val MISSING_TAG: String = "MissingContent"
         private const val FLAG_DEBUGGABLE: Int = 0x2
 
@@ -221,14 +220,6 @@ class SoundPoolPlayer(context: Context) {
             }
         }
         return null
-    }
-
-    fun stopStream(streamId: Int?) {
-        val pool = soundPool ?: return
-        val id = streamId ?: return
-        if (id == 0) return
-        pool.stop(id)
-        activeStreamIds.remove(id)
     }
 
     /**

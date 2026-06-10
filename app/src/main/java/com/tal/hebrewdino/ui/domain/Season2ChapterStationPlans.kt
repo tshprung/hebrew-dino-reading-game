@@ -176,22 +176,34 @@ object Season2ChapterStationPlans {
                     imageMatchPictureSizeMultiplier = 1f,
                     imageMatchChoiceCount = 3,
                 )
-            StationKind.WordParts ->
+            StationKind.WordParts -> {
+                val wordPartsMode =
+                    when (chapterIndex) {
+                        3 ->
+                            when (sid) {
+                                5 -> Season2WordPartsPresentationMode.GuidedWordParts
+                                6 -> Season2WordPartsPresentationMode.HiddenWordPartsChallenge
+                                else -> null
+                            }
+                        else -> null
+                    }
+                val wordPartsCatalogIds =
+                    if (chapterIndex == 3 && sid in listOf(5, 6)) {
+                        Season2WordPartsCatalog.wordCatalogIdsForChapter3WordParts(wordCatalogIds)
+                    } else {
+                        wordCatalogIds
+                    }
                 advancedPlan(
                     mode = Season2AdvancedStationMode.WordParts,
-                    wordCatalogIds = wordCatalogIds,
+                    wordCatalogIds = wordPartsCatalogIds,
                     theme = theme,
-                    wordPartsPresentationMode =
-                        when (chapterIndex) {
-                            3 ->
-                                when (sid) {
-                                    5 -> Season2WordPartsPresentationMode.GuidedWordParts
-                                    6 -> Season2WordPartsPresentationMode.HiddenWordPartsChallenge
-                                    else -> null
-                                }
-                            else -> null
-                        },
+                    questionCount =
+                        wordPartsMode?.let { mode ->
+                            Season2WordPartsCatalog.maxUniqueRounds(wordPartsCatalogIds, mode).coerceAtMost(6)
+                        } ?: 4,
+                    wordPartsPresentationMode = wordPartsMode,
                 )
+            }
             StationKind.PictureToWord ->
                 advancedPlan(
                     mode = Season2AdvancedStationMode.PictureToWord,

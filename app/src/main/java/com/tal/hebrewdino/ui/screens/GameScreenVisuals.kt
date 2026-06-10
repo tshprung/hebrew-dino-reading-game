@@ -14,7 +14,6 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -49,19 +48,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.zIndex
 import androidx.compose.ui.platform.LocalContext
-import com.tal.hebrewdino.ui.audio.VoicePlayer
-import com.tal.hebrewdino.ui.audio.RawVoicePlayer
 import com.tal.hebrewdino.ui.components.AnimatedTalkingCharacter
 import com.tal.hebrewdino.ui.components.ChapterNavChipStyles
 import com.tal.hebrewdino.ui.domain.DevTools
-import com.tal.hebrewdino.ui.components.Episode4Stations15HelpColumn
-import com.tal.hebrewdino.ui.data.PlayerAddress
-import com.tal.hebrewdino.ui.domain.LevelSession
 import com.tal.hebrewdino.ui.domain.Question
-import com.tal.hebrewdino.ui.domain.StationHintMode
-import com.tal.hebrewdino.ui.domain.StationUiSpec
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -441,70 +432,3 @@ internal fun EntryPulseAnimation(
     }
 }
 
-@Composable
-internal fun BoxScope.GameOverlayLayer(
-    chapterId: Int,
-    stationId: Int,
-    episode4HelpSt15: Boolean,
-    popBalloonsHelpControlsEnabled: Boolean,
-    phase: GamePhase,
-    inputLocked: Boolean,
-    audioEnabled: Boolean,
-    stationUiSpec: StationUiSpec,
-    episode4HelpLocksChoices: Boolean,
-    balloonHelpLocksChoices: Boolean,
-    performSideHelpReplay: () -> Unit,
-    performSideHelpHint: () -> Unit,
-    session: LevelSession,
-    scope: CoroutineScope,
-    voice: VoicePlayer,
-    rawVoice: RawVoicePlayer,
-    cancelFeedbackVoice: () -> Unit,
-    audioRuntime: GameAudioRuntimeState,
-    chapter1PlayerAddress: PlayerAddress? = null,
-) {
-    val showSideHelpColumn = episode4HelpSt15 || popBalloonsHelpControlsEnabled
-    if (showSideHelpColumn) {
-        val replayEnabled = phase == GamePhase.Play && !inputLocked
-        val hintEnabled =
-            when {
-                episode4HelpSt15 ->
-                    replayEnabled &&
-                        !episode4HelpLocksChoices &&
-                        stationUiSpec.hintMode != StationHintMode.None
-
-                else -> replayEnabled && !balloonHelpLocksChoices
-            }
-        Episode4Stations15HelpColumn(
-            replayEnabled = replayEnabled,
-            hintEnabled = hintEnabled,
-            onReplay = performSideHelpReplay,
-            onHint = performSideHelpHint,
-            modifier =
-                Modifier
-                    .align(Alignment.CenterStart)
-                    .padding(start = 2.dp, top = 100.dp, bottom = 96.dp)
-                    .zIndex(6f),
-        )
-    }
-    Chapter3Station5ReplayOverlay(
-        chapterId = chapterId,
-        stationId = stationId,
-        episode4HelpSt15 = episode4HelpSt15,
-        phase = phase,
-        inputLocked = inputLocked,
-        audioEnabled = audioEnabled,
-        session = session,
-        scope = scope,
-        voice = voice,
-        rawVoice = rawVoice,
-        cancelFeedbackVoice = cancelFeedbackVoice,
-        audioRuntime = audioRuntime,
-        chapter1PlayerAddress = chapter1PlayerAddress,
-        modifier =
-            Modifier
-                .align(Alignment.CenterStart)
-                .padding(start = 2.dp, top = 100.dp, bottom = 96.dp)
-                .zIndex(6f),
-    )
-}

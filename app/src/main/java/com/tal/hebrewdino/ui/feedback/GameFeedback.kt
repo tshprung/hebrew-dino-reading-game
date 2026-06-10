@@ -8,6 +8,7 @@ import com.tal.hebrewdino.ui.audio.SoundPoolPlayer
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlin.time.Duration.Companion.milliseconds
 
 /** Unified audio + light haptics for kid-facing stations; visuals stay in composables. */
 class GameFeedback(
@@ -43,7 +44,7 @@ class GameFeedback(
         view?.performConfirmLikeHaptic()
         scope.launch {
             sfx.playFirstAvailable(AudioClips.SfxCorrect, volume = 0.84f)
-            delay(95)
+            delay(95.milliseconds)
             sfx.playFirstAvailable(AudioClips.SfxCorrect, volume = 0.52f)
         }
     }
