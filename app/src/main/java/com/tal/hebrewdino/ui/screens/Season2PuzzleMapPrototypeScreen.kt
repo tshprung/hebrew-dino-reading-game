@@ -72,6 +72,7 @@ import com.tal.hebrewdino.ui.domain.Season2Chapter1RevealOrder
 import com.tal.hebrewdino.ui.domain.Season2ChapterRegistry
 import com.tal.hebrewdino.ui.audio.GameAudioEngine
 import com.tal.hebrewdino.ui.audio.LocalBackgroundMusic
+import com.tal.hebrewdino.ui.audio.Season2StoryAudio
 import com.tal.hebrewdino.ui.audio.withVoiceDuck
 import com.tal.hebrewdino.ui.domain.Season2Copy
 import com.tal.hebrewdino.ui.domain.Season2IntroFlow
@@ -129,6 +130,7 @@ fun Season2PuzzleMapPrototypeScreen(
     val season2Progress = remember(context) { Season2ProgressPrefs(context.applicationContext) }
     val completedChapters by season2Progress.completedChaptersFlow.collectAsState(initial = emptySet())
     val completedStations by season2Progress.completedStationsFlow(chapterId).collectAsState(initial = emptySet())
+    val puzzleMapExplainHeard by season2Progress.puzzleMapExplainHeardFlow(chapterId).collectAsState(initial = false)
     val posterResId = remember(chapterId) { season2PosterResForChapter(chapterId) }
     val posterPainter = painterResource(id = posterResId)
     val mapIntroLines =
@@ -179,18 +181,19 @@ fun Season2PuzzleMapPrototypeScreen(
     var progressHydrated by remember(chapterId) { mutableStateOf(false) }
 
     fun showReturnCaptionForCompletedCount(completedCount: Int) {
-        Season2Copy.returnCaptionAfterStation(completedCount)?.let { caption ->
-            val praiseRes =
-                com.tal.hebrewdino.ui.audio.Season2CompanionFeedbackAudio.pickMapReturnPraise(
-                    companion = companionCharacter,
-                    avoidRawResId = lastMapPraiseRawResId,
-                )
-            lastMapPraiseRawResId = praiseRes
-            returnCaption = caption
-            returnCaptionVoiceCount = completedCount
-            returnCaptionVoiceResId = praiseRes
-            returnCaptionEpoch += 1
+        val voice =
+            Season2StoryAudio.mapReturnVoice(
+                completedCount = completedCount,
+                companion = companionCharacter,
+                avoidPraiseRawResId = lastMapPraiseRawResId,
+            ) ?: return
+        if (!voice.isFirstReveal) {
+            lastMapPraiseRawResId = voice.rawResId
         }
+        returnCaption = voice.caption
+        returnCaptionVoiceCount = completedCount
+        returnCaptionVoiceResId = voice.rawResId
+        returnCaptionEpoch += 1
     }
 
     fun startReveal(tile: Int, triggerCelebrationOnFinish: Boolean) {
@@ -250,24 +253,53 @@ fun Season2PuzzleMapPrototypeScreen(
         }
     }
 
-    LaunchedEffect(mapReturnCaptionEvent, showIntro) {
-        if (mapReturnCaptionEvent == 0L || showIntro) return@LaunchedEffect
-        if (mapReturnCaptionCount > 0) {
-            showReturnCaptionForCompletedCount(mapReturnCaptionCount)
-            onMapReturnCaptionConsumed()
-        }
-    }
-
     val mapTitle = Season2Copy.puzzleMapTitle(chapterId, isChapterCompleted)
     val bgm = LocalBackgroundMusic.current
     val rawVoice = remember(context) { com.tal.hebrewdino.ui.audio.RawVoicePlayer(context = context.applicationContext) }
     var replayInstructionSpoken by remember(chapterId) { mutableStateOf(false) }
+    var puzzleExplainStarted by remember(chapterId) { mutableStateOf(false) }
 
     DisposableEffect(Unit) {
         onDispose {
             rawVoice.stopNow()
             rawVoice.release()
         }
+    }
+
+    LaunchedEffect(mapReturnCaptionEvent, showIntro) {
+        if (mapReturnCaptionEvent == 0L || showIntro) return@LaunchedEffect
+        if (mapReturnCaptionCount > 0) {
+            rawVoice.stopNow()
+            showReturnCaptionForCompletedCount(mapReturnCaptionCount)
+            onMapReturnCaptionConsumed()
+        }
+    }
+
+    LaunchedEffect(
+        chapterId,
+        showIntro,
+        completedStations.size,
+        puzzleMapExplainHeard,
+        progressHydrated,
+        puzzleExplainStarted,
+        mapReturnCaptionEvent,
+    ) {
+        if (!progressHydrated || puzzleExplainStarted) return@LaunchedEffect
+        if (mapReturnCaptionEvent != 0L) return@LaunchedEffect
+        if (
+            !Season2StoryAudio.shouldPlayPuzzleMapExplain(
+                showChapterIntroOverlay = showIntro,
+                completedStationCount = completedStations.size,
+                puzzleMapExplainHeard = puzzleMapExplainHeard,
+            )
+        ) {
+            return@LaunchedEffect
+        }
+        puzzleExplainStarted = true
+        bgm?.withVoiceDuck {
+            rawVoice.playRawBlocking(Season2StoryAudio.PuzzleMapExplain)
+        }
+        season2Progress.markPuzzleMapExplainHeard(chapterId)
     }
 
     LaunchedEffect(isChapterCompleted, showIntro, replayInstructionSpoken) {
@@ -358,6 +390,7 @@ fun Season2PuzzleMapPrototypeScreen(
 
         if (showIntro) {
             Season2MapIntroOverlay(
+                chapterId = chapterId,
                 companionCharacter = companionCharacter,
                 playerAddress = playerAddress,
                 storyLines = mapIntroLines,

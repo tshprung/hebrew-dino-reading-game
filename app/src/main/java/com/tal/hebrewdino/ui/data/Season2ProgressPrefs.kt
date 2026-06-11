@@ -23,6 +23,9 @@ class Season2ProgressPrefs(private val context: Context) {
     private fun introDismissedKeyForChapter(chapterId: Int): Preferences.Key<String> =
         stringPreferencesKey("season2_ch${chapterId}_intro_dismissed")
 
+    private fun puzzleMapExplainHeardKeyForChapter(chapterId: Int): Preferences.Key<String> =
+        stringPreferencesKey("season2_ch${chapterId}_puzzle_map_explain_heard")
+
     private val seasonIntroDismissedKey: Preferences.Key<String> =
         stringPreferencesKey("season2_season_intro_dismissed")
 
@@ -87,6 +90,19 @@ class Season2ProgressPrefs(private val context: Context) {
         }
     }
 
+    fun puzzleMapExplainHeardFlow(chapterId: Int): Flow<Boolean> =
+        context.dataStore.data.map { prefs ->
+            if (chapterId !in 1..6) return@map false
+            prefs[puzzleMapExplainHeardKeyForChapter(chapterId)] == "1"
+        }
+
+    suspend fun markPuzzleMapExplainHeard(chapterId: Int) {
+        if (chapterId !in 1..6) return
+        context.dataStore.edit { prefs ->
+            prefs[puzzleMapExplainHeardKeyForChapter(chapterId)] = "1"
+        }
+    }
+
     suspend fun markChapterCompleted(chapterId: Int) {
         if (chapterId !in 1..6) return
         context.dataStore.edit { prefs ->
@@ -108,6 +124,7 @@ class Season2ProgressPrefs(private val context: Context) {
             for (ch in 1..6) {
                 prefs[completedStationsKeyForChapter(ch)] = ""
                 prefs.remove(introDismissedKeyForChapter(ch))
+                prefs.remove(puzzleMapExplainHeardKeyForChapter(ch))
             }
         }
     }

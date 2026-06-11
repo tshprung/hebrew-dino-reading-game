@@ -53,8 +53,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import com.tal.hebrewdino.ui.audio.InStationPraiseAudio
+import com.tal.hebrewdino.ui.audio.LocalBackgroundMusic
 import com.tal.hebrewdino.ui.audio.RawVoicePlayer
 import com.tal.hebrewdino.ui.audio.AudioClips
+import com.tal.hebrewdino.ui.audio.withVoiceDuck
 import com.tal.hebrewdino.ui.companion.Chapter1AddressAwareAudio
 import com.tal.hebrewdino.ui.companion.CompanionAssets
 import com.tal.hebrewdino.ui.companion.CompanionDinoPortrait
@@ -96,6 +98,7 @@ fun Season2MemoryMatchStationScreen(
     val audio = remember { GameAudioEngine(context = context) }
     val voice = audio.voice
     val rawVoice = remember { RawVoicePlayer(context = context) }
+    val bgm = LocalBackgroundMusic.current
     val companionAssets = remember(companionCharacter) { CompanionAssets.forCharacter(companionCharacter) }
     val rapidTapDetector = remember { Season2GuessingDetector(memoryMatchMode = true) }
     var season2HintText by remember { mutableStateOf<String?>(null) }
@@ -235,7 +238,12 @@ fun Season2MemoryMatchStationScreen(
             matched[firstIndex] = true
             matched[secondIndex] = true
             scope.launch {
-                rawVoice.playRawBlocking(InStationPraiseAudio.pick())
+                val praise = InStationPraiseAudio.pick()
+                if (bgm != null) {
+                    bgm.withVoiceDuck { rawVoice.playRawBlocking(praise) }
+                } else {
+                    rawVoice.playRawBlocking(praise)
+                }
             }
         } else {
             flipped[firstIndex] = false
@@ -251,16 +259,24 @@ fun Season2MemoryMatchStationScreen(
         if (!allMatched) return@LaunchedEffect
         inputEnabled = false
         delay(420)
+        suspend fun playPraiseClip() {
+            val praise = InStationPraiseAudio.pick()
+            if (bgm != null) {
+                bgm.withVoiceDuck { rawVoice.playRawBlocking(praise) }
+            } else {
+                rawVoice.playRawBlocking(praise)
+            }
+        }
         if (roundIndex < totalRounds - 1) {
+            playPraiseClip()
+            delay(280)
             roundIndex += 1
             firstIndex = -1
             secondIndex = -1
             inputEnabled = true
             playMemoryMatchInstruction()
         } else {
-            rawVoice.playRawBlocking(InStationPraiseAudio.pick())
-            delay(320)
-            rawVoice.playRawBlocking(InStationPraiseAudio.pick())
+            playPraiseClip()
             delay(500)
             onMarkCompleted()
         }

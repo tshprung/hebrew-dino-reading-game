@@ -53,10 +53,10 @@ class Season2CopyTest {
     @Test
     fun seasonIntroLines_tellsAdventureStory() {
         val lines = Season2Copy.seasonIntroStoryLines()
-        assertEquals(4, lines.size)
-        assertTrue(lines[0].contains("טיילו ביער"))
-        assertTrue(lines[1].contains("מפה עתיקה"))
-        assertTrue(lines[3].contains("מי מסתתר"))
+        assertEquals(3, lines.size)
+        assertTrue(lines[0].contains("מפה עתיקה"))
+        assertTrue(lines[1].contains("בכל חלק"))
+        assertTrue(lines[2].contains("מי מסתתר"))
     }
 
     @Test

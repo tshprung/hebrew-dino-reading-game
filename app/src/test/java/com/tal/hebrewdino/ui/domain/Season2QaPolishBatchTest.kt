@@ -38,7 +38,7 @@ class Season2QaPolishBatchTest {
                 isSeason2Quiz = true,
             ),
         )
-        assertFalse(
+        assertTrue(
             Season2Station6FeedbackPolicy.shouldSkipCoachBubble(
                 season2UxStationId = Season2Chapter1StationOrder.PICK_LETTER,
                 isSeason2Quiz = true,

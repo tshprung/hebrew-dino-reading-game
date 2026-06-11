@@ -47,11 +47,12 @@ object Season2Copy {
     /** Season-level intro before chapter select (short adventure story). */
     fun seasonIntroStoryLines(): List<String> =
         listOf(
-            rtl("דינו ודינה טיילו ביער, ופתאום ראו משהו נוצץ בין העלים."),
-            rtl("זאת הייתה מפה עתיקה!"),
-            rtl("אולי מסתתרים כאן דינוזאורים חדשים…"),
-            rtl("בואו נפתור משחקים ונראה מי מסתתר!"),
+            rtl("מצאנו מפה עתיקה!"),
+            rtl("בכל חלק של המפה מסתתר דינוזאור אחר…"),
+            rtl("בואו נפתח את החלקים ונגלה מי מסתתר!"),
         )
+
+    fun firstRevealMapCaption(): String = rtl("חלק ראשון נחשף! ממשיכים לגלות…")
 
     fun seasonIntroContinueLabel(): String = rtl("בואו נגלה!")
 

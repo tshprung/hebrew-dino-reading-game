@@ -84,7 +84,7 @@ class Season2StationAudioTest {
     @Test
     fun ch6RhymePairs_includeCurtainPairWhenWordInCatalog() {
         val pairs = Season2RhymePairCatalog.pairsForWordIds(Season2ChapterContent.ch6Words)
-        assertTrue(pairs.size >= 2)
+        assertEquals(6, pairs.size)
         assertTrue(pairs.any { it.targetCatalogId == "w_ב_2" && it.rhymeCatalogId == "w_ח_3" })
     }
 

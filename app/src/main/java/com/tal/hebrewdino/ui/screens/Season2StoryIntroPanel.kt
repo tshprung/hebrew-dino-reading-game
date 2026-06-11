@@ -14,13 +14,17 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.annotation.RawRes
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -30,6 +34,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.tal.hebrewdino.R
 import com.tal.hebrewdino.ui.audio.BackgroundMusicVoiceDuck
+import com.tal.hebrewdino.ui.audio.LocalBackgroundMusic
+import com.tal.hebrewdino.ui.audio.RawVoicePlayer
+import com.tal.hebrewdino.ui.audio.withVoiceDuck
 import com.tal.hebrewdino.ui.companion.Chapter1DinoCompanionPilot
 import com.tal.hebrewdino.ui.companion.CompanionAssets
 import com.tal.hebrewdino.ui.companion.CompanionDinoPortrait
@@ -51,13 +58,32 @@ fun Season2StoryIntroPanel(
     companionCharacter: DinoCharacter,
     continueLabel: String,
     onContinue: () -> Unit,
+    @RawRes voiceRawResId: Int? = null,
     modifier: Modifier = Modifier,
 ) {
+    val context = LocalContext.current
+    val bgm = LocalBackgroundMusic.current
+    val rawVoice = remember { RawVoicePlayer(context.applicationContext) }
     val assets = remember(companionCharacter) { CompanionAssets.forCharacter(companionCharacter) }
     val isCompactLandscapePhone = ScreenFit.isCompactLandscapePhone()
     val (portraitW, portraitH) = Chapter1DinoCompanionPilot.introPortraitSize(isCompactLandscapePhone)
 
     BackgroundMusicVoiceDuck(active = true)
+
+    DisposableEffect(Unit) {
+        onDispose {
+            rawVoice.stopNow()
+            rawVoice.release()
+        }
+    }
+
+    LaunchedEffect(voiceRawResId) {
+        val res = voiceRawResId
+        if (res == null || res == 0) return@LaunchedEffect
+        bgm?.withVoiceDuck {
+            rawVoice.playRawBlocking(res)
+        }
+    }
 
     Box(modifier = modifier.fillMaxSize()) {
         Image(
@@ -129,7 +155,10 @@ fun Season2StoryIntroPanel(
             }
 
             FilledTonalButton(
-                onClick = onContinue,
+                onClick = {
+                    rawVoice.stopNow()
+                    onContinue()
+                },
                 modifier =
                     Modifier
                         .widthIn(min = 180.dp, max = 320.dp)

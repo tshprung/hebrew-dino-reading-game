@@ -15,6 +15,9 @@ object Season2RhymePairCatalog {
             Season2RhymePair("w_ב_2", "w_ח_3"), // בלון — חלון
             Season2RhymePair("w_ב_2", "w_ו_3"), // בלון — וילון
             Season2RhymePair("w_ח_3", "w_ו_3"), // חלון — וילון
+            Season2RhymePair("w_ש_4", "w_ב_2"), // שעון — בלון
+            Season2RhymePair("w_ש_4", "w_ח_3"), // שעון — חלון
+            Season2RhymePair("w_ש_4", "w_ו_3"), // שעון — וילון
         )
 
     fun pairsForWordIds(wordCatalogIds: List<String>): List<Season2RhymePair> {

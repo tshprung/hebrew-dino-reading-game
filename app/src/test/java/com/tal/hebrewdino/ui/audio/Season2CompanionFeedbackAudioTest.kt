@@ -31,6 +31,12 @@ class Season2CompanionFeedbackAudioTest {
     }
 
     @Test
+    fun mapPraiseCaption_resolvesForPoolMembers() {
+        val rawRes = Season2RawAudio.mapPraisePool(DinoCharacter.Dino).first()
+        assertTrue(Season2CompanionFeedbackAudio.mapPraiseCaption(rawRes).isNotBlank())
+    }
+
+    @Test
     fun mapPraise_avoidsImmediateRepeatWhenPoolHasAlternatives() {
         val first = Season2CompanionFeedbackAudio.pickMapReturnPraise(DinoCharacter.Dino, avoidRawResId = 0, random = Random(1))
         val second =

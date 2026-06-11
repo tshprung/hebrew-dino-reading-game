@@ -68,6 +68,7 @@ internal class GameViewModel(
 
     var episode4HelpClearJob: Job? = null
     var balloonHelpClearJob: Job? = null
+    var wordPartsPickJob: Job? = null
 
     fun resetEpisode4HelpForNewQuestion() {
         episode4HelpClearJob?.cancel()

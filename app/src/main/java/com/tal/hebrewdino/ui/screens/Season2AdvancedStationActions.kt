@@ -8,11 +8,14 @@ import com.tal.hebrewdino.ui.audio.VoicePlayer
 import com.tal.hebrewdino.ui.domain.AnswerResult
 import com.tal.hebrewdino.ui.domain.LevelSession
 import com.tal.hebrewdino.ui.domain.Question
+import com.tal.hebrewdino.ui.domain.Season2Station6FeedbackPolicy
 import com.tal.hebrewdino.ui.domain.Season2WordPartsCatalog
 import com.tal.hebrewdino.ui.game.ChildGameAudioHooks
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlin.time.Duration.Companion.milliseconds
 
 internal object Season2AdvancedStationActions {
     fun handleMissingFirstLetterPick(
@@ -51,7 +54,12 @@ internal object Season2AdvancedStationActions {
     fun handleWordPartsPick(
         picked: Question.WordPartsSplitOption,
         gameViewModel: GameViewModel,
+        cancelFeedbackVoice: () -> Unit,
         audioEnabled: Boolean,
+        isSeason2QuizChapter: Boolean,
+        season2UxStationId: Int?,
+        season2AdvancedMode: com.tal.hebrewdino.ui.domain.Season2AdvancedStationMode?,
+        consecutiveWrongsInRound: Int,
         chapterId: Int,
         stationId: Int,
         session: LevelSession,
@@ -63,64 +71,92 @@ internal object Season2AdvancedStationActions {
         onWrongFeedback: () -> Unit,
     ) {
         if (!gameViewModel.consumeTapCooldown()) return
-        scope.launch {
-            val tappedCatalogId =
-                Season2WordPartsCatalog.catalogIdForSplit(picked.firstPart, picked.secondPart)
-            if (audioEnabled && rawVoice != null) {
-                if (tappedCatalogId == null) {
-                    Log.e(
-                        "MissingContent",
-                        "Missing word-part split catalog mapping. chapterId=$chapterId stationId=$stationId " +
-                            "context=Season2AdvancedStationActions.handleWordPartsPick " +
-                            "split='${picked.firstPart}+${picked.secondPart}'",
-                    )
-                } else {
-                    Season2WordPartsAudio.playSplitTapSequence(
-                        catalogId = tappedCatalogId,
-                        rawVoice = rawVoice,
-                        chapterId = chapterId,
-                        stationId = stationId,
-                    )
-                }
-            } else if (tappedCatalogId == null) {
-                Log.e(
-                    "MissingContent",
-                    "Missing word-part split catalog mapping. chapterId=$chapterId stationId=$stationId " +
-                        "context=Season2AdvancedStationActions.handleWordPartsPick " +
-                        "split='${picked.firstPart}+${picked.secondPart}'",
+        gameViewModel.wordPartsPickJob?.cancel()
+        cancelFeedbackVoice()
+        val willPlayFocusAfterWrong =
+            isSeason2QuizChapter &&
+                Season2Station6FeedbackPolicy.shouldReplayInstructionAfterWrong(
+                    consecutiveWrongInRound = consecutiveWrongsInRound + 1,
+                    season2UxStationId = season2UxStationId,
+                    isSeason2Quiz = isSeason2QuizChapter,
+                    season2AdvancedMode = season2AdvancedMode,
                 )
-            }
-
-            when (session.submitWordParts(picked)) {
-                AnswerResult.Correct -> {
-                    if (audioEnabled) ChildGameAudioHooks.onCorrect()
-                    gameViewModel.inputLocked = true
-                    val q = session.currentQuestion as? Question.WordPartsQuestion
-                    if (q != null) {
-                        gameViewModel.wordPartsCompletedEquation =
-                            "${q.word} = ${q.firstPart} + ${q.correctPart}"
-                    }
+        val job =
+            scope.launch {
+                gameViewModel.inputLocked = true
+                try {
+                    val tappedCatalogId =
+                        Season2WordPartsCatalog.catalogIdForSplit(picked.firstPart, picked.secondPart)
                     if (audioEnabled && rawVoice != null) {
-                        GameAudioActions.playPraiseNoImmediateRepeat(
-                            voice = voice,
-                            audioRuntime = audioRuntime,
-                            candidates = emptyArray(),
-                            chapterId = chapterId,
-                            stationId = stationId,
-                            context = "Season2AdvancedStationActions.handleWordPartsPick(correct)",
-                            rawVoice = rawVoice,
+                        if (tappedCatalogId == null) {
+                            Log.e(
+                                "MissingContent",
+                                "Missing word-part split catalog mapping. chapterId=$chapterId stationId=$stationId " +
+                                    "context=Season2AdvancedStationActions.handleWordPartsPick " +
+                                    "split='${picked.firstPart}+${picked.secondPart}'",
+                            )
+                        } else {
+                            Season2WordPartsAudio.playSplitTapSequence(
+                                catalogId = tappedCatalogId,
+                                rawVoice = rawVoice,
+                                chapterId = chapterId,
+                                stationId = stationId,
+                            )
+                        }
+                    } else if (tappedCatalogId == null) {
+                        Log.e(
+                            "MissingContent",
+                            "Missing word-part split catalog mapping. chapterId=$chapterId stationId=$stationId " +
+                                "context=Season2AdvancedStationActions.handleWordPartsPick " +
+                                "split='${picked.firstPart}+${picked.secondPart}'",
                         )
                     }
-                    delay(1_400)
-                    gameViewModel.wordPartsCompletedEquation = null
-                    val isLast = session.currentIndex >= session.totalQuestions - 1
-                    advanceAfterRound(isLast)
+
+                    when (session.submitWordParts(picked)) {
+                        AnswerResult.Correct -> {
+                            if (audioEnabled) ChildGameAudioHooks.onCorrect()
+                            val q = session.currentQuestion as? Question.WordPartsQuestion
+                            if (q != null) {
+                                gameViewModel.wordPartsCompletedEquation =
+                                    "${q.word} = ${q.firstPart} + ${q.correctPart}"
+                            }
+                            if (audioEnabled && rawVoice != null) {
+                                GameAudioActions.playPraiseNoImmediateRepeat(
+                                    voice = voice,
+                                    audioRuntime = audioRuntime,
+                                    candidates = emptyArray(),
+                                    chapterId = chapterId,
+                                    stationId = stationId,
+                                    context = "Season2AdvancedStationActions.handleWordPartsPick(correct)",
+                                    rawVoice = rawVoice,
+                                )
+                            }
+                            delay(1_400)
+                            gameViewModel.wordPartsCompletedEquation = null
+                            val isLast = session.currentIndex >= session.totalQuestions - 1
+                            advanceAfterRound(isLast)
+                        }
+                        AnswerResult.Wrong -> {
+                            if (audioEnabled) ChildGameAudioHooks.onWrong()
+                            onWrongFeedback()
+                            if (!willPlayFocusAfterWrong) {
+                                delay(350.milliseconds)
+                                gameViewModel.inputLocked = false
+                            }
+                        }
+                        else -> {
+                            gameViewModel.inputLocked = false
+                        }
+                    }
+                } catch (e: CancellationException) {
+                    gameViewModel.inputLocked = false
+                    throw e
                 }
-                AnswerResult.Wrong -> {
-                    if (audioEnabled) ChildGameAudioHooks.onWrong()
-                    onWrongFeedback()
-                }
-                else -> {}
+            }
+        gameViewModel.wordPartsPickJob = job
+        job.invokeOnCompletion {
+            if (gameViewModel.wordPartsPickJob === job) {
+                gameViewModel.wordPartsPickJob = null
             }
         }
     }

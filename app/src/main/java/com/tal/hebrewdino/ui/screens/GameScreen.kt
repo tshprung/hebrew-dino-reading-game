@@ -44,6 +44,7 @@ import com.tal.hebrewdino.ui.audio.AudioClips
 import com.tal.hebrewdino.ui.audio.InStationPraiseAudio
 import com.tal.hebrewdino.ui.audio.GameAudioEngine
 import com.tal.hebrewdino.ui.audio.LocalBackgroundMusic
+import com.tal.hebrewdino.ui.audio.withVoiceDuck
 import com.tal.hebrewdino.ui.audio.RawVoicePlayer
 import com.tal.hebrewdino.ui.audio.SoundPoolPlayer
 import com.tal.hebrewdino.ui.audio.VoicePlayer
@@ -690,7 +691,6 @@ fun GameScreen(
         if (
             detector != null &&
                 s2StationId != null &&
-                chapter1PlayerAddress != null &&
                 Season2Station6FeedbackPolicy.shouldSkipCoachBubble(
                     s2StationId,
                     isSeason2QuizChapter,
@@ -718,15 +718,23 @@ fun GameScreen(
                                 avoidRawResId = lastSeason2FocusRawResId,
                             )
                         lastSeason2FocusRawResId = focusRes
-                        rawVoice.playRawBlocking(focusRes)
+                        if (backgroundMusic != null) {
+                            backgroundMusic.withVoiceDuck {
+                                rawVoice.playRawBlocking(focusRes)
+                            }
+                        } else {
+                            rawVoice.playRawBlocking(focusRes)
+                        }
                     }
-                    Season2GuessingCoach.replayTargetAudio(
-                        season2StationId = s2StationId,
-                        session = session,
-                        playerAddress = chapter1PlayerAddress,
-                        rawVoice = rawVoice,
-                        gameplayChapterId = chapterId,
-                    )
+                    if (chapter1PlayerAddress != null) {
+                        Season2GuessingCoach.replayTargetAudio(
+                            season2StationId = s2StationId,
+                            session = session,
+                            playerAddress = chapter1PlayerAddress,
+                            rawVoice = rawVoice,
+                            gameplayChapterId = chapterId,
+                        )
+                    }
                     gameViewModel.inputLocked = false
                 }
             } else {
@@ -1210,7 +1218,12 @@ fun GameScreen(
                         Season2AdvancedStationActions.handleWordPartsPick(
                             picked = picked,
                             gameViewModel = gameViewModel,
+                            cancelFeedbackVoice = cancelFeedbackVoiceCb,
                             audioEnabled = audioEnabled,
+                            isSeason2QuizChapter = isSeason2QuizChapter,
+                            season2UxStationId = season2Chapter1StationId,
+                            season2AdvancedMode = plan.season2AdvancedMode,
+                            consecutiveWrongsInRound = season2Station6ConsecutiveWrongs,
                             chapterId = chapterId,
                             stationId = stationId,
                             session = session,

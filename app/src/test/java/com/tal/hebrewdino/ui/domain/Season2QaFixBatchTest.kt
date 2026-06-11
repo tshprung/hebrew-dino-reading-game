@@ -111,7 +111,7 @@ class Season2QaFixBatchTest {
         assertEquals(6, ch1Plan.questionCount)
 
         val ch2Plan = Season2Chapter1StationOrder.quizPlan(chapterIndex = 2, stationId = 6)
-        assertEquals(5, ch2Plan.questionCount)
+        assertEquals(6, ch2Plan.questionCount)
 
         val ch3Ctx = Season2ChapterStationPlans.contextFor(3)!!
         val ch3St5 = Season2ChapterStationPlans.quizPlan(ch3Ctx, 5)

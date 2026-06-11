@@ -66,6 +66,22 @@ object Season2RawAudio {
             DinoCharacter.Dino -> FocusDinoPool
         }
 
+    /** Visible caption text aligned to each companion map-praise raw clip. */
+    fun mapPraiseCaption(@RawRes rawResId: Int): String? =
+        when (rawResId) {
+            R.raw.season2_map_praise_dino_01 -> "\u200Fיופי! עוד חלק מהמפה התגלה!"
+            R.raw.season2_map_praise_dino_02 -> "\u200Fכל הכבוד! גילינו עוד חלק במפה!"
+            R.raw.season2_map_praise_dino_03 -> "\u200Fנהדר! המפה נפתחת עוד קצת!"
+            R.raw.season2_map_praise_dino_04 -> "\u200Fאיזה יופי! עוד חלק מהפאזל נחשף!"
+            R.raw.season2_map_praise_dino_05 -> "\u200Fוואו! אנחנו מתקרבים לסוף!"
+            R.raw.season2_map_praise_dina_01 -> "\u200Fיופי! עוד חלק מהמפה התגלה!"
+            R.raw.season2_map_praise_dina_02 -> "\u200Fכל הכבוד! גילינו עוד חלק במפה!"
+            R.raw.season2_map_praise_dina_03 -> "\u200Fנהדר! המפה נפתחת עוד קצת!"
+            R.raw.season2_map_praise_dina_04 -> "\u200Fאיזה יופי! עוד חלק מהפאזל נחשף!"
+            R.raw.season2_map_praise_dina_05 -> "\u200Fוואו! אנחנו מתקרבים לסוף!"
+            else -> null
+        }
+
     @RawRes
     fun instructionRawResId(
         mode: Season2AdvancedStationMode,

@@ -51,7 +51,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.tal.hebrewdino.ui.audio.GameAudioEngine
 import com.tal.hebrewdino.ui.audio.RawVoicePlayer
-import com.tal.hebrewdino.ui.audio.RewardSuccessAudio
+import com.tal.hebrewdino.ui.audio.Season2StoryAudio
 import com.tal.hebrewdino.ui.audio.withVoiceDuck
 import com.tal.hebrewdino.ui.companion.CompanionDinoRewardCelebration
 import com.tal.hebrewdino.ui.companion.CompanionRewardCelebrationStyle
@@ -80,6 +80,7 @@ fun Season2SeasonIntroOverlay(
         storyLines = Season2Copy.seasonIntroStoryLines(),
         companionCharacter = companionCharacter,
         continueLabel = Season2Copy.seasonIntroContinueLabel(),
+        voiceRawResId = Season2StoryAudio.StoryIntro,
         onContinue = onContinue,
         modifier = modifier,
     )
@@ -87,6 +88,7 @@ fun Season2SeasonIntroOverlay(
 
 @Composable
 fun Season2MapIntroOverlay(
+    chapterId: Int,
     companionCharacter: DinoCharacter,
     playerAddress: PlayerAddress,
     onContinue: () -> Unit,
@@ -98,6 +100,7 @@ fun Season2MapIntroOverlay(
         storyLines = storyLines,
         companionCharacter = companionCharacter,
         continueLabel = "\u200Fבואו נגלה!",
+        voiceRawResId = Season2StoryAudio.optionalChapterIntroRawRes(chapterId),
         onContinue = onContinue,
         modifier = modifier,
     )
@@ -209,9 +212,9 @@ fun Season2ChapterCompleteOverlay(
         }
     }
 
-    LaunchedEffect(companionCharacter) {
+    LaunchedEffect(chapterId) {
         voicePlaying = true
-        val clip = RewardSuccessAudio.pickAndRemember(companionCharacter)
+        val clip = Season2StoryAudio.chapterCompleteRawRes(chapterId)
         bgm?.withVoiceDuck {
             rawVoice.playRawBlocking(clip)
         }

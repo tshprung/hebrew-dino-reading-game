@@ -139,7 +139,8 @@ class Season2ChapterRegistryTest {
     fun chapter2_hasFootprintsTheme_andDistinctLetters() {
         val ch2 = Season2ChapterRegistry.chapter(2)!!
         assertEquals(Season2StationTheme.Footprints, ch2.stationTheme)
-        assertEquals(listOf("ח", "ר", "ק", "ש"), ch2.letters)
+        assertEquals(listOf("ח", "ר", "ק", "ש", "מ"), ch2.letters)
+        assertEquals(5, ch2.letters.distinct().size)
         assertNotNull(ch2.posterPuzzleResId)
     }
 

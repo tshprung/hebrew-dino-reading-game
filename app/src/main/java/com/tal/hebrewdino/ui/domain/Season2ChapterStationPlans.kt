@@ -153,7 +153,7 @@ object Season2ChapterStationPlans {
                     mode = StationQuizMode.PictureStartsWith,
                     questionCount = 4,
                     initialGroupIndex = 0,
-                    optionCount = 4,
+                    optionCount = if (chapterIndex == 3) 5 else 4,
                     sortOptionLetters = true,
                 )
             StationKind.WhichWordStartsWith ->
@@ -222,7 +222,8 @@ object Season2ChapterStationPlans {
                     mode = Season2AdvancedStationMode.Rhyming,
                     wordCatalogIds = wordCatalogIds,
                     theme = theme,
-                    questionCount = 3,
+                    questionCount =
+                        Season2RhymePairCatalog.pairsForWordIds(wordCatalogIds).size.coerceAtMost(6),
                 )
             StationKind.MemoryMatch ->
                 error("Memory match has no quiz plan")
