@@ -45,6 +45,7 @@ import com.tal.hebrewdino.ui.screens.TrainingV1CompleteScreen
 import com.tal.hebrewdino.ui.screens.TrainingV1IntroScreen
 import com.tal.hebrewdino.ui.screens.TrainingV1RoundScreen
 import com.tal.hebrewdino.ui.domain.TrainingV1Config
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlin.random.Random
 
@@ -80,17 +81,14 @@ internal fun NavGraphBuilder.systemAndTrainingGraph(host: AppNavHostState) {
     composable(NavRoutes.Opening) {
         val context = LocalContext.current
         val parentInfoPrefs = remember(context) { ParentInfoPrefs(context.applicationContext) }
-        val lastSeenParentInfoVersion by parentInfoPrefs.lastSeenVersionCodeFlow.collectAsState(initial = null)
         var showParentInfo by remember { mutableStateOf(false) }
-        var autoParentInfoChecked by remember { mutableStateOf(false) }
         var showParentsGate by remember { mutableStateOf(false) }
         var parentsGateNonce by remember { mutableStateOf(0) }
         val challenge = remember(parentsGateNonce) { generateParentsGateChallenge() }
 
-        LaunchedEffect(lastSeenParentInfoVersion) {
-            if (autoParentInfoChecked) return@LaunchedEffect
-            autoParentInfoChecked = true
-            if (ParentInfoPolicy.shouldAutoShow(lastSeenParentInfoVersion, BuildConfig.VERSION_CODE)) {
+        LaunchedEffect(parentInfoPrefs) {
+            val lastSeen = parentInfoPrefs.lastSeenVersionCodeFlow.first()
+            if (ParentInfoPolicy.shouldAutoShow(lastSeen, BuildConfig.VERSION_CODE)) {
                 showParentInfo = true
             }
         }
@@ -125,9 +123,9 @@ internal fun NavGraphBuilder.systemAndTrainingGraph(host: AppNavHostState) {
         if (showParentInfo) {
             ParentInfoDialog(
                 onDismiss = {
-                    showParentInfo = false
                     host.scope.launch {
                         parentInfoPrefs.markSeenForVersion(BuildConfig.VERSION_CODE)
+                        showParentInfo = false
                     }
                 },
             )
