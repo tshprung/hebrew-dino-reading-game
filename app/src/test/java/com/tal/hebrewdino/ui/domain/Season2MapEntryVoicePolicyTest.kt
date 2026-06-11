@@ -129,14 +129,23 @@ class Season2MapEntryVoicePolicyTest {
 
     @Test
     fun puzzleExplain_thenEntry_onFirstHiddenMap() {
+        assertFalse(
+            Season2MapEntryVoicePolicy.shouldPlayPuzzleExplainBeforeEntry(
+                chapterId = 1,
+                completedStationCount = 0,
+                puzzleMapExplainHeard = false,
+            ),
+        )
         assertTrue(
             Season2MapEntryVoicePolicy.shouldPlayPuzzleExplainBeforeEntry(
+                chapterId = 2,
                 completedStationCount = 0,
                 puzzleMapExplainHeard = false,
             ),
         )
         assertFalse(
             Season2MapEntryVoicePolicy.shouldPlayPuzzleExplainBeforeEntry(
+                chapterId = 2,
                 completedStationCount = 0,
                 puzzleMapExplainHeard = true,
             ),

@@ -149,7 +149,7 @@ class Season2Ch1QaPolishBatchTest {
     @Test
     fun ch1_st6_layout_nudge_constants() {
         assertEquals(19, Season2Ch1QaPolicy.FinaleExtraDownDp.value.toInt())
-        assertEquals(152, Season2Ch1QaPolicy.FinaleContentEndPaddingDp.value.toInt())
+        assertEquals(120, Season2Ch1QaPolicy.FinaleDinoReservedWidthDp.value.toInt())
     }
 
     @Test

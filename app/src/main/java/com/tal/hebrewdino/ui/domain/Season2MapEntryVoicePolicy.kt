@@ -45,14 +45,16 @@ object Season2MapEntryVoicePolicy {
         )
 
     fun shouldPlayPuzzleExplainBeforeEntry(
+        chapterId: Int,
         completedStationCount: Int,
         puzzleMapExplainHeard: Boolean,
     ): Boolean =
-        Season2StoryAudio.shouldPlayPuzzleMapExplain(
-            showChapterIntroOverlay = false,
-            completedStationCount = completedStationCount,
-            puzzleMapExplainHeard = puzzleMapExplainHeard,
-        )
+        Season2Ch1QaPolicy.shouldPlayPuzzleExplainBeforeMapEntry(chapterId) &&
+            Season2StoryAudio.shouldPlayPuzzleMapExplain(
+                showChapterIntroOverlay = false,
+                completedStationCount = completedStationCount,
+                puzzleMapExplainHeard = puzzleMapExplainHeard,
+            )
 
     fun shouldSuppressBecauseStationReturn(mapReturnCaptionEvent: Long): Boolean =
         mapReturnCaptionEvent != 0L

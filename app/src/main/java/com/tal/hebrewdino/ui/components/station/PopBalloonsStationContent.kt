@@ -243,6 +243,7 @@ fun ColumnScope.PopBalloonsStationContent(
     onPopSfx: suspend (letter: String, isCorrect: Boolean, finalCorrectBalloon: Boolean, balloonIndex: Int) -> Unit,
     onWrongPick: () -> Unit,
     onAllCorrectPopped: (correctLetter: String, poppedBalloonColor: Color) -> Unit,
+    allowTapDuringWrongRecover: Boolean = false,
 ) {
     val isCompactLandscapePhone = ScreenFit.isCompactLandscapePhone()
     val usePhoneTuning = compactLandscapePhoneTuning && isCompactLandscapePhone
@@ -268,6 +269,7 @@ fun ColumnScope.PopBalloonsStationContent(
             onAllCorrectPopped = onAllCorrectPopped,
             episode4CorrectBalloonHintEpoch = episode4CorrectBalloonHintEpoch,
             helpSideInsetDp = helpSideInsetDp,
+            allowTapDuringWrongRecover = allowTapDuringWrongRecover,
         )
     }
 }

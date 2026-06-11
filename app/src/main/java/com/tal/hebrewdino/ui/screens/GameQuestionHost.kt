@@ -346,6 +346,7 @@ internal fun GameQuestionHost(
                     maxVisibleBalloonCount = maxVisibleBalloonCount,
                     episode4CorrectBalloonHintEpoch = episode4CorrectBalloonHintEpoch,
                     helpSideInsetDp = helpSideInsetDp,
+                    season2Chapter1UxStationId = ui.season2Chapter1UxStationId,
                     contentTopPaddingDp =
                         if (ui.sagaUsesPopBalloonsAudioStaging ||
                             (ui.chapterId == 3 && ui.stationId == 3) ||
@@ -804,11 +805,15 @@ internal fun GameQuestionHost(
                         stationId = ui.stationId,
                         onAttempt = { choiceId -> handlers.handleImageMatchAttempt(choiceId) },
                         onChoiceWordPreview =
-                            if (ui.audioEnabled &&
-                                (
-                                    Season2Ch1QaPolicy.isWhichWordStartsWithUx(ui.season2Chapter1UxStationId) ||
-                                        Season2StationUx.isWhichWordStartsWithStation(ui.chapterId, ui.stationId)
-                                )
+                            if (
+                                ui.audioEnabled &&
+                                    !Season2Ch1QaPolicy.shouldOrchestrateWhichWordCorrectPraiseInStation(
+                                        ui.season2Chapter1UxStationId,
+                                    ) &&
+                                    (
+                                        Season2Ch1QaPolicy.isWhichWordStartsWithUx(ui.season2Chapter1UxStationId) ||
+                                            Season2StationUx.isWhichWordStartsWithStation(ui.chapterId, ui.stationId)
+                                    )
                             ) {
                                 { choiceId ->
                                     ImageMatchActions.handleImageToWordWordPressed(
@@ -825,6 +830,7 @@ internal fun GameQuestionHost(
                             } else {
                                 null
                             },
+                        season2Chapter1UxStationId = ui.season2Chapter1UxStationId,
                         entryPulseScale = state.entryPulseScale,
                         modifier = Modifier.fillMaxSize(),
                     )

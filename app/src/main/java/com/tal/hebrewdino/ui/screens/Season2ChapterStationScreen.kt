@@ -26,6 +26,7 @@ import com.tal.hebrewdino.ui.data.Season2ProgressPrefs
 
 import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
 
+import com.tal.hebrewdino.ui.domain.Season2Ch1QaPolicy
 import com.tal.hebrewdino.ui.domain.Season2Chapter1RevealOrder
 import com.tal.hebrewdino.ui.domain.Season2Chapter1StationOrder
 
@@ -111,11 +112,20 @@ fun Season2ChapterStationScreen(
             season2Progress.markStationCompleted(chapterId, stationId)
 
             val requestCelebration =
-                Season2IntroFlow.shouldRequestChapterCelebration(
-                    stationId = stationId,
-                    wasStationAlreadyDone = wasStationDone,
-                    chapterWasCompleteBefore = chapterWasComplete,
-                )
+                if (chapterId == 1) {
+                    Season2Ch1QaPolicy.shouldRequestFirstTimeChapterReward(
+                        registryChapterId = chapterId,
+                        stationId = stationId,
+                        wasStationAlreadyDone = wasStationDone,
+                        chapterWasCompleteBefore = chapterWasComplete,
+                    )
+                } else {
+                    Season2IntroFlow.shouldRequestChapterCelebration(
+                        stationId = stationId,
+                        wasStationAlreadyDone = wasStationDone,
+                        chapterWasCompleteBefore = chapterWasComplete,
+                    )
+                }
 
             if (requestCelebration && !chapterWasComplete) {
                 season2Progress.markChapterCompleted(chapterId)

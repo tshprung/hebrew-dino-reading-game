@@ -37,6 +37,7 @@ internal fun GameOverlayLayer(
     cancelFeedbackVoice: () -> Unit,
     audioRuntime: GameAudioRuntimeState,
     chapter1PlayerAddress: PlayerAddress?,
+    showHintButton: Boolean = true,
     modifier: Modifier = Modifier,
 ) {
     val playEnabled = phase == GamePhase.Play && !inputLocked
@@ -55,6 +56,7 @@ internal fun GameOverlayLayer(
                 hintEnabled = playEnabled && !choicesLocked,
                 onReplay = performSideHelpReplay,
                 onHint = performSideHelpHint,
+                showHintButton = showHintButton,
                 modifier =
                     Modifier
                         .align(Alignment.CenterStart)

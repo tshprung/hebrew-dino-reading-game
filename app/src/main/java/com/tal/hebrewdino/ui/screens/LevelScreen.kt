@@ -508,6 +508,7 @@ internal fun PopBalloonsOptions(
      * (RTL: start = physical right where saga help buttons live).
      */
     helpSideInsetDp: Dp = 0.dp,
+    allowTapDuringWrongRecover: Boolean = false,
 ) {
     val isCompactLandscapePhone = ScreenFit.isCompactLandscapePhone()
     val maxVisible = maxVisibleBalloonCount?.coerceIn(1, options.size)
@@ -890,7 +891,7 @@ internal fun PopBalloonsOptions(
                     letter = letter,
                     color = color,
                     seed = idx * 7919 + correctAnswer.hashCode(),
-                    enabled = enabled && !wrongRecoverRunning,
+                    enabled = enabled && (allowTapDuringWrongRecover || !wrongRecoverRunning),
                     shouldPop = isCorrectLetter,
                     bobPhaseMillis = idx * 220,
                     popJuiceIndex = idx,

@@ -313,6 +313,7 @@ fun Season2PuzzleMapPrototypeScreen(
         val explainHeard = season2Progress.puzzleMapExplainHeardFlow(chapterId).first()
         val playPuzzleExplain =
             Season2MapEntryVoicePolicy.shouldPlayPuzzleExplainBeforeEntry(
+                chapterId = chapterId,
                 completedStationCount = completedStations.size,
                 puzzleMapExplainHeard = explainHeard,
             )

@@ -8,6 +8,7 @@ import com.tal.hebrewdino.ui.data.PlayerAddress
 import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
 import com.tal.hebrewdino.ui.domain.LessonChoice
 import com.tal.hebrewdino.ui.domain.Question
+import com.tal.hebrewdino.ui.domain.Season2Ch1QaPolicy
 import com.tal.hebrewdino.ui.domain.StationUiSpec
 import com.tal.hebrewdino.ui.domain.TrainingInstructionCopy
 import com.tal.hebrewdino.ui.domain.TrainingV1Config
@@ -35,8 +36,11 @@ internal fun ImageMatchQuestionRenderer(
     onAttempt: (String) -> Boolean,
     onChoiceWordPreview: ((String) -> Unit)? = null,
     entryPulseScale: Float,
+    season2Chapter1UxStationId: Int? = null,
     modifier: Modifier = Modifier,
 ) {
+    val usesWhichWordCompactLayout =
+        Season2Ch1QaPolicy.isWhichWordStartsWithLayoutStation(chapterId, stationId)
     val rawHeaderInstructionText =
         when {
             chapterId == TrainingV1Config.CHAPTER_ID &&
@@ -70,7 +74,7 @@ internal fun ImageMatchQuestionRenderer(
         showTargetLetterChip = stationUiSpec.imageMatchShowTargetLetterChip,
         listenOnlyTemporaryHintLetter = listenOnlyTemporaryHintLetter,
         headerTopPaddingDp = stationUiSpec.imageMatchHeaderTopPaddingDp.toInt(),
-        readableInstructionHeaderPanel = stationUiSpec.imageMatchHeaderReadablePanel,
+        readableInstructionHeaderPanel = stationUiSpec.imageMatchHeaderReadablePanel && !usesWhichWordCompactLayout,
         targetLetterChipOffsetYDp = stationUiSpec.imageMatchTargetLetterChipOffsetYDp.toInt(),
         contentKey = contentKey,
         enabled = enabled,

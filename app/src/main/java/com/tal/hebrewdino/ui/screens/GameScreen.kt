@@ -54,6 +54,7 @@ import com.tal.hebrewdino.ui.domain.Episode4Help
 import com.tal.hebrewdino.ui.domain.LetterPoolSpec
 import com.tal.hebrewdino.ui.domain.Season2Chapter1LetterPoolSpec
 import com.tal.hebrewdino.ui.domain.Season2Chapter2LetterPoolSpec
+import com.tal.hebrewdino.ui.domain.Season2Ch1QaPolicy
 import com.tal.hebrewdino.ui.domain.Season2GuessingCoach
 import com.tal.hebrewdino.ui.domain.Season2GuessingDetector
 import com.tal.hebrewdino.ui.domain.Season2GuessingHintCopy
@@ -708,6 +709,9 @@ fun GameScreen(
     ) {
         val detector = season2GuessingDetector
         val s2StationId = season2Chapter1StationId
+        val keepPopBalloonsInputUnlocked =
+            isSeason2BalloonStation &&
+                Season2Ch1QaPolicy.shouldKeepPopBalloonsInputUnlockedDuringFeedback(s2StationId)
         if (
             detector != null &&
                 s2StationId != null &&
@@ -731,7 +735,9 @@ fun GameScreen(
                 scope.launch {
                     try {
                         cancelFeedbackVoice()
-                        gameViewModel.inputLocked = true
+                        if (!keepPopBalloonsInputUnlocked) {
+                            gameViewModel.inputLocked = true
+                        }
                         if (audioEnabled) {
                             val focusRes =
                                 com.tal.hebrewdino.ui.audio.Season2CompanionFeedbackAudio.pickFocusLine(
@@ -765,7 +771,9 @@ fun GameScreen(
             } else {
                 scope.launch {
                     try {
-                        gameViewModel.inputLocked = true
+                        if (!keepPopBalloonsInputUnlocked) {
+                            gameViewModel.inputLocked = true
+                        }
                         if (audioEnabled && chapter1PlayerAddress != null) {
                             playAddressAwareTryAgainBlocking(
                                 chapterId = chapterId,
@@ -796,7 +804,9 @@ fun GameScreen(
                     scope.launch {
                         try {
                             cancelFeedbackVoice()
-                            gameViewModel.inputLocked = true
+                            if (!keepPopBalloonsInputUnlocked) {
+                                gameViewModel.inputLocked = true
+                            }
                             gameViewModel.dinoVisual = DinoVisual.TryAgain
                             optionsShake.animateTo(7f, tween(70))
                             optionsShake.animateTo(0f, tween(140))
@@ -1050,6 +1060,9 @@ fun GameScreen(
                     fun handlePopBalloonsWrongPick() {
                         if (isSeason2QuizChapter) {
                             if (!gameViewModel.consumeTapCooldown()) return
+                            if (isSeason2BalloonStation) {
+                                cancelFeedbackVoiceCb()
+                            }
                             session.wrongTap()
                             gameViewModel.shakeEpoch += 1
                             onWrongFeedback()
@@ -1315,6 +1328,7 @@ fun GameScreen(
                                 }
                             },
                             season2HadCoachIntervention = season2HadCoachIntervention,
+                            season2Chapter1UxStationId = season2Chapter1StationId,
                         )
                     }
 
@@ -1472,6 +1486,11 @@ fun GameScreen(
             cancelFeedbackVoice = { cancelFeedbackVoice() },
             audioRuntime = audioRuntime,
             chapter1PlayerAddress = chapter1PlayerAddress,
+            showHintButton =
+                !Season2Ch1QaPolicy.shouldHideFinaleHintButton(
+                    gameplayChapterId = chapterId,
+                    season2UxStationId = season2Chapter1StationId,
+                ),
         )
 
         if ((isCompactLandscapePhone || isSeason2QuizChapter) &&

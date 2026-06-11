@@ -57,7 +57,10 @@ internal object PopBalloonsActions {
         onPraisePlayed: (Int) -> Unit = {},
     ) {
         if (!audioEnabled) return
-        if (!season2QuizBalloons) {
+        if (
+            Season2Ch1QaPolicy.shouldCancelPreviousFeedbackOnPopBalloonsTap(season2QuizBalloons) ||
+                !season2QuizBalloons
+        ) {
             cancelFeedbackVoice()
         }
         if (sagaUsesPopBalloonsAudioStaging) {

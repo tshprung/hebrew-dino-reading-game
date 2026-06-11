@@ -97,6 +97,7 @@ internal object AdvanceAfterRoundActions {
                 stationId in 2..5 &&
                 stationId != Chapter1StationOrder.PICTURE_PICK_ONE &&
                 !isChapter3AudioLetterRecognitionStation &&
+                !Season2Ch1QaPolicy.shouldOrchestrateWhichWordCorrectPraiseInStation(season2Chapter1UxStationId) &&
                 Random.nextFloat() < Episode1PraiseChance
         /** Ch3/Ch6 st5, Ch6 st6, and Training st1/2/3 already play praise in action handlers. */
         val trainingInStationPraiseAlreadyPlayed =
@@ -109,7 +110,8 @@ internal object AdvanceAfterRoundActions {
                 (chapterId == 6 && stationId == 6) ||
                 trainingInStationPraiseAlreadyPlayed ||
                 Season2StationAudio.isPictureToWordStation(chapterId, stationId) ||
-                Season2Ch1QaPolicy.shouldSkipAdvanceRoundPraiseBecausePlayedInStation(season2Chapter1UxStationId)
+                Season2Ch1QaPolicy.shouldSkipAdvanceRoundPraiseBecausePlayedInStation(season2Chapter1UxStationId) ||
+                Season2Ch1QaPolicy.shouldOrchestrateWhichWordCorrectPraiseInStation(season2Chapter1UxStationId)
         val otherPraiseEligible =
             audioEnabled &&
                 !finaleMatchLetterStation &&

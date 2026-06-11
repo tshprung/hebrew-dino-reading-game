@@ -1,6 +1,7 @@
 package com.tal.hebrewdino.ui.screens
 
 import com.tal.hebrewdino.ui.audio.AudioClips
+import com.tal.hebrewdino.ui.audio.InStationPraiseAudio
 import com.tal.hebrewdino.ui.audio.RawVoicePlayer
 import com.tal.hebrewdino.ui.audio.VoicePlayer
 import com.tal.hebrewdino.ui.domain.AnswerResult
@@ -302,8 +303,74 @@ internal object ImageMatchActions {
         advanceAfterRound: suspend (Boolean) -> Unit,
         onWrongFeedback: (wrongWordCatalogId: String?, wrongWordAlreadySpoken: Boolean) -> Unit,
         season2HadCoachIntervention: Boolean = false,
+        season2Chapter1UxStationId: Int? = null,
     ): Boolean {
         if (!gameViewModel.consumeTapCooldown()) return false
+        if (Season2Ch1QaPolicy.shouldOrchestrateWhichWordCorrectPraiseInStation(season2Chapter1UxStationId)) {
+            cancelFeedbackVoice()
+            return when (session.submitImageMatch(choiceId)) {
+                AnswerResult.Correct -> {
+                    if (audioEnabled) ChildGameAudioHooks.onCorrect()
+                    gameViewModel.inputLocked = true
+                    val audioJob =
+                        GameAudioActions.launchFeedbackVoiceNoCancel(
+                            audioEnabled = audioEnabled,
+                            scope = scope,
+                            audioRuntime = audioRuntime,
+                        ) {
+                            playImageToWordTappedOptionAudio(
+                                choiceId = choiceId,
+                                audioEnabled = audioEnabled,
+                                chapterId = chapterId,
+                                voice = voice,
+                                rawVoice = rawVoice,
+                            )
+                            if (
+                                !Season2EarlyStationQaPolicy.shouldSkipInStationCorrectPraiseAfterCoach(
+                                    season2HadCoachIntervention,
+                                )
+                            ) {
+                                val praiseRes =
+                                    InStationPraiseAudio.pick(
+                                        avoidRawResId = null,
+                                    )
+                                if (rawVoice == null) {
+                                    voice.playRequiredBlocking(
+                                        assetPath = "",
+                                        context = "ImageMatchActions.handleImageMatchAttempt(ch1WhichWordPraise,rawVoice=null)",
+                                        chapterId = chapterId,
+                                        stationId = stationId,
+                                    )
+                                } else {
+                                    rawVoice.playRawBlocking(praiseRes)
+                                }
+                            }
+                        }
+                    scope.launch {
+                        GameAudioActions.joinSilently(audioJob)
+                        val isLast = session.currentIndex >= session.totalQuestions - 1
+                        advanceAfterRound(isLast)
+                    }
+                    true
+                }
+                AnswerResult.Wrong -> {
+                    scope.launch {
+                        playImageToWordTappedOptionAudio(
+                            choiceId = choiceId,
+                            audioEnabled = audioEnabled,
+                            chapterId = chapterId,
+                            voice = voice,
+                            rawVoice = rawVoice,
+                        )
+                        if (audioEnabled) ChildGameAudioHooks.onWrong()
+                        HintPulseActions.registerWrongTapForHintPulse(gameViewModel)
+                        onWrongFeedback(choiceId, true)
+                    }
+                    false
+                }
+                AnswerResult.Finished -> false
+            }
+        }
         cancelFeedbackVoice()
         return when (session.submitImageMatch(choiceId)) {
             AnswerResult.Correct -> {

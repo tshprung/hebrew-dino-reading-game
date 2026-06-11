@@ -23,6 +23,7 @@ fun Episode4Stations15HelpColumn(
     hintEnabled: Boolean,
     onReplay: () -> Unit,
     onHint: () -> Unit,
+    showHintButton: Boolean = true,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -37,13 +38,15 @@ fun Episode4Stations15HelpColumn(
         ) {
             Text("🔊 שוב", fontSize = 22.sp, style = ChapterNavChipStyles.labelTextStyle())
         }
-        OutlinedButton(
-            onClick = onHint,
-            enabled = hintEnabled,
-            colors = ChapterNavChipStyles.outlinedButtonColors(),
-            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 8.dp),
-        ) {
-            Text("רמז", fontSize = 22.sp, style = ChapterNavChipStyles.labelTextStyle())
+        if (showHintButton) {
+            OutlinedButton(
+                onClick = onHint,
+                enabled = hintEnabled,
+                colors = ChapterNavChipStyles.outlinedButtonColors(),
+                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 8.dp),
+            ) {
+                Text("רמז", fontSize = 22.sp, style = ChapterNavChipStyles.labelTextStyle())
+            }
         }
     }
 }

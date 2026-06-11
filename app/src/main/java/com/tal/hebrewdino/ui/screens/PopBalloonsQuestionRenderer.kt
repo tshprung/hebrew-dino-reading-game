@@ -20,6 +20,7 @@ import com.tal.hebrewdino.ui.components.station.PopBalloonsStationContent
 import com.tal.hebrewdino.ui.data.PlayerAddress
 import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
 import com.tal.hebrewdino.ui.domain.Question
+import com.tal.hebrewdino.ui.domain.Season2Ch1QaPolicy
 import com.tal.hebrewdino.ui.domain.Season2Chapter1StationOrder
 import com.tal.hebrewdino.ui.domain.Season2ChapterIds
 import com.tal.hebrewdino.ui.domain.Season2StationAudio
@@ -52,6 +53,7 @@ internal fun PopBalloonsQuestionRenderer(
     maxVisibleBalloonCount: Int?,
     episode4CorrectBalloonHintEpoch: Int,
     helpSideInsetDp: Dp,
+    season2Chapter1UxStationId: Int? = null,
     contentTopPaddingDp: Dp = 0.dp,
     onBalloonPressed: (String) -> Unit,
     onPopSfx: suspend (letter: String, isCorrect: Boolean, finalCorrectBalloon: Boolean, balloonIndex: Int) -> Unit,
@@ -70,6 +72,8 @@ internal fun PopBalloonsQuestionRenderer(
             )
     val compactLandscapePhoneTuning =
         forceSeason2Tuning || (isCompactLandscapePhone && stationUiSpec.popBalloonsCompactLandscapePhoneTuning)
+    val allowTapDuringWrongRecover =
+        Season2Ch1QaPolicy.shouldAllowTapDuringPopBalloonsWrongRecover(season2Chapter1UxStationId)
     val usesAddressAwareBalloonInstruction =
         (
             (stationUiSpec.chapterId == 1 || stationUiSpec.chapterId == 2 || stationUiSpec.chapterId == 4 || stationUiSpec.chapterId == 5) &&
@@ -142,6 +146,7 @@ internal fun PopBalloonsQuestionRenderer(
                     onAllCorrectPopped = onAllCorrectPopped,
                     episode4CorrectBalloonHintEpoch = episode4CorrectBalloonHintEpoch,
                     helpSideInsetDp = helpSideInsetDp,
+                    allowTapDuringWrongRecover = allowTapDuringWrongRecover,
                 )
                 PopBalloonsInstructionHeaderBlock(
                     listenOnly = listenOnly,
@@ -176,6 +181,7 @@ internal fun PopBalloonsQuestionRenderer(
                 onPopSfx = onPopSfx,
                 onWrongPick = onWrongPick,
                 onAllCorrectPopped = onAllCorrectPopped,
+                allowTapDuringWrongRecover = allowTapDuringWrongRecover,
             )
         }
     }

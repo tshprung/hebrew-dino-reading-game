@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -47,6 +48,7 @@ import com.tal.hebrewdino.ui.components.learning.LessonChoiceCardCaptionSpacerHe
 import com.tal.hebrewdino.ui.domain.LessonChoice
 import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
 import com.tal.hebrewdino.ui.domain.Chapter1Station4To6LessonChoiceCardSpec
+import com.tal.hebrewdino.ui.domain.Season2Ch1QaPolicy
 import com.tal.hebrewdino.ui.domain.Season2StationUx
 import com.tal.hebrewdino.ui.domain.Question
 import com.tal.hebrewdino.ui.components.learning.LessonChoiceCardPictureAspect
@@ -113,9 +115,11 @@ fun ImageMatchGame(
                         stationId == Chapter1StationOrder.PICTURE_PICK_ALL
                 ) || isSeason2WhichWordFinale
             )
-    isCompactLandscapePhone &&
-        chapterId == 1 &&
-        stationId == Chapter1StationOrder.PICTURE_PICK_ALL
+    val useWhichWordCompactLayout =
+        isCompactLandscapePhone &&
+            chapterId != null &&
+            stationId != null &&
+            Season2Ch1QaPolicy.isWhichWordStartsWithLayoutStation(chapterId, stationId)
     LaunchedEffect(contentKey) {
         successChoiceId = null
         wrongFlashChoiceId = null
@@ -158,7 +162,145 @@ fun ImageMatchGame(
             val cardH = cardW * LessonChoiceCardPictureAspect
             val density = LocalDensity.current
             val narrowRow = rowInnerWidth < 380.dp
-            if (isCompactLandscapePhoneSixStationArcStation5) {
+            if (useWhichWordCompactLayout) {
+                val cardGapTwo = 8.dp
+                val sharedCardSize =
+                    Chapter1Station4To6LessonChoiceCardSpec.station5And6CardSize(
+                        maxWidth = rowInnerWidth,
+                        maxHeight = maxHeight,
+                        choiceCount = choiceCount,
+                        pictureSizeMultiplier = pictureSizeMultiplier,
+                        showWordCaption = showWordCaptions,
+                    )
+                val effectiveCardWTwo = sharedCardSize.width
+                val cardHTwo = sharedCardSize.height
+                Column(
+                    modifier = Modifier.fillMaxSize(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    if (headerInstructionText != null) {
+                        val instructionBaseFontSp = if (rowInnerWidth < 480.dp) 28f else 32f
+                        val instructionFontSp =
+                            (instructionBaseFontSp * Season2Ch1QaPolicy.WhichWordStartsWithInstructionFontScale).sp
+                        CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+                            Text(
+                                text = headerInstructionText,
+                                fontSize = instructionFontSp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF0B2B3D),
+                                textAlign = TextAlign.End,
+                                maxLines = 1,
+                                modifier =
+                                    Modifier
+                                        .wrapContentWidth(Alignment.End)
+                                        .padding(top = 2.dp)
+                                        .offset(y = -Season2Ch1QaPolicy.WhichWordStartsWithInstructionUpDp)
+                                        .background(
+                                            Color.White.copy(
+                                                alpha = Season2Ch1QaPolicy.WhichWordStartsWithInstructionBgAlpha,
+                                            ),
+                                            RoundedCornerShape(
+                                                Season2Ch1QaPolicy.WhichWordStartsWithInstructionBgCornerRadiusDp,
+                                            ),
+                                        )
+                                        .padding(
+                                            horizontal = Season2Ch1QaPolicy.WhichWordStartsWithInstructionBgHorizontalPaddingDp,
+                                            vertical = Season2Ch1QaPolicy.WhichWordStartsWithInstructionBgVerticalPaddingDp,
+                                        ),
+                            )
+                        }
+                    }
+                    if (showTargetLetterChip) {
+                        TargetLetterHeaderChip(
+                            letter = question.targetLetter,
+                            fontSize = 44.sp,
+                            modifier =
+                                Modifier
+                                    .padding(top = 4.dp)
+                                    .offset(y = -Season2Ch1QaPolicy.WhichWordStartsWithLetterUpDp),
+                        )
+                    } else if (listenOnlyTemporaryHintLetter != null) {
+                        TargetLetterHeaderChip(
+                            letter = listenOnlyTemporaryHintLetter,
+                            fontSize = 44.sp,
+                            modifier =
+                                Modifier
+                                    .padding(top = 4.dp)
+                                    .offset(y = -Season2Ch1QaPolicy.WhichWordStartsWithLetterUpDp),
+                        )
+                    }
+                    Row(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .weight(1f, fill = true)
+                                .padding(top = Season2Ch1QaPolicy.WhichWordStartsWithLayoutPilotCardsDownDp)
+                                .offset { IntOffset(shakePx.roundToInt(), 0) },
+                        horizontalArrangement = Arrangement.spacedBy(cardGapTwo, Alignment.CenterHorizontally),
+                        verticalAlignment = Alignment.Top,
+                    ) {
+                        question.choices.forEach { choice ->
+                            val scale = remember(choice.id, contentKey) { Animatable(1f) }
+                            val flash = remember(choice.id, contentKey) { Animatable(0f) }
+                            LaunchedEffect(entryPulseEpoch, choice.id, contentKey) {
+                                if (entryPulseEpoch <= 0) return@LaunchedEffect
+                                scale.animateTo(1.05f, tween(120))
+                                scale.animateTo(1f, spring(dampingRatio = 0.70f, stiffness = 420f))
+                            }
+                            LaunchedEffect(hintPulseEpoch, hintCorrectChoiceId, choice.id, contentKey) {
+                                if (hintPulseEpoch <= 0 || hintCorrectChoiceId != choice.id) return@LaunchedEffect
+                                scale.snapTo(1f)
+                                scale.animateTo(1.22f, tween(120))
+                                scale.animateTo(1f, spring(dampingRatio = 0.55f, stiffness = 420f))
+                            }
+                            LaunchedEffect(wrongFlashEpoch, wrongFlashChoiceId, choice.id, contentKey) {
+                                if (wrongFlashEpoch <= 0 || wrongFlashChoiceId != choice.id) return@LaunchedEffect
+                                flash.snapTo(1f)
+                                flash.animateTo(0f, tween(220))
+                            }
+                            val captionSp =
+                                captionFontSizeForWordCard(
+                                    density = density,
+                                    cardWidth = effectiveCardWTwo,
+                                    word = choice.word,
+                                    sizeMultiplier = captionSizeMultiplier * 0.92f,
+                                    chapterId = chapterId,
+                                    stationId = stationId,
+                                )
+                            Chapter1Station4To6LessonChoiceCardSpec.Card(
+                                choice = choice,
+                                enabled = enabled,
+                                scale = scale.value,
+                                showWordCaption = showWordCaptions,
+                                cardWidth = effectiveCardWTwo,
+                                cardHeight = cardHTwo,
+                                captionFontSize = captionSp,
+                                innerPictureScale = innerPictureScaleForChoice(choice),
+                                onClick = {
+                                    val ok = onAttempt(choice.id)
+                                    if (ok) {
+                                        successChoiceId = choice.id
+                                        scope.launch {
+                                            scale.snapTo(1f)
+                                            scale.animateTo(1.28f, tween(100))
+                                            scale.animateTo(1f, spring(dampingRatio = 0.52f, stiffness = 420f))
+                                        }
+                                    } else {
+                                        wrongFlashChoiceId = choice.id
+                                        wrongFlashEpoch += 1
+                                        scope.launch {
+                                            flash.snapTo(1f)
+                                            flash.animateTo(0f, tween(220))
+                                        }
+                                    }
+                                },
+                                isCorrectPick = choice.id == successChoiceId,
+                                wrongFlashAlpha = flash.value,
+                            )
+                        }
+                    }
+                }
+            } else if (isCompactLandscapePhoneSixStationArcStation5) {
                 val columnGap = 10.dp
                 val sidePanelW =
                     if (rowInnerWidth < 480.dp) {
