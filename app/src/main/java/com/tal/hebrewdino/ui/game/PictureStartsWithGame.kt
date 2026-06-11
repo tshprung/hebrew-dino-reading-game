@@ -39,6 +39,7 @@ import com.tal.hebrewdino.ui.components.learning.captionFontSizeForWordCard
 import com.tal.hebrewdino.ui.domain.Chapter1Station4To6LessonChoiceCardSpec
 import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
 import com.tal.hebrewdino.ui.domain.HebrewLetterOrder
+import com.tal.hebrewdino.ui.domain.Season2Ch1QaPolicy
 import com.tal.hebrewdino.ui.domain.Season2StationUx
 import com.tal.hebrewdino.ui.domain.LessonChoice
 import com.tal.hebrewdino.ui.domain.Question
@@ -81,6 +82,8 @@ fun PictureStartsWithGame(
     instructionText: String = "באיזו אות המילה מתחילה?",
     /** White readability panel behind instruction (from [StationUiSpec] presentation flags). */
     instructionReadablePanel: Boolean = false,
+    /** S2 Ch1 PictureStartsWith layout pilot — instruction above cards, compact line, cards nudged down. */
+    useCh1LayoutPilot: Boolean = false,
     /** When true, letter options are sorted for display (e.g. Chapter 3 station 1). */
     sortOptionLetters: Boolean = false,
     /** When false, picture card shows image only (episode 4–5 listen-first station 4). */
@@ -136,43 +139,9 @@ fun PictureStartsWithGame(
 
     if (useTwoColumn) {
         CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
-            Box(modifier = modifier.fillMaxSize()) {
-                val instructionOffsetY =
-                    if ((chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) && stationId == Chapter1StationOrder.PICTURE_PICK_ONE
-                    ) {
-                        (-12).dp
-                    } else {
-                        (-6).dp
-                    }
-                CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
-                    Text(
-                        text = instructionText,
-                        fontSize = 34.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF0B2B3D),
-                        textAlign = TextAlign.Center,
-                        modifier =
-                            Modifier
-                                .align(Alignment.TopCenter)
-                                .offset(y = instructionOffsetY + instructionExtraDownDp)
-                                .padding(top = 0.dp, start = 12.dp, end = 12.dp)
-                                .then(
-                                    if (instructionReadablePanel) {
-                                        Modifier
-                                            .background(Color.White.copy(alpha = 0.72f), RoundedCornerShape(18.dp))
-                                            .padding(horizontal = instructionPanelPadH, vertical = instructionPanelPadV)
-                                    } else {
-                                        Modifier
-                                    },
-                                ),
-                    )
-                }
+            val twoColumnPlayRow: @Composable (Modifier, Dp) -> Unit = { rowModifier, pictureColumnTopSpacer ->
                 Row(
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .fillMaxHeight()
-                            .offset { IntOffset(shakePx.roundToInt(), 0) },
+                    modifier = rowModifier.offset { IntOffset(shakePx.roundToInt(), 0) },
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally),
                 ) {
@@ -214,7 +183,7 @@ fun PictureStartsWithGame(
                                 .fillMaxHeight(),
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
-                        Spacer(modifier = Modifier.height(48.dp))
+                        Spacer(modifier = Modifier.height(pictureColumnTopSpacer))
                         BoxWithConstraints(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
                     val rowInnerWidth = maxWidth
                     val frameCap =
@@ -293,8 +262,72 @@ fun PictureStartsWithGame(
                         )
                     }
                 }
-            }
                     }
+                }
+            }
+            if (useCh1LayoutPilot) {
+                Column(modifier = modifier.fillMaxSize()) {
+                    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+                        Text(
+                            text = instructionText,
+                            fontSize = 32.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF0B2B3D),
+                            textAlign = TextAlign.Center,
+                            maxLines = 1,
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 12.dp, vertical = 2.dp),
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(4.dp))
+                    twoColumnPlayRow(
+                        Modifier
+                            .fillMaxWidth()
+                            .weight(1f, fill = true)
+                            .padding(top = Season2Ch1QaPolicy.PictureStartsWithLayoutPilotCardsDownDp),
+                        8.dp,
+                    )
+                }
+            } else {
+                Box(modifier = modifier.fillMaxSize()) {
+                    val instructionOffsetY =
+                        if ((chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) &&
+                            stationId == Chapter1StationOrder.PICTURE_PICK_ONE
+                        ) {
+                            (-12).dp
+                        } else {
+                            (-6).dp
+                        }
+                    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+                        Text(
+                            text = instructionText,
+                            fontSize = 34.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF0B2B3D),
+                            textAlign = TextAlign.Center,
+                            modifier =
+                                Modifier
+                                    .align(Alignment.TopCenter)
+                                    .offset(y = instructionOffsetY + instructionExtraDownDp)
+                                    .padding(top = 0.dp, start = 12.dp, end = 12.dp)
+                                    .then(
+                                        if (instructionReadablePanel) {
+                                            Modifier
+                                                .background(Color.White.copy(alpha = 0.72f), RoundedCornerShape(18.dp))
+                                                .padding(horizontal = instructionPanelPadH, vertical = instructionPanelPadV)
+                                        } else {
+                                            Modifier
+                                        },
+                                    ),
+                        )
+                    }
+                    twoColumnPlayRow(
+                        Modifier.fillMaxWidth().fillMaxHeight(),
+                        48.dp,
+                    )
+                }
             }
         }
     } else {

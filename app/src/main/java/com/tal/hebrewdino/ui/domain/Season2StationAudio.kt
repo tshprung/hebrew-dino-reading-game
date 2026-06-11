@@ -11,6 +11,7 @@ import com.tal.hebrewdino.ui.audio.VoicePlayer
 import com.tal.hebrewdino.ui.domain.Question.MissingFirstLetterQuestion
 import com.tal.hebrewdino.ui.domain.Question.RhymingQuestion
 import com.tal.hebrewdino.ui.domain.Question.WordPartsQuestion
+import kotlinx.coroutines.delay
 
 /** Season 2 gameplay audio routing (chapter IDs 101–106). */
 object Season2StationAudio {
@@ -102,6 +103,55 @@ object Season2StationAudio {
             chapterId = chapterId,
             stationId = stationId,
             context = "Season2StationAudio.speakPictureToWordRoundPrompt",
+        )
+    }
+
+    suspend fun replayPictureToWordTargetWordOnly(
+        chapterId: Int,
+        stationId: Int,
+        catalogId: String,
+        rawVoice: RawVoicePlayer?,
+        voice: VoicePlayer,
+    ) {
+        if (!isPictureToWordStation(chapterId, stationId)) return
+        if (rawVoice == null) {
+            Log.e(
+                MISSING_TAG,
+                "Missing required station prompt audio. chapterId=$chapterId stationId=$stationId " +
+                    "context=Season2StationAudio.replayPictureToWordTargetWordOnly stage=rawVoice=null",
+            )
+            voice.playRequiredBlocking(
+                assetPath = "",
+                context = "Season2StationAudio.replayPictureToWordTargetWordOnly(rawVoice=null)",
+                chapterId = chapterId,
+                stationId = stationId,
+            )
+            return
+        }
+        playWordRawOrLog(
+            catalogId = catalogId,
+            rawVoice = rawVoice,
+            chapterId = chapterId,
+            stationId = stationId,
+            context = "Season2StationAudio.replayPictureToWordTargetWordOnly",
+        )
+    }
+
+    suspend fun replayPictureToWordCoachInstructionAndWord(
+        chapterId: Int,
+        stationId: Int,
+        catalogId: String,
+        rawVoice: RawVoicePlayer,
+    ) {
+        if (!isPictureToWordStation(chapterId, stationId)) return
+        rawVoice.playRawBlocking(R.raw.instruction_image_to_word)
+        delay(Season2Ch1QaPolicy.CoachInstructionToWordGapMs)
+        playWordRawOrLog(
+            catalogId = catalogId,
+            rawVoice = rawVoice,
+            chapterId = chapterId,
+            stationId = stationId,
+            context = "Season2StationAudio.replayPictureToWordCoachInstructionAndWord",
         )
     }
 

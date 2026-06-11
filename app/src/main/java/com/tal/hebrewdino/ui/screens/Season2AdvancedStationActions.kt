@@ -8,6 +8,7 @@ import com.tal.hebrewdino.ui.audio.VoicePlayer
 import com.tal.hebrewdino.ui.domain.AnswerResult
 import com.tal.hebrewdino.ui.domain.LevelSession
 import com.tal.hebrewdino.ui.domain.Question
+import com.tal.hebrewdino.ui.domain.Season2EarlyStationQaPolicy
 import com.tal.hebrewdino.ui.domain.Season2Station6FeedbackPolicy
 import com.tal.hebrewdino.ui.domain.Season2WordPartsCatalog
 import com.tal.hebrewdino.ui.game.ChildGameAudioHooks
@@ -69,6 +70,7 @@ internal object Season2AdvancedStationActions {
         audioRuntime: GameAudioRuntimeState,
         advanceAfterRound: suspend (Boolean) -> Unit,
         onWrongFeedback: () -> Unit,
+        season2HadCoachIntervention: Boolean = false,
     ) {
         if (!gameViewModel.consumeTapCooldown()) return
         gameViewModel.wordPartsPickJob?.cancel()
@@ -120,7 +122,13 @@ internal object Season2AdvancedStationActions {
                                 gameViewModel.wordPartsCompletedEquation =
                                     "${q.word} = ${q.firstPart} + ${q.correctPart}"
                             }
-                            if (audioEnabled && rawVoice != null) {
+                            if (
+                                audioEnabled &&
+                                    rawVoice != null &&
+                                    !Season2EarlyStationQaPolicy.shouldSkipInStationCorrectPraiseAfterCoach(
+                                        season2HadCoachIntervention,
+                                    )
+                            ) {
                                 GameAudioActions.playPraiseNoImmediateRepeat(
                                     voice = voice,
                                     audioRuntime = audioRuntime,

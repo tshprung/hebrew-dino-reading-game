@@ -57,6 +57,9 @@ import com.tal.hebrewdino.ui.domain.Season2Chapter2LetterPoolSpec
 import com.tal.hebrewdino.ui.domain.Season2GuessingCoach
 import com.tal.hebrewdino.ui.domain.Season2GuessingDetector
 import com.tal.hebrewdino.ui.domain.Season2GuessingHintCopy
+import com.tal.hebrewdino.ui.companion.playAddressAwareTryAgainBlocking
+import com.tal.hebrewdino.ui.domain.Season2AdvancedStationMode
+import com.tal.hebrewdino.ui.domain.Season2EarlyStationQaPolicy
 import com.tal.hebrewdino.ui.domain.Season2Station6FeedbackPolicy
 import com.tal.hebrewdino.ui.domain.Season2StationAudio
 import com.tal.hebrewdino.ui.companion.CompanionVisualPolicy
@@ -376,6 +379,7 @@ fun GameScreen(
     var season2Station6ConsecutiveWrongs by remember(stationId) { mutableIntStateOf(0) }
     var lastSeason2FocusRawResId by remember(stationId) { mutableIntStateOf(0) }
     var lastSeason2BalloonPraiseRawResId by remember(stationId) { mutableIntStateOf(0) }
+    var lastSeason2PostFocusPraiseRawResId by remember(stationId) { mutableIntStateOf(0) }
     val listenOnly = plan.listenOnlyTargetPrompt
     val stationUiSpec = remember(chapterId, stationId) { StationBehaviorRegistry.getStationUiSpec(chapterId, stationId) }
     val helpColumnEnabled = Episode4Help.isHelpColumnActive(stationUiSpec)
@@ -518,16 +522,20 @@ fun GameScreen(
     }
 
     val performSideHelpHint: () -> Unit = {
-        SideHelpActions.performHint(
-            isPlayPhase = gameViewModel.phase == GamePhase.Play && !gameViewModel.inputLocked,
-            episode4HelpEnabled = helpColumnEnabled,
-            popBalloonsHelpEnabled = popBalloonsHelpControlsEnabled,
-            stationId = stationId,
-            stationUiSpec = stationUiSpec,
-            session = session,
-            gameViewModel = gameViewModel,
-            scope = scope,
-        )
+        if (plan.season2AdvancedMode == Season2AdvancedStationMode.PictureToWord) {
+            performSideHelpReplay()
+        } else {
+            SideHelpActions.performHint(
+                isPlayPhase = gameViewModel.phase == GamePhase.Play && !gameViewModel.inputLocked,
+                episode4HelpEnabled = helpColumnEnabled,
+                popBalloonsHelpEnabled = popBalloonsHelpControlsEnabled,
+                stationId = stationId,
+                stationUiSpec = stationUiSpec,
+                session = session,
+                gameViewModel = gameViewModel,
+                scope = scope,
+            )
+        }
     }
     val useSagaSelectedCompanionDino =
         expectsSelectedCompanion &&
@@ -642,12 +650,22 @@ fun GameScreen(
 
     suspend fun advanceAfterRound(isLast: Boolean, ch3SpellMidWord: Boolean = false) {
         season2Station6ConsecutiveWrongs = 0
-        if (isSeason2QuizChapter && season2HadCoachIntervention && chapter1PlayerAddress != null) {
-            season2HintText = Season2GuessingHintCopy.processPraise(chapter1PlayerAddress)
-            val praiseRes = InStationPraiseAudio.pick()
-            rawVoice.playRawBlocking(praiseRes)
-            delay(900.milliseconds)
-            season2HintText = null
+        if (
+            com.tal.hebrewdino.ui.domain.Season2PostFocusCorrectPolicy.shouldPlayCompanionPraiseOnCorrect(
+                isSeason2QuizChapter = isSeason2QuizChapter,
+                season2HadCoachIntervention = season2HadCoachIntervention,
+            )
+        ) {
+            val companion = chapter1CompanionCharacter
+            if (audioEnabled && companion != null) {
+                lastSeason2PostFocusPraiseRawResId =
+                    com.tal.hebrewdino.ui.audio.Season2PostFocusCorrectAudio.playBlocking(
+                        companion = companion,
+                        rawVoice = rawVoice,
+                        backgroundMusic = backgroundMusic,
+                        avoidRawResId = lastSeason2PostFocusPraiseRawResId,
+                    )
+            }
             season2HadCoachIntervention = false
         }
         season2GuessingDetector?.onCorrect()
@@ -658,6 +676,7 @@ fun GameScreen(
             sagaEpisode = isSagaEpisode(chapterId),
             chapterId = chapterId,
             stationId = stationId,
+            season2Chapter1UxStationId = season2Chapter1StationId,
             isLast = isLast,
             ch3SpellMidWord = ch3SpellMidWord,
             suppressInGameDinoProgress = suppressInGameDinoProgress,
@@ -737,6 +756,7 @@ fun GameScreen(
                                 gameplayChapterId = chapterId,
                             )
                         }
+                        season2HadCoachIntervention = true
                     } finally {
                         gameViewModel.dinoVisual = DinoVisual.Idle
                         gameViewModel.inputLocked = false
@@ -744,11 +764,26 @@ fun GameScreen(
                 }
             } else {
                 scope.launch {
-                    if (audioEnabled) ChildGameAudioHooks.onWrong()
-                    optionsShake.animateTo(7f, tween(70))
-                    optionsShake.animateTo(0f, tween(140))
-                    gameViewModel.dinoVisual = DinoVisual.Idle
-                    gameViewModel.inputLocked = false
+                    try {
+                        gameViewModel.inputLocked = true
+                        if (audioEnabled && chapter1PlayerAddress != null) {
+                            playAddressAwareTryAgainBlocking(
+                                chapterId = chapterId,
+                                stationId = stationId,
+                                playerAddress = chapter1PlayerAddress,
+                                rawVoice = rawVoice,
+                                voice = voice,
+                                context = "GameScreen.onWrongFeedback(s2QuizTryAgain)",
+                            )
+                        } else if (audioEnabled) {
+                            ChildGameAudioHooks.onWrong()
+                        }
+                        optionsShake.animateTo(7f, tween(70))
+                        optionsShake.animateTo(0f, tween(140))
+                    } finally {
+                        gameViewModel.dinoVisual = DinoVisual.Idle
+                        gameViewModel.inputLocked = false
+                    }
                 }
             }
             return
@@ -958,6 +993,7 @@ fun GameScreen(
                             advanceAfterRound = { isLast, ch3SpellMidWord ->
                                 advanceAfterRound(isLast, ch3SpellMidWord = ch3SpellMidWord)
                             },
+                            season2HadCoachIntervention = season2HadCoachIntervention,
                         )
                     }
 
@@ -971,10 +1007,6 @@ fun GameScreen(
                             isCorrect &&
                                 isSeason2BalloonStation &&
                                 season2HadCoachIntervention
-                        if (afterCoachIntervention && chapter1PlayerAddress != null) {
-                            season2HintText =
-                                Season2GuessingHintCopy.processPraise(chapter1PlayerAddress)
-                        }
                         PopBalloonsActions.handlePopSfx(
                             audioEnabled = audioEnabled,
                             sagaUsesPopBalloonsAudioStaging = sagaUsesPopBalloonsAudioStaging,
@@ -1000,14 +1032,17 @@ fun GameScreen(
                             station2PopFallbackDurationMs = Station2PopFallbackDurationMs,
                             season2QuizBalloons = isSeason2BalloonStation,
                             afterCoachIntervention = afterCoachIntervention,
+                            companionCharacter = chapter1CompanionCharacter,
+                            postFocusAvoidPraiseRawResId = lastSeason2PostFocusPraiseRawResId,
                             lastPraiseRawResId = lastSeason2BalloonPraiseRawResId,
+                            backgroundMusic = backgroundMusic,
+                            onPostFocusPraisePlayed = { resId ->
+                                lastSeason2PostFocusPraiseRawResId = resId
+                                season2HadCoachIntervention = false
+                                season2SkipBalloonStagingAwait = true
+                            },
                             onPraisePlayed = { resId ->
                                 lastSeason2BalloonPraiseRawResId = resId
-                                if (afterCoachIntervention) {
-                                    season2HintText = null
-                                    season2HadCoachIntervention = false
-                                    season2SkipBalloonStagingAwait = true
-                                }
                             },
                         )
                     }
@@ -1080,6 +1115,7 @@ fun GameScreen(
                                     wrongPickedLetterAlreadySpoken = wrongPickedLetterAlreadySpoken,
                                 )
                             },
+                            season2HadCoachIntervention = season2HadCoachIntervention,
                         )
                     }
 
@@ -1122,12 +1158,14 @@ fun GameScreen(
                             rawVoice = rawVoice,
                             audioRuntime = audioRuntime,
                             advanceAfterRound = { isLast -> advanceAfterRound(isLast) },
-                            onWrongFeedback = { wrongWordCatalogId ->
+                            onWrongFeedback = { wrongWordCatalogId, wrongWordAlreadySpoken ->
                                 onWrongFeedback(
                                     wrongWordCatalogId = wrongWordCatalogId,
-                                    wrongWordAlreadySpoken = true,
+                                    wrongWordAlreadySpoken = wrongWordAlreadySpoken,
                                 )
                             },
+                            season2HadCoachIntervention = season2HadCoachIntervention,
+                            season2Chapter1UxStationId = season2Chapter1StationId,
                         )
                     }
 
@@ -1139,7 +1177,7 @@ fun GameScreen(
                                 Season2StationAudio.isPictureToWordStation(chapterId, stationId)
                         ) {
                             scope.launch {
-                                Season2StationAudio.speakPictureToWordRoundPrompt(
+                                Season2StationAudio.replayPictureToWordTargetWordOnly(
                                     chapterId = chapterId,
                                     stationId = stationId,
                                     catalogId = q.correctChoiceId,
@@ -1232,6 +1270,7 @@ fun GameScreen(
                             audioRuntime = audioRuntime,
                             advanceAfterRound = { isLast -> advanceAfterRound(isLast) },
                             onWrongFeedback = { onWrongFeedback() },
+                            season2HadCoachIntervention = season2HadCoachIntervention,
                         )
                     }
 
@@ -1265,13 +1304,17 @@ fun GameScreen(
                             rawVoice = rawVoice,
                             audioRuntime = audioRuntime,
                             advanceAfterRound = { isLast -> advanceAfterRound(isLast) },
-                            onWrongFeedback = { wrongWordCatalogId, generic ->
-                                if (generic) {
+                            onWrongFeedback = { wrongWordCatalogId, wrongWordAlreadySpoken ->
+                                if (wrongWordCatalogId == null && !wrongWordAlreadySpoken) {
                                     onWrongFeedback()
                                 } else {
-                                    onWrongFeedback(wrongWordCatalogId = wrongWordCatalogId)
+                                    onWrongFeedback(
+                                        wrongWordCatalogId = wrongWordCatalogId,
+                                        wrongWordAlreadySpoken = wrongWordAlreadySpoken,
+                                    )
                                 }
                             },
+                            season2HadCoachIntervention = season2HadCoachIntervention,
                         )
                     }
 
@@ -1313,6 +1356,7 @@ fun GameScreen(
                                 balloonHelpHintLetter = gameViewModel.balloonHelpHintLetter,
                                 showPopBalloonsTargetLetterChip = showPopBalloonsTargetLetterChip,
                                 chapter1PlayerAddress = chapter1PlayerAddress,
+                                season2Chapter1UxStationId = season2Chapter1StationId,
                             ),
                         state =
                             GameQuestionHostState(

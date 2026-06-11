@@ -76,9 +76,11 @@ import com.tal.hebrewdino.ui.audio.Season2StoryAudio
 import com.tal.hebrewdino.ui.audio.withVoiceDuck
 import com.tal.hebrewdino.ui.domain.Season2Copy
 import com.tal.hebrewdino.ui.domain.Season2IntroFlow
+import com.tal.hebrewdino.ui.domain.Season2MapEntryVoicePolicy
 import com.tal.hebrewdino.ui.domain.Season2PuzzleMapTileClickPolicy
 import com.tal.hebrewdino.ui.layout.topChromeInsetsPadding
 import androidx.compose.ui.text.style.TextAlign
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlin.math.PI
 import kotlin.math.sin
@@ -165,23 +167,32 @@ fun Season2PuzzleMapPrototypeScreen(
     val isRevealing = revealingTile != null
 
     var showIntro by remember(chapterId) { mutableStateOf(false) }
-
-    LaunchedEffect(requestChapterIntro) {
-        if (Season2IntroFlow.shouldShowChapterIntro(requestChapterIntro)) {
-            showIntro = true
-            onChapterIntroConsumed()
-        }
-    }
-    var showCompletionCelebration by remember(chapterId) { mutableStateOf(false) }
-    var returnCaption by remember { mutableStateOf<String?>(null) }
-    var returnCaptionVoiceCount by remember { mutableIntStateOf(0) }
-    var returnCaptionVoiceResId by remember { mutableIntStateOf(0) }
-    var returnCaptionEpoch by remember { mutableIntStateOf(0) }
-    var lastMapPraiseRawResId by remember(chapterId) { mutableIntStateOf(0) }
-    var previousStations by remember(chapterId) { mutableStateOf<Set<Int>?>(null) }
+    var entryFromChapterSelect by remember(chapterId) { mutableStateOf(false) }
+    var suppressMapEntryBecauseStationReturn by remember(chapterId) { mutableStateOf(false) }
     var progressHydrated by remember(chapterId) { mutableStateOf(false) }
 
-    fun showReturnCaptionForCompletedCount(completedCount: Int) {
+    LaunchedEffect(requestChapterIntro, progressHydrated, isChapterCompleted) {
+        if (!requestChapterIntro || !progressHydrated) return@LaunchedEffect
+        entryFromChapterSelect = true
+        suppressMapEntryBecauseStationReturn = false
+        if (
+            Season2IntroFlow.shouldShowChapterIntro(
+                chapterId = chapterId,
+                entryFromChapterSelect = true,
+                chapterFullyRevealed = isChapterCompleted,
+            )
+        ) {
+            showIntro = true
+        }
+        onChapterIntroConsumed()
+    }
+    var showCompletionCelebration by remember(chapterId) { mutableStateOf(false) }
+    var mapReturnVoiceResId by remember { mutableIntStateOf(0) }
+    var mapReturnVoiceEpoch by remember { mutableIntStateOf(0) }
+    var lastMapPraiseRawResId by remember(chapterId) { mutableIntStateOf(0) }
+    var previousStations by remember(chapterId) { mutableStateOf<Set<Int>?>(null) }
+
+    fun playMapReturnVoiceForCompletedCount(completedCount: Int) {
         val voice =
             Season2StoryAudio.mapReturnVoice(
                 completedCount = completedCount,
@@ -191,10 +202,8 @@ fun Season2PuzzleMapPrototypeScreen(
         if (!voice.isFirstReveal) {
             lastMapPraiseRawResId = voice.rawResId
         }
-        returnCaption = voice.caption
-        returnCaptionVoiceCount = completedCount
-        returnCaptionVoiceResId = voice.rawResId
-        returnCaptionEpoch += 1
+        mapReturnVoiceResId = voice.rawResId
+        mapReturnVoiceEpoch += 1
     }
 
     fun startReveal(tile: Int, triggerCelebrationOnFinish: Boolean) {
@@ -257,8 +266,7 @@ fun Season2PuzzleMapPrototypeScreen(
     val mapTitle = Season2Copy.puzzleMapTitle(chapterId, isChapterCompleted)
     val bgm = LocalBackgroundMusic.current
     val rawVoice = remember(context) { com.tal.hebrewdino.ui.audio.RawVoicePlayer(context = context.applicationContext) }
-    var replayInstructionSpoken by remember(chapterId) { mutableStateOf(false) }
-    var puzzleExplainStarted by remember(chapterId) { mutableStateOf(false) }
+    var mapEntryInstructionSpoken by remember(chapterId) { mutableStateOf(false) }
 
     DisposableEffect(Unit) {
         onDispose {
@@ -267,48 +275,64 @@ fun Season2PuzzleMapPrototypeScreen(
         }
     }
 
+    LaunchedEffect(mapReturnCaptionEvent) {
+        if (Season2MapEntryVoicePolicy.shouldSuppressBecauseStationReturn(mapReturnCaptionEvent)) {
+            suppressMapEntryBecauseStationReturn = true
+        }
+    }
+
     LaunchedEffect(mapReturnCaptionEvent, showIntro) {
         if (mapReturnCaptionEvent == 0L || showIntro) return@LaunchedEffect
         if (mapReturnCaptionCount > 0) {
             rawVoice.stopNow()
-            showReturnCaptionForCompletedCount(mapReturnCaptionCount)
+            playMapReturnVoiceForCompletedCount(mapReturnCaptionCount)
             onMapReturnCaptionConsumed()
         }
     }
 
-    LaunchedEffect(
-        chapterId,
-        showIntro,
-        completedStations.size,
-        puzzleMapExplainHeard,
-        progressHydrated,
-        puzzleExplainStarted,
-        mapReturnCaptionEvent,
-    ) {
-        if (!progressHydrated || puzzleExplainStarted) return@LaunchedEffect
-        if (mapReturnCaptionEvent != 0L) return@LaunchedEffect
+    LaunchedEffect(mapReturnVoiceEpoch, mapReturnVoiceResId, showIntro) {
+        if (mapReturnVoiceResId == 0 || showIntro) return@LaunchedEffect
+        bgm?.withVoiceDuck {
+            rawVoice.playRawBlocking(mapReturnVoiceResId)
+        }
+    }
+
+    LaunchedEffect(chapterId, progressHydrated, showIntro, mapReturnCaptionEvent) {
         if (
-            !Season2StoryAudio.shouldPlayPuzzleMapExplain(
+            !Season2MapEntryVoicePolicy.shouldOrchestrateMapEntryVoice(
+                progressHydrated = progressHydrated,
                 showChapterIntroOverlay = showIntro,
-                completedStationCount = completedStations.size,
-                puzzleMapExplainHeard = puzzleMapExplainHeard,
+                entryFromChapterSelect = entryFromChapterSelect,
+                mapReturnCaptionEvent = mapReturnCaptionEvent,
+                mapEntryInstructionSpoken = mapEntryInstructionSpoken,
+                suppressBecauseStationReturn = suppressMapEntryBecauseStationReturn,
             )
         ) {
             return@LaunchedEffect
         }
-        puzzleExplainStarted = true
+        val explainHeard = season2Progress.puzzleMapExplainHeardFlow(chapterId).first()
+        val playPuzzleExplain =
+            Season2MapEntryVoicePolicy.shouldPlayPuzzleExplainBeforeEntry(
+                completedStationCount = completedStations.size,
+                puzzleMapExplainHeard = explainHeard,
+            )
+        val mapEntryRawRes =
+            Season2MapEntryVoicePolicy.mapEntryInstructionRawRes(
+                chapterId = chapterId,
+                chapterFullyRevealed = isChapterCompleted,
+                nextPlayablePosterTile = nextPlayablePosterTile,
+                entryFromChapterSelect = entryFromChapterSelect,
+            )
         bgm?.withVoiceDuck {
-            rawVoice.playRawBlocking(Season2StoryAudio.PuzzleMapExplain)
+            if (playPuzzleExplain) {
+                rawVoice.playRawBlocking(Season2StoryAudio.PuzzleMapExplain)
+            }
+            rawVoice.playRawBlocking(mapEntryRawRes)
         }
-        season2Progress.markPuzzleMapExplainHeard(chapterId)
-    }
-
-    LaunchedEffect(isChapterCompleted, showIntro, replayInstructionSpoken) {
-        if (!isChapterCompleted || showIntro || replayInstructionSpoken) return@LaunchedEffect
-        replayInstructionSpoken = true
-        bgm?.withVoiceDuck {
-            rawVoice.playRawBlocking(Season2Copy.replayTileInstructionVoiceRawRes())
+        if (playPuzzleExplain) {
+            season2Progress.markPuzzleMapExplainHeard(chapterId)
         }
+        mapEntryInstructionSpoken = true
     }
 
     Box(
@@ -396,15 +420,6 @@ fun Season2PuzzleMapPrototypeScreen(
                 playerAddress = playerAddress,
                 storyLines = mapIntroLines,
                 onContinue = { showIntro = false },
-            )
-        }
-
-        returnCaption?.let { caption ->
-            Season2MapReturnCaptionOverlay(
-                caption = caption,
-                voiceRawResId = returnCaptionVoiceResId,
-                playEpoch = returnCaptionEpoch,
-                onDismiss = { returnCaption = null },
             )
         }
 

@@ -12,7 +12,11 @@ import com.tal.hebrewdino.ui.data.PlayerAddress
 import com.tal.hebrewdino.ui.domain.AnswerResult
 import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
 import com.tal.hebrewdino.ui.domain.LevelSession
+import com.tal.hebrewdino.ui.audio.BackgroundMusicPlayer
 import com.tal.hebrewdino.ui.audio.InStationPraiseAudio
+import com.tal.hebrewdino.ui.audio.Season2PostFocusCorrectAudio
+import com.tal.hebrewdino.ui.data.DinoCharacter
+import com.tal.hebrewdino.ui.domain.Season2Ch1QaPolicy
 import com.tal.hebrewdino.ui.domain.Season2EarlyStationQaPolicy
 import com.tal.hebrewdino.ui.domain.Season2StationAudio
 import com.tal.hebrewdino.ui.domain.TrainingV1Config
@@ -45,7 +49,11 @@ internal object PopBalloonsActions {
         skipProgressPraise: Boolean = false,
         season2QuizBalloons: Boolean = false,
         afterCoachIntervention: Boolean = false,
+        companionCharacter: DinoCharacter? = null,
+        postFocusAvoidPraiseRawResId: Int = 0,
+        backgroundMusic: BackgroundMusicPlayer? = null,
         lastPraiseRawResId: Int? = null,
+        onPostFocusPraisePlayed: (Int) -> Unit = {},
         onPraisePlayed: (Int) -> Unit = {},
     ) {
         if (!audioEnabled) return
@@ -193,7 +201,26 @@ internal object PopBalloonsActions {
                                 }
                             }
                         }
-                        if (!skipProgressPraise) {
+                        if (
+                            isCorrect &&
+                                afterCoachIntervention &&
+                                companionCharacter != null &&
+                                rawVoice != null
+                        ) {
+                            val praiseRes =
+                                Season2PostFocusCorrectAudio.playBlocking(
+                                    companion = companionCharacter,
+                                    rawVoice = rawVoice,
+                                    backgroundMusic = backgroundMusic,
+                                    avoidRawResId = postFocusAvoidPraiseRawResId,
+                                )
+                            onPostFocusPraisePlayed(praiseRes)
+                        } else if (
+                            Season2EarlyStationQaPolicy.shouldPlayBalloonPraiseOnCorrectPop(
+                                season2QuizBalloons = season2QuizBalloons,
+                                finalCorrectBalloon = finalCorrectBalloon,
+                            ) && !skipProgressPraise
+                        ) {
                             maybePlaySeason2BalloonProgressPraise(
                                 season2QuizBalloons = season2QuizBalloons,
                                 chapterId = chapterId,
@@ -315,14 +342,16 @@ internal object PopBalloonsActions {
                                 voice.playBlocking(letterClip)
                             }
                         }
-                        playAddressAwareTryAgainBlocking(
-                            chapterId = chapterId,
-                            stationId = null,
-                            playerAddress = chapter1PlayerAddress,
-                            rawVoice = rawVoice,
-                            voice = voice,
-                            context = "PopBalloonsActions.handleBalloonTap(wrong,tryAgain)",
-                        )
+                        if (Season2Ch1QaPolicy.shouldPlayTryAgainInPopBalloonsSfx(season2QuizBalloons)) {
+                            playAddressAwareTryAgainBlocking(
+                                chapterId = chapterId,
+                                stationId = null,
+                                playerAddress = chapter1PlayerAddress,
+                                rawVoice = rawVoice,
+                                voice = voice,
+                                context = "PopBalloonsActions.handleBalloonTap(wrong,tryAgain)",
+                            )
+                        }
                     }
                 }
             return

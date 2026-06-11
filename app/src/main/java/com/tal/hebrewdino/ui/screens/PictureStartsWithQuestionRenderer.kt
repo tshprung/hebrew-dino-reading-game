@@ -5,6 +5,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.tal.hebrewdino.ui.components.station.PictureStartsWithStationContent
 import com.tal.hebrewdino.ui.domain.Question
+import com.tal.hebrewdino.ui.domain.Season2Ch1QaPolicy
 import com.tal.hebrewdino.ui.domain.StationUiSpec
 import com.tal.hebrewdino.ui.layout.ScreenFit
 
@@ -38,6 +39,10 @@ internal fun PictureStartsWithQuestionRenderer(
     entryPulseScale: Float,
     modifier: Modifier = Modifier,
 ) {
+    val layoutPilot =
+        chapterId != null &&
+            stationId != null &&
+            Season2Ch1QaPolicy.isPictureStartsWithLayoutPilot(chapterId, stationId)
     val displayInstructionText =
         if (isCompactLandscapePhone && stationUiSpec.pictureStartsWithCompactLandscapeRtlWrapInstruction) {
             ScreenFit.rtlUnicodeWrap(instructionText)
@@ -48,7 +53,8 @@ internal fun PictureStartsWithQuestionRenderer(
     PictureStartsWithStationContent(
         question = current,
         instructionText = displayInstructionText,
-        instructionReadablePanel = instructionReadablePanel,
+        instructionReadablePanel = instructionReadablePanel && !layoutPilot,
+        useCh1LayoutPilot = layoutPilot,
         showWordCaption = showWordCaption,
         onPictureTapReplayWord = onPictureTapReplayWord,
         temporaryStartingLetterHint = temporaryStartingLetterHint,

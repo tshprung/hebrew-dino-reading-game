@@ -236,6 +236,7 @@ object Season2GuessingCoach {
                     playerAddress = playerAddress,
                     rawVoice = rawVoice,
                     kind = Chapter1AddressAwareAudio.InstructionKind.PictureStartsWith,
+                    postInstructionGapMs = Season2Ch1QaPolicy.CoachInstructionToWordGapMs,
                 )
             }
 
@@ -263,8 +264,28 @@ object Season2GuessingCoach {
             Season2Chapter1StationOrder.MATCH_LETTER_TO_WORD,
             ->
                 when (question) {
+                    is Question.ImageMatchQuestion ->
+                        if (
+                            Season2Ch1QaPolicy.shouldReplayPictureToWordCoachWithInstruction(
+                                season2UxStationId = season2StationId,
+                                gameplayChapterId = gameplayChapterId ?: Season2ChapterIds.Chapter1Tyrannosaurus,
+                            )
+                        ) {
+                            Season2StationAudio.replayPictureToWordCoachInstructionAndWord(
+                                chapterId = gameplayChapterId ?: Season2ChapterIds.Chapter1Tyrannosaurus,
+                                stationId = season2StationId,
+                                catalogId = question.correctChoiceId,
+                                rawVoice = rawVoice,
+                            )
+                        } else {
+                            replayAdvancedTargetAudio(
+                                question = question,
+                                rawVoice = rawVoice,
+                                chapterId = gameplayChapterId ?: Season2ChapterIds.Chapter1Tyrannosaurus,
+                                stationId = season2StationId,
+                            )
+                        }
                     is Question.WordPartsQuestion,
-                    is Question.ImageMatchQuestion,
                     ->
                         replayAdvancedTargetAudio(
                             question = question,
@@ -396,8 +417,9 @@ object Season2GuessingCoach {
         playerAddress: PlayerAddress?,
         rawVoice: RawVoicePlayer,
         kind: Chapter1AddressAwareAudio.InstructionKind,
+        postInstructionGapMs: Long = 200L,
     ) {
-        playInstructionRaw(playerAddress, rawVoice, kind)
+        playInstructionRaw(playerAddress, rawVoice, kind, postInstructionGapMs)
         val pictureQuestion = question as? Question.PictureStartsWithQuestion
         if (pictureQuestion != null) {
             val wordResId = AudioClips.wordRawResIdByCatalogId(pictureQuestion.catalogEntryId)
@@ -412,19 +434,21 @@ object Season2GuessingCoach {
         } else {
             playTargetLetter(question, rawVoice, season2StationId = Season2Chapter1StationOrder.PICTURE_STARTS_WITH)
         }
-        delay(280)
     }
 
     private suspend fun playInstructionRaw(
         playerAddress: PlayerAddress?,
         rawVoice: RawVoicePlayer,
         kind: Chapter1AddressAwareAudio.InstructionKind,
+        postInstructionGapMs: Long = 200L,
     ) {
         if (playerAddress == null) return
         val instructionRes = Chapter1AddressAwareAudio.instructionRawRes(kind, playerAddress)
         if (instructionRes != 0) {
             rawVoice.playRawBlocking(instructionRes)
-            delay(200)
+            if (postInstructionGapMs > 0) {
+                delay(postInstructionGapMs)
+            }
         }
     }
 
@@ -524,9 +548,6 @@ object Season2GuessingCoach {
         }
 
         rawVoice.playRawBlocking(resId)
-
-        delay(280)
-
     }
 
 

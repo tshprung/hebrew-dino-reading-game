@@ -3,6 +3,7 @@ package com.tal.hebrewdino.ui.screens
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -50,8 +51,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
+import com.tal.hebrewdino.R
 import com.tal.hebrewdino.ui.audio.InStationPraiseAudio
 import com.tal.hebrewdino.ui.audio.LocalBackgroundMusic
 import com.tal.hebrewdino.ui.audio.RawVoicePlayer
@@ -282,12 +286,13 @@ fun Season2MemoryMatchStationScreen(
         }
     }
 
-    Box(
-        modifier =
-            modifier
-                .fillMaxSize()
-                .background(Brush.verticalGradient(listOf(MuseumWallTop, MuseumWallBottom))),
-    ) {
+    Box(modifier = modifier.fillMaxSize()) {
+        Image(
+            painter = painterResource(id = R.drawable.season2_memory_match_bg),
+            contentDescription = null,
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Crop,
+        )
         Column(
             modifier =
                 Modifier

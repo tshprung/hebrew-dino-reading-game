@@ -20,6 +20,13 @@ object Season2CompanionFeedbackAudio {
         random: Random = Random,
     ): Int = pickFromPool(Season2RawAudio.focusPool(companion), avoidRawResId, random)
 
+    @RawRes
+    fun pickPostFocusCorrectPraise(
+        companion: DinoCharacter,
+        avoidRawResId: Int = 0,
+        random: Random = Random,
+    ): Int = pickFromPool(Season2RawAudio.postFocusCorrectPool(companion), avoidRawResId, random)
+
     fun mapPraiseCaption(@RawRes rawResId: Int): String =
         Season2RawAudio.mapPraiseCaption(rawResId)
             ?: error("Missing Season 2 map praise caption for rawResId=$rawResId")

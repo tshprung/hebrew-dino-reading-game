@@ -12,14 +12,38 @@ class Season2IntroFlowTest {
     }
 
     @Test
-    fun chapterIntro_onlyWhenEnteredFromChapterSelect() {
-        assertTrue(Season2IntroFlow.shouldShowChapterIntro(entryFromChapterSelect = true))
+    fun chapterIntro_onlyWhenEnteredFromChapterSelect_inProgress() {
+        assertTrue(
+            Season2IntroFlow.shouldShowChapterIntro(
+                entryFromChapterSelect = true,
+                chapterFullyRevealed = false,
+            ),
+        )
         assertFalse(Season2IntroFlow.shouldShowChapterIntro(entryFromChapterSelect = false))
     }
 
     @Test
     fun chapterIntro_notShownWhenReturningFromStation() {
         assertFalse(Season2IntroFlow.shouldShowChapterIntro(entryFromChapterSelect = false))
+    }
+
+    @Test
+    fun chapterIntro_skipped_when_chapter_fully_revealed() {
+        assertFalse(
+            Season2IntroFlow.shouldShowChapterIntro(
+                entryFromChapterSelect = true,
+                chapterFullyRevealed = true,
+            ),
+        )
+        for (chapterId in 2..6) {
+            assertFalse(
+                Season2IntroFlow.shouldShowChapterIntro(
+                    chapterId = chapterId,
+                    entryFromChapterSelect = true,
+                    chapterFullyRevealed = true,
+                ),
+            )
+        }
     }
 
     @Test

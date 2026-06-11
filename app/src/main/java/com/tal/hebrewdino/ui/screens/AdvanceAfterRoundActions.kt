@@ -9,6 +9,8 @@ import com.tal.hebrewdino.ui.audio.RawVoicePlayer
 import com.tal.hebrewdino.ui.audio.VoicePlayer
 import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
 import com.tal.hebrewdino.ui.domain.LevelSession
+import com.tal.hebrewdino.ui.domain.Season2Ch1QaPolicy
+import com.tal.hebrewdino.ui.domain.Season2StationAudio
 import com.tal.hebrewdino.ui.domain.TrainingV1Config
 import com.tal.hebrewdino.ui.feedback.GameFeedback
 import kotlinx.coroutines.CoroutineScope
@@ -41,6 +43,7 @@ internal object AdvanceAfterRoundActions {
         sagaEpisode: Boolean,
         chapterId: Int,
         stationId: Int,
+        season2Chapter1UxStationId: Int? = null,
         isLast: Boolean,
         ch3SpellMidWord: Boolean,
         suppressInGameDinoProgress: Boolean,
@@ -69,8 +72,14 @@ internal object AdvanceAfterRoundActions {
                 stationId == TrainingV1Config.STATION_MATCH_LETTER_TO_WORD
         val finaleMatchLetterStation =
             sagaEpisode && stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH
+        val skipInterRoundFeedback =
+            Season2Ch1QaPolicy.shouldSkipAdvanceRoundInterRoundFeedback(
+                season2UxStationId = season2Chapter1UxStationId,
+                isLast = isLast,
+            )
         if (audioEnabled) {
             when {
+                skipInterRoundFeedback -> Unit
                 sagaUsesPickLetterAudioStaging && isLast && chapterId != 3 -> gameFeedback.playCorrect()
                 sagaUsesPopBalloonsAudioStaging -> Unit
                 sagaUsesFindGridAudioStaging -> Unit
@@ -98,7 +107,9 @@ internal object AdvanceAfterRoundActions {
         val inStationPraiseAlreadyPlayed =
             isChapter3AudioLetterRecognitionStation ||
                 (chapterId == 6 && stationId == 6) ||
-                trainingInStationPraiseAlreadyPlayed
+                trainingInStationPraiseAlreadyPlayed ||
+                Season2StationAudio.isPictureToWordStation(chapterId, stationId) ||
+                Season2Ch1QaPolicy.shouldSkipAdvanceRoundPraiseBecausePlayedInStation(season2Chapter1UxStationId)
         val otherPraiseEligible =
             audioEnabled &&
                 !finaleMatchLetterStation &&
@@ -177,9 +188,12 @@ internal object AdvanceAfterRoundActions {
             GameAudioActions.awaitTrackedVoices(audioRuntime, 10000L)
             cancelFeedbackVoice()
         }
+        val tightBetweenRounds =
+            Season2Ch1QaPolicy.useTightBetweenRoundTiming(season2Chapter1UxStationId)
         delay(
             when {
                 ch3SpellMidWord -> 38
+                tightBetweenRounds -> 40
                 sagaUsesFindGridAudioStaging -> 120
                 else -> 170
             },
@@ -196,11 +210,14 @@ internal object AdvanceAfterRoundActions {
         } else if (sagaEpisode && (sagaUsesFindGridAudioStaging || stationId == Chapter1StationOrder.PICTURE_PICK_ONE)) {
             GameAudioActions.awaitFeedbackVoice(audioRuntime, 8000L)
         }
-        contentAlpha.animateTo(0f, tween(BetweenQuestionFadeMs))
-        if (!waitPraiseBeforeFade) {
+        val betweenFadeMs = if (tightBetweenRounds) 40 else BetweenQuestionFadeMs
+        contentAlpha.animateTo(0f, tween(betweenFadeMs))
+        if (!waitPraiseBeforeFade && !tightBetweenRounds) {
             GameAudioActions.awaitFeedbackVoice(audioRuntime, 2500L)
         }
-        delay(5)
+        if (!tightBetweenRounds) {
+            delay(5)
+        }
         session.nextQuestion()
         if (session.currentQuestion == null && !gameViewModel.completionCallbackFired) {
             gameViewModel.completionCallbackFired = true
@@ -212,6 +229,6 @@ internal object AdvanceAfterRoundActions {
             }
             onComplete(stationId, session.correctCount, session.mistakeCount)
         }
-        contentAlpha.animateTo(1f, tween(BetweenQuestionFadeMs))
+        contentAlpha.animateTo(1f, tween(betweenFadeMs))
     }
 }

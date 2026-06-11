@@ -61,6 +61,15 @@ class Season2RawAudioWiringTest {
         assertEquals(5, Season2RawAudio.mapPraisePool(com.tal.hebrewdino.ui.data.DinoCharacter.Dina).size)
         assertEquals(3, Season2RawAudio.focusPool(com.tal.hebrewdino.ui.data.DinoCharacter.Dino).size)
         assertNull(Season2Copy.returnCaptionVoiceRawRes(6))
+        assertEquals(R.raw.season2_map_entry_next_tile_01, Season2RawAudio.MapEntryNextTile)
+        assertEquals(R.raw.season2_map_entry_replay_tiles_01, Season2RawAudio.MapEntryReplayTiles)
+        assertEquals(R.raw.season2_success_01, Season2RawAudio.Success01)
+        assertEquals(R.raw.season2_success_02, Season2RawAudio.Success02)
+        assertEquals(R.raw.season2_success_03, Season2RawAudio.Success03)
+        assertEquals(
+            setOf(R.raw.season2_success_01, R.raw.season2_success_02, R.raw.season2_success_03),
+            Season2RawAudio.postFocusCorrectPool(com.tal.hebrewdino.ui.data.DinoCharacter.Dino).toSet(),
+        )
         assertEquals(R.raw.season2_replay_tile_instruction, Season2Copy.replayTileInstructionVoiceRawRes())
     }
 

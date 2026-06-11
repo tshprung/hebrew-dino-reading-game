@@ -6,6 +6,7 @@ import com.tal.hebrewdino.ui.audio.VoicePlayer
 import com.tal.hebrewdino.ui.domain.AnswerResult
 import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
 import com.tal.hebrewdino.ui.domain.LevelSession
+import com.tal.hebrewdino.ui.domain.Season2EarlyStationQaPolicy
 import com.tal.hebrewdino.ui.game.ChildGameAudioHooks
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
@@ -39,6 +40,7 @@ internal object PictureStartsWithActions {
         audioRuntime: GameAudioRuntimeState,
         advanceAfterRound: suspend (Boolean) -> Unit,
         onWrongFeedback: (wrongPickedLetter: String?, wrongPickedLetterAlreadySpoken: Boolean) -> Unit,
+        season2HadCoachIntervention: Boolean = false,
     ) {
         if (!gameViewModel.consumeTapCooldown()) return
         cancelFeedbackVoice()
@@ -46,20 +48,24 @@ internal object PictureStartsWithActions {
             AnswerResult.Correct -> {
                 if (audioEnabled) ChildGameAudioHooks.onCorrect()
                 gameViewModel.inputLocked = true
-                val shouldPinCorrectLetter =
+                val useLetterStagingCorrect =
                     (sagaEpisode && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) ||
+                        isSeason2QuizChapter
+                val shouldPinCorrectLetter =
+                    useLetterStagingCorrect ||
                         (chapterId == 3 && stationId == 1) ||
                         (chapterId == 6 && stationId == 1)
                 if (shouldPinCorrectLetter) {
                     gameViewModel.station4PinnedCorrectLetter = picked
                 }
-                if (sagaEpisode && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
+                if (useLetterStagingCorrect) {
                     scope.launch {
                         gameViewModel.correctTapPulseLetter = picked
                         gameViewModel.correctTapPulseEpoch += 1
                         cancelFeedbackVoice()
                         val applyImmediateLetterNameAudio =
-                            chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5
+                            chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5 ||
+                                isSeason2QuizChapter
                         val job =
                             GameAudioActions.launchFeedbackVoiceNoCancel(
                                 audioEnabled = true,
@@ -96,15 +102,21 @@ internal object PictureStartsWithActions {
                                         voice.playBlocking(letterName)
                                     }
                                 }
-                                GameAudioActions.playPraiseNoImmediateRepeat(
-                                    voice = voice,
-                                    audioRuntime = audioRuntime,
-                                    candidates = SagaPictureStartsWithPraiseCandidates,
-                                    chapterId = chapterId,
-                                    stationId = stationId,
-                                    context = "PictureStartsWithActions.handlePick(correct,praise)",
-                                    rawVoice = rawVoice,
-                                )
+                                if (
+                                    !Season2EarlyStationQaPolicy.shouldSkipInStationCorrectPraiseAfterCoach(
+                                        season2HadCoachIntervention,
+                                    )
+                                ) {
+                                    GameAudioActions.playPraiseNoImmediateRepeat(
+                                        voice = voice,
+                                        audioRuntime = audioRuntime,
+                                        candidates = SagaPictureStartsWithPraiseCandidates,
+                                        chapterId = chapterId,
+                                        stationId = stationId,
+                                        context = "PictureStartsWithActions.handlePick(correct,praise)",
+                                        rawVoice = rawVoice,
+                                    )
+                                }
                             }
                         GameAudioActions.joinSilently(job)
                         val isLast = session.currentIndex >= session.totalQuestions - 1
@@ -127,7 +139,13 @@ internal object PictureStartsWithActions {
             }
             AnswerResult.Wrong -> {
                 HintPulseActions.registerWrongTapForHintPulse(gameViewModel)
-                if (sagaEpisode && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
+                val useLetterStagingWrong =
+                    Season2EarlyStationQaPolicy.shouldUseSeason2PictureStartsWithWrongAudio(
+                        isSeason2QuizChapter = isSeason2QuizChapter,
+                        sagaEpisode = sagaEpisode,
+                        stationId = stationId,
+                    )
+                if (useLetterStagingWrong) {
                     gameViewModel.station4WrongFlashLetter = picked
                     gameViewModel.station4WrongFlashEpoch += 1
                     val applyImmediateLetterNameAudio =

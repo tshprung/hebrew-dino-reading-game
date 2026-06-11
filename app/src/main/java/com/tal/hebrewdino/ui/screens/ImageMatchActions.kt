@@ -7,6 +7,8 @@ import com.tal.hebrewdino.ui.domain.AnswerResult
 import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
 import com.tal.hebrewdino.ui.domain.LevelSession
 import com.tal.hebrewdino.ui.domain.Question
+import com.tal.hebrewdino.ui.domain.Season2Ch1QaPolicy
+import com.tal.hebrewdino.ui.domain.Season2EarlyStationQaPolicy
 import com.tal.hebrewdino.ui.domain.Season2StationAudio
 import com.tal.hebrewdino.ui.domain.TrainingV1Config
 import com.tal.hebrewdino.ui.game.ChildGameAudioHooks
@@ -39,7 +41,9 @@ internal object ImageMatchActions {
         rawVoice: RawVoicePlayer?,
         audioRuntime: GameAudioRuntimeState,
         advanceAfterRound: suspend (Boolean) -> Unit,
-        onWrongFeedback: (wrongWordCatalogId: String?) -> Unit,
+        onWrongFeedback: (wrongWordCatalogId: String?, wrongWordAlreadySpoken: Boolean) -> Unit,
+        season2HadCoachIntervention: Boolean = false,
+        season2Chapter1UxStationId: Int? = null,
     ): Boolean {
         if (!gameViewModel.consumeTapCooldown()) return false
         val result = session.submitImageMatch(choiceId)
@@ -56,28 +60,38 @@ internal object ImageMatchActions {
                     cancelFeedbackVoice()
                     if (audioEnabled) ChildGameAudioHooks.onCorrect()
                     gameViewModel.inputLocked = true
+                    val isLast = session.currentIndex >= session.totalQuestions - 1
                     val audioJob =
                         GameAudioActions.launchFeedbackVoiceNoCancel(
                             audioEnabled = audioEnabled,
                             scope = scope,
                             audioRuntime = audioRuntime,
                         ) {
-                            GameAudioActions.playPraiseNoImmediateRepeat(
-                                voice = voice,
-                                audioRuntime = audioRuntime,
-                                candidates = ImageToWordPraiseCandidates,
-                                chapterId = chapterId,
-                                rawVoice = rawVoice,
-                            )
+                            if (
+                                !Season2EarlyStationQaPolicy.shouldSkipInStationCorrectPraiseAfterCoach(
+                                    season2HadCoachIntervention,
+                                ) &&
+                                !Season2Ch1QaPolicy.shouldSkipPictureToWordAssetPraiseOnLastRound(
+                                    season2UxStationId = season2Chapter1UxStationId,
+                                    isLast = isLast,
+                                )
+                            ) {
+                                GameAudioActions.playPraiseNoImmediateRepeat(
+                                    voice = voice,
+                                    audioRuntime = audioRuntime,
+                                    candidates = ImageToWordPraiseCandidates,
+                                    chapterId = chapterId,
+                                    rawVoice = rawVoice,
+                                )
+                            }
                         }
                     GameAudioActions.joinSilently(audioJob)
-                    val isLast = session.currentIndex >= session.totalQuestions - 1
                     advanceAfterRound(isLast)
                 }
                 AnswerResult.Wrong -> {
                     if (audioEnabled) ChildGameAudioHooks.onWrong()
                     HintPulseActions.registerWrongTapForHintPulse(gameViewModel)
-                    onWrongFeedback(choiceId)
+                    onWrongFeedback(choiceId, true)
                 }
                 else -> Unit
             }
@@ -286,7 +300,8 @@ internal object ImageMatchActions {
         rawVoice: RawVoicePlayer?,
         audioRuntime: GameAudioRuntimeState,
         advanceAfterRound: suspend (Boolean) -> Unit,
-        onWrongFeedback: (wrongWordCatalogId: String?, generic: Boolean) -> Unit,
+        onWrongFeedback: (wrongWordCatalogId: String?, wrongWordAlreadySpoken: Boolean) -> Unit,
+        season2HadCoachIntervention: Boolean = false,
     ): Boolean {
         if (!gameViewModel.consumeTapCooldown()) return false
         cancelFeedbackVoice()
@@ -394,18 +409,32 @@ internal object ImageMatchActions {
                 true
             }
             AnswerResult.Wrong -> {
-                if (audioEnabled) ChildGameAudioHooks.onWrong()
-                HintPulseActions.registerWrongTapForHintPulse(gameViewModel)
-                when {
-                    chapterId == TrainingV1Config.CHAPTER_ID &&
-                        stationId == TrainingV1Config.STATION_WHICH_WORD_STARTS_WITH_LETTER ->
-                        onWrongFeedback(choiceId, false)
+                val playTappedWordFirst =
+                    sagaEpisode && stationId == Chapter1StationOrder.PICTURE_PICK_ALL
+                if (playTappedWordFirst) {
+                    scope.launch {
+                        playImageToWordTappedOptionAudio(
+                            choiceId = choiceId,
+                            audioEnabled = audioEnabled,
+                            chapterId = chapterId,
+                            voice = voice,
+                            rawVoice = rawVoice,
+                        )
+                        if (audioEnabled) ChildGameAudioHooks.onWrong()
+                        HintPulseActions.registerWrongTapForHintPulse(gameViewModel)
+                        onWrongFeedback(choiceId, true)
+                    }
+                } else {
+                    if (audioEnabled) ChildGameAudioHooks.onWrong()
+                    HintPulseActions.registerWrongTapForHintPulse(gameViewModel)
+                    when {
+                        chapterId == TrainingV1Config.CHAPTER_ID &&
+                            stationId == TrainingV1Config.STATION_WHICH_WORD_STARTS_WITH_LETTER ->
+                            onWrongFeedback(choiceId, false)
 
-                    sagaEpisode && stationId == Chapter1StationOrder.PICTURE_PICK_ALL ->
-                        onWrongFeedback(choiceId, false)
-
-                    else ->
-                        onWrongFeedback(null, true)
+                        else ->
+                            onWrongFeedback(null, false)
+                    }
                 }
                 false
             }

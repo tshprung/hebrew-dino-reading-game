@@ -50,6 +50,7 @@ import com.tal.hebrewdino.ui.domain.Chapter1Station5And6ImageMatchInnerScale
 import com.tal.hebrewdino.ui.domain.LessonChoice
 import com.tal.hebrewdino.ui.domain.Question
 import com.tal.hebrewdino.ui.domain.Season2ChapterIds
+import com.tal.hebrewdino.ui.domain.Season2Ch1QaPolicy
 import com.tal.hebrewdino.ui.domain.Season2StationAudio
 import com.tal.hebrewdino.ui.domain.TrainingV1Config
 import com.tal.hebrewdino.ui.layout.ScreenFit
@@ -132,7 +133,8 @@ fun ImageToWordGame(
             when {
                 chapterId == 6 && stationId == 6 -> 38.dp
                 isSeason2ImageToWord && chapterId == Season2ChapterIds.Chapter6Mosasaurus -> 24.dp
-                isSeason2ImageToWord && chapterId == Season2ChapterIds.Chapter1Tyrannosaurus -> 19.dp
+                isSeason2ImageToWord && chapterId == Season2ChapterIds.Chapter1Tyrannosaurus ->
+                    19.dp + Season2Ch1QaPolicy.FinaleExtraDownDp
                 isSeason2ImageToWord -> 12.dp
                 else -> 0.dp
             }
@@ -154,7 +156,13 @@ fun ImageToWordGame(
                     .fillMaxSize()
                     .padding(
                         start = 12.dp,
-                        end = if (isSeason2ImageToWord) 80.dp else 12.dp,
+                        end =
+                            when {
+                                isSeason2ImageToWord && chapterId == Season2ChapterIds.Chapter1Tyrannosaurus ->
+                                    Season2Ch1QaPolicy.FinaleContentEndPaddingDp
+                                isSeason2ImageToWord -> 80.dp
+                                else -> 12.dp
+                            },
                         top = if (isCompactLandscapePhone) 0.dp else 8.dp,
                         bottom = if (isCompactLandscapePhone) 4.dp else 8.dp,
                     )

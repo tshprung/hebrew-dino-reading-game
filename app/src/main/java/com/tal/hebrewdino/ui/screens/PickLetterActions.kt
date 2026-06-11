@@ -6,6 +6,7 @@ import com.tal.hebrewdino.ui.audio.SoundPoolPlayer
 import com.tal.hebrewdino.ui.audio.VoicePlayer
 import com.tal.hebrewdino.ui.domain.AnswerResult
 import com.tal.hebrewdino.ui.domain.LevelSession
+import com.tal.hebrewdino.ui.domain.Season2EarlyStationQaPolicy
 import com.tal.hebrewdino.ui.domain.TrainingV1Config
 import com.tal.hebrewdino.ui.game.ChildGameAudioHooks
 import kotlinx.coroutines.CoroutineScope
@@ -40,6 +41,7 @@ internal object PickLetterActions {
         audioRuntime: GameAudioRuntimeState,
         onWrongFeedback: (wrongPickedLetter: String, wrongPickedLetterAlreadySpoken: Boolean) -> Unit,
         advanceAfterRound: suspend (isLast: Boolean, ch3SpellMidWord: Boolean) -> Unit,
+        season2HadCoachIntervention: Boolean = false,
     ) {
         if (!gameViewModel.consumeTapCooldown()) return
         cancelFeedbackVoice()
@@ -191,6 +193,10 @@ internal object PickLetterActions {
                                 advanceAfterRound(isLast, false)
                                 return@launch
                             }
+                            val skipPraise =
+                                Season2EarlyStationQaPolicy.shouldSkipInStationCorrectPraiseAfterCoach(
+                                    season2HadCoachIntervention,
+                                )
                             val praise = AudioClips.station1CorrectPraiseTailCandidates()
                             val job =
                                 GameAudioActions.launchFeedbackVoiceNoCancel(
@@ -199,15 +205,17 @@ internal object PickLetterActions {
                                     audioRuntime = audioRuntime,
                                 ) {
                                     rawVoice.playRawBlocking(resId)
-                                    GameAudioActions.playPraiseNoImmediateRepeat(
-                                        voice = voice,
-                                        audioRuntime = audioRuntime,
-                                        candidates = praise,
-                                        chapterId = chapterId,
-                                        stationId = stationId,
-                                        context = "PickLetterActions.handlePick(correct,sagaStagingPraise)",
-                                        rawVoice = rawVoice,
-                                    )
+                                    if (!skipPraise) {
+                                        GameAudioActions.playPraiseNoImmediateRepeat(
+                                            voice = voice,
+                                            audioRuntime = audioRuntime,
+                                            candidates = praise,
+                                            chapterId = chapterId,
+                                            stationId = stationId,
+                                            context = "PickLetterActions.handlePick(correct,sagaStagingPraise)",
+                                            rawVoice = rawVoice,
+                                        )
+                                    }
                                 }
                             GameAudioActions.joinSilently(job)
                             val isLast = session.currentIndex >= session.totalQuestions - 1
@@ -220,6 +228,10 @@ internal object PickLetterActions {
                             advanceAfterRound(isLast, false)
                             return@launch
                         }
+                        val skipPraise =
+                            Season2EarlyStationQaPolicy.shouldSkipInStationCorrectPraiseAfterCoach(
+                                season2HadCoachIntervention,
+                            )
                         val praise = AudioClips.station1CorrectPraiseTailCandidates()
                         val job =
                             GameAudioActions.launchFeedbackVoiceNoCancel(
@@ -228,15 +240,17 @@ internal object PickLetterActions {
                                 audioRuntime = audioRuntime,
                             ) {
                                 voice.playBlocking(letterName)
-                                GameAudioActions.playPraiseNoImmediateRepeat(
-                                    voice = voice,
-                                    audioRuntime = audioRuntime,
-                                    candidates = praise,
-                                    chapterId = chapterId,
-                                    stationId = stationId,
-                                    context = "PickLetterActions.handlePick(correct,sagaStagingPraise)",
-                                    rawVoice = rawVoice,
-                                )
+                                if (!skipPraise) {
+                                    GameAudioActions.playPraiseNoImmediateRepeat(
+                                        voice = voice,
+                                        audioRuntime = audioRuntime,
+                                        candidates = praise,
+                                        chapterId = chapterId,
+                                        stationId = stationId,
+                                        context = "PickLetterActions.handlePick(correct,sagaStagingPraise)",
+                                        rawVoice = rawVoice,
+                                    )
+                                }
                             }
                         GameAudioActions.joinSilently(job)
                         val isLast = session.currentIndex >= session.totalQuestions - 1

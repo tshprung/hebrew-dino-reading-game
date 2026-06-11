@@ -15,7 +15,16 @@ object Season2NavKeys {
 object Season2IntroFlow {
     fun shouldShowSeasonIntro(entryFromSeasons: Boolean): Boolean = entryFromSeasons
 
-    fun shouldShowChapterIntro(entryFromChapterSelect: Boolean): Boolean = entryFromChapterSelect
+    fun shouldShowChapterIntro(
+        entryFromChapterSelect: Boolean,
+        chapterFullyRevealed: Boolean = false,
+    ): Boolean = entryFromChapterSelect && !chapterFullyRevealed
+
+    fun shouldShowChapterIntro(
+        chapterId: Int,
+        entryFromChapterSelect: Boolean,
+        chapterFullyRevealed: Boolean,
+    ): Boolean = shouldShowChapterIntro(entryFromChapterSelect, chapterFullyRevealed)
 
     /**
      * First-time chapter completion via progress update on the puzzle map.

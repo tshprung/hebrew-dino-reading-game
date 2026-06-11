@@ -3,6 +3,7 @@ package com.tal.hebrewdino.ui.audio
 import com.tal.hebrewdino.R
 import com.tal.hebrewdino.ui.data.DinoCharacter
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -34,6 +35,19 @@ class Season2CompanionFeedbackAudioTest {
     fun mapPraiseCaption_resolvesForPoolMembers() {
         val rawRes = Season2RawAudio.mapPraisePool(DinoCharacter.Dino).first()
         assertTrue(Season2CompanionFeedbackAudio.mapPraiseCaption(rawRes).isNotBlank())
+    }
+
+    @Test
+    fun postFocusCorrect_usesSharedSuccessPool() {
+        val dino = Season2RawAudio.postFocusCorrectPool(DinoCharacter.Dino).toSet()
+        val dina = Season2RawAudio.postFocusCorrectPool(DinoCharacter.Dina).toSet()
+        assertEquals(dino, dina)
+        assertTrue(R.raw.season2_success_01 in dino)
+        assertFalse(R.raw.reward_dino_01 in dino)
+        assertFalse(R.raw.reward_dina_01 in dina)
+        assertTrue(
+            Season2CompanionFeedbackAudio.pickPostFocusCorrectPraise(DinoCharacter.Dina) in dina,
+        )
     }
 
     @Test

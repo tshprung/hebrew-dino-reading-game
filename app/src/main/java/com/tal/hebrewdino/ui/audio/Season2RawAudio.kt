@@ -14,6 +14,10 @@ object Season2RawAudio {
 
     @RawRes val ReplayTileInstruction: Int = R.raw.season2_replay_tile_instruction
 
+    @RawRes val MapEntryNextTile: Int = R.raw.season2_map_entry_next_tile_01
+
+    @RawRes val MapEntryReplayTiles: Int = R.raw.season2_map_entry_replay_tiles_01
+
     @RawRes val WordPartsChooseSplitInstructions: Int = R.raw.season2_word_parts_choose_split_instructions
 
     @RawRes val WordPartsHiddenSplitInstructions: Int = R.raw.season2_word_parts_hidden_split_instructions
@@ -21,6 +25,12 @@ object Season2RawAudio {
     @RawRes val MissingFirstLetterInstructions: Int = R.raw.season2_missing_first_letter_instructions
 
     @RawRes val RhymingInstructions: Int = R.raw.season2_rhyming_instructions
+
+    @RawRes val Success01: Int = R.raw.season2_success_01
+
+    @RawRes val Success02: Int = R.raw.season2_success_02
+
+    @RawRes val Success03: Int = R.raw.season2_success_03
 
     private val MapPraiseDinoPool: IntArray =
         intArrayOf(
@@ -53,6 +63,16 @@ object Season2RawAudio {
             R.raw.season2_focus_dina_02,
             R.raw.season2_focus_dina_03,
         )
+
+    /** Short neutral praise after two-mistake focus (in-station, not reward screen). */
+    private val PostFocusCorrectPool: IntArray =
+        intArrayOf(
+            Success01,
+            Success02,
+            Success03,
+        )
+
+    fun postFocusCorrectPool(_companion: DinoCharacter): IntArray = PostFocusCorrectPool
 
     fun mapPraisePool(companion: DinoCharacter): IntArray =
         when (companion) {

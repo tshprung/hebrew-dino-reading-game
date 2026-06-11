@@ -12,6 +12,12 @@ class Season2Ch1St123QaFixBatchTest {
     fun balloonPraise_alwaysOnSeason2QuizPopBalloons() {
         assertTrue(Season2EarlyStationQaPolicy.shouldPlayBalloonPraiseOnCorrectPop(season2QuizBalloons = true))
         assertFalse(Season2EarlyStationQaPolicy.shouldPlayBalloonPraiseOnCorrectPop(season2QuizBalloons = false))
+        assertFalse(
+            Season2EarlyStationQaPolicy.shouldPlayBalloonPraiseOnCorrectPop(
+                season2QuizBalloons = true,
+                finalCorrectBalloon = true,
+            ),
+        )
     }
 
     @Test

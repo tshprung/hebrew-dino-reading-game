@@ -32,6 +32,7 @@ import com.tal.hebrewdino.ui.domain.StationInstructionCopy
 import com.tal.hebrewdino.ui.domain.Season2AdvancedStationMode
 import com.tal.hebrewdino.ui.domain.Season2ChapterStationPlans
 import com.tal.hebrewdino.ui.domain.Season2StationThemeCopy
+import com.tal.hebrewdino.ui.domain.Season2Ch1QaPolicy
 import com.tal.hebrewdino.ui.domain.Season2StationUx
 import com.tal.hebrewdino.ui.domain.StationQuizMode
 import com.tal.hebrewdino.ui.domain.StationQuizPlan
@@ -113,6 +114,7 @@ internal data class GameQuestionHostUi(
     val balloonHelpHintLetter: String?,
     val showPopBalloonsTargetLetterChip: Boolean,
     val chapter1PlayerAddress: PlayerAddress?,
+    val season2Chapter1UxStationId: Int? = null,
 )
 
 internal data class GameQuestionHostState(
@@ -803,7 +805,10 @@ internal fun GameQuestionHost(
                         onAttempt = { choiceId -> handlers.handleImageMatchAttempt(choiceId) },
                         onChoiceWordPreview =
                             if (ui.audioEnabled &&
-                                Season2StationUx.isWhichWordStartsWithStation(ui.chapterId, ui.stationId)
+                                (
+                                    Season2Ch1QaPolicy.isWhichWordStartsWithUx(ui.season2Chapter1UxStationId) ||
+                                        Season2StationUx.isWhichWordStartsWithStation(ui.chapterId, ui.stationId)
+                                )
                             ) {
                                 { choiceId ->
                                     ImageMatchActions.handleImageToWordWordPressed(
