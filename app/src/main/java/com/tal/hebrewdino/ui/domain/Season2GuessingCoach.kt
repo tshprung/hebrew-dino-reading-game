@@ -117,20 +117,22 @@ object Season2GuessingCoach {
 
 
             Season2ChapterStationPlans.StationKind.PictureStartsWith ->
-
-                playInstructionThenLetter(
-
-                    season2StationId = season2StationId,
-
-                    question = question,
-
-                    playerAddress = playerAddress,
-
-                    rawVoice = rawVoice,
-
-                    kind = Chapter1AddressAwareAudio.InstructionKind.PictureStartsWith,
-
-                )
+                if (Season2EarlyStationQaPolicy.shouldReplayWordForPictureStartsWithCoach(season2StationId)) {
+                    playInstructionThenWord(
+                        question = question,
+                        playerAddress = playerAddress,
+                        rawVoice = rawVoice,
+                        kind = Chapter1AddressAwareAudio.InstructionKind.PictureStartsWith,
+                    )
+                } else {
+                    playInstructionThenLetter(
+                        season2StationId = season2StationId,
+                        question = question,
+                        playerAddress = playerAddress,
+                        rawVoice = rawVoice,
+                        kind = Chapter1AddressAwareAudio.InstructionKind.PictureStartsWith,
+                    )
+                }
 
 
 
@@ -229,21 +231,12 @@ object Season2GuessingCoach {
 
 
             Season2Chapter1StationOrder.PICTURE_STARTS_WITH -> {
-
-                playInstructionThenLetter(
-
-                    season2StationId = Season2Chapter1StationOrder.PICTURE_STARTS_WITH,
-
+                playInstructionThenWord(
                     question = question,
-
                     playerAddress = playerAddress,
-
                     rawVoice = rawVoice,
-
                     kind = Chapter1AddressAwareAudio.InstructionKind.PictureStartsWith,
-
                 )
-
             }
 
 
@@ -388,38 +381,53 @@ object Season2GuessingCoach {
 
 
     private suspend fun playInstructionThenLetter(
-
         season2StationId: Int,
-
         question: Question,
-
         playerAddress: PlayerAddress?,
-
         rawVoice: RawVoicePlayer,
-
         kind: Chapter1AddressAwareAudio.InstructionKind,
-
     ) {
-
-        if (playerAddress != null) {
-
-            val instructionRes =
-
-                Chapter1AddressAwareAudio.instructionRawRes(kind, playerAddress)
-
-            if (instructionRes != 0) {
-
-                rawVoice.playRawBlocking(instructionRes)
-
-                delay(200)
-
-            }
-
-        }
-
+        playInstructionRaw(playerAddress, rawVoice, kind)
         playTargetLetter(question, rawVoice, season2StationId)
-
     }
+
+    private suspend fun playInstructionThenWord(
+        question: Question,
+        playerAddress: PlayerAddress?,
+        rawVoice: RawVoicePlayer,
+        kind: Chapter1AddressAwareAudio.InstructionKind,
+    ) {
+        playInstructionRaw(playerAddress, rawVoice, kind)
+        val pictureQuestion = question as? Question.PictureStartsWithQuestion
+        if (pictureQuestion != null) {
+            val wordResId = AudioClips.wordRawResIdByCatalogId(pictureQuestion.catalogEntryId)
+            if (wordResId == null) {
+                Log.e(
+                    "MissingContent",
+                    "Missing Season2 coach picture word audio. catalogId='${pictureQuestion.catalogEntryId}'",
+                )
+                return
+            }
+            rawVoice.playRawBlocking(wordResId)
+        } else {
+            playTargetLetter(question, rawVoice, season2StationId = Season2Chapter1StationOrder.PICTURE_STARTS_WITH)
+        }
+        delay(280)
+    }
+
+    private suspend fun playInstructionRaw(
+        playerAddress: PlayerAddress?,
+        rawVoice: RawVoicePlayer,
+        kind: Chapter1AddressAwareAudio.InstructionKind,
+    ) {
+        if (playerAddress == null) return
+        val instructionRes = Chapter1AddressAwareAudio.instructionRawRes(kind, playerAddress)
+        if (instructionRes != 0) {
+            rawVoice.playRawBlocking(instructionRes)
+            delay(200)
+        }
+    }
+
 
 
 

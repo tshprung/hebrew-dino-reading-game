@@ -31,6 +31,7 @@ internal object PictureStartsWithActions {
         chapterId: Int,
         stationId: Int,
         sagaEpisode: Boolean,
+        isSeason2QuizChapter: Boolean = false,
         session: LevelSession,
         scope: CoroutineScope,
         voice: VoicePlayer,
@@ -130,7 +131,8 @@ internal object PictureStartsWithActions {
                     gameViewModel.station4WrongFlashLetter = picked
                     gameViewModel.station4WrongFlashEpoch += 1
                     val applyImmediateLetterNameAudio =
-                        chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5
+                        chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5 ||
+                            isSeason2QuizChapter
                     if (audioEnabled && applyImmediateLetterNameAudio) {
                         val resId = AudioClips.letterNameRawResId(picked)
                         if (resId == null) {
@@ -173,9 +175,13 @@ internal object PictureStartsWithActions {
                         }
                         gameViewModel.inputLocked = true
                         scope.launch {
-                            rawVoice.playRawBlocking(resId)
-                            if (audioEnabled) ChildGameAudioHooks.onWrong()
-                            onWrongFeedback(picked, true)
+                            try {
+                                rawVoice.playRawBlocking(resId)
+                                if (audioEnabled) ChildGameAudioHooks.onWrong()
+                                onWrongFeedback(picked, true)
+                            } finally {
+                                gameViewModel.inputLocked = false
+                            }
                         }
                     } else {
                         val letterName = AudioClips.letterNameClip(picked)

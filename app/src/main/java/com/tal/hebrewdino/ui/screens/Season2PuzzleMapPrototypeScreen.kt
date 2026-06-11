@@ -76,6 +76,7 @@ import com.tal.hebrewdino.ui.audio.Season2StoryAudio
 import com.tal.hebrewdino.ui.audio.withVoiceDuck
 import com.tal.hebrewdino.ui.domain.Season2Copy
 import com.tal.hebrewdino.ui.domain.Season2IntroFlow
+import com.tal.hebrewdino.ui.domain.Season2PuzzleMapTileClickPolicy
 import com.tal.hebrewdino.ui.layout.topChromeInsetsPadding
 import androidx.compose.ui.text.style.TextAlign
 import kotlinx.coroutines.launch
@@ -583,21 +584,28 @@ private fun ContinuousPosterBoard(
             val row = (posterTile - 1) / TILE_COLUMNS
             val col = (posterTile - 1) % TILE_COLUMNS
             val isRevealed = posterTile in revealedTiles
-            val isNext = posterTile == nextPlayablePosterTile
             val enabled =
-                !isRevealing &&
-                    (
-                        chapterFullyRevealed ||
-                            isRevealed ||
-                            isNext
-                    )
+                Season2PuzzleMapTileClickPolicy.isTileClickable(
+                    posterTile = posterTile,
+                    revealedTiles = revealedTiles,
+                    nextPlayablePosterTile = nextPlayablePosterTile,
+                    chapterFullyRevealed = chapterFullyRevealed,
+                    isRevealing = isRevealing,
+                )
+            val highlighted =
+                Season2PuzzleMapTileClickPolicy.isNextTileHighlighted(
+                    posterTile = posterTile,
+                    nextPlayablePosterTile = nextPlayablePosterTile,
+                    chapterFullyRevealed = chapterFullyRevealed,
+                    isClickable = enabled,
+                )
             val stationNumber = Season2Chapter1RevealOrder.stationForPosterTile(posterTile)
             TileInteractionLayer(
                 row = row,
                 col = col,
                 cellWidth = cellWidth,
                 cellHeight = cellHeight,
-                highlighted = enabled && !chapterFullyRevealed && isNext,
+                highlighted = highlighted,
                 enabled = enabled,
                 replayStationNumber = if (chapterFullyRevealed) stationNumber else null,
                 onTap = { onPosterTileTap(posterTile) },

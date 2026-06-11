@@ -48,8 +48,16 @@ object Season2Copy {
     fun seasonIntroStoryLines(): List<String> =
         listOf(
             rtl("מצאנו מפה עתיקה!"),
-            rtl("בכל חלק של המפה מסתתר דינוזאור אחר…"),
-            rtl("בואו נפתח את החלקים ונגלה מי מסתתר!"),
+            rtl("בכל חלק של המפה מסתתר דינוזאור אחר."),
+            rtl("בכל פעם שתפתרו משימה, עוד חלק מהתמונה יתגלה."),
+            rtl("בואו נגלה מי מסתתר שם!"),
+        )
+
+    /** Chapter 1 map intro — matches season2_ch1_intro_01 narration. */
+    fun ch1MapIntroStoryLines(): List<String> =
+        listOf(
+            rtl("במפה הזאת מסתתר דינוזאור גדול עם שיניים חדות ושאגה חזקה."),
+            rtl("בואו נגלה מי זה!"),
         )
 
     fun firstRevealMapCaption(): String = rtl("חלק ראשון נחשף! ממשיכים לגלות…")

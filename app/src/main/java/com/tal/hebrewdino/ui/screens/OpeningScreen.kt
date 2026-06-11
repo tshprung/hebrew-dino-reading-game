@@ -39,12 +39,14 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.tal.hebrewdino.R
+import com.tal.hebrewdino.ui.domain.ParentInfoCopy
 import com.tal.hebrewdino.ui.layout.topChromeInsetsPadding
 
 @Composable
 fun OpeningScreen(
     onPlay: () -> Unit,
     onOpenSettings: () -> Unit,
+    onOpenParentInfo: () -> Unit,
     onExit: () -> Unit,
     modifier: Modifier = Modifier,
     enableMotion: Boolean = true,
@@ -94,6 +96,17 @@ fun OpeningScreen(
                         .topChromeInsetsPadding()
                         .padding(top = 8.dp, end = 10.dp)
                         .testTag("opening_settings"),
+            )
+
+            OpeningTopChip(
+                text = ParentInfoCopy.InfoButtonLabel,
+                onClick = onOpenParentInfo,
+                modifier =
+                    Modifier
+                        .align(Alignment.TopEnd)
+                        .topChromeInsetsPadding()
+                        .padding(top = 52.dp, end = 10.dp)
+                        .testTag("opening_parent_info"),
             )
 
             OpeningPlayButton(

@@ -13,6 +13,7 @@ import com.tal.hebrewdino.ui.domain.AnswerResult
 import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
 import com.tal.hebrewdino.ui.domain.LevelSession
 import com.tal.hebrewdino.ui.audio.InStationPraiseAudio
+import com.tal.hebrewdino.ui.domain.Season2EarlyStationQaPolicy
 import com.tal.hebrewdino.ui.domain.Season2StationAudio
 import com.tal.hebrewdino.ui.domain.TrainingV1Config
 import com.tal.hebrewdino.ui.game.ChildGameAudioHooks
@@ -42,9 +43,15 @@ internal object PopBalloonsActions {
         station2PopTailPaddingMs: Long,
         station2PopFallbackDurationMs: Long,
         skipProgressPraise: Boolean = false,
+        season2QuizBalloons: Boolean = false,
+        afterCoachIntervention: Boolean = false,
+        lastPraiseRawResId: Int? = null,
+        onPraisePlayed: (Int) -> Unit = {},
     ) {
         if (!audioEnabled) return
-        cancelFeedbackVoice()
+        if (!season2QuizBalloons) {
+            cancelFeedbackVoice()
+        }
         if (sagaUsesPopBalloonsAudioStaging) {
             GameAudioActions.launchFeedbackVoiceNoCancel(
                 audioEnabled = true,
@@ -188,10 +195,11 @@ internal object PopBalloonsActions {
                         }
                         if (!skipProgressPraise) {
                             maybePlaySeason2BalloonProgressPraise(
+                                season2QuizBalloons = season2QuizBalloons,
                                 chapterId = chapterId,
                                 rawVoice = rawVoice,
-                                finalCorrectBalloon = finalCorrectBalloon,
-                                letterWasSpoken = speakLetter,
+                                lastPraiseRawResId = lastPraiseRawResId,
+                                onPraisePlayed = onPraisePlayed,
                             )
                         }
                     } else {
@@ -575,17 +583,24 @@ internal object PopBalloonsActions {
     }
 
     private suspend fun maybePlaySeason2BalloonProgressPraise(
+        season2QuizBalloons: Boolean,
         chapterId: Int,
         rawVoice: RawVoicePlayer?,
-        finalCorrectBalloon: Boolean,
-        letterWasSpoken: Boolean,
+        lastPraiseRawResId: Int?,
+        onPraisePlayed: (Int) -> Unit,
     ) {
-        if (!Season2StationAudio.isSeason2GameplayChapter(chapterId) || rawVoice == null) return
-        if (!letterWasSpoken && !finalCorrectBalloon) return
-        val playPraise = finalCorrectBalloon || Random.nextFloat() < 0.45f
-        if (!playPraise) return
+        if (rawVoice == null) return
+        val season2BalloonPraise =
+            Season2EarlyStationQaPolicy.shouldPlayBalloonPraiseOnCorrectPop(season2QuizBalloons) ||
+                Season2StationAudio.isSeason2GameplayChapter(chapterId)
+        if (!season2BalloonPraise) return
         delay(90)
-        rawVoice.playRawBlocking(InStationPraiseAudio.pick())
+        val praiseRes =
+            InStationPraiseAudio.pick(
+                avoidRawResId = lastPraiseRawResId?.takeIf { it != 0 },
+            )
+        rawVoice.playRawBlocking(praiseRes)
+        onPraisePlayed(praiseRes)
     }
 }
 

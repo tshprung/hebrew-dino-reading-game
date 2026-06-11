@@ -113,7 +113,7 @@ object Season2ChapterRegistry {
                 letterPoolSpec = Season2Chapter1LetterPoolSpec,
                 stationTheme = Season2StationTheme.Standard,
                 gameplayChapterId = Season2ChapterIds.Chapter1Tyrannosaurus,
-                mapIntroStoryLines = { address -> Season2Copy.mapIntroStoryLines(address) },
+                mapIntroStoryLines = { _ -> Season2Copy.ch1MapIntroStoryLines() },
                 learningFocus = "אותיות ז י ס ע + מילים מוכרות",
             ),
             qaReadyChapter(

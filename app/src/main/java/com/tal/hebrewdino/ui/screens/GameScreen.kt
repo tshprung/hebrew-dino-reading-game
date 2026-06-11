@@ -375,6 +375,7 @@ fun GameScreen(
     var season2SkipBalloonStagingAwait by remember(stationId) { mutableStateOf(false) }
     var season2Station6ConsecutiveWrongs by remember(stationId) { mutableIntStateOf(0) }
     var lastSeason2FocusRawResId by remember(stationId) { mutableIntStateOf(0) }
+    var lastSeason2BalloonPraiseRawResId by remember(stationId) { mutableIntStateOf(0) }
     val listenOnly = plan.listenOnlyTargetPrompt
     val stationUiSpec = remember(chapterId, stationId) { StationBehaviorRegistry.getStationUiSpec(chapterId, stationId) }
     val helpColumnEnabled = Episode4Help.isHelpColumnActive(stationUiSpec)
@@ -709,40 +710,45 @@ fun GameScreen(
                 season2Station6ConsecutiveWrongs = 0
                 val companion = chapter1CompanionCharacter ?: DinoCharacter.Dino
                 scope.launch {
-                    cancelFeedbackVoice()
-                    gameViewModel.inputLocked = true
-                    if (audioEnabled) {
-                        val focusRes =
-                            com.tal.hebrewdino.ui.audio.Season2CompanionFeedbackAudio.pickFocusLine(
-                                companion = companion,
-                                avoidRawResId = lastSeason2FocusRawResId,
-                            )
-                        lastSeason2FocusRawResId = focusRes
-                        if (backgroundMusic != null) {
-                            backgroundMusic.withVoiceDuck {
+                    try {
+                        cancelFeedbackVoice()
+                        gameViewModel.inputLocked = true
+                        if (audioEnabled) {
+                            val focusRes =
+                                com.tal.hebrewdino.ui.audio.Season2CompanionFeedbackAudio.pickFocusLine(
+                                    companion = companion,
+                                    avoidRawResId = lastSeason2FocusRawResId,
+                                )
+                            lastSeason2FocusRawResId = focusRes
+                            if (backgroundMusic != null) {
+                                backgroundMusic.withVoiceDuck {
+                                    rawVoice.playRawBlocking(focusRes)
+                                }
+                            } else {
                                 rawVoice.playRawBlocking(focusRes)
                             }
-                        } else {
-                            rawVoice.playRawBlocking(focusRes)
                         }
+                        if (chapter1PlayerAddress != null) {
+                            Season2GuessingCoach.replayTargetAudio(
+                                season2StationId = s2StationId,
+                                session = session,
+                                playerAddress = chapter1PlayerAddress,
+                                rawVoice = rawVoice,
+                                gameplayChapterId = chapterId,
+                            )
+                        }
+                    } finally {
+                        gameViewModel.dinoVisual = DinoVisual.Idle
+                        gameViewModel.inputLocked = false
                     }
-                    if (chapter1PlayerAddress != null) {
-                        Season2GuessingCoach.replayTargetAudio(
-                            season2StationId = s2StationId,
-                            session = session,
-                            playerAddress = chapter1PlayerAddress,
-                            rawVoice = rawVoice,
-                            gameplayChapterId = chapterId,
-                        )
-                    }
-                    gameViewModel.inputLocked = false
                 }
             } else {
                 scope.launch {
-                    HintPulseActions.registerWrongTapForHintPulse(gameViewModel)
                     if (audioEnabled) ChildGameAudioHooks.onWrong()
                     optionsShake.animateTo(7f, tween(70))
                     optionsShake.animateTo(0f, tween(140))
+                    gameViewModel.dinoVisual = DinoVisual.Idle
+                    gameViewModel.inputLocked = false
                 }
             }
             return
@@ -753,29 +759,32 @@ fun GameScreen(
                 season2CoachJob?.cancel()
                 season2CoachJob =
                     scope.launch {
-                        cancelFeedbackVoice()
-                        gameViewModel.inputLocked = true
-                        gameViewModel.dinoVisual = DinoVisual.TryAgain
-                        optionsShake.animateTo(7f, tween(70))
-                        optionsShake.animateTo(0f, tween(140))
-                        season2HintText =
-                            Season2GuessingHintCopy.coachBubbleText(
+                        try {
+                            cancelFeedbackVoice()
+                            gameViewModel.inputLocked = true
+                            gameViewModel.dinoVisual = DinoVisual.TryAgain
+                            optionsShake.animateTo(7f, tween(70))
+                            optionsShake.animateTo(0f, tween(140))
+                            season2HintText =
+                                Season2GuessingHintCopy.coachBubbleText(
+                                    season2StationId = s2StationId,
+                                    playerAddress = chapter1PlayerAddress,
+                                )
+                            season2HadCoachIntervention = true
+                            Season2GuessingCoach.replayTargetAudio(
                                 season2StationId = s2StationId,
+                                session = session,
                                 playerAddress = chapter1PlayerAddress,
+                                rawVoice = rawVoice,
+                                gameplayChapterId = chapterId,
                             )
-                        season2HadCoachIntervention = true
-                        Season2GuessingCoach.replayTargetAudio(
-                            season2StationId = s2StationId,
-                            session = session,
-                            playerAddress = chapter1PlayerAddress,
-                            rawVoice = rawVoice,
-                            gameplayChapterId = chapterId,
-                        )
-                        delay(350.milliseconds)
-                        season2HintText = null
-                        detector.onInterventionAcknowledged()
-                        gameViewModel.dinoVisual = DinoVisual.Idle
-                        gameViewModel.inputLocked = false
+                            delay(350.milliseconds)
+                            season2HintText = null
+                            detector.onInterventionAcknowledged()
+                        } finally {
+                            gameViewModel.dinoVisual = DinoVisual.Idle
+                            gameViewModel.inputLocked = false
+                        }
                     }
                 return
             }
@@ -958,19 +967,13 @@ fun GameScreen(
                         finalCorrectBalloon: Boolean,
                         balloonIndex: Int,
                     ) {
-                        val playedCoachRecoveryPraise =
+                        val afterCoachIntervention =
                             isCorrect &&
                                 isSeason2BalloonStation &&
-                                season2HadCoachIntervention &&
-                                chapter1PlayerAddress != null
-                        if (playedCoachRecoveryPraise) {
-                            cancelFeedbackVoiceCb()
+                                season2HadCoachIntervention
+                        if (afterCoachIntervention && chapter1PlayerAddress != null) {
                             season2HintText =
                                 Season2GuessingHintCopy.processPraise(chapter1PlayerAddress)
-                            rawVoice.playRawBlocking(InStationPraiseAudio.pick())
-                            season2HintText = null
-                            season2HadCoachIntervention = false
-                            season2SkipBalloonStagingAwait = true
                         }
                         PopBalloonsActions.handlePopSfx(
                             audioEnabled = audioEnabled,
@@ -995,7 +998,17 @@ fun GameScreen(
                             },
                             station2PopTailPaddingMs = Station2PopTailPaddingMs,
                             station2PopFallbackDurationMs = Station2PopFallbackDurationMs,
-                            skipProgressPraise = playedCoachRecoveryPraise,
+                            season2QuizBalloons = isSeason2BalloonStation,
+                            afterCoachIntervention = afterCoachIntervention,
+                            lastPraiseRawResId = lastSeason2BalloonPraiseRawResId,
+                            onPraisePlayed = { resId ->
+                                lastSeason2BalloonPraiseRawResId = resId
+                                if (afterCoachIntervention) {
+                                    season2HintText = null
+                                    season2HadCoachIntervention = false
+                                    season2SkipBalloonStagingAwait = true
+                                }
+                            },
                         )
                     }
 
@@ -1025,22 +1038,7 @@ fun GameScreen(
                         poppedBalloonColor: Color,
                         popAll: Boolean,
                     ) {
-                        val coachPraiseNow =
-                            isSeason2BalloonStation &&
-                                season2HadCoachIntervention &&
-                                chapter1PlayerAddress != null
-                        if (coachPraiseNow) {
-                            scope.launch {
-                                cancelFeedbackVoiceCb()
-                                season2HintText =
-                                    Season2GuessingHintCopy.processPraise(chapter1PlayerAddress)
-                                rawVoice.playRawBlocking(InStationPraiseAudio.pick())
-                                season2HintText = null
-                                season2HadCoachIntervention = false
-                            }
-                        }
-                        val skipStagingAwait =
-                            season2SkipBalloonStagingAwait || coachPraiseNow
+                        val skipStagingAwait = season2SkipBalloonStagingAwait
                         season2SkipBalloonStagingAwait = false
                         PopBalloonsActions.handleAllCorrectPopped(
                             lastLetter = lastLetter,
@@ -1069,6 +1067,7 @@ fun GameScreen(
                             chapterId = chapterId,
                             stationId = stationId,
                             sagaEpisode = isSagaEpisode(chapterId),
+                            isSeason2QuizChapter = isSeason2QuizChapter,
                             session = session,
                             scope = scope,
                             voice = voice,

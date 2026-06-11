@@ -1,5 +1,6 @@
 package com.tal.hebrewdino.ui
 
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -24,7 +25,9 @@ import androidx.navigation.navArgument
 import com.tal.hebrewdino.BuildConfig
 import com.tal.hebrewdino.ui.data.AudioPrefs
 import com.tal.hebrewdino.ui.data.DinoCharacter
+import com.tal.hebrewdino.ui.data.ParentInfoPrefs
 import com.tal.hebrewdino.ui.data.Season2ProgressPrefs
+import com.tal.hebrewdino.ui.domain.ParentInfoPolicy
 import com.tal.hebrewdino.ui.domain.Season2Chapter1StationOrder
 import com.tal.hebrewdino.ui.domain.Season2ChapterRegistry
 import com.tal.hebrewdino.ui.domain.Season2NavKeys
@@ -32,6 +35,7 @@ import com.tal.hebrewdino.ui.screens.ChaptersScreen
 import com.tal.hebrewdino.ui.screens.OnboardingCompanionScreen
 import com.tal.hebrewdino.ui.screens.OnboardingPlayerAddressScreen
 import com.tal.hebrewdino.ui.screens.OpeningScreen
+import com.tal.hebrewdino.ui.screens.ParentInfoDialog
 import com.tal.hebrewdino.ui.screens.Season2ChapterSelectScreen
 import com.tal.hebrewdino.ui.screens.Season2ChapterStationScreen
 import com.tal.hebrewdino.ui.screens.Season2PuzzleMapPrototypeScreen
@@ -75,9 +79,22 @@ internal fun NavGraphBuilder.systemAndTrainingGraph(host: AppNavHostState) {
 
     composable(NavRoutes.Opening) {
         val context = LocalContext.current
+        val parentInfoPrefs = remember(context) { ParentInfoPrefs(context.applicationContext) }
+        val lastSeenParentInfoVersion by parentInfoPrefs.lastSeenVersionCodeFlow.collectAsState(initial = null)
+        var showParentInfo by remember { mutableStateOf(false) }
+        var autoParentInfoChecked by remember { mutableStateOf(false) }
         var showParentsGate by remember { mutableStateOf(false) }
         var parentsGateNonce by remember { mutableStateOf(0) }
         val challenge = remember(parentsGateNonce) { generateParentsGateChallenge() }
+
+        LaunchedEffect(lastSeenParentInfoVersion) {
+            if (autoParentInfoChecked) return@LaunchedEffect
+            autoParentInfoChecked = true
+            if (ParentInfoPolicy.shouldAutoShow(lastSeenParentInfoVersion, BuildConfig.VERSION_CODE)) {
+                showParentInfo = true
+            }
+        }
+
         OpeningScreen(
             onPlay = {
                 when {
@@ -102,8 +119,19 @@ internal fun NavGraphBuilder.systemAndTrainingGraph(host: AppNavHostState) {
                 parentsGateNonce++
                 showParentsGate = true
             },
+            onOpenParentInfo = { showParentInfo = true },
             onExit = { (context as? android.app.Activity)?.finish() },
         )
+        if (showParentInfo) {
+            ParentInfoDialog(
+                onDismiss = {
+                    showParentInfo = false
+                    host.scope.launch {
+                        parentInfoPrefs.markSeenForVersion(BuildConfig.VERSION_CODE)
+                    }
+                },
+            )
+        }
         if (showParentsGate) {
             ParentsGateDialog(
                 challenge = challenge,

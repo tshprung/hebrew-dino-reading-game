@@ -59,7 +59,7 @@ private data class SeasonCardConfig(
 private enum class SeasonHeroKind {
     None,
     SelectedCompanion,
-    MysteryMap,
+    Season2Overview,
 }
 
 @Composable
@@ -87,7 +87,7 @@ fun SeasonsScreen(
                     title = "עונה 2: מגלים דינוזאורים",
                     subtitle = "מפה מסתורית — גלו דינוזאורים חבויים",
                     enabled = true,
-                    heroKind = SeasonHeroKind.MysteryMap,
+                    heroKind = SeasonHeroKind.Season2Overview,
                 ),
                 SeasonCardConfig(
                     seasonId = 3,
@@ -312,21 +312,18 @@ private fun SeasonCard(
                         )
                     }
                 }
-                SeasonHeroKind.MysteryMap -> {
+                SeasonHeroKind.Season2Overview -> {
                     Spacer(modifier = Modifier.width(10.dp))
-                    Box(
+                    Image(
+                        painter = painterResource(id = R.drawable.season2_overview_hero),
+                        contentDescription = null,
                         modifier =
                             Modifier
-                                .size(width = 96.dp, height = 108.dp),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Season2FrostedPosterPreview(
-                            posterResId = R.drawable.season2_trex_puzzle_full,
-                            revealed = false,
-                            showMysteryGlyph = false,
-                            modifier = Modifier.fillMaxSize(),
-                        )
-                    }
+                                .size(width = 112.dp, height = 108.dp)
+                                .clip(RoundedCornerShape(14.dp)),
+                        contentScale = ContentScale.Crop,
+                        alignment = Alignment.Center,
+                    )
                 }
                 SeasonHeroKind.None -> Unit
             }

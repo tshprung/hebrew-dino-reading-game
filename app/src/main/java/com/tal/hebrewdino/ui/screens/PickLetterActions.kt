@@ -381,9 +381,15 @@ internal object PickLetterActions {
                     }
                     gameViewModel.inputLocked = true
                     scope.launch {
-                        rawVoice.playRawBlocking(resId)
-                        if (shouldRunWrongHook) ChildGameAudioHooks.onWrong()
-                        onWrongFeedback(picked, true)
+                        try {
+                            rawVoice.playRawBlocking(resId)
+                            if (shouldRunWrongHook) ChildGameAudioHooks.onWrong()
+                            onWrongFeedback(picked, true)
+                        } finally {
+                            if (!sagaUsesPickLetterAudioStaging) {
+                                gameViewModel.inputLocked = false
+                            }
+                        }
                     }
                 } else {
                     if (shouldRunWrongHook) ChildGameAudioHooks.onWrong()
