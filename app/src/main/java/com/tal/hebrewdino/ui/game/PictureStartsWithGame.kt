@@ -41,6 +41,7 @@ import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
 import com.tal.hebrewdino.ui.domain.HebrewLetterOrder
 import com.tal.hebrewdino.ui.domain.Season2Ch1QaPolicy
 import com.tal.hebrewdino.ui.domain.Season2StationUx
+import com.tal.hebrewdino.ui.domain.Season2WarmupStationQaPolicy
 import com.tal.hebrewdino.ui.domain.LessonChoice
 import com.tal.hebrewdino.ui.domain.Question
 import com.tal.hebrewdino.ui.layout.ScreenFit
@@ -179,7 +180,15 @@ fun PictureStartsWithGame(
                         modifier =
                             Modifier
                                 .widthIn(max = 270.dp)
-                                .offset(x = (-16).dp)
+                                .offset(
+                                    x =
+                                        (-16).dp -
+                                            if (isSeason2WarmupPictureStartsWith) {
+                                                Season2WarmupStationQaPolicy.HalfCmPhysicalLeftDp
+                                            } else {
+                                                0.dp
+                                            },
+                                )
                                 .fillMaxHeight(),
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {

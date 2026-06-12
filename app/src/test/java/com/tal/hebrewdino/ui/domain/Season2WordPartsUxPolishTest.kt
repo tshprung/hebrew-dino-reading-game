@@ -119,14 +119,14 @@ class Season2WordPartsUxPolishTest {
     @Test
     fun image_down_left_nudge() {
         val ui = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/game/Season2WordPartsGame.kt")
-        assertTrue(ui.contains("Season2Ch2St6WordPartsPolicy.ImagePhysicalLeftDp"))
-        assertTrue(ui.contains("if (isCh2St6)"))
+        assertTrue(ui.contains("Season2WordPartsUxPolicy.ImagePhysicalLeftDp"))
+        assertFalse(ui.contains("if (isCh2St6)"))
     }
 
     @Test
     fun options_down_nudge() {
         val ui = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/game/Season2WordPartsGame.kt")
-        assertTrue(ui.contains("Season2Ch2St6WordPartsPolicy.OptionsDownDp"))
+        assertTrue(ui.contains("Season2WordPartsUxPolicy.OptionsDownDp"))
     }
 
     @Test

@@ -73,8 +73,8 @@ fun SeasonsScreen(
     val companionAssets = remember(companionCharacter) { CompanionAssets.forCharacter(companionCharacter) }
     val scroll = rememberScrollState()
     val seasons =
-        if (BuildConfig.DEBUG) {
-            listOf(
+        buildList {
+            add(
                 SeasonCardConfig(
                     seasonId = 1,
                     title = "עונה 1: המסע הראשון",
@@ -82,6 +82,8 @@ fun SeasonsScreen(
                     enabled = true,
                     heroKind = SeasonHeroKind.SelectedCompanion,
                 ),
+            )
+            add(
                 SeasonCardConfig(
                     seasonId = 2,
                     title = "עונה 2: מגלים דינוזאורים",
@@ -89,31 +91,27 @@ fun SeasonsScreen(
                     enabled = true,
                     heroKind = SeasonHeroKind.Season2Overview,
                 ),
-                SeasonCardConfig(
-                    seasonId = 3,
-                    title = "עונה 3: קוראים יותר",
-                    subtitle = "תרגול מתקדם יותר עם מילים מוכרות",
-                    status = "בפיתוח",
-                    enabled = false,
-                ),
-                SeasonCardConfig(
-                    seasonId = 4,
-                    title = "עונה 4: הרפתקה חדשה",
-                    subtitle = "עוד מסע עם דינו והאותיות",
-                    status = "בפיתוח",
-                    enabled = false,
-                ),
             )
-        } else {
-            listOf(
-                SeasonCardConfig(
-                    seasonId = 1,
-                    title = "עונה 1: המסע הראשון",
-                    subtitle = "6 פרקים + אימון",
-                    enabled = true,
-                    heroKind = SeasonHeroKind.SelectedCompanion,
-                ),
-            )
+            if (BuildConfig.DEBUG) {
+                add(
+                    SeasonCardConfig(
+                        seasonId = 3,
+                        title = "עונה 3: קוראים יותר",
+                        subtitle = "תרגול מתקדם יותר עם מילים מוכרות",
+                        status = "בפיתוח",
+                        enabled = false,
+                    ),
+                )
+                add(
+                    SeasonCardConfig(
+                        seasonId = 4,
+                        title = "עונה 4: הרפתקה חדשה",
+                        subtitle = "עוד מסע עם דינו והאותיות",
+                        status = "בפיתוח",
+                        enabled = false,
+                    ),
+                )
+            }
         }
 
     Box(modifier = modifier.fillMaxSize()) {

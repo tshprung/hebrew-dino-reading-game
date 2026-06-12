@@ -23,8 +23,6 @@ object Season2Chapter1StationOrder {
     const val FINALE_STATION: Int = 6
     /** @deprecated Use [FINALE_STATION]; kept for call-site compatibility. */
     const val MATCH_LETTER_TO_WORD: Int = FINALE_STATION
-    const val PICTURE_TO_WORD: Int = FINALE_STATION
-    const val VISIBLE_WORD_PARTS: Int = FINALE_STATION
 
     const val STATION_COUNT: Int = 6
 
@@ -35,9 +33,6 @@ object Season2Chapter1StationOrder {
         }
         return sharedWarmupQuizPlan(sid)
     }
-
-    /** Legacy single-arg plan (chapter 1 defaults). */
-    fun quizPlan(stationId: Int): StationQuizPlan = quizPlan(chapterIndex = 1, stationId = stationId)
 
     private fun finaleQuizPlan(chapterIndex: Int): StationQuizPlan {
         val chapterDef =

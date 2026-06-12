@@ -115,17 +115,11 @@ class Season2GlobalizeCh1ApprovedFixesTest {
     }
 
     @Test
-    fun no_text_bubble_post_focus_correct() {
-        assertFalse(Season2PostFocusCorrectPolicy.shouldShowPostFocusTextBubble())
-        assertFalse(Season2EarlyStationQaPolicy.shouldShowMapReturnPraiseCaption())
-    }
-
-    @Test
     fun no_double_praise() {
         assertTrue(
             Season2StationQaPolicy.shouldSkipAdvanceRoundPraiseBecausePlayedInStation(
-                gameplayChapterId = 1,
-                season2UxStationId = Season2Chapter1StationOrder.PICK_LETTER,
+                Season2ChapterIds.Chapter1Tyrannosaurus,
+                Season2Chapter1StationOrder.PICK_LETTER,
             ),
         )
         assertTrue(Season2StationQaPolicy.shouldSuppressSagaEpisodeAdvancePraise(isSeason2QuizChapter = true))
@@ -137,9 +131,7 @@ class Season2GlobalizeCh1ApprovedFixesTest {
     fun Ch1_behavior_unchanged() {
         assertEquals(Season2Copy.ch1MapIntroStoryLines(), Season2Copy.chapterMapIntroStoryLines(1))
         assertTrue(
-            Season2Ch1QaPolicy.shouldRequestFirstTimeChapterReward(
-                registryChapterId = 1,
-                stationId = Season2Chapter1StationOrder.FINALE_STATION,
+            Season2ChapterFlowPolicy.shouldRequestFirstTimeChapterReward(stationId = Season2Chapter1StationOrder.FINALE_STATION,
                 wasStationAlreadyDone = false,
                 chapterWasCompleteBefore = false,
             ),

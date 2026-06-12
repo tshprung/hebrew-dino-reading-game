@@ -50,7 +50,6 @@ class Season2Ch1QaFixBatchTest {
 
     @Test
     fun mapReturn_audioOnlyNoCaptionOverlay() {
-        assertFalse(Season2EarlyStationQaPolicy.shouldShowMapReturnPraiseCaption())
         val source = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/screens/Season2PuzzleMapPrototypeScreen.kt")
         assertTrue(source.contains("mapReturnVoiceResId"))
         assertFalse(source.contains("Season2MapReturnCaptionOverlay"))

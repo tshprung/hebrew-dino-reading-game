@@ -420,16 +420,7 @@ internal suspend fun speakLetterPrompt(
                 "MissingContent",
                 "Missing required station prompt audio. chapterId=$chapterId stationId=$stationId context=$context stage=missing letter-name mapping targetLetter='$letter'",
             )
-            if (rawVoice != null) {
-                rawVoice.playRawBlocking(0)
-            } else {
-                voice.playRequiredBlocking(
-                    assetPath = "",
-                    context = "$context(missingLetterNameMapping,rawVoice=null)",
-                    chapterId = chapterId,
-                    stationId = stationId,
-                )
-            }
+            rawVoice.playRawBlocking(0)
             return
         }
         rawVoice.playRawBlocking(letterResId)

@@ -136,14 +136,14 @@ object Season2ChapterStationPlans {
             StationKind.PopBalloons ->
                 StationQuizPlan(
                     mode = StationQuizMode.PopBalloons,
-                    questionCount = 3,
+                    questionCount = Season2WarmupStationQaPolicy.PopBalloonsQuestionCount,
                     initialGroupIndex = 0,
                     optionCount = 10,
                 )
             StationKind.PickLetter ->
                 StationQuizPlan(
                     mode = StationQuizMode.PickLetter,
-                    questionCount = 4,
+                    questionCount = Season2WarmupStationQaPolicy.PickLetterQuestionCount,
                     initialGroupIndex = 0,
                     optionCount = 5,
                     sortOptionLetters = true,
@@ -151,7 +151,7 @@ object Season2ChapterStationPlans {
             StationKind.PictureStartsWith ->
                 StationQuizPlan(
                     mode = StationQuizMode.PictureStartsWith,
-                    questionCount = 4,
+                    questionCount = Season2WarmupStationQaPolicy.PictureStartsWithQuestionCount,
                     initialGroupIndex = 0,
                     optionCount = if (chapterIndex == 3) 5 else 4,
                     sortOptionLetters = true,

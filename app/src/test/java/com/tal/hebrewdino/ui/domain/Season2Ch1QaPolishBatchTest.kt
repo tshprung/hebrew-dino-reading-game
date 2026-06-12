@@ -73,7 +73,7 @@ class Season2Ch1QaPolishBatchTest {
     @Test
     fun ch1_st3_single_completion_praise() {
         assertTrue(
-            Season2Ch1QaPolicy.shouldSkipAdvanceRoundPraiseBecausePlayedInStation(
+            Season2StationQaPolicy.shouldSkipAdvanceRoundPraiseBecausePlayedInStation(Season2ChapterIds.Chapter1Tyrannosaurus, 
                 Season2Chapter1StationOrder.PICTURE_STARTS_WITH,
             ),
         )
@@ -106,12 +106,13 @@ class Season2Ch1QaPolishBatchTest {
     @Test
     fun ch1_st5_no_long_blank_interround() {
         assertTrue(
-            Season2Ch1QaPolicy.shouldSkipAdvanceRoundInterRoundFeedback(
-                season2UxStationId = Season2Chapter1StationOrder.WHICH_WORD_STARTS_WITH,
+            Season2StationQaPolicy.shouldSkipAdvanceRoundInterRoundFeedback(
+                Season2ChapterIds.Chapter1Tyrannosaurus,
+                Season2Chapter1StationOrder.WHICH_WORD_STARTS_WITH,
                 isLast = false,
             ),
         )
-        assertTrue(Season2Ch1QaPolicy.useTightBetweenRoundTiming(Season2Chapter1StationOrder.WHICH_WORD_STARTS_WITH))
+        assertTrue(Season2StationQaPolicy.useTightBetweenRoundTiming(Season2ChapterIds.Chapter1Tyrannosaurus, Season2Chapter1StationOrder.WHICH_WORD_STARTS_WITH))
     }
 
     @Test
@@ -125,9 +126,9 @@ class Season2Ch1QaPolishBatchTest {
     @Test
     fun ch1_st6_focus_replay_instruction_plus_word() {
         assertTrue(
-            Season2Ch1QaPolicy.shouldReplayPictureToWordCoachWithInstruction(
-                season2UxStationId = Season2Chapter1StationOrder.FINALE_STATION,
-                gameplayChapterId = Season2ChapterIds.Chapter1Tyrannosaurus,
+            Season2StationQaPolicy.shouldReplayPictureToWordCoachWithInstruction(
+                Season2ChapterIds.Chapter1Tyrannosaurus,
+                Season2Chapter1StationOrder.FINALE_STATION,
             ),
         )
         val coach = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/domain/Season2GuessingCoach.kt")
@@ -137,8 +138,9 @@ class Season2Ch1QaPolishBatchTest {
     @Test
     fun ch1_st6_single_correct_praise() {
         assertTrue(
-            Season2Ch1QaPolicy.shouldSkipPictureToWordAssetPraiseOnLastRound(
-                season2UxStationId = Season2Chapter1StationOrder.FINALE_STATION,
+            Season2StationQaPolicy.shouldSkipPictureToWordAssetPraiseOnLastRound(
+                Season2ChapterIds.Chapter1Tyrannosaurus,
+                Season2Chapter1StationOrder.FINALE_STATION,
                 isLast = true,
             ),
         )

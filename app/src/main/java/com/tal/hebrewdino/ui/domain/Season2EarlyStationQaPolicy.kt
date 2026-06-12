@@ -12,7 +12,11 @@ object Season2EarlyStationQaPolicy {
         season2QuizBalloons: Boolean,
         finalCorrectBalloon: Boolean,
     ): Boolean =
-        shouldPlayBalloonPraiseOnCorrectPop(season2QuizBalloons) && !finalCorrectBalloon
+        Season2WarmupStationQaPolicy.shouldPlayBalloonProgressPraise(
+            season2QuizBalloons = season2QuizBalloons,
+            finalCorrectBalloon = finalCorrectBalloon,
+            afterCoachIntervention = false,
+        )
 
     fun shouldReplayWordForPictureStartsWithCoach(season2UxStationId: Int): Boolean =
         season2UxStationId == Season2Chapter1StationOrder.PICTURE_STARTS_WITH
@@ -27,6 +31,4 @@ object Season2EarlyStationQaPolicy {
 
     fun shouldSkipInStationCorrectPraiseAfterCoach(season2HadCoachIntervention: Boolean): Boolean =
         season2HadCoachIntervention
-
-    fun shouldShowMapReturnPraiseCaption(): Boolean = false
 }

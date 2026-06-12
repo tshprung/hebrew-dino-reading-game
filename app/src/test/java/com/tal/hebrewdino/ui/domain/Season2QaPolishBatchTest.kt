@@ -15,15 +15,12 @@ class Season2QaPolishBatchTest {
     @Test
     fun station6Feedback_skipsCoachBubbleOnFirstWrong() {
         assertTrue(
-            Season2Station6FeedbackPolicy.shouldSkipCoachBubble(
-                season2UxStationId = Season2Chapter1StationOrder.MATCH_LETTER_TO_WORD,
-                isSeason2Quiz = true,
+            Season2Station6FeedbackPolicy.shouldSkipCoachBubble(isSeason2Quiz = true,
             ),
         )
         assertFalse(
             Season2Station6FeedbackPolicy.shouldReplayInstructionAfterWrong(
                 consecutiveWrongInRound = 1,
-                season2UxStationId = 6,
                 isSeason2Quiz = true,
             ),
         )
@@ -34,25 +31,11 @@ class Season2QaPolishBatchTest {
         assertTrue(
             Season2Station6FeedbackPolicy.shouldReplayInstructionAfterWrong(
                 consecutiveWrongInRound = 2,
-                season2UxStationId = 6,
                 isSeason2Quiz = true,
             ),
         )
         assertTrue(
-            Season2Station6FeedbackPolicy.shouldSkipCoachBubble(
-                season2UxStationId = Season2Chapter1StationOrder.PICK_LETTER,
-                isSeason2Quiz = true,
-            ),
-        )
-    }
-
-    @Test
-    fun pictureToWordFeedback_usesLightPolicyOnNonFinaleStations() {
-        assertTrue(
-            Season2Station6FeedbackPolicy.shouldUseLightWordChoiceFeedback(
-                season2UxStationId = 5,
-                isSeason2Quiz = true,
-                season2AdvancedMode = Season2AdvancedStationMode.PictureToWord,
+            Season2Station6FeedbackPolicy.shouldSkipCoachBubble(isSeason2Quiz = true,
             ),
         )
     }
@@ -101,7 +84,7 @@ class Season2QaPolishBatchTest {
         assertEquals(StationTemplateId.WordParts, spec.templateId)
         assertFalse(spec.showBetweenRoundIntroPulse)
         assertTrue(spec.helpControlsEnabled)
-        assertTrue(Season2StationUx.isWordPartsStation(ch3, 6))
+        assertTrue(Season2StationUx.stationKindForGameplayChapter(ch3, 6) == Season2ChapterStationPlans.StationKind.WordParts)
     }
 
     @Test

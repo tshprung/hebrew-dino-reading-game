@@ -73,7 +73,6 @@ internal fun GameOverlayLayer(
             audioEnabled = audioEnabled,
             session = session,
             scope = scope,
-            voice = voice,
             rawVoice = rawVoice,
             cancelFeedbackVoice = cancelFeedbackVoice,
             audioRuntime = audioRuntime,

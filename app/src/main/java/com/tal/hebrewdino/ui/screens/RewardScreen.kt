@@ -60,6 +60,8 @@ import com.tal.hebrewdino.ui.layout.ScreenFit
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlin.time.Duration.Companion.milliseconds
+
 @Composable
 private fun PilotRewardSparklesLayer(
     modifier: Modifier = Modifier,
@@ -107,8 +109,6 @@ private fun PilotRewardSparklesLayer(
 @Composable
 fun RewardScreen(
     levelId: Int,
-    @Suppress("UNUSED_PARAMETER") correct: Int,
-    @Suppress("UNUSED_PARAMETER") mistakes: Int,
     onBackToMap: () -> Unit,
     /** Full-bleed station-complete backdrop (chapter-specific). */
     backgroundRes: Int = R.drawable.forest_bg_reward,
@@ -166,7 +166,6 @@ fun RewardScreen(
         }
     var navigatedAway by remember(levelId) { mutableStateOf(false) }
     var companionVoicePlaying by remember(levelId) { mutableStateOf(false) }
-    val showCompanionPortrait = chapter1DinoCompanionPilot || showSelectedCompanionPortrait
     val portraitCharacter =
         if (chapter1DinoCompanionPilot) {
             CompanionVisualPolicy.requireSelectedCompanion(
@@ -289,7 +288,7 @@ fun RewardScreen(
                         companionVoicePlaying = true
                         rawVoice?.playRawBlocking(clip)
                         companionVoicePlaying = false
-                        delay(Chapter1DinoCompanionPilot.REWARD_POST_AUDIO_MS)
+                        delay(Chapter1DinoCompanionPilot.REWARD_POST_AUDIO_MS.milliseconds)
                     } else {
                         Log.e(
                             "MissingContent",

@@ -103,7 +103,6 @@ fun CompanionDinoRewardCelebration(
                     when (style) {
                         CompanionRewardCelebrationStyle.GrandFinale -> 1.75f
                         CompanionRewardCelebrationStyle.Sparkle -> 1.45f
-                        else -> 1f
                     },
                 phase = sparklePhase,
             )

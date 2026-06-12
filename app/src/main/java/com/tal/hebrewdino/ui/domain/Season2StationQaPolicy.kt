@@ -46,13 +46,6 @@ object Season2StationQaPolicy {
         stationKind(gameplayChapterId, season2UxStationId) ==
             Season2ChapterStationPlans.StationKind.WhichWordStartsWith
 
-    fun isPictureStartsWithStation(
-        gameplayChapterId: Int,
-        season2UxStationId: Int?,
-    ): Boolean =
-        stationKind(gameplayChapterId, season2UxStationId) ==
-            Season2ChapterStationPlans.StationKind.PictureStartsWith
-
     fun isPictureToWordStation(
         gameplayChapterId: Int,
         season2UxStationId: Int?,

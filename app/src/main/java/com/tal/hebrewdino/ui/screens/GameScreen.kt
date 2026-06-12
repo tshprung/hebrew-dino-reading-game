@@ -671,12 +671,14 @@ fun GameScreen(
 
     suspend fun advanceAfterRound(isLast: Boolean, ch3SpellMidWord: Boolean = false) {
         season2Station6ConsecutiveWrongs = 0
+        var playedPostFocusCompanionPraise = false
         if (
             com.tal.hebrewdino.ui.domain.Season2PostFocusCorrectPolicy.shouldPlayCompanionPraiseOnCorrect(
                 isSeason2QuizChapter = isSeason2QuizChapter,
                 season2HadCoachIntervention = season2HadCoachIntervention,
             )
         ) {
+            playedPostFocusCompanionPraise = true
             val companion = chapter1CompanionCharacter
             if (audioEnabled && companion != null) {
                 lastSeason2PostFocusPraiseRawResId =
@@ -699,6 +701,7 @@ fun GameScreen(
             stationId = stationId,
             season2Chapter1UxStationId = season2Chapter1StationId,
             isSeason2QuizChapter = isSeason2QuizChapter,
+            suppressAdvanceRoundNarratorPraiseAfterPostFocusCompanion = playedPostFocusCompanionPraise,
             isLast = isLast,
             ch3SpellMidWord = ch3SpellMidWord,
             suppressInGameDinoProgress = suppressInGameDinoProgress,
@@ -736,19 +739,13 @@ fun GameScreen(
         if (
             detector != null &&
                 s2StationId != null &&
-                Season2Station6FeedbackPolicy.shouldSkipCoachBubble(
-                    s2StationId,
-                    isSeason2QuizChapter,
-                    plan.season2AdvancedMode,
-                )
+                Season2Station6FeedbackPolicy.shouldSkipCoachBubble(isSeason2QuizChapter)
         ) {
             season2Station6ConsecutiveWrongs++
             if (
                 Season2Station6FeedbackPolicy.shouldReplayInstructionAfterWrong(
                     consecutiveWrongInRound = season2Station6ConsecutiveWrongs,
-                    season2UxStationId = s2StationId,
                     isSeason2Quiz = isSeason2QuizChapter,
-                    season2AdvancedMode = plan.season2AdvancedMode,
                 )
             ) {
                 season2Station6ConsecutiveWrongs = 0
@@ -1025,6 +1022,13 @@ fun GameScreen(
                                 advanceAfterRound(isLast, ch3SpellMidWord = ch3SpellMidWord)
                             },
                             season2HadCoachIntervention = season2HadCoachIntervention,
+                            companionCharacter = chapter1CompanionCharacter,
+                            backgroundMusic = backgroundMusic,
+                            postFocusAvoidPraiseRawResId = lastSeason2PostFocusPraiseRawResId,
+                            onPostFocusPraisePlayed = { resId ->
+                                lastSeason2PostFocusPraiseRawResId = resId
+                                season2HadCoachIntervention = false
+                            },
                         )
                     }
 
@@ -1063,6 +1067,7 @@ fun GameScreen(
                             station2PopFallbackDurationMs = Station2PopFallbackDurationMs,
                             season2QuizBalloons = isSeason2BalloonStation,
                             afterCoachIntervention = afterCoachIntervention,
+                            season2HadCoachIntervention = season2HadCoachIntervention,
                             companionCharacter = chapter1CompanionCharacter,
                             postFocusAvoidPraiseRawResId = lastSeason2PostFocusPraiseRawResId,
                             lastPraiseRawResId = lastSeason2BalloonPraiseRawResId,
@@ -1081,12 +1086,14 @@ fun GameScreen(
                     fun handlePopBalloonsWrongPick() {
                         if (isSeason2QuizChapter) {
                             if (!gameViewModel.consumeTapCooldown()) return
-                            if (isSeason2BalloonStation) {
-                                cancelFeedbackVoiceCb()
-                            }
                             session.wrongTap()
                             gameViewModel.shakeEpoch += 1
-                            onWrongFeedback()
+                            scope.launch {
+                                if (audioEnabled && isSeason2BalloonStation) {
+                                    GameAudioActions.awaitFeedbackVoice(audioRuntime, 5000L)
+                                }
+                                onWrongFeedback()
+                            }
                             return
                         }
                         PopBalloonsActions.handleWrongPick(
@@ -1258,7 +1265,7 @@ fun GameScreen(
 
                     fun handleWordPartsPictureTap() {
                         val q = session.currentQuestion as? Question.WordPartsQuestion ?: return
-                        if (!audioEnabled || rawVoice == null) return
+                        if (!audioEnabled) return
                         Season2AdvancedStationActions.interruptWordPartsVoice(
                             gameViewModel = gameViewModel,
                             cancelFeedbackVoice = cancelFeedbackVoiceCb,

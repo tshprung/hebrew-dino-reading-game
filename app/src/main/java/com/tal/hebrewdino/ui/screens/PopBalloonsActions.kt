@@ -19,6 +19,7 @@ import com.tal.hebrewdino.ui.data.DinoCharacter
 import com.tal.hebrewdino.ui.domain.Season2Ch1QaPolicy
 import com.tal.hebrewdino.ui.domain.Season2EarlyStationQaPolicy
 import com.tal.hebrewdino.ui.domain.Season2StationAudio
+import com.tal.hebrewdino.ui.domain.Season2WarmupStationQaPolicy
 import com.tal.hebrewdino.ui.domain.TrainingV1Config
 import com.tal.hebrewdino.ui.game.ChildGameAudioHooks
 import kotlinx.coroutines.CoroutineScope
@@ -49,6 +50,7 @@ internal object PopBalloonsActions {
         skipProgressPraise: Boolean = false,
         season2QuizBalloons: Boolean = false,
         afterCoachIntervention: Boolean = false,
+        season2HadCoachIntervention: Boolean = false,
         companionCharacter: DinoCharacter? = null,
         postFocusAvoidPraiseRawResId: Int = 0,
         backgroundMusic: BackgroundMusicPlayer? = null,
@@ -106,7 +108,7 @@ internal object PopBalloonsActions {
                         sfx.stopAllStreams()
                         val speakLetter = finalCorrectBalloon || Random.nextFloat() < 0.35f
                         if (speakLetter) {
-                            if (chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) {
+                            if (Season2WarmupStationQaPolicy.usesRawLetterNameStationFeedback(chapterId)) {
                                 val resId = AudioClips.letterNameRawResId(letter)
                                 if (resId == null) {
                                     android.util.Log.e(
@@ -204,12 +206,13 @@ internal object PopBalloonsActions {
                                 }
                             }
                         }
-                        if (
-                            isCorrect &&
-                                afterCoachIntervention &&
-                                companionCharacter != null &&
-                                rawVoice != null
-                        ) {
+                        val coachPraiseEligible =
+                            Season2WarmupStationQaPolicy.shouldPlayBalloonCompanionPraiseAfterCoach(
+                                season2QuizBalloons = season2QuizBalloons,
+                                isCorrect = isCorrect,
+                                afterCoachIntervention = afterCoachIntervention || season2HadCoachIntervention,
+                            )
+                        if (coachPraiseEligible && companionCharacter != null && rawVoice != null) {
                             val praiseRes =
                                 Season2PostFocusCorrectAudio.playBlocking(
                                     companion = companionCharacter,
@@ -219,9 +222,17 @@ internal object PopBalloonsActions {
                                 )
                             onPostFocusPraisePlayed(praiseRes)
                         } else if (
-                            Season2EarlyStationQaPolicy.shouldPlayBalloonPraiseOnCorrectPop(
-                                season2QuizBalloons = season2QuizBalloons,
-                                finalCorrectBalloon = finalCorrectBalloon,
+                            (
+                                Season2WarmupStationQaPolicy.shouldPlayBalloonProgressPraise(
+                                    season2QuizBalloons = season2QuizBalloons,
+                                    finalCorrectBalloon = finalCorrectBalloon,
+                                    afterCoachIntervention = afterCoachIntervention || season2HadCoachIntervention,
+                                ) ||
+                                    Season2WarmupStationQaPolicy.shouldPlayBalloonFinalRoundPraise(
+                                        season2QuizBalloons = season2QuizBalloons,
+                                        finalCorrectBalloon = finalCorrectBalloon,
+                                        afterCoachIntervention = afterCoachIntervention || season2HadCoachIntervention,
+                                    )
                             ) && !skipProgressPraise
                         ) {
                             maybePlaySeason2BalloonProgressPraise(
@@ -234,7 +245,7 @@ internal object PopBalloonsActions {
                         }
                     } else {
                         val wrongPops =
-                            AudioClips.station2WrongPopPlaylist(balloonIndex)
+                            AudioClips.station2WrongPopPlaylist()
                         val wrongPopPlayed =
                             sfx.playFirstAvailableReturningPathAndStreamId(
                                 *wrongPops,
@@ -255,7 +266,7 @@ internal object PopBalloonsActions {
                             }.coerceAtMost(5000L)
                         if (wrongWaitMs > 0) delay(wrongWaitMs)
                         sfx.stopAllStreams()
-                        if (chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) {
+                        if (Season2WarmupStationQaPolicy.usesRawLetterNameStationFeedback(chapterId)) {
                             val resId = AudioClips.letterNameRawResId(letter)
                             if (resId == null) {
                                 android.util.Log.e(
@@ -367,7 +378,7 @@ internal object PopBalloonsActions {
                 volume = if (isCorrect) 0.88f else 0.32f,
             )
         }
-        if (chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) {
+        if (Season2WarmupStationQaPolicy.usesRawLetterNameStationFeedback(chapterId)) {
             val resId = AudioClips.letterNameRawResId(letter)
             if (resId == null) {
                 android.util.Log.e(

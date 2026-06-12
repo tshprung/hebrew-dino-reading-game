@@ -8,17 +8,15 @@ import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
 import com.tal.hebrewdino.ui.domain.Episode4Help
 import com.tal.hebrewdino.ui.domain.LevelSession
 import com.tal.hebrewdino.ui.domain.Question
-import com.tal.hebrewdino.ui.domain.Season2AdvancedStationMode
 import com.tal.hebrewdino.ui.domain.Season2StationAudio
-import com.tal.hebrewdino.ui.domain.Season2WordPartsPresentationMode
 import com.tal.hebrewdino.ui.domain.StationHintMode
+import com.tal.hebrewdino.ui.domain.StationQuizPlan
 import com.tal.hebrewdino.ui.domain.StationReplayMode
 import com.tal.hebrewdino.ui.domain.StationUiSpec
-import com.tal.hebrewdino.ui.domain.StationQuizPlan
-import com.tal.hebrewdino.ui.domain.TrainingV1Config
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlin.time.Duration.Companion.milliseconds
 
 internal object SideHelpActions {
     fun startReplay(
@@ -207,7 +205,7 @@ internal object SideHelpActions {
                 gameViewModel.episode4HelpClearJob?.cancel()
                 gameViewModel.episode4HelpClearJob =
                     scope.launch {
-                        delay(duration)
+                        delay(duration.milliseconds)
                         gameViewModel.wordPartsHintRevealWord = null
                         gameViewModel.episode4HelpLocksChoices = false
                         gameViewModel.episode4HelpClearJob = null
@@ -227,7 +225,7 @@ internal object SideHelpActions {
             gameViewModel.episode4HelpClearJob?.cancel()
             gameViewModel.episode4HelpClearJob =
                 scope.launch {
-                    delay(duration)
+                    delay(duration.milliseconds)
                     gameViewModel.episode4HelpActiveHintLetter = null
                     gameViewModel.episode4HelpLocksChoices = false
                     gameViewModel.episode4HelpClearJob = null
@@ -242,7 +240,7 @@ internal object SideHelpActions {
             gameViewModel.balloonHelpClearJob?.cancel()
             gameViewModel.balloonHelpClearJob =
                 scope.launch {
-                    delay(Episode4Help.HINT_REVEAL_FALLBACK_MS)
+                    delay(Episode4Help.HINT_REVEAL_FALLBACK_MS.milliseconds)
                     gameViewModel.balloonHelpHintLetter = null
                     gameViewModel.balloonHelpLocksChoices = false
                     gameViewModel.balloonHelpClearJob = null

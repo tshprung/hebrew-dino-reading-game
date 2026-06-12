@@ -1,19 +1,15 @@
 package com.tal.hebrewdino.ui.screens
 
-import com.tal.hebrewdino.R
-import com.tal.hebrewdino.ui.audio.AudioClips
 import com.tal.hebrewdino.ui.audio.InStationPraiseAudio
 import com.tal.hebrewdino.ui.audio.RawVoicePlayer
 import com.tal.hebrewdino.ui.audio.SoundPoolPlayer
 import com.tal.hebrewdino.ui.audio.VoicePlayer
-import com.tal.hebrewdino.ui.data.PlayerAddress
-import com.tal.hebrewdino.ui.domain.TrainingV1Config
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
-import kotlin.random.Random
+import kotlin.time.Duration.Companion.milliseconds
 
 internal object GameAudioActions {
     fun cancelFeedbackVoice(
@@ -109,45 +105,11 @@ internal object GameAudioActions {
         return job
     }
 
-    suspend fun playSoundPoolIntroWithOverlappedLetter(
-        sfx: SoundPoolPlayer,
-        intro: String,
-        introMs: Long,
-        letter: String,
-        leadFraction: Float,
-        extraPauseMs: Long,
-        delayScale: Float,
-        chapterId: Int? = null,
-        stationId: Int? = null,
-        context: String,
-    ) {
-        sfx.stopAllStreams()
-        sfx.playRequiredReturningStreamId(
-            assetPath = intro,
-            volume = 1f,
-            context = context,
-            chapterId = chapterId,
-            stationId = stationId,
-        )
-        val lead =
-            (introMs * leadFraction)
-                .toLong()
-                .coerceIn(16L, introMs)
-        delay(((lead + extraPauseMs) * delayScale).toLong())
-        sfx.playRequiredReturningStreamId(
-            assetPath = letter,
-            volume = 1f,
-            context = context,
-            chapterId = chapterId,
-            stationId = stationId,
-        )
-    }
-
     suspend fun await(
         job: Job?,
         timeoutMs: Long,
     ) {
-        withTimeoutOrNull(timeoutMs) { job?.join() }
+        withTimeoutOrNull(timeoutMs.milliseconds) { job?.join() }
     }
 
     suspend fun joinSilently(job: Job?) {
@@ -161,18 +123,11 @@ internal object GameAudioActions {
         await(audioRuntime.feedbackVoiceJob, timeoutMs)
     }
 
-    suspend fun awaitPromptVoice(
-        audioRuntime: GameAudioRuntimeState,
-        timeoutMs: Long,
-    ) {
-        await(audioRuntime.promptVoiceJob, timeoutMs)
-    }
-
     suspend fun awaitTrackedVoices(
         audioRuntime: GameAudioRuntimeState,
         timeoutMs: Long,
     ) {
-        withTimeoutOrNull(timeoutMs) {
+        withTimeoutOrNull(timeoutMs.milliseconds) {
             audioRuntime.feedbackVoiceJob?.join()
             audioRuntime.promptVoiceJob?.join()
         }
@@ -193,14 +148,13 @@ internal object GameAudioActions {
     ) {
         awaitTrackedVoices(audioRuntime, voiceDrainTimeoutMs)
         cancelFeedbackVoice()
-        delay(STATION_TO_REWARD_AUDIO_HANDOFF_MS)
+        delay(STATION_TO_REWARD_AUDIO_HANDOFF_MS.milliseconds)
     }
 
     suspend fun playPraiseNoImmediateRepeat(
         voice: VoicePlayer,
         audioRuntime: GameAudioRuntimeState,
         candidates: Array<String>,
-        @Suppress("UNUSED_PARAMETER") playerAddress: PlayerAddress? = null,
         chapterId: Int? = null,
         stationId: Int? = null,
         context: String = "GameAudioActions.playPraiseNoImmediateRepeat",
@@ -238,97 +192,4 @@ internal object GameAudioActions {
         }
     }
 
-    private suspend fun playRequiredBlockingRandomizedNoRepeatWithRawOverride(
-        voice: VoicePlayer,
-        rawVoice: RawVoicePlayer?,
-        assetPaths: Array<String>,
-        avoidAssetPath: String?,
-        overrideAssetPath: String,
-        overrideRawResId: Int,
-        chapterId: Int,
-        stationId: Int?,
-        context: String,
-        random: Random = Random.Default,
-    ): String? {
-        val n = assetPaths.size
-        if (n == 0) {
-            voice.playRequiredBlocking(
-                assetPath = "",
-                context = "$context(empty candidates)",
-                chapterId = chapterId,
-                stationId = stationId,
-            )
-            return null
-        }
-        val start = random.nextInt(n)
-
-        for (k in 0 until n) {
-            val p = assetPaths[(start + k) % n]
-            if (p.isBlank()) continue
-            if (avoidAssetPath != null && p == avoidAssetPath) continue
-            if (p == overrideAssetPath) {
-                if (rawVoice == null) {
-                    android.util.Log.e(
-                        "MissingContent",
-                        "Missing required praise raw override. chapterId=$chapterId stationId=$stationId context=$context stage=rawVoice=null expectedRawRes=$overrideRawResId expectedAssetPath='$overrideAssetPath'",
-                    )
-                    voice.playRequiredBlocking(
-                        assetPath = "",
-                        context = "$context(rawVoice=null for override)",
-                        chapterId = chapterId,
-                        stationId = stationId,
-                    )
-                    return null
-                }
-                rawVoice.playRawBlocking(overrideRawResId)
-                return p
-            }
-            voice.playRequiredBlocking(
-                assetPath = p,
-                context = "$context(praise)",
-                chapterId = chapterId,
-                stationId = stationId,
-            )
-            return p
-        }
-
-        if (avoidAssetPath != null) {
-            for (k in 0 until n) {
-                val p = assetPaths[(start + k) % n]
-                if (p.isBlank()) continue
-                if (p == overrideAssetPath) {
-                    if (rawVoice == null) {
-                        android.util.Log.e(
-                            "MissingContent",
-                            "Missing required praise raw override. chapterId=$chapterId stationId=$stationId context=$context stage=rawVoice=null expectedRawRes=$overrideRawResId expectedAssetPath='$overrideAssetPath'",
-                        )
-                        voice.playRequiredBlocking(
-                            assetPath = "",
-                            context = "$context(rawVoice=null for override)",
-                            chapterId = chapterId,
-                            stationId = stationId,
-                        )
-                        return null
-                    }
-                    rawVoice.playRawBlocking(overrideRawResId)
-                    return p
-                }
-                voice.playRequiredBlocking(
-                    assetPath = p,
-                    context = "$context(praise)",
-                    chapterId = chapterId,
-                    stationId = stationId,
-                )
-                return p
-            }
-        }
-
-        voice.playRequiredBlocking(
-            assetPath = "",
-            context = "$context(no selectable candidates)",
-            chapterId = chapterId,
-            stationId = stationId,
-        )
-        return null
-    }
 }

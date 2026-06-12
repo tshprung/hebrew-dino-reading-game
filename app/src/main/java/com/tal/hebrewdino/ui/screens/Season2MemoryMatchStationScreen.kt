@@ -361,7 +361,7 @@ fun Season2MemoryMatchStationScreen(
             Text(
                 text = "\u200F${Season2Copy.MemoryMatchInstruction}",
                 modifier = Modifier.fillMaxWidth(),
-                textAlign = TextAlign.End,
+                textAlign = TextAlign.Center,
                 style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
                 color = TitleBrown.copy(alpha = 0.85f),
             )

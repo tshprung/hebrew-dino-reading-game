@@ -14,7 +14,7 @@ class Season2ChapterWiringTest {
         assertTrue(Season2ChapterRegistry.isPlayable(1))
         assertTrue(Season2ChapterRegistry.isPlayable(2))
         assertNull(StationQuizPlans.chapter1(1).season2AdvancedMode)
-        assertNull(Season2Chapter1StationOrder.quizPlan(1).season2AdvancedMode)
+        assertNull(Season2Chapter1StationOrder.quizPlan(chapterIndex = 1, stationId = 1).season2AdvancedMode)
     }
 
     @Test

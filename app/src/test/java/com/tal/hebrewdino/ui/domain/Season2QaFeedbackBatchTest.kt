@@ -20,14 +20,12 @@ class Season2QaFeedbackBatchTest {
         assertTrue(
             Season2Station6FeedbackPolicy.shouldReplayInstructionAfterWrong(
                 consecutiveWrongInRound = 2,
-                season2UxStationId = Season2Chapter1StationOrder.PICK_LETTER,
                 isSeason2Quiz = true,
             ),
         )
         assertFalse(
             Season2Station6FeedbackPolicy.shouldReplayInstructionAfterWrong(
                 consecutiveWrongInRound = 1,
-                season2UxStationId = Season2Chapter1StationOrder.PICK_LETTER,
                 isSeason2Quiz = true,
             ),
         )

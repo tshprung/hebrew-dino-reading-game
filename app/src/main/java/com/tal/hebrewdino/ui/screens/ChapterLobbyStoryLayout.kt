@@ -1,6 +1,8 @@
 package com.tal.hebrewdino.ui.screens
 
 import android.annotation.SuppressLint
+import android.util.Log
+import androidx.annotation.RawRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -18,8 +20,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -28,36 +30,33 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.unit.TextUnit
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
-import com.tal.hebrewdino.R
-import androidx.annotation.RawRes
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.tal.hebrewdino.ui.audio.RawVoicePlayer
 import com.tal.hebrewdino.ui.audio.VoicePlayer
 import com.tal.hebrewdino.ui.companion.Chapter1DinoCompanionPilot
-import com.tal.hebrewdino.ui.companion.CompanionAssets
-import com.tal.hebrewdino.ui.data.DinoCharacter
 import com.tal.hebrewdino.ui.companion.Chapter1ForestStoryCharacters
+import com.tal.hebrewdino.ui.companion.CompanionAssets
 import com.tal.hebrewdino.ui.companion.CompanionGentleIdleMotion
 import com.tal.hebrewdino.ui.companion.MotherLostEggsCue
 import com.tal.hebrewdino.ui.components.AnimatedTalkingCharacter
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import com.tal.hebrewdino.ui.data.DinoCharacter
 import com.tal.hebrewdino.ui.layout.ScreenFit
-import android.util.Log
 import kotlinx.coroutines.CancellationException
 
 enum class ChapterLobbyCompanion {

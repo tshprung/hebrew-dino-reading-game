@@ -148,20 +148,15 @@ internal fun NavGraphBuilder.systemAndTrainingGraph(host: AppNavHostState) {
             onOpenSeason1 = {
                 host.navController.navigate(NavRoutes.Chapters) { launchSingleTop = true }
             },
-            onOpenSeason2 =
-                if (BuildConfig.DEBUG) {
-                    {
-                        host.navController.navigate(NavRoutes.Season2ChapterSelect) {
-                            popUpTo(NavRoutes.Season2ChapterSelect) { inclusive = true }
-                            launchSingleTop = true
-                        }
-                        host.navController.currentBackStackEntry
-                            ?.savedStateHandle
-                            ?.set(Season2NavKeys.SHOW_SEASON_INTRO, true)
-                    }
-                } else {
-                    {}
-                },
+            onOpenSeason2 = {
+                host.navController.navigate(NavRoutes.Season2ChapterSelect) {
+                    popUpTo(NavRoutes.Season2ChapterSelect) { inclusive = true }
+                    launchSingleTop = true
+                }
+                host.navController.currentBackStackEntry
+                    ?.savedStateHandle
+                    ?.set(Season2NavKeys.SHOW_SEASON_INTRO, true)
+            },
             onBackToOpening = {
                 host.navController.navigate(NavRoutes.Opening) {
                     popUpTo(NavRoutes.Opening) { inclusive = false }

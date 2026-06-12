@@ -38,9 +38,6 @@ object Season2Ch1QaPolicy {
      */
     val FinaleDinoReservedWidthDp: Dp = 120.dp
 
-    fun isCh1PopBalloonsStation(season2UxStationId: Int?): Boolean =
-        Season2StationQaPolicy.isPopBalloonsStation(season2UxStationId)
-
     fun shouldKeepPopBalloonsInputUnlockedDuringFeedback(season2UxStationId: Int?): Boolean =
         Season2StationQaPolicy.shouldKeepPopBalloonsInputUnlockedDuringFeedback(season2UxStationId)
 
@@ -69,12 +66,6 @@ object Season2Ch1QaPolicy {
 
     fun isWhichWordStartsWithLayoutPilot(season2UxStationId: Int?): Boolean =
         season2UxStationId == Season2Chapter1StationOrder.WHICH_WORD_STARTS_WITH
-
-    fun shouldOrchestrateWhichWordCorrectPraiseInStation(season2UxStationId: Int?): Boolean =
-        Season2StationQaPolicy.shouldOrchestrateWhichWordCorrectPraiseInStation(
-            Season2ChapterIds.Chapter1Tyrannosaurus,
-            season2UxStationId,
-        )
 
     fun shouldHideFinaleHintButton(
         gameplayChapterId: Int,
@@ -111,64 +102,8 @@ object Season2Ch1QaPolicy {
         entryFromChapterSelect: Boolean,
     ): Boolean = chapterFullyRevealed && entryFromChapterSelect
 
-    fun shouldSkipAdvanceRoundInterRoundFeedback(
-        season2UxStationId: Int?,
-        isLast: Boolean,
-    ): Boolean =
-        Season2StationQaPolicy.shouldSkipAdvanceRoundInterRoundFeedback(
-            Season2ChapterIds.Chapter1Tyrannosaurus,
-            season2UxStationId,
-            isLast,
-        )
-
-    fun shouldSkipAdvanceRoundPraiseBecausePlayedInStation(season2UxStationId: Int?): Boolean =
-        Season2StationQaPolicy.shouldSkipAdvanceRoundPraiseBecausePlayedInStation(
-            Season2ChapterIds.Chapter1Tyrannosaurus,
-            season2UxStationId,
-        )
-
-    /** Chapter reward overlay only on first-time St6 completion (no replay reward). */
-    fun shouldRequestFirstTimeChapterReward(
-        registryChapterId: Int,
-        stationId: Int,
-        wasStationAlreadyDone: Boolean,
-        chapterWasCompleteBefore: Boolean,
-    ): Boolean =
-        registryChapterId == 1 &&
-            stationId == Season2Chapter1StationOrder.FINALE_STATION &&
-            !wasStationAlreadyDone &&
-            !chapterWasCompleteBefore
-
     /** Ch1 map entry: map-entry clip only — skip puzzle-explain duplicate. */
     fun shouldPlayPuzzleExplainBeforeMapEntry(registryChapterId: Int): Boolean = registryChapterId != 1
-
-    fun shouldSkipPictureToWordAssetPraiseOnLastRound(
-        season2UxStationId: Int?,
-        isLast: Boolean,
-    ): Boolean =
-        Season2StationQaPolicy.shouldSkipPictureToWordAssetPraiseOnLastRound(
-            Season2ChapterIds.Chapter1Tyrannosaurus,
-            season2UxStationId,
-            isLast,
-        )
-
-    fun useTightBetweenRoundTiming(season2UxStationId: Int?): Boolean =
-        Season2StationQaPolicy.useTightBetweenRoundTiming(
-            Season2ChapterIds.Chapter1Tyrannosaurus,
-            season2UxStationId,
-        )
-
-    fun isWhichWordStartsWithUx(season2UxStationId: Int?): Boolean =
-        season2UxStationId == Season2Chapter1StationOrder.WHICH_WORD_STARTS_WITH
-
-    fun shouldReplayPictureToWordCoachWithInstruction(
-        season2UxStationId: Int?,
-        gameplayChapterId: Int,
-    ): Boolean =
-        Season2StationQaPolicy.shouldReplayPictureToWordCoachWithInstruction(
-            gameplayChapterId,
-            season2UxStationId,
-        )
 
     fun isCh1FinalePictureToWord(
         gameplayChapterId: Int,

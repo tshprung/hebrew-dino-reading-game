@@ -9,14 +9,15 @@ import com.tal.hebrewdino.ui.audio.RawVoicePlayer
 import com.tal.hebrewdino.ui.audio.VoicePlayer
 import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
 import com.tal.hebrewdino.ui.domain.LevelSession
+import com.tal.hebrewdino.ui.domain.Season2PostFocusCorrectPolicy
 import com.tal.hebrewdino.ui.domain.Season2StationAudio
 import com.tal.hebrewdino.ui.domain.Season2StationQaPolicy
 import com.tal.hebrewdino.ui.domain.TrainingV1Config
 import com.tal.hebrewdino.ui.feedback.GameFeedback
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import kotlin.random.Random
+import kotlin.time.Duration.Companion.milliseconds
 
 private val Episode1PraiseCandidates =
     arrayOf(
@@ -45,6 +46,7 @@ internal object AdvanceAfterRoundActions {
         stationId: Int,
         season2Chapter1UxStationId: Int? = null,
         isSeason2QuizChapter: Boolean = false,
+        suppressAdvanceRoundNarratorPraiseAfterPostFocusCompanion: Boolean = false,
         isLast: Boolean,
         ch3SpellMidWord: Boolean,
         suppressInGameDinoProgress: Boolean,
@@ -95,10 +97,15 @@ internal object AdvanceAfterRoundActions {
         }
         val suppressSagaAdvancePraise =
             Season2StationQaPolicy.shouldSuppressSagaEpisodeAdvancePraise(isSeason2QuizChapter)
+        val suppressNarratorPraiseAfterPostFocus =
+            Season2PostFocusCorrectPolicy.shouldSuppressAdvanceRoundNarratorPraise(
+                suppressAdvanceRoundNarratorPraiseAfterPostFocusCompanion,
+            )
         val episode1PraiseEligible =
             audioEnabled &&
                 sagaEpisode &&
                 !suppressSagaAdvancePraise &&
+                !suppressNarratorPraiseAfterPostFocus &&
                 stationId in 2..5 &&
                 stationId != Chapter1StationOrder.PICTURE_PICK_ONE &&
                 !isChapter3AudioLetterRecognitionStation &&
@@ -129,6 +136,7 @@ internal object AdvanceAfterRoundActions {
         val otherPraiseEligible =
             audioEnabled &&
                 !suppressSagaAdvancePraise &&
+                !suppressNarratorPraiseAfterPostFocus &&
                 !finaleMatchLetterStation &&
                 !trainingMatchLetterStation &&
                 !(sagaUsesPickLetterAudioStaging) &&
@@ -213,7 +221,7 @@ internal object AdvanceAfterRoundActions {
                 tightBetweenRounds -> 40
                 sagaUsesFindGridAudioStaging -> 120
                 else -> 170
-            },
+            }.milliseconds,
         )
         val waitPraiseBeforeFade =
             sagaEpisode &&
@@ -238,7 +246,7 @@ internal object AdvanceAfterRoundActions {
             GameAudioActions.awaitFeedbackVoice(audioRuntime, 2500L)
         }
         if (!tightBetweenRounds) {
-            delay(5)
+            delay(5.milliseconds)
         }
         session.nextQuestion()
         if (session.currentQuestion == null && !gameViewModel.completionCallbackFired) {

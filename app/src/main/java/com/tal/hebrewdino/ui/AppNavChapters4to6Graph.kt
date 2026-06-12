@@ -166,8 +166,6 @@ internal fun NavGraphBuilder.chapterFourToSixGraph(host: AppNavHostState) {
         BackHandler { backToMap() }
         RewardScreen(
             levelId = stationId,
-            correct = correct,
-            mistakes = mistakes,
             onBackToMap = backToMap,
             showSelectedCompanionPortrait = true,
             selectedCompanionCharacter = host.companionCharacter,
@@ -322,8 +320,6 @@ internal fun NavGraphBuilder.chapterFourToSixGraph(host: AppNavHostState) {
         BackHandler { backToMap() }
         RewardScreen(
             levelId = stationId,
-            correct = correct,
-            mistakes = mistakes,
             onBackToMap = backToMap,
             showSelectedCompanionPortrait = true,
             selectedCompanionCharacter = host.companionCharacter,
@@ -475,8 +471,6 @@ internal fun NavGraphBuilder.chapterFourToSixGraph(host: AppNavHostState) {
         BackHandler { backToMap() }
         RewardScreen(
             levelId = stationId,
-            correct = correct,
-            mistakes = mistakes,
             onBackToMap = backToMap,
             showSelectedCompanionPortrait = true,
             selectedCompanionCharacter = host.companionCharacter,

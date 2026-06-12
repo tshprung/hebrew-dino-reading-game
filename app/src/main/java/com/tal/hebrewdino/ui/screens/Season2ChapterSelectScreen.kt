@@ -56,17 +56,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.tal.hebrewdino.ui.data.DinoCharacter
 import com.tal.hebrewdino.ui.data.Season2ProgressPrefs
-import com.tal.hebrewdino.ui.domain.Season2Chapter1RevealOrder
 import com.tal.hebrewdino.ui.domain.Season2ChapterRegistry
 import com.tal.hebrewdino.ui.domain.Season2IntroFlow
 import com.tal.hebrewdino.ui.domain.Season2Copy
 import com.tal.hebrewdino.ui.domain.Season2StandardRevealOrder
 import com.tal.hebrewdino.ui.layout.topChromeInsetsPadding
 import kotlin.math.max
-import kotlinx.coroutines.launch
 
-private val MuseumWallTop = Color(0xFFF4EDE3)
-private val MuseumWallBottom = Color(0xFFE6D9C8)
 private val TitleBrown = Color(0xFF4A3A2E)
 private val CardIvoryTop = Color(0xFFFFFBF2)
 private val CardIvoryBottom = Color(0xFFF2E8DA)
@@ -98,7 +94,6 @@ fun Season2ChapterSelectScreen(
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
     val season2Progress = remember(context) { Season2ProgressPrefs(context.applicationContext) }
     val completedChapters by season2Progress.completedChaptersFlow.collectAsState(initial = emptySet())
     val chapter1Stations by season2Progress.completedStationsFlow(1).collectAsState(initial = emptySet())
@@ -482,7 +477,7 @@ private fun CompletionTag(
                 }
             }
         }
-        state == ChapterState.Locked && (isPrerequisiteLocked || !isComingSoon) -> {
+        state == ChapterState.Locked -> {
             Surface(
                 modifier = modifier,
                 shape = RoundedCornerShape(999.dp),

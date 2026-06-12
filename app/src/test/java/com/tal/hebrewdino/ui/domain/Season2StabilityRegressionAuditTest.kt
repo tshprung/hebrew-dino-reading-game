@@ -133,19 +133,17 @@ class Season2StabilityRegressionAuditTest {
             )
         stations.forEach { sid ->
             assertTrue(
-                Season2Station6FeedbackPolicy.shouldSkipCoachBubble(sid, isSeason2Quiz = true),
+                Season2Station6FeedbackPolicy.shouldSkipCoachBubble(isSeason2Quiz = true),
             )
             assertFalse(
                 Season2Station6FeedbackPolicy.shouldReplayInstructionAfterWrong(
                     consecutiveWrongInRound = 1,
-                    season2UxStationId = sid,
                     isSeason2Quiz = true,
                 ),
             )
             assertTrue(
                 Season2Station6FeedbackPolicy.shouldReplayInstructionAfterWrong(
                     consecutiveWrongInRound = 2,
-                    season2UxStationId = sid,
                     isSeason2Quiz = true,
                 ),
             )
@@ -153,7 +151,6 @@ class Season2StabilityRegressionAuditTest {
         assertFalse(
             Season2Station6FeedbackPolicy.shouldReplayInstructionAfterWrong(
                 consecutiveWrongInRound = 2,
-                season2UxStationId = 1,
                 isSeason2Quiz = false,
             ),
         )

@@ -387,8 +387,6 @@ internal fun NavGraphBuilder.chapterOneToThreeGraph(host: AppNavHostState) {
         BackHandler { backToMap() }
         RewardScreen(
             levelId = levelId,
-            correct = correct,
-            mistakes = mistakes,
             onBackToMap = backToMap,
             chapter1DinoCompanionPilot = true,
             chapter1CompanionCharacter = host.companionCharacter,
@@ -441,8 +439,6 @@ internal fun NavGraphBuilder.chapterOneToThreeGraph(host: AppNavHostState) {
         BackHandler { backToMap() }
         RewardScreen(
             levelId = stationId,
-            correct = correct,
-            mistakes = mistakes,
             // Match gameplay (`Chapter2LevelScreen`) so station-complete doesn't feel like a different "camera".
             backgroundRes = R.drawable.chapter2_level_overlay,
             onBackToMap = backToMap,
@@ -522,8 +518,6 @@ internal fun NavGraphBuilder.chapterOneToThreeGraph(host: AppNavHostState) {
         BackHandler { backToMap() }
         RewardScreen(
             levelId = stationId,
-            correct = correct,
-            mistakes = mistakes,
             backgroundRes = R.drawable.ch3_reward_bg,
             onBackToMap = backToMap,
             showSelectedCompanionPortrait = true,

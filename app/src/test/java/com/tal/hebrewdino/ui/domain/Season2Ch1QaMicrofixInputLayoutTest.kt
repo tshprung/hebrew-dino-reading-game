@@ -24,8 +24,8 @@ class Season2Ch1QaMicrofixInputLayoutTest {
         val pop = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/screens/PopBalloonsActions.kt")
         assertTrue(pop.contains("shouldCancelPreviousFeedbackOnPopBalloonsTap"))
         val gameScreen = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/screens/GameScreen.kt")
-        assertTrue(gameScreen.contains("if (isSeason2BalloonStation)"))
-        assertTrue(gameScreen.contains("cancelFeedbackVoiceCb()"))
+        assertTrue(gameScreen.contains("handlePopBalloonsWrongPick"))
+        assertTrue(gameScreen.contains("awaitFeedbackVoice"))
     }
 
     @Test
@@ -57,7 +57,7 @@ class Season2Ch1QaMicrofixInputLayoutTest {
     @Test
     fun ch1_st5_correct_praise_not_clipped_policy() {
         assertTrue(
-            Season2Ch1QaPolicy.shouldOrchestrateWhichWordCorrectPraiseInStation(
+            Season2StationQaPolicy.shouldOrchestrateWhichWordCorrectPraiseInStation(Season2ChapterIds.Chapter1Tyrannosaurus, 
                 Season2Chapter1StationOrder.WHICH_WORD_STARTS_WITH,
             ),
         )

@@ -83,7 +83,8 @@ class Season2PropagateCh1ApprovedStationUxTest {
     fun post_focus_correct_success_pool_all_relevant_s2() {
         val coach = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/domain/Season2GuessingCoach.kt")
         assertTrue(coach.contains("Season2StationQaPolicy.shouldReplayPictureToWordCoachWithInstruction"))
-        assertFalse(Season2PostFocusCorrectPolicy.shouldShowPostFocusTextBubble())
+        val postFocus = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/domain/Season2PostFocusCorrectPolicy.kt")
+        assertTrue(postFocus.contains("shouldPlayCompanionPraiseOnCorrect"))
     }
 
     @Test
@@ -114,15 +115,13 @@ class Season2PropagateCh1ApprovedStationUxTest {
     @Test
     fun ch1_unchanged() {
         assertTrue(
-            Season2Ch1QaPolicy.shouldRequestFirstTimeChapterReward(
-                registryChapterId = 1,
-                stationId = Season2Chapter1StationOrder.FINALE_STATION,
+            Season2ChapterFlowPolicy.shouldRequestFirstTimeChapterReward(stationId = Season2Chapter1StationOrder.FINALE_STATION,
                 wasStationAlreadyDone = false,
                 chapterWasCompleteBefore = false,
             ),
         )
         assertTrue(
-            Season2Ch1QaPolicy.shouldOrchestrateWhichWordCorrectPraiseInStation(
+            Season2StationQaPolicy.shouldOrchestrateWhichWordCorrectPraiseInStation(Season2ChapterIds.Chapter1Tyrannosaurus, 
                 Season2Chapter1StationOrder.WHICH_WORD_STARTS_WITH,
             ),
         )

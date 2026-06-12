@@ -660,7 +660,6 @@ internal fun GameQuestionHost(
                                             voice = deps.voice,
                                             audioRuntime = deps.audioRuntime,
                                             candidates = MatchPraiseClips,
-                                            playerAddress = ui.chapter1PlayerAddress,
                                             chapterId = ui.chapterId,
                                             stationId = ui.stationId,
                                             context = "GameQuestionHost.handleMatchSolved(praise)",

@@ -4,7 +4,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.tal.hebrewdino.ui.audio.AudioClips
 import com.tal.hebrewdino.ui.audio.RawVoicePlayer
-import com.tal.hebrewdino.ui.audio.VoicePlayer
 import com.tal.hebrewdino.ui.companion.Chapter1AddressAwareAudio
 import com.tal.hebrewdino.ui.components.Chapter3Station5ReplayColumn
 import com.tal.hebrewdino.ui.data.PlayerAddress
@@ -23,7 +22,6 @@ internal fun Chapter3Station5ReplayOverlay(
     audioEnabled: Boolean,
     session: LevelSession,
     scope: CoroutineScope,
-    voice: VoicePlayer,
     rawVoice: RawVoicePlayer,
     cancelFeedbackVoice: () -> Unit,
     audioRuntime: GameAudioRuntimeState,

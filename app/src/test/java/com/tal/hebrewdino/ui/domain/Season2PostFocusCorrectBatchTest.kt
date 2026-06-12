@@ -58,7 +58,6 @@ class Season2PostFocusCorrectBatchTest {
             season2HadCoachIntervention = false,
         ),
     )
-    assertFalse(Season2PostFocusCorrectPolicy.shouldShowPostFocusTextBubble())
   }
 
   @Test
@@ -73,7 +72,16 @@ class Season2PostFocusCorrectBatchTest {
 
   @Test
   fun representativeStations_skipGenericPraiseAfterCoach() {
-    assertTrue(Season2PostFocusCorrectPolicy.shouldSkipGenericInStationPraise(season2HadCoachIntervention = true))
+    assertTrue(
+        Season2EarlyStationQaPolicy.shouldSkipInStationCorrectPraiseAfterCoach(
+            season2HadCoachIntervention = true,
+        ),
+    )
+    assertTrue(
+        Season2PostFocusCorrectPolicy.shouldSuppressAdvanceRoundNarratorPraise(
+            playedPostFocusCompanionPraise = true,
+        ),
+    )
     val pickLetter = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/screens/PickLetterActions.kt")
     val picture = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/screens/PictureStartsWithActions.kt")
     val image = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/screens/ImageMatchActions.kt")

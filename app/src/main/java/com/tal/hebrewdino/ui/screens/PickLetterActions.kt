@@ -6,7 +6,11 @@ import com.tal.hebrewdino.ui.audio.SoundPoolPlayer
 import com.tal.hebrewdino.ui.audio.VoicePlayer
 import com.tal.hebrewdino.ui.domain.AnswerResult
 import com.tal.hebrewdino.ui.domain.LevelSession
+import com.tal.hebrewdino.ui.audio.BackgroundMusicPlayer
+import com.tal.hebrewdino.ui.audio.Season2PostFocusCorrectAudio
+import com.tal.hebrewdino.ui.data.DinoCharacter
 import com.tal.hebrewdino.ui.domain.Season2EarlyStationQaPolicy
+import com.tal.hebrewdino.ui.domain.Season2WarmupStationQaPolicy
 import com.tal.hebrewdino.ui.domain.TrainingV1Config
 import com.tal.hebrewdino.ui.game.ChildGameAudioHooks
 import kotlinx.coroutines.CoroutineScope
@@ -42,11 +46,15 @@ internal object PickLetterActions {
         onWrongFeedback: (wrongPickedLetter: String, wrongPickedLetterAlreadySpoken: Boolean) -> Unit,
         advanceAfterRound: suspend (isLast: Boolean, ch3SpellMidWord: Boolean) -> Unit,
         season2HadCoachIntervention: Boolean = false,
+        companionCharacter: DinoCharacter? = null,
+        backgroundMusic: BackgroundMusicPlayer? = null,
+        postFocusAvoidPraiseRawResId: Int = 0,
+        onPostFocusPraisePlayed: (Int) -> Unit = {},
     ) {
         if (!gameViewModel.consumeTapCooldown()) return
         cancelFeedbackVoice()
         val applyImmediateLetterNameAudio =
-            chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5 || chapterId == TrainingV1Config.CHAPTER_ID
+            Season2WarmupStationQaPolicy.usesRawLetterNameStationFeedback(chapterId)
         when (session.submitAnswer(picked)) {
             AnswerResult.Correct -> {
                 val isTrainingStation1 =
@@ -193,7 +201,7 @@ internal object PickLetterActions {
                                 advanceAfterRound(isLast, false)
                                 return@launch
                             }
-                            val skipPraise =
+                            val skipNarratorPraise =
                                 Season2EarlyStationQaPolicy.shouldSkipInStationCorrectPraiseAfterCoach(
                                     season2HadCoachIntervention,
                                 )
@@ -205,7 +213,16 @@ internal object PickLetterActions {
                                     audioRuntime = audioRuntime,
                                 ) {
                                     rawVoice.playRawBlocking(resId)
-                                    if (!skipPraise) {
+                                    if (skipNarratorPraise && companionCharacter != null) {
+                                        val praiseRes =
+                                            Season2PostFocusCorrectAudio.playBlocking(
+                                                companion = companionCharacter,
+                                                rawVoice = rawVoice,
+                                                backgroundMusic = backgroundMusic,
+                                                avoidRawResId = postFocusAvoidPraiseRawResId,
+                                            )
+                                        onPostFocusPraisePlayed(praiseRes)
+                                    } else if (!skipNarratorPraise) {
                                         GameAudioActions.playPraiseNoImmediateRepeat(
                                             voice = voice,
                                             audioRuntime = audioRuntime,
@@ -228,7 +245,7 @@ internal object PickLetterActions {
                             advanceAfterRound(isLast, false)
                             return@launch
                         }
-                        val skipPraise =
+                        val skipNarratorPraise =
                             Season2EarlyStationQaPolicy.shouldSkipInStationCorrectPraiseAfterCoach(
                                 season2HadCoachIntervention,
                             )
@@ -240,7 +257,7 @@ internal object PickLetterActions {
                                 audioRuntime = audioRuntime,
                             ) {
                                 voice.playBlocking(letterName)
-                                if (!skipPraise) {
+                                if (!skipNarratorPraise) {
                                     GameAudioActions.playPraiseNoImmediateRepeat(
                                         voice = voice,
                                         audioRuntime = audioRuntime,

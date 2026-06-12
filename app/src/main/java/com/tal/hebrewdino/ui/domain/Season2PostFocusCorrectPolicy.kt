@@ -7,8 +7,7 @@ object Season2PostFocusCorrectPolicy {
         season2HadCoachIntervention: Boolean,
     ): Boolean = isSeason2QuizChapter && season2HadCoachIntervention
 
-    fun shouldShowPostFocusTextBubble(): Boolean = false
-
-    fun shouldSkipGenericInStationPraise(season2HadCoachIntervention: Boolean): Boolean =
-        Season2EarlyStationQaPolicy.shouldSkipInStationCorrectPraiseAfterCoach(season2HadCoachIntervention)
+    /** After companion post-focus praise, narrator must not praise again on round advance. */
+    fun shouldSuppressAdvanceRoundNarratorPraise(playedPostFocusCompanionPraise: Boolean): Boolean =
+        playedPostFocusCompanionPraise
 }

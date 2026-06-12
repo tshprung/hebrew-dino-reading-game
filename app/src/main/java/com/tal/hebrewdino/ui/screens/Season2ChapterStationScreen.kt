@@ -26,8 +26,8 @@ import com.tal.hebrewdino.ui.data.Season2ProgressPrefs
 
 import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
 
-import com.tal.hebrewdino.ui.domain.Season2Ch1QaPolicy
 import com.tal.hebrewdino.ui.domain.Season2Chapter1RevealOrder
+import com.tal.hebrewdino.ui.domain.Season2ChapterFlowPolicy
 import com.tal.hebrewdino.ui.domain.Season2Chapter1StationOrder
 
 import com.tal.hebrewdino.ui.domain.Season2ChapterRegistry
@@ -112,26 +112,18 @@ fun Season2ChapterStationScreen(
             season2Progress.markStationCompleted(chapterId, stationId)
 
             val requestCelebration =
-                when (chapterId) {
-                    1 ->
-                        Season2Ch1QaPolicy.shouldRequestFirstTimeChapterReward(
-                            registryChapterId = chapterId,
-                            stationId = stationId,
-                            wasStationAlreadyDone = wasStationDone,
-                            chapterWasCompleteBefore = chapterWasComplete,
-                        )
-                    2 ->
-                        com.tal.hebrewdino.ui.domain.Season2Ch2St6WordPartsPolicy.shouldRequestFirstTimeChapterReward(
-                            stationId = stationId,
-                            wasStationAlreadyDone = wasStationDone,
-                            chapterWasCompleteBefore = chapterWasComplete,
-                        )
-                    else ->
-                        Season2IntroFlow.shouldRequestChapterCelebration(
-                            stationId = stationId,
-                            wasStationAlreadyDone = wasStationDone,
-                            chapterWasCompleteBefore = chapterWasComplete,
-                        )
+                if (chapterId in 1..6) {
+                    Season2ChapterFlowPolicy.shouldRequestFirstTimeChapterReward(
+                        stationId = stationId,
+                        wasStationAlreadyDone = wasStationDone,
+                        chapterWasCompleteBefore = chapterWasComplete,
+                    )
+                } else {
+                    Season2IntroFlow.shouldRequestChapterCelebration(
+                        stationId = stationId,
+                        wasStationAlreadyDone = wasStationDone,
+                        chapterWasCompleteBefore = chapterWasComplete,
+                    )
                 }
 
             if (requestCelebration && !chapterWasComplete) {

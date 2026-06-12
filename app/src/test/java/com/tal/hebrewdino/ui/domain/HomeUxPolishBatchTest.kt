@@ -70,6 +70,18 @@ class HomeUxPolishBatchTest {
     }
 
     @Test
+    fun seasonsScreen_release_includes_season1_and_season2_only() {
+        val seasons = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/screens/SeasonsScreen.kt")
+        assertTrue(seasons.contains("seasonId = 2"))
+        assertTrue(seasons.contains("enabled = true"))
+        assertTrue(seasons.contains("if (BuildConfig.DEBUG)"))
+        val nav = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/AppNavSystemGraph.kt")
+        assertTrue(nav.contains("onOpenSeason2 = {"))
+        assertTrue(nav.contains("NavRoutes.Season2ChapterSelect"))
+        assertFalse(nav.contains("if (BuildConfig.DEBUG) {\n                    {\n                        host.navController.navigate(NavRoutes.Season2ChapterSelect)"))
+    }
+
+    @Test
     fun season2IntroText_matchesStoryAudioScript() {
         val lines = Season2Copy.seasonIntroStoryLines()
         assertEquals(4, lines.size)

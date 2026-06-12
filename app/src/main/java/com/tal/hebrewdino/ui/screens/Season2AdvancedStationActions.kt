@@ -8,7 +8,7 @@ import com.tal.hebrewdino.ui.audio.VoicePlayer
 import com.tal.hebrewdino.ui.domain.AnswerResult
 import com.tal.hebrewdino.ui.domain.LevelSession
 import com.tal.hebrewdino.ui.domain.Question
-import com.tal.hebrewdino.ui.domain.Season2Ch2St6WordPartsPolicy
+import com.tal.hebrewdino.ui.domain.Season2WordPartsUxPolicy
 import com.tal.hebrewdino.ui.domain.Season2EarlyStationQaPolicy
 import com.tal.hebrewdino.ui.domain.Season2Station6FeedbackPolicy
 import com.tal.hebrewdino.ui.domain.Season2WordPartsCatalog
@@ -91,9 +91,7 @@ internal object Season2AdvancedStationActions {
             isSeason2QuizChapter &&
                 Season2Station6FeedbackPolicy.shouldReplayInstructionAfterWrong(
                     consecutiveWrongInRound = consecutiveWrongsInRound + 1,
-                    season2UxStationId = season2UxStationId,
                     isSeason2Quiz = isSeason2QuizChapter,
-                    season2AdvancedMode = season2AdvancedMode,
                 )
         val job =
             scope.launch {
@@ -104,7 +102,7 @@ internal object Season2AdvancedStationActions {
                         Season2WordPartsCatalog.catalogIdForSplit(picked.firstPart, picked.secondPart)
                     val immediateCorrectFilter =
                         q != null &&
-                            Season2Ch2St6WordPartsPolicy.filterCorrectSplitImmediatelyBeforeAudio(
+                            Season2WordPartsUxPolicy.filterCorrectSplitImmediatelyBeforeAudio(
                                 q.presentationMode,
                             )
                     val outcome =
@@ -172,7 +170,7 @@ internal object Season2AdvancedStationActions {
                             }
                             delay(
                                 if (immediateCorrectFilter) {
-                                    Season2Ch2St6WordPartsPolicy.CorrectPostPraiseHoldMs
+                                    Season2WordPartsUxPolicy.CorrectPostPraiseHoldMs
                                 } else {
                                     1_400L
                                 },

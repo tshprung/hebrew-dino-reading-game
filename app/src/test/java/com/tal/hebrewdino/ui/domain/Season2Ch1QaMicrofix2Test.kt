@@ -23,7 +23,7 @@ class Season2Ch1QaMicrofix2Test {
     @Test
     fun ch1_st5_correct_single_praise() {
         assertTrue(
-            Season2Ch1QaPolicy.shouldSkipAdvanceRoundPraiseBecausePlayedInStation(
+            Season2StationQaPolicy.shouldSkipAdvanceRoundPraiseBecausePlayedInStation(Season2ChapterIds.Chapter1Tyrannosaurus, 
                 Season2Chapter1StationOrder.WHICH_WORD_STARTS_WITH,
             ),
         )
@@ -43,17 +43,13 @@ class Season2Ch1QaMicrofix2Test {
     @Test
     fun ch1_reward_only_on_first_chapter_completion() {
         assertTrue(
-            Season2Ch1QaPolicy.shouldRequestFirstTimeChapterReward(
-                registryChapterId = 1,
-                stationId = Season2Chapter1StationOrder.FINALE_STATION,
+            Season2ChapterFlowPolicy.shouldRequestFirstTimeChapterReward(stationId = Season2Chapter1StationOrder.FINALE_STATION,
                 wasStationAlreadyDone = false,
                 chapterWasCompleteBefore = false,
             ),
         )
         assertFalse(
-            Season2Ch1QaPolicy.shouldRequestFirstTimeChapterReward(
-                registryChapterId = 1,
-                stationId = Season2Chapter1StationOrder.FINALE_STATION,
+            Season2ChapterFlowPolicy.shouldRequestFirstTimeChapterReward(stationId = Season2Chapter1StationOrder.FINALE_STATION,
                 wasStationAlreadyDone = true,
                 chapterWasCompleteBefore = true,
             ),
@@ -63,15 +59,13 @@ class Season2Ch1QaMicrofix2Test {
     @Test
     fun ch1_replay_st6_no_reward() {
         assertFalse(
-            Season2Ch1QaPolicy.shouldRequestFirstTimeChapterReward(
-                registryChapterId = 1,
-                stationId = Season2Chapter1StationOrder.FINALE_STATION,
+            Season2ChapterFlowPolicy.shouldRequestFirstTimeChapterReward(stationId = Season2Chapter1StationOrder.FINALE_STATION,
                 wasStationAlreadyDone = true,
                 chapterWasCompleteBefore = true,
             ),
         )
         val station = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/screens/Season2ChapterStationScreen.kt")
-        assertTrue(station.contains("shouldRequestFirstTimeChapterReward"))
+        assertTrue(station.contains("Season2ChapterFlowPolicy.shouldRequestFirstTimeChapterReward"))
     }
 
     @Test
@@ -92,9 +86,8 @@ class Season2Ch1QaMicrofix2Test {
     @Test
     fun s1_unchanged() {
         assertTrue(Season2Ch1QaPolicy.shouldPlayPuzzleExplainBeforeMapEntry(registryChapterId = 2))
-        assertFalse(
-            Season2Ch1QaPolicy.shouldRequestFirstTimeChapterReward(
-                registryChapterId = 2,
+        assertTrue(
+            Season2ChapterFlowPolicy.shouldRequestFirstTimeChapterReward(
                 stationId = Season2Chapter1StationOrder.FINALE_STATION,
                 wasStationAlreadyDone = false,
                 chapterWasCompleteBefore = false,

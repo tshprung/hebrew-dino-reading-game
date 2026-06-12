@@ -56,6 +56,7 @@ import com.tal.hebrewdino.ui.layout.ScreenFit
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import kotlinx.coroutines.launch
+import kotlin.time.Duration.Companion.milliseconds
 
 @Composable
 fun Chapter1LettersIntroScreen(
@@ -219,7 +220,7 @@ fun ChapterLettersIntroScreen(
                     val clip = AudioClips.letterNameClip(l)
                     if (clip != null) voice?.playBlocking(clip)
                 }
-                kotlinx.coroutines.delay(180)
+                kotlinx.coroutines.delay(180.milliseconds)
             }
         } finally {
             highlightedLetter = null

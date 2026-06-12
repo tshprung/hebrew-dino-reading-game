@@ -3,14 +3,13 @@ package com.tal.hebrewdino.ui.screens
 import com.tal.hebrewdino.ui.audio.AudioClips
 import com.tal.hebrewdino.ui.audio.RawVoicePlayer
 import com.tal.hebrewdino.ui.audio.SoundPoolPlayer
-import com.tal.hebrewdino.ui.audio.VoicePlayer
 import com.tal.hebrewdino.ui.companion.Chapter1AddressAwareAudio
 import com.tal.hebrewdino.ui.data.PlayerAddress
-import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
 import com.tal.hebrewdino.ui.domain.Question
 import com.tal.hebrewdino.ui.domain.Season2StationAudio
 import com.tal.hebrewdino.ui.domain.StationTemplateId
 import kotlinx.coroutines.delay
+import kotlin.time.Duration.Companion.milliseconds
 
 private const val Chapter1InstructionToTargetGapMs: Long = 170L
 
@@ -26,18 +25,7 @@ internal suspend fun playChapter1AddressAwareIntro(
     isSagaEpisode: Boolean,
     q: Question,
     rawVoice: RawVoicePlayer,
-    voice: VoicePlayer,
     sfx: SoundPoolPlayer,
-    station1IntroLetterLeadFraction: Float,
-    station1IntroToLetterLeadScale: Float,
-    station2BalloonIntroLetterLeadFraction: Float,
-    station2IntroToLetterLeadScale: Float,
-    station2BalloonIntroToLetterGapBoost: Float,
-    station2BalloonIntroToLetterExtraPauseMs: Long,
-    station4IntroWordLeadFraction: Float,
-    station4IntroToWordLeadScale: Float,
-    station4IntroToWordGapBoost: Float,
-    station4IntroToWordExtraPauseMs: Long,
 ): Boolean {
     if (!Season2StationAudio.usesChapter1StyleAddressAwareIntro(chapterId) || playerAddress == null) return false
     val kind =
@@ -62,7 +50,7 @@ internal suspend fun playChapter1AddressAwareIntro(
             } ?: return false
         sfx.stopAllStreams()
         rawVoice.playRawBlocking(instructionRaw)
-        delay(Chapter1InstructionToTargetGapMs)
+        delay(Chapter1InstructionToTargetGapMs.milliseconds)
         val resId = AudioClips.letterNameRawResId(target)
         if (resId == null) {
             android.util.Log.e(
@@ -79,7 +67,7 @@ internal suspend fun playChapter1AddressAwareIntro(
     if (sagaUsesFindGridAudioStaging && q is Question.FindLetterGridQuestion) {
         sfx.stopAllStreams()
         rawVoice.playRawBlocking(instructionRaw)
-        delay(Chapter1InstructionToTargetGapMs)
+        delay(Chapter1InstructionToTargetGapMs.milliseconds)
         val resId = AudioClips.letterNameRawResId(q.targetLetter)
         if (resId == null) {
             android.util.Log.e(
@@ -96,7 +84,7 @@ internal suspend fun playChapter1AddressAwareIntro(
     if (stationTemplateId == StationTemplateId.ImageMatch && q is Question.ImageMatchQuestion) {
         sfx.stopAllStreams()
         rawVoice.playRawBlocking(instructionRaw)
-        delay(Chapter1InstructionToTargetGapMs)
+        delay(Chapter1InstructionToTargetGapMs.milliseconds)
         val resId = AudioClips.letterNameRawResId(q.targetLetter)
         if (resId == null) {
             android.util.Log.e(
@@ -123,7 +111,7 @@ internal suspend fun playChapter1AddressAwareIntro(
     ) {
         sfx.stopAllStreams()
         rawVoice.playRawBlocking(instructionRaw)
-        delay(Chapter1InstructionToTargetGapMs)
+        delay(Chapter1InstructionToTargetGapMs.milliseconds)
         val wordResId = AudioClips.wordRawResIdByCatalogId(q.catalogEntryId)
         if (wordResId == null) {
             android.util.Log.e(
@@ -140,7 +128,7 @@ internal suspend fun playChapter1AddressAwareIntro(
     if (sagaUsesPopBalloonsAudioStaging && q is Question.PopBalloonsQuestion) {
         sfx.stopAllStreams()
         rawVoice.playRawBlocking(instructionRaw)
-        delay(Chapter1InstructionToTargetGapMs)
+        delay(Chapter1InstructionToTargetGapMs.milliseconds)
         val resId = AudioClips.letterNameRawResId(q.correctAnswer)
         if (resId == null) {
             android.util.Log.e(

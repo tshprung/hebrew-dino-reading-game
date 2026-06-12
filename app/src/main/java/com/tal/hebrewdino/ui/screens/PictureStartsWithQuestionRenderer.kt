@@ -40,9 +40,7 @@ internal fun PictureStartsWithQuestionRenderer(
     modifier: Modifier = Modifier,
 ) {
     val layoutPilot =
-        chapterId != null &&
-            stationId != null &&
-            Season2Ch1QaPolicy.isPictureStartsWithLayoutPilot(chapterId, stationId)
+        Season2Ch1QaPolicy.isPictureStartsWithLayoutPilot(chapterId, stationId)
     val displayInstructionText =
         if (isCompactLandscapePhone && stationUiSpec.pictureStartsWithCompactLandscapeRtlWrapInstruction) {
             ScreenFit.rtlUnicodeWrap(instructionText)

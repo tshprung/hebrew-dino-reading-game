@@ -1,12 +1,7 @@
 package com.tal.hebrewdino.ui.domain
 
-import com.tal.hebrewdino.ui.companion.CompanionVisualPolicy
-
 /** Season 2 gameplay presentation helpers (gated; chapters 3–6 warmup arc). */
 object Season2StationUx {
-    fun expectsSelectedCompanion(chapterId: Int): Boolean =
-        CompanionVisualPolicy.expectsSelectedCompanion(chapterId)
-
     fun isWarmupPictureStartsWith(chapterId: Int, stationId: Int): Boolean =
         Season2StationAudio.isSeason2WarmupChapter(chapterId) &&
             stationId == Season2Chapter1StationOrder.PICTURE_STARTS_WITH &&
@@ -52,8 +47,4 @@ object Season2StationUx {
     fun isWhichWordStartsWithStation(gameplayChapterId: Int, stationId: Int): Boolean =
         stationKindForGameplayChapter(gameplayChapterId, stationId) ==
             Season2ChapterStationPlans.StationKind.WhichWordStartsWith
-
-    fun isWordPartsStation(gameplayChapterId: Int, stationId: Int): Boolean =
-        stationKindForGameplayChapter(gameplayChapterId, stationId) ==
-            Season2ChapterStationPlans.StationKind.WordParts
 }

@@ -11,6 +11,8 @@ import com.tal.hebrewdino.ui.companion.playAddressAwareTryAgainBlocking
 import com.tal.hebrewdino.ui.companion.playLetterThenAddressAwareTryAgain
 import com.tal.hebrewdino.ui.data.PlayerAddress
 import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
+import com.tal.hebrewdino.ui.domain.Season2StationAudio
+import com.tal.hebrewdino.ui.domain.Season2WarmupStationQaPolicy
 import com.tal.hebrewdino.ui.feedback.GameFeedback
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
@@ -256,8 +258,7 @@ internal object WrongFeedbackActions {
                             )
                             return@play
                         }
-                        val requiredChapter = chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5
-                        if (requiredChapter) {
+                        if (Season2WarmupStationQaPolicy.usesRawLetterNameStationFeedback(chapterId)) {
                             val resId = AudioClips.letterNameRawResId(wrongPickedLetter)
                             if (resId == null) {
                                 android.util.Log.e(
@@ -278,6 +279,10 @@ internal object WrongFeedbackActions {
                                     chapterId = chapterId,
                                     stationId = stationId,
                                 )
+                                return@play
+                            }
+                            if (Season2StationAudio.isSeason2GameplayChapter(chapterId)) {
+                                rawVoice.playRawBlocking(resId)
                                 return@play
                             }
                             val variant = Random.nextInt(100)

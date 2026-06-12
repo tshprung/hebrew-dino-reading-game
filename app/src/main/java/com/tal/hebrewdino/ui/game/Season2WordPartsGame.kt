@@ -38,7 +38,7 @@ import com.tal.hebrewdino.ui.components.learning.LessonChoiceCard
 import com.tal.hebrewdino.ui.components.learning.LessonChoiceCardPictureAspect
 import com.tal.hebrewdino.ui.domain.LessonChoice
 import com.tal.hebrewdino.ui.domain.Question
-import com.tal.hebrewdino.ui.domain.Season2Ch2St6WordPartsPolicy
+import com.tal.hebrewdino.ui.domain.Season2WordPartsUxPolicy
 import com.tal.hebrewdino.ui.domain.Season2WordPartsPresentationMode
 import com.tal.hebrewdino.ui.layout.ScreenFit
 
@@ -183,7 +183,6 @@ fun Season2WordPartsGame(
     }
     val isCompact = ScreenFit.isCompactLandscapePhone()
     val mode = question.presentationMode
-    val isCh2St6 = Season2Ch2St6WordPartsPolicy.isCh2St6WordParts(mode)
     val isHidden = mode == Season2WordPartsPresentationMode.HiddenWordPartsChallenge
     val isCorrectState = completedEquation != null
     val showFullWord =
@@ -244,11 +243,7 @@ fun Season2WordPartsGame(
                 }
             val heroHeight = maxOf(cardH, infoColumnHeight)
             val optionsGapBelowHero =
-                if (isCh2St6) {
-                    (if (isCompact) 10.dp else 12.dp) + Season2Ch2St6WordPartsPolicy.OptionsDownDp
-                } else {
-                    if (isCompact) 10.dp else 12.dp
-                }
+                (if (isCompact) 10.dp else 12.dp) + Season2WordPartsUxPolicy.OptionsDownDp
 
             Column(
                 modifier =
@@ -272,14 +267,8 @@ fun Season2WordPartsGame(
                     modifier =
                         Modifier
                             .wrapContentWidth(Alignment.CenterHorizontally)
-                            .then(
-                                if (isCh2St6) {
-                                    Modifier.absoluteOffset(
-                                        x = -Season2Ch2St6WordPartsPolicy.InstructionPhysicalLeftDp,
-                                    )
-                                } else {
-                                    Modifier
-                                },
+                            .absoluteOffset(
+                                x = -Season2WordPartsUxPolicy.InstructionPhysicalLeftDp,
                             )
                             .padding(bottom = if (isCompact) 6.dp else 8.dp)
                             .background(Color.White.copy(alpha = 0.82f), RoundedCornerShape(14.dp))
@@ -298,15 +287,9 @@ fun Season2WordPartsGame(
                             Modifier
                                 .weight(0.52f)
                                 .fillMaxHeight()
-                                .then(
-                                    if (isCh2St6) {
-                                        Modifier.absoluteOffset(
-                                            x = -Season2Ch2St6WordPartsPolicy.ImagePhysicalLeftDp,
-                                            y = Season2Ch2St6WordPartsPolicy.ImageDownDp,
-                                        )
-                                    } else {
-                                        Modifier
-                                    },
+                                .absoluteOffset(
+                                    x = -Season2WordPartsUxPolicy.ImagePhysicalLeftDp,
+                                    y = Season2WordPartsUxPolicy.ImageDownDp,
                                 ),
                         contentAlignment = Alignment.Center,
                     ) {
@@ -339,13 +322,9 @@ fun Season2WordPartsGame(
                                     compact = isCompact,
                                     minHeight = wordLineMinHeight,
                                     modifier =
-                                        if (isCh2St6) {
-                                            Modifier.absoluteOffset(
-                                                y = Season2Ch2St6WordPartsPolicy.TargetWordDownDp,
-                                            )
-                                        } else {
-                                            Modifier
-                                        },
+                                        Modifier.absoluteOffset(
+                                            y = Season2WordPartsUxPolicy.TargetWordDownDp,
+                                        ),
                                 )
                             }
                             if (hintEquationText != null) {
@@ -355,15 +334,11 @@ fun Season2WordPartsGame(
                                 WordPartsHintEquationPill(
                                     equationText = hintEquationText,
                                     compact = isCompact,
-                                    wrapContent = isCh2St6,
+                                    wrapContent = true,
                                     modifier =
-                                        if (isCh2St6) {
-                                            Modifier.absoluteOffset(
-                                                x = -Season2Ch2St6WordPartsPolicy.HintPhysicalLeftDp,
-                                            )
-                                        } else {
-                                            Modifier
-                                        },
+                                        Modifier.absoluteOffset(
+                                            x = -Season2WordPartsUxPolicy.HintPhysicalLeftDp,
+                                        ),
                                 )
                             } else if (showFullWord && hintReserve > 0.dp) {
                                 Spacer(modifier = Modifier.height(hintReserve))
@@ -380,12 +355,14 @@ fun Season2WordPartsGame(
                     modifier =
                         Modifier
                             .fillMaxWidth()
-                            .then(
-                                if (isCh2St6) {
-                                    Modifier.absoluteOffset(x = -Season2Ch2St6WordPartsPolicy.OptionsPhysicalLeftDp)
-                                } else {
-                                    Modifier
-                                },
+                            .absoluteOffset(
+                                x =
+                                    -Season2WordPartsUxPolicy.OptionsPhysicalLeftDp -
+                                        if (hintEquationText != null) {
+                                            Season2WordPartsUxPolicy.HintOptionsExtraPhysicalLeftDp
+                                        } else {
+                                            0.dp
+                                        },
                             ),
                     horizontalArrangement = Arrangement.spacedBy(scaledDp(if (isCompact) 6.dp else 8.dp), Alignment.CenterHorizontally),
                     verticalAlignment = Alignment.CenterVertically,

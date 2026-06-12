@@ -13,7 +13,6 @@ import com.tal.hebrewdino.ui.domain.Question
 import com.tal.hebrewdino.ui.domain.Season2StationAudio
 import com.tal.hebrewdino.ui.domain.StationTemplateId
 import com.tal.hebrewdino.ui.domain.TrainingV1Config
-import kotlinx.coroutines.delay
 
 internal suspend fun playIntroPrompt(
     audioEnabled: Boolean,
@@ -32,28 +31,10 @@ internal suspend fun playIntroPrompt(
     q: Question,
     voice: VoicePlayer,
     sfx: SoundPoolPlayer,
-    station1IntroLetterLeadFraction: Float,
-    station1IntroToLetterLeadScale: Float,
-    station2BalloonIntroLetterLeadFraction: Float,
-    station2IntroToLetterLeadScale: Float,
-    station2BalloonIntroToLetterGapBoost: Float,
-    station2BalloonIntroToLetterExtraPauseMs: Long,
-    station4IntroWordLeadFraction: Float,
-    station4IntroToWordLeadScale: Float,
-    station4IntroToWordGapBoost: Float,
-    station4IntroToWordExtraPauseMs: Long,
     chapter1PlayerAddress: PlayerAddress? = null,
     rawVoice: RawVoicePlayer? = null,
 ) {
     if (!audioEnabled) return
-    val usesRawLetterNames =
-        chapterId == 1 ||
-            chapterId == 2 ||
-            chapterId == 3 ||
-            chapterId == 4 ||
-            chapterId == 5 ||
-            chapterId == 6 ||
-            chapterId == TrainingV1Config.CHAPTER_ID
 
     if (Season2StationAudio.usesChapter1StyleAddressAwareIntro(chapterId) && chapter1PlayerAddress != null && rawVoice != null) {
         if (
@@ -68,18 +49,7 @@ internal suspend fun playIntroPrompt(
                 isSagaEpisode = isSagaEpisode,
                 q = q,
                 rawVoice = rawVoice,
-                voice = voice,
                 sfx = sfx,
-                station1IntroLetterLeadFraction = station1IntroLetterLeadFraction,
-                station1IntroToLetterLeadScale = station1IntroToLetterLeadScale,
-                station2BalloonIntroLetterLeadFraction = station2BalloonIntroLetterLeadFraction,
-                station2IntroToLetterLeadScale = station2IntroToLetterLeadScale,
-                station2BalloonIntroToLetterGapBoost = station2BalloonIntroToLetterGapBoost,
-                station2BalloonIntroToLetterExtraPauseMs = station2BalloonIntroToLetterExtraPauseMs,
-                station4IntroWordLeadFraction = station4IntroWordLeadFraction,
-                station4IntroToWordLeadScale = station4IntroToWordLeadScale,
-                station4IntroToWordGapBoost = station4IntroToWordGapBoost,
-                station4IntroToWordExtraPauseMs = station4IntroToWordExtraPauseMs,
             )
         ) {
             return
@@ -194,16 +164,7 @@ internal suspend fun playIntroPrompt(
                 "MissingContent",
                 "Missing required station prompt audio. chapterId=$chapterId stationId=$stationId context=playIntroPrompt(AudioLetterRecognition) stage=missing raw letter-name mapping targetLetter='${q.correctAnswer}'",
             )
-            if (rawVoice != null) {
-                rawVoice.playRawBlocking(0)
-            } else {
-                voice.playRequiredBlocking(
-                    assetPath = "",
-                    context = "playIntroPrompt(AudioLetterRecognition,missingLetterNameMapping,rawVoice=null)",
-                    chapterId = chapterId,
-                    stationId = stationId,
-                )
-            }
+            rawVoice.playRawBlocking(0)
             return
         }
         rawVoice.playRawBlocking(resId)
@@ -438,16 +399,7 @@ internal suspend fun playIntroPrompt(
                 "MissingContent",
                 "Missing required station prompt audio. chapterId=$chapterId stationId=$stationId context=playIntroPrompt(Ch3Ch6Station1Word) stage=missing raw word mapping catalogId='${q.catalogEntryId}'",
             )
-            if (rawVoice != null) {
-                rawVoice.playRawBlocking(0)
-            } else {
-                voice.playRequiredBlocking(
-                    assetPath = "",
-                    context = "playIntroPrompt(Ch3Ch6Station1Word,missingWordMapping,rawVoice=null)",
-                    chapterId = chapterId,
-                    stationId = stationId,
-                )
-            }
+            rawVoice.playRawBlocking(0)
             return
         }
         rawVoice.playRawBlocking(wordResId)
@@ -528,7 +480,7 @@ internal suspend fun playIntroPrompt(
                 "MissingContent",
                 "Missing required letter-name audio. chapterId=$chapterId stationId=$stationId context=playIntroPrompt(TrainingHearLetterChoose) stage=missing raw letter-name mapping letter='${q.correctAnswer}'",
             )
-            rawVoice?.playRawBlocking(0)
+            rawVoice.playRawBlocking(0)
             return
         }
         rawVoice.playRawBlocking(resId)
@@ -573,7 +525,7 @@ internal suspend fun playIntroPrompt(
                 "MissingContent",
                 "Missing required letter-name audio. chapterId=$chapterId stationId=$stationId context=playIntroPrompt(TrainingImageMatchWhichWordStartsWith) stage=missing raw letter-name mapping letter='${q.targetLetter}'",
             )
-            rawVoice?.playRawBlocking(0)
+            rawVoice.playRawBlocking(0)
             return
         }
         rawVoice.playRawBlocking(resId)

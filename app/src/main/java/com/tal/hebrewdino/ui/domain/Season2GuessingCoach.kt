@@ -215,7 +215,7 @@ object Season2GuessingCoach {
 
                             rawVoice = rawVoice,
 
-                            chapterId = gameplayChapterId ?: Season2ChapterIds.Chapter1Tyrannosaurus,
+                            chapterId = gameplayChapterId,
 
                             stationId = season2StationId,
 

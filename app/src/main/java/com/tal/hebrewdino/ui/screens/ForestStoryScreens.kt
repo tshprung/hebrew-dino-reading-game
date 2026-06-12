@@ -7,7 +7,6 @@ import com.tal.hebrewdino.ui.companion.Chapter1AddressAwareAudio
 import com.tal.hebrewdino.ui.companion.Chapter1CompanionCopy
 import com.tal.hebrewdino.ui.companion.displayNameHebrew
 import com.tal.hebrewdino.ui.data.DinoCharacter
-import com.tal.hebrewdino.ui.data.PlayerAddress
 
 @Composable
 fun ForestIntroScreen(
@@ -34,25 +33,3 @@ fun ForestIntroScreen(
     )
 }
 
-@Composable
-fun ForestOutroScreen(
-    character: DinoCharacter,
-    playerAddress: PlayerAddress,
-    onContinue: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    ChapterLobbyStoryLayout(
-        backgroundRes = R.drawable.forest_bg_story_outro_egg,
-        dinoContentDescription = character.displayNameHebrew(),
-        title = "יש!",
-        body = Chapter1CompanionCopy.finaleBody(character),
-        chapterId = 1,
-        storyContext = "ForestOutroScreen",
-        voiceRawResId = Chapter1AddressAwareAudio.storyOutroRawRes(character),
-        companion = ChapterLobbyCompanion.DinoOnly,
-        useCompanionDinoArt = true,
-        companionCharacter = character,
-        onContinue = onContinue,
-        modifier = modifier,
-    )
-}

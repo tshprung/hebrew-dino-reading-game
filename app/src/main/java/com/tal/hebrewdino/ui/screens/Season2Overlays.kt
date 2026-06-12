@@ -4,13 +4,11 @@ import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -49,7 +47,6 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import com.tal.hebrewdino.ui.audio.GameAudioEngine
 import com.tal.hebrewdino.ui.audio.RawVoicePlayer
 import com.tal.hebrewdino.ui.audio.Season2StoryAudio
 import com.tal.hebrewdino.ui.audio.withVoiceDuck
@@ -63,6 +60,7 @@ import com.tal.hebrewdino.ui.audio.BackgroundMusicVoiceDuck
 import com.tal.hebrewdino.ui.audio.LocalBackgroundMusic
 import com.tal.hebrewdino.ui.layout.ScreenFit
 import kotlinx.coroutines.delay
+import kotlin.time.Duration.Companion.milliseconds
 
 private val OverlayScrim = Color(0xFF2B2724).copy(alpha = 0.72f)
 private val MuseumWallTop = Color(0xFFF4EDE3)
@@ -104,61 +102,6 @@ fun Season2MapIntroOverlay(
         onContinue = onContinue,
         modifier = modifier,
     )
-}
-
-@Composable
-fun Season2MapReturnCaptionOverlay(
-    caption: String,
-    @androidx.annotation.RawRes voiceRawResId: Int?,
-    playEpoch: Int,
-    onDismiss: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val context = LocalContext.current
-    val bgm = LocalBackgroundMusic.current
-    val rawVoice = remember { com.tal.hebrewdino.ui.audio.RawVoicePlayer(context = context.applicationContext) }
-
-    DisposableEffect(Unit) {
-        onDispose {
-            rawVoice.stopNow()
-            rawVoice.release()
-        }
-    }
-
-    val hasVoice = voiceRawResId != null && voiceRawResId != 0
-
-    LaunchedEffect(playEpoch, caption, voiceRawResId, hasVoice) {
-        if (hasVoice) {
-            bgm?.withVoiceDuck {
-                rawVoice.playRawBlocking(voiceRawResId!!)
-            }
-        }
-        delay(if (hasVoice) 2_600 else 2_200)
-        onDismiss()
-    }
-
-    Box(
-        modifier =
-            modifier
-                .fillMaxSize()
-                .clickable(onClick = onDismiss),
-        contentAlignment = Alignment.TopCenter,
-    ) {
-        Surface(
-            modifier = Modifier.padding(top = 72.dp, start = 16.dp, end = 16.dp),
-            shape = RoundedCornerShape(999.dp),
-            color = Color.White.copy(alpha = 0.92f),
-            shadowElevation = 6.dp,
-        ) {
-            Text(
-                text = caption,
-                modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
-                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                color = Color(0xFF2E7D32),
-                textAlign = TextAlign.End,
-            )
-        }
-    }
 }
 
 @Composable
@@ -219,7 +162,7 @@ fun Season2ChapterCompleteOverlay(
             rawVoice.playRawBlocking(clip)
         }
         voicePlaying = false
-        delay(800)
+        delay(800.milliseconds)
     }
 
     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
