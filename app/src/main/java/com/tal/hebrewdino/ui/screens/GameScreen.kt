@@ -501,7 +501,17 @@ fun GameScreen(
     )
 
     val performSideHelpReplay: () -> Unit = {
-        if (!gameViewModel.inputLocked) {
+        val wordPartsReplay =
+            plan.season2AdvancedMode == Season2AdvancedStationMode.WordParts &&
+                session.currentQuestion is Question.WordPartsQuestion
+        if (!gameViewModel.inputLocked || wordPartsReplay) {
+            if (wordPartsReplay) {
+                Season2AdvancedStationActions.interruptWordPartsVoice(
+                    gameViewModel = gameViewModel,
+                    cancelFeedbackVoice = { cancelFeedbackVoice() },
+                    rawVoice = rawVoice,
+                )
+            }
             SideHelpActions.startReplay(
                 audioEnabled = audioEnabled,
                 isPlayPhase = gameViewModel.phase == GamePhase.Play && !gameViewModel.inputLocked,
@@ -526,6 +536,16 @@ fun GameScreen(
         if (plan.season2AdvancedMode == Season2AdvancedStationMode.PictureToWord) {
             performSideHelpReplay()
         } else {
+            if (
+                plan.season2AdvancedMode == Season2AdvancedStationMode.WordParts &&
+                    session.currentQuestion is Question.WordPartsQuestion
+            ) {
+                Season2AdvancedStationActions.interruptWordPartsVoice(
+                    gameViewModel = gameViewModel,
+                    cancelFeedbackVoice = { cancelFeedbackVoice() },
+                    rawVoice = rawVoice,
+                )
+            }
             SideHelpActions.performHint(
                 isPlayPhase = gameViewModel.phase == GamePhase.Play && !gameViewModel.inputLocked,
                 episode4HelpEnabled = helpColumnEnabled,
@@ -678,6 +698,7 @@ fun GameScreen(
             chapterId = chapterId,
             stationId = stationId,
             season2Chapter1UxStationId = season2Chapter1StationId,
+            isSeason2QuizChapter = isSeason2QuizChapter,
             isLast = isLast,
             ch3SpellMidWord = ch3SpellMidWord,
             suppressInGameDinoProgress = suppressInGameDinoProgress,
@@ -1201,13 +1222,25 @@ fun GameScreen(
                             return
                         }
                         if (q is Question.WordPartsQuestion) {
+                            Season2AdvancedStationActions.interruptWordPartsVoice(
+                                gameViewModel = gameViewModel,
+                                cancelFeedbackVoice = cancelFeedbackVoiceCb,
+                                rawVoice = rawVoice,
+                            )
                             scope.launch {
-                                Season2StationAudio.replayAdvancedInstructionAndWord(
-                                    q = q,
-                                    chapterId = chapterId,
-                                    stationId = stationId,
-                                    rawVoice = rawVoice,
-                                )
+                                GameAudioActions.launchPromptVoice(
+                                    audioEnabled = audioEnabled,
+                                    scope = scope,
+                                    audioRuntime = audioRuntime,
+                                    cancelFeedbackVoice = cancelFeedbackVoiceCb,
+                                ) {
+                                    Season2StationAudio.replayAdvancedInstructionAndWord(
+                                        q = q,
+                                        chapterId = chapterId,
+                                        stationId = stationId,
+                                        rawVoice = rawVoice,
+                                    )
+                                }
                             }
                             return
                         }
@@ -1223,9 +1256,38 @@ fun GameScreen(
                         )
                     }
 
+                    fun handleWordPartsPictureTap() {
+                        val q = session.currentQuestion as? Question.WordPartsQuestion ?: return
+                        if (!audioEnabled || rawVoice == null) return
+                        Season2AdvancedStationActions.interruptWordPartsVoice(
+                            gameViewModel = gameViewModel,
+                            cancelFeedbackVoice = cancelFeedbackVoiceCb,
+                            rawVoice = rawVoice,
+                        )
+                        scope.launch {
+                            GameAudioActions.launchFeedbackVoiceNoCancel(
+                                audioEnabled = true,
+                                scope = scope,
+                                audioRuntime = audioRuntime,
+                            ) {
+                                com.tal.hebrewdino.ui.audio.Season2WordPartsAudio.playPictureTapSequence(
+                                    catalogId = q.catalogEntryId,
+                                    rawVoice = rawVoice,
+                                    chapterId = chapterId,
+                                    stationId = stationId,
+                                )
+                            }
+                        }
+                    }
+
                     fun handleWordPartsHintRevealAudio() {
                         val q = session.currentQuestion as? Question.WordPartsQuestion ?: return
                         if (!audioEnabled) return
+                        Season2AdvancedStationActions.interruptWordPartsVoice(
+                            gameViewModel = gameViewModel,
+                            cancelFeedbackVoice = cancelFeedbackVoiceCb,
+                            rawVoice = rawVoice,
+                        )
                         scope.launch {
                             GameAudioActions.launchFeedbackVoiceNoCancel(
                                 audioEnabled = true,
@@ -1423,6 +1485,7 @@ fun GameScreen(
                                 handleWordPartsPick = ::handleWordPartsPick,
                                 handleRhymingPick = ::handleRhymingPick,
                                 handleAdvancedReplayWord = ::handleAdvancedReplayWord,
+                                handleWordPartsPictureTap = ::handleWordPartsPictureTap,
                                 handleWordPartsHintRevealAudio = ::handleWordPartsHintRevealAudio,
                                 handleFinaleWrongPlacement = ::handleFinaleWrongPlacement,
                                 onWrongFeedback = { wrongPickedLetter, wrongWordCatalogId, wrongPickedLetterAlreadySpoken, wrongWordAlreadySpoken ->

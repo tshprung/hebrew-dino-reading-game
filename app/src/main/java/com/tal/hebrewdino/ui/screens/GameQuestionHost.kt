@@ -33,6 +33,7 @@ import com.tal.hebrewdino.ui.domain.Season2AdvancedStationMode
 import com.tal.hebrewdino.ui.domain.Season2ChapterStationPlans
 import com.tal.hebrewdino.ui.domain.Season2StationThemeCopy
 import com.tal.hebrewdino.ui.domain.Season2Ch1QaPolicy
+import com.tal.hebrewdino.ui.domain.Season2StationQaPolicy
 import com.tal.hebrewdino.ui.domain.Season2StationUx
 import com.tal.hebrewdino.ui.domain.StationQuizMode
 import com.tal.hebrewdino.ui.domain.StationQuizPlan
@@ -167,6 +168,7 @@ internal data class GameQuestionHostHandlers(
     val handleWordPartsPick: (picked: Question.WordPartsSplitOption) -> Unit,
     val handleRhymingPick: (choiceId: String) -> Unit,
     val handleAdvancedReplayWord: () -> Unit,
+    val handleWordPartsPictureTap: () -> Unit,
     val handleWordPartsHintRevealAudio: () -> Unit,
     val handleFinaleWrongPlacement: () -> Unit,
     val onWrongFeedback: (wrongPickedLetter: String?, wrongWordCatalogId: String?, wrongPickedLetterAlreadySpoken: Boolean, wrongWordAlreadySpoken: Boolean) -> Unit,
@@ -807,12 +809,13 @@ internal fun GameQuestionHost(
                         onChoiceWordPreview =
                             if (
                                 ui.audioEnabled &&
-                                    !Season2Ch1QaPolicy.shouldOrchestrateWhichWordCorrectPraiseInStation(
-                                        ui.season2Chapter1UxStationId,
+                                    !Season2StationQaPolicy.shouldOrchestrateWhichWordCorrectPraiseInStation(
+                                        gameplayChapterId = ui.chapterId,
+                                        season2UxStationId = ui.season2Chapter1UxStationId,
                                     ) &&
-                                    (
-                                        Season2Ch1QaPolicy.isWhichWordStartsWithUx(ui.season2Chapter1UxStationId) ||
-                                            Season2StationUx.isWhichWordStartsWithStation(ui.chapterId, ui.stationId)
+                                    Season2StationQaPolicy.isWhichWordStartsWithStation(
+                                        gameplayChapterId = ui.chapterId,
+                                        season2UxStationId = ui.season2Chapter1UxStationId,
                                     )
                             ) {
                                 { choiceId ->
@@ -873,7 +876,7 @@ internal fun GameQuestionHost(
                 hintRevealWord = state.wordPartsHintRevealWord,
                 onPictureTapReplayWord =
                     if (ui.audioEnabled) {
-                        { handlers.handleAdvancedReplayWord() }
+                        { handlers.handleWordPartsPictureTap() }
                     } else {
                         null
                     },

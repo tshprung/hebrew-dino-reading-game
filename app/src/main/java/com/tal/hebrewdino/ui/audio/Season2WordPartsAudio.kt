@@ -89,6 +89,28 @@ object Season2WordPartsAudio {
         rawVoice.playRawBlocking(wordResId)
     }
 
+    /** Picture tap: full word → part1 → part2 (no instruction). */
+    suspend fun playPictureTapSequence(
+        catalogId: String,
+        rawVoice: RawVoicePlayer,
+        chapterId: Int? = null,
+        stationId: Int? = null,
+    ) {
+        playCorrectFullWord(
+            catalogId = catalogId,
+            rawVoice = rawVoice,
+            chapterId = chapterId,
+            stationId = stationId,
+        )
+        delay(PART_GAP_MS.milliseconds)
+        playPartsSequence(
+            catalogId = catalogId,
+            rawVoice = rawVoice,
+            chapterId = chapterId,
+            stationId = stationId,
+        )
+    }
+
     /** Correct-answer tail after tapped split parts were heard: full word only. */
     suspend fun playCorrectFullWord(
         catalogId: String,

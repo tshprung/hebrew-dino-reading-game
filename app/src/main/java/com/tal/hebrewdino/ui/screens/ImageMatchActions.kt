@@ -10,6 +10,7 @@ import com.tal.hebrewdino.ui.domain.LevelSession
 import com.tal.hebrewdino.ui.domain.Question
 import com.tal.hebrewdino.ui.domain.Season2Ch1QaPolicy
 import com.tal.hebrewdino.ui.domain.Season2EarlyStationQaPolicy
+import com.tal.hebrewdino.ui.domain.Season2StationQaPolicy
 import com.tal.hebrewdino.ui.domain.Season2StationAudio
 import com.tal.hebrewdino.ui.domain.TrainingV1Config
 import com.tal.hebrewdino.ui.game.ChildGameAudioHooks
@@ -72,7 +73,8 @@ internal object ImageMatchActions {
                                 !Season2EarlyStationQaPolicy.shouldSkipInStationCorrectPraiseAfterCoach(
                                     season2HadCoachIntervention,
                                 ) &&
-                                !Season2Ch1QaPolicy.shouldSkipPictureToWordAssetPraiseOnLastRound(
+                                !Season2StationQaPolicy.shouldSkipPictureToWordAssetPraiseOnLastRound(
+                                    gameplayChapterId = chapterId,
                                     season2UxStationId = season2Chapter1UxStationId,
                                     isLast = isLast,
                                 )
@@ -306,7 +308,12 @@ internal object ImageMatchActions {
         season2Chapter1UxStationId: Int? = null,
     ): Boolean {
         if (!gameViewModel.consumeTapCooldown()) return false
-        if (Season2Ch1QaPolicy.shouldOrchestrateWhichWordCorrectPraiseInStation(season2Chapter1UxStationId)) {
+        if (
+            Season2StationQaPolicy.shouldOrchestrateWhichWordCorrectPraiseInStation(
+                gameplayChapterId = chapterId,
+                season2UxStationId = season2Chapter1UxStationId,
+            )
+        ) {
             cancelFeedbackVoice()
             return when (session.submitImageMatch(choiceId)) {
                 AnswerResult.Correct -> {

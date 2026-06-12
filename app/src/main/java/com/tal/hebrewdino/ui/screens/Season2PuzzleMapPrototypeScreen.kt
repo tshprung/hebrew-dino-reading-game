@@ -623,7 +623,7 @@ private fun ContinuousPosterBoard(
                 cellHeight = cellHeight,
                 highlighted = highlighted,
                 enabled = enabled,
-                replayStationNumber = if (chapterFullyRevealed) stationNumber else null,
+                replayStationNumber = stationNumber,
                 onTap = { onPosterTileTap(posterTile) },
             )
         }

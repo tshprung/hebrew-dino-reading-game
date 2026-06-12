@@ -39,16 +39,16 @@ object Season2Ch1QaPolicy {
     val FinaleDinoReservedWidthDp: Dp = 120.dp
 
     fun isCh1PopBalloonsStation(season2UxStationId: Int?): Boolean =
-        season2UxStationId == Season2Chapter1StationOrder.POP_BALLOONS
+        Season2StationQaPolicy.isPopBalloonsStation(season2UxStationId)
 
     fun shouldKeepPopBalloonsInputUnlockedDuringFeedback(season2UxStationId: Int?): Boolean =
-        isCh1PopBalloonsStation(season2UxStationId)
+        Season2StationQaPolicy.shouldKeepPopBalloonsInputUnlockedDuringFeedback(season2UxStationId)
 
     fun shouldCancelPreviousFeedbackOnPopBalloonsTap(season2QuizBalloons: Boolean): Boolean =
         season2QuizBalloons
 
     fun shouldAllowTapDuringPopBalloonsWrongRecover(season2UxStationId: Int?): Boolean =
-        isCh1PopBalloonsStation(season2UxStationId)
+        Season2StationQaPolicy.shouldAllowTapDuringPopBalloonsWrongRecover(season2UxStationId)
 
     /** WhichWordStartsWith compact layout — S1 PICTURE_PICK_ALL, S2 gameplay, training. */
     fun isWhichWordStartsWithLayoutStation(chapterId: Int?, stationId: Int?): Boolean {
@@ -71,7 +71,10 @@ object Season2Ch1QaPolicy {
         season2UxStationId == Season2Chapter1StationOrder.WHICH_WORD_STARTS_WITH
 
     fun shouldOrchestrateWhichWordCorrectPraiseInStation(season2UxStationId: Int?): Boolean =
-        isWhichWordStartsWithUx(season2UxStationId)
+        Season2StationQaPolicy.shouldOrchestrateWhichWordCorrectPraiseInStation(
+            Season2ChapterIds.Chapter1Tyrannosaurus,
+            season2UxStationId,
+        )
 
     fun shouldHideFinaleHintButton(
         gameplayChapterId: Int,
@@ -112,19 +115,17 @@ object Season2Ch1QaPolicy {
         season2UxStationId: Int?,
         isLast: Boolean,
     ): Boolean =
-        season2UxStationId in
-            setOf(
-                Season2Chapter1StationOrder.WHICH_WORD_STARTS_WITH,
-                Season2Chapter1StationOrder.FINALE_STATION,
-            ) &&
-            !isLast
+        Season2StationQaPolicy.shouldSkipAdvanceRoundInterRoundFeedback(
+            Season2ChapterIds.Chapter1Tyrannosaurus,
+            season2UxStationId,
+            isLast,
+        )
 
     fun shouldSkipAdvanceRoundPraiseBecausePlayedInStation(season2UxStationId: Int?): Boolean =
-        season2UxStationId in
-            setOf(
-                Season2Chapter1StationOrder.PICTURE_STARTS_WITH,
-                Season2Chapter1StationOrder.WHICH_WORD_STARTS_WITH,
-            )
+        Season2StationQaPolicy.shouldSkipAdvanceRoundPraiseBecausePlayedInStation(
+            Season2ChapterIds.Chapter1Tyrannosaurus,
+            season2UxStationId,
+        )
 
     /** Chapter reward overlay only on first-time St6 completion (no replay reward). */
     fun shouldRequestFirstTimeChapterReward(
@@ -144,14 +145,18 @@ object Season2Ch1QaPolicy {
     fun shouldSkipPictureToWordAssetPraiseOnLastRound(
         season2UxStationId: Int?,
         isLast: Boolean,
-    ): Boolean = season2UxStationId == Season2Chapter1StationOrder.FINALE_STATION && isLast
+    ): Boolean =
+        Season2StationQaPolicy.shouldSkipPictureToWordAssetPraiseOnLastRound(
+            Season2ChapterIds.Chapter1Tyrannosaurus,
+            season2UxStationId,
+            isLast,
+        )
 
     fun useTightBetweenRoundTiming(season2UxStationId: Int?): Boolean =
-        season2UxStationId in
-            setOf(
-                Season2Chapter1StationOrder.WHICH_WORD_STARTS_WITH,
-                Season2Chapter1StationOrder.FINALE_STATION,
-            )
+        Season2StationQaPolicy.useTightBetweenRoundTiming(
+            Season2ChapterIds.Chapter1Tyrannosaurus,
+            season2UxStationId,
+        )
 
     fun isWhichWordStartsWithUx(season2UxStationId: Int?): Boolean =
         season2UxStationId == Season2Chapter1StationOrder.WHICH_WORD_STARTS_WITH
@@ -160,8 +165,10 @@ object Season2Ch1QaPolicy {
         season2UxStationId: Int?,
         gameplayChapterId: Int,
     ): Boolean =
-        season2UxStationId == Season2Chapter1StationOrder.FINALE_STATION &&
-            gameplayChapterId == Season2ChapterIds.Chapter1Tyrannosaurus
+        Season2StationQaPolicy.shouldReplayPictureToWordCoachWithInstruction(
+            gameplayChapterId,
+            season2UxStationId,
+        )
 
     fun isCh1FinalePictureToWord(
         gameplayChapterId: Int,

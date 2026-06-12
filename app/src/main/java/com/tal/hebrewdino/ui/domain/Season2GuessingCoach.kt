@@ -178,13 +178,34 @@ object Season2GuessingCoach {
 
 
 
+            Season2ChapterStationPlans.StationKind.PictureToWord ->
+                if (
+                    question is Question.ImageMatchQuestion &&
+                        Season2StationQaPolicy.shouldReplayPictureToWordCoachWithInstruction(
+                            gameplayChapterId = gameplayChapterId,
+                            season2UxStationId = season2StationId,
+                        )
+                ) {
+                    Season2StationAudio.replayPictureToWordCoachInstructionAndWord(
+                        chapterId = gameplayChapterId,
+                        stationId = season2StationId,
+                        catalogId = question.correctChoiceId,
+                        rawVoice = rawVoice,
+                    )
+                } else {
+                    replayAdvancedTargetAudio(
+                        question = question,
+                        rawVoice = rawVoice,
+                        chapterId = gameplayChapterId,
+                        stationId = season2StationId,
+                    )
+                }
+
             Season2ChapterStationPlans.StationKind.WordParts,
 
             Season2ChapterStationPlans.StationKind.MissingFirstLetter,
 
             Season2ChapterStationPlans.StationKind.Rhyming,
-
-            Season2ChapterStationPlans.StationKind.PictureToWord,
 
             ->
 
@@ -266,9 +287,9 @@ object Season2GuessingCoach {
                 when (question) {
                     is Question.ImageMatchQuestion ->
                         if (
-                            Season2Ch1QaPolicy.shouldReplayPictureToWordCoachWithInstruction(
-                                season2UxStationId = season2StationId,
+                            Season2StationQaPolicy.shouldReplayPictureToWordCoachWithInstruction(
                                 gameplayChapterId = gameplayChapterId ?: Season2ChapterIds.Chapter1Tyrannosaurus,
+                                season2UxStationId = season2StationId,
                             )
                         ) {
                             Season2StationAudio.replayPictureToWordCoachInstructionAndWord(

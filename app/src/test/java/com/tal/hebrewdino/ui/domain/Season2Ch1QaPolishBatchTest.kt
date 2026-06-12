@@ -99,7 +99,7 @@ class Season2Ch1QaPolishBatchTest {
     @Test
     fun ch1_st5_every_tap_reads_tapped_word() {
         val host = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/screens/GameQuestionHost.kt")
-        assertTrue(host.contains("isWhichWordStartsWithUx"))
+        assertTrue(host.contains("Season2StationQaPolicy.isWhichWordStartsWithStation"))
         assertTrue(host.contains("handleImageToWordWordPressed"))
     }
 

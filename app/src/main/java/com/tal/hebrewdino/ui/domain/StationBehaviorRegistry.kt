@@ -770,10 +770,7 @@ object StationBehaviorRegistry {
         stationId: Int,
         plan: StationQuizPlan,
     ): StationUiSpec {
-        val enableHelp =
-            Season2StationUx.stationKindForGameplayChapter(chapterId, stationId) ==
-                Season2ChapterStationPlans.StationKind.WhichWordStartsWith &&
-                chapterId == Season2ChapterIds.Chapter3Stegosaurus
+        val enableHelp = false
         return StationUiSpec(
             chapterId = chapterId,
             stationId = stationId,

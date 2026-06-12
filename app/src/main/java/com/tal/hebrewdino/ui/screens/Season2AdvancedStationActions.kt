@@ -8,6 +8,7 @@ import com.tal.hebrewdino.ui.audio.VoicePlayer
 import com.tal.hebrewdino.ui.domain.AnswerResult
 import com.tal.hebrewdino.ui.domain.LevelSession
 import com.tal.hebrewdino.ui.domain.Question
+import com.tal.hebrewdino.ui.domain.Season2Ch2St6WordPartsPolicy
 import com.tal.hebrewdino.ui.domain.Season2EarlyStationQaPolicy
 import com.tal.hebrewdino.ui.domain.Season2Station6FeedbackPolicy
 import com.tal.hebrewdino.ui.domain.Season2WordPartsCatalog
@@ -19,6 +20,17 @@ import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.milliseconds
 
 internal object Season2AdvancedStationActions {
+    fun interruptWordPartsVoice(
+        gameViewModel: GameViewModel,
+        cancelFeedbackVoice: () -> Unit,
+        rawVoice: RawVoicePlayer?,
+    ) {
+        gameViewModel.wordPartsPickJob?.cancel()
+        gameViewModel.wordPartsPickJob = null
+        cancelFeedbackVoice()
+        rawVoice?.stopNow()
+    }
+
     fun handleMissingFirstLetterPick(
         picked: String,
         gameViewModel: GameViewModel,
@@ -72,9 +84,9 @@ internal object Season2AdvancedStationActions {
         onWrongFeedback: () -> Unit,
         season2HadCoachIntervention: Boolean = false,
     ) {
+        if (gameViewModel.wordPartsCompletedEquation != null) return
         if (!gameViewModel.consumeTapCooldown()) return
-        gameViewModel.wordPartsPickJob?.cancel()
-        cancelFeedbackVoice()
+        interruptWordPartsVoice(gameViewModel, cancelFeedbackVoice, rawVoice)
         val willPlayFocusAfterWrong =
             isSeason2QuizChapter &&
                 Season2Station6FeedbackPolicy.shouldReplayInstructionAfterWrong(
@@ -87,8 +99,25 @@ internal object Season2AdvancedStationActions {
             scope.launch {
                 gameViewModel.inputLocked = true
                 try {
+                    val q = session.currentQuestion as? Question.WordPartsQuestion
                     val tappedCatalogId =
                         Season2WordPartsCatalog.catalogIdForSplit(picked.firstPart, picked.secondPart)
+                    val immediateCorrectFilter =
+                        q != null &&
+                            Season2Ch2St6WordPartsPolicy.filterCorrectSplitImmediatelyBeforeAudio(
+                                q.presentationMode,
+                            )
+                    val outcome =
+                        if (immediateCorrectFilter) {
+                            val result = session.submitWordParts(picked)
+                            if (result == AnswerResult.Correct) {
+                                gameViewModel.wordPartsCompletedEquation =
+                                    "${q.word} = ${q.firstPart} + ${q.correctPart}"
+                            }
+                            result
+                        } else {
+                            null
+                        }
                     if (audioEnabled && rawVoice != null) {
                         if (tappedCatalogId == null) {
                             Log.e(
@@ -114,13 +143,15 @@ internal object Season2AdvancedStationActions {
                         )
                     }
 
-                    when (session.submitWordParts(picked)) {
+                    when (outcome ?: session.submitWordParts(picked)) {
                         AnswerResult.Correct -> {
                             if (audioEnabled) ChildGameAudioHooks.onCorrect()
-                            val q = session.currentQuestion as? Question.WordPartsQuestion
-                            if (q != null) {
-                                gameViewModel.wordPartsCompletedEquation =
-                                    "${q.word} = ${q.firstPart} + ${q.correctPart}"
+                            if (!immediateCorrectFilter) {
+                                val correctQ = session.currentQuestion as? Question.WordPartsQuestion
+                                if (correctQ != null) {
+                                    gameViewModel.wordPartsCompletedEquation =
+                                        "${correctQ.word} = ${correctQ.firstPart} + ${correctQ.correctPart}"
+                                }
                             }
                             if (
                                 audioEnabled &&
@@ -139,8 +170,13 @@ internal object Season2AdvancedStationActions {
                                     rawVoice = rawVoice,
                                 )
                             }
-                            delay(1_400)
-                            gameViewModel.wordPartsCompletedEquation = null
+                            delay(
+                                if (immediateCorrectFilter) {
+                                    Season2Ch2St6WordPartsPolicy.CorrectPostPraiseHoldMs
+                                } else {
+                                    1_400L
+                                },
+                            )
                             val isLast = session.currentIndex >= session.totalQuestions - 1
                             advanceAfterRound(isLast)
                         }

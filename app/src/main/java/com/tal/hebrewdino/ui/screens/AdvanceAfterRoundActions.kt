@@ -9,8 +9,8 @@ import com.tal.hebrewdino.ui.audio.RawVoicePlayer
 import com.tal.hebrewdino.ui.audio.VoicePlayer
 import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
 import com.tal.hebrewdino.ui.domain.LevelSession
-import com.tal.hebrewdino.ui.domain.Season2Ch1QaPolicy
 import com.tal.hebrewdino.ui.domain.Season2StationAudio
+import com.tal.hebrewdino.ui.domain.Season2StationQaPolicy
 import com.tal.hebrewdino.ui.domain.TrainingV1Config
 import com.tal.hebrewdino.ui.feedback.GameFeedback
 import kotlinx.coroutines.CoroutineScope
@@ -44,6 +44,7 @@ internal object AdvanceAfterRoundActions {
         chapterId: Int,
         stationId: Int,
         season2Chapter1UxStationId: Int? = null,
+        isSeason2QuizChapter: Boolean = false,
         isLast: Boolean,
         ch3SpellMidWord: Boolean,
         suppressInGameDinoProgress: Boolean,
@@ -73,7 +74,8 @@ internal object AdvanceAfterRoundActions {
         val finaleMatchLetterStation =
             sagaEpisode && stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH
         val skipInterRoundFeedback =
-            Season2Ch1QaPolicy.shouldSkipAdvanceRoundInterRoundFeedback(
+            Season2StationQaPolicy.shouldSkipAdvanceRoundInterRoundFeedback(
+                gameplayChapterId = chapterId,
                 season2UxStationId = season2Chapter1UxStationId,
                 isLast = isLast,
             )
@@ -91,13 +93,19 @@ internal object AdvanceAfterRoundActions {
         if (!suppressInGameDinoProgress && !(isChapter3HighlightedLetterInWordStation && ch3SpellMidWord)) {
             gameViewModel.dinoVisual = DinoVisual.Jump
         }
+        val suppressSagaAdvancePraise =
+            Season2StationQaPolicy.shouldSuppressSagaEpisodeAdvancePraise(isSeason2QuizChapter)
         val episode1PraiseEligible =
             audioEnabled &&
                 sagaEpisode &&
+                !suppressSagaAdvancePraise &&
                 stationId in 2..5 &&
                 stationId != Chapter1StationOrder.PICTURE_PICK_ONE &&
                 !isChapter3AudioLetterRecognitionStation &&
-                !Season2Ch1QaPolicy.shouldOrchestrateWhichWordCorrectPraiseInStation(season2Chapter1UxStationId) &&
+                !Season2StationQaPolicy.shouldOrchestrateWhichWordCorrectPraiseInStation(
+                    chapterId,
+                    season2Chapter1UxStationId,
+                ) &&
                 Random.nextFloat() < Episode1PraiseChance
         /** Ch3/Ch6 st5, Ch6 st6, and Training st1/2/3 already play praise in action handlers. */
         val trainingInStationPraiseAlreadyPlayed =
@@ -110,10 +118,17 @@ internal object AdvanceAfterRoundActions {
                 (chapterId == 6 && stationId == 6) ||
                 trainingInStationPraiseAlreadyPlayed ||
                 Season2StationAudio.isPictureToWordStation(chapterId, stationId) ||
-                Season2Ch1QaPolicy.shouldSkipAdvanceRoundPraiseBecausePlayedInStation(season2Chapter1UxStationId) ||
-                Season2Ch1QaPolicy.shouldOrchestrateWhichWordCorrectPraiseInStation(season2Chapter1UxStationId)
+                Season2StationQaPolicy.shouldSkipAdvanceRoundPraiseBecausePlayedInStation(
+                    chapterId,
+                    season2Chapter1UxStationId,
+                ) ||
+                Season2StationQaPolicy.shouldOrchestrateWhichWordCorrectPraiseInStation(
+                    chapterId,
+                    season2Chapter1UxStationId,
+                )
         val otherPraiseEligible =
             audioEnabled &&
+                !suppressSagaAdvancePraise &&
                 !finaleMatchLetterStation &&
                 !trainingMatchLetterStation &&
                 !(sagaUsesPickLetterAudioStaging) &&
@@ -191,7 +206,7 @@ internal object AdvanceAfterRoundActions {
             cancelFeedbackVoice()
         }
         val tightBetweenRounds =
-            Season2Ch1QaPolicy.useTightBetweenRoundTiming(season2Chapter1UxStationId)
+            Season2StationQaPolicy.useTightBetweenRoundTiming(chapterId, season2Chapter1UxStationId)
         delay(
             when {
                 ch3SpellMidWord -> 38
@@ -204,12 +219,17 @@ internal object AdvanceAfterRoundActions {
             sagaEpisode &&
                 (sagaUsesPopBalloonsAudioStaging ||
                     sagaUsesFindGridAudioStaging ||
-                    stationId == Chapter1StationOrder.PICTURE_PICK_ONE)
+                    stationId == Chapter1StationOrder.PICTURE_PICK_ONE) ||
+                (isSeason2QuizChapter && sagaUsesPickLetterAudioStaging)
         if (sagaUsesPopBalloonsAudioStaging) {
             GameAudioActions.awaitFeedbackVoice(audioRuntime, 8000L)
             gameViewModel.station2PinnedBalloonLetter = null
             gameViewModel.station2PinnedBalloonColor = null
-        } else if (sagaEpisode && (sagaUsesFindGridAudioStaging || stationId == Chapter1StationOrder.PICTURE_PICK_ONE)) {
+        } else if (
+            sagaEpisode && (sagaUsesFindGridAudioStaging || stationId == Chapter1StationOrder.PICTURE_PICK_ONE)
+        ) {
+            GameAudioActions.awaitFeedbackVoice(audioRuntime, 8000L)
+        } else if (isSeason2QuizChapter && sagaUsesPickLetterAudioStaging) {
             GameAudioActions.awaitFeedbackVoice(audioRuntime, 8000L)
         }
         val betweenFadeMs = if (tightBetweenRounds) 40 else BetweenQuestionFadeMs

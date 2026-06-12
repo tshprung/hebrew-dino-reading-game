@@ -53,12 +53,53 @@ object Season2Copy {
             rtl("בואו נגלה מי מסתתר שם!"),
         )
 
-    /** Chapter 1 map intro — matches season2_ch1_intro_01 narration. */
-    fun ch1MapIntroStoryLines(): List<String> =
-        listOf(
-            rtl("במפה הזאת מסתתר דינוזאור גדול עם שיניים חדות ושאגה חזקה."),
-            rtl("בואו נגלה מי זה!"),
-        )
+    /** Chapter map intro lines — visible text matches recorded chapter intro narration (no niqqud). */
+    fun ch1MapIntroStoryLines(): List<String> = chapterMapIntroStoryLines(1)
+
+    fun ch2MapIntroStoryLines(): List<String> = chapterMapIntroStoryLines(2)
+
+    fun ch3MapIntroStoryLines(): List<String> = chapterMapIntroStoryLines(3)
+
+    fun ch4MapIntroStoryLines(): List<String> = chapterMapIntroStoryLines(4)
+
+    fun ch5MapIntroStoryLines(): List<String> = chapterMapIntroStoryLines(5)
+
+    fun ch6MapIntroStoryLines(): List<String> = chapterMapIntroStoryLines(6)
+
+    fun chapterMapIntroStoryLines(chapterIndex: Int): List<String> =
+        when (chapterIndex) {
+            1 ->
+                listOf(
+                    rtl("במפה הזאת מסתתר דינוזאור גדול עם שיניים חדות ושאגה חזקה."),
+                    rtl("בואו נגלה מי זה!"),
+                )
+            2 ->
+                listOf(
+                    rtl("במפה הזאת מסתתר דינוזאור עם שלוש קרניים חזקות."),
+                    rtl("בואו נגלה מי זה!"),
+                )
+            3 ->
+                listOf(
+                    rtl("במפה הזאת מסתתר דינוזאור עם לוחות גדולים על הגב."),
+                    rtl("בואו נגלה מי זה!"),
+                )
+            4 ->
+                listOf(
+                    rtl("במפה הזאת מסתתר דינוזאור עם צוואר ארוך מאוד, שמגיע עד העלים הגבוהים."),
+                    rtl("בואו נגלה מי זה!"),
+                )
+            5 ->
+                listOf(
+                    rtl("במפה הזאת מסתתר דינוזאור עם שריון חזק וזנב כבד."),
+                    rtl("בואו נגלה מי זה!"),
+                )
+            6 ->
+                listOf(
+                    rtl("במפה הזאת מסתתר יצור ימי קדום וענקי, שחי מתחת לגלים."),
+                    rtl("בואו נגלה מי זה!"),
+                )
+            else -> error("Unknown chapter intro: $chapterIndex")
+        }
 
     fun firstRevealMapCaption(): String = rtl("חלק ראשון נחשף! ממשיכים לגלות…")
 

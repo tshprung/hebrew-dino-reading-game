@@ -112,19 +112,26 @@ fun Season2ChapterStationScreen(
             season2Progress.markStationCompleted(chapterId, stationId)
 
             val requestCelebration =
-                if (chapterId == 1) {
-                    Season2Ch1QaPolicy.shouldRequestFirstTimeChapterReward(
-                        registryChapterId = chapterId,
-                        stationId = stationId,
-                        wasStationAlreadyDone = wasStationDone,
-                        chapterWasCompleteBefore = chapterWasComplete,
-                    )
-                } else {
-                    Season2IntroFlow.shouldRequestChapterCelebration(
-                        stationId = stationId,
-                        wasStationAlreadyDone = wasStationDone,
-                        chapterWasCompleteBefore = chapterWasComplete,
-                    )
+                when (chapterId) {
+                    1 ->
+                        Season2Ch1QaPolicy.shouldRequestFirstTimeChapterReward(
+                            registryChapterId = chapterId,
+                            stationId = stationId,
+                            wasStationAlreadyDone = wasStationDone,
+                            chapterWasCompleteBefore = chapterWasComplete,
+                        )
+                    2 ->
+                        com.tal.hebrewdino.ui.domain.Season2Ch2St6WordPartsPolicy.shouldRequestFirstTimeChapterReward(
+                            stationId = stationId,
+                            wasStationAlreadyDone = wasStationDone,
+                            chapterWasCompleteBefore = chapterWasComplete,
+                        )
+                    else ->
+                        Season2IntroFlow.shouldRequestChapterCelebration(
+                            stationId = stationId,
+                            wasStationAlreadyDone = wasStationDone,
+                            chapterWasCompleteBefore = chapterWasComplete,
+                        )
                 }
 
             if (requestCelebration && !chapterWasComplete) {

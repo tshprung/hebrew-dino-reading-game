@@ -134,7 +134,7 @@ object Season2ChapterRegistry {
                 letterPoolSpec = Season2Chapter2LetterPoolSpec,
                 stationTheme = Season2StationTheme.Footprints,
                 gameplayChapterId = Season2ChapterIds.Chapter2Triceratops,
-                mapIntroStoryLines = { address -> ch2MapIntroLines(address) },
+                mapIntroStoryLines = { _ -> Season2Copy.ch2MapIntroStoryLines() },
                 learningFocus = "אותיות ח ר ק ש + מילים מוחשיות",
             ),
             wiredChapter(
@@ -146,7 +146,7 @@ object Season2ChapterRegistry {
                 letterPoolSpec = Season2Chapter3LetterPoolSpec,
                 theme = Season2StationTheme.StegosaurusPlates,
                 focus = "חלקי מילה + אותיות ג נ פ צ",
-                mapIntro = { address -> ch3MapIntroLines(address) },
+                mapIntro = { _ -> Season2Copy.ch3MapIntroStoryLines() },
             ),
             wiredChapter(
                 index = 4,
@@ -157,7 +157,7 @@ object Season2ChapterRegistry {
                 letterPoolSpec = Season2Chapter4LetterPoolSpec,
                 theme = Season2StationTheme.HighLeaves,
                 focus = "תמונה→מילה, אותיות ב ד ת כ",
-                mapIntro = { address -> ch4MapIntroLines(address) },
+                mapIntro = { _ -> Season2Copy.ch4MapIntroStoryLines() },
             ),
             wiredChapter(
                 index = 5,
@@ -168,7 +168,7 @@ object Season2ChapterRegistry {
                 letterPoolSpec = Season2Chapter5LetterPoolSpec,
                 theme = Season2StationTheme.LetterArmor,
                 focus = "אות ראשונה חסרה — חזרה על מילים",
-                mapIntro = { address -> ch5MapIntroLines(address) },
+                mapIntro = { _ -> Season2Copy.ch5MapIntroStoryLines() },
             ),
             wiredChapter(
                 index = 6,
@@ -180,7 +180,7 @@ object Season2ChapterRegistry {
                 letterPoolSpec = Season2Chapter6LetterPoolSpec,
                 theme = Season2StationTheme.UnderwaterBubbles,
                 focus = "חזרה מעורבבת + חרוזים",
-                mapIntro = { address -> ch6MapIntroLines(address) },
+                mapIntro = { _ -> Season2Copy.ch6MapIntroStoryLines() },
             ),
         )
 
@@ -254,45 +254,4 @@ object Season2ChapterRegistry {
         )
     }
 
-    private fun ch2MapIntroLines(playerAddress: PlayerAddress): List<String> =
-        listOf(
-            "\u200Fמצאנו עקבות בחול!",
-            "\u200Fהן מובילות למפה מסתורית שנייה…",
-            "\u200Fמשהו עם קרניים מסתתר כאן.",
-            mapIntroDiscoverAskLine(playerAddress),
-        )
-
-    private fun ch3MapIntroLines(playerAddress: PlayerAddress): List<String> =
-        listOf(
-            "\u200Fמצאנו מפה עם לוחות מוזרים…",
-            "\u200Fאולי הם שייכים לדינוזאור עם קוצים על הגב.",
-            mapIntroDiscoverAskLine(playerAddress),
-        )
-
-    private fun ch4MapIntroLines(playerAddress: PlayerAddress): List<String> =
-        listOf(
-            "\u200Fהמפה הבאה מובילה לעצים גבוהים…",
-            "\u200Fמי מגיע עד העלים?",
-            mapIntroDiscoverAskLine(playerAddress),
-        )
-
-    private fun ch5MapIntroLines(playerAddress: PlayerAddress): List<String> =
-        listOf(
-            "\u200Fמצאנו סימנים של שריון חזק…",
-            "\u200Fמי מסתתר מאחורי המפה הזאת?",
-            mapIntroDiscoverAskLine(playerAddress),
-        )
-
-    private fun ch6MapIntroLines(playerAddress: PlayerAddress): List<String> =
-        listOf(
-            "\u200Fהמפה האחרונה מובילה אל הים…",
-            "\u200Fמשהו גדול שוחה שם מתחת למים.",
-            mapIntroDiscoverAskLine(playerAddress),
-        )
-
-    private fun mapIntroDiscoverAskLine(playerAddress: PlayerAddress): String =
-        when (playerAddress) {
-            PlayerAddress.Boy -> "\u200Fתעזור לי לגלות מי זה?"
-            PlayerAddress.Girl -> "\u200Fתעזרי לי לגלות מי זה?"
-        }
 }
