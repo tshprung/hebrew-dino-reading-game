@@ -277,6 +277,7 @@ fun ImageMatchGame(
                                 captionFontSize = captionSp,
                                 innerPictureScale = innerPictureScaleForChoice(choice),
                                 onClick = {
+                                    onChoiceWordPreview?.invoke(choice.id)
                                     val ok = onAttempt(choice.id)
                                     if (ok) {
                                         successChoiceId = choice.id

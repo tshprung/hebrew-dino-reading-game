@@ -9,6 +9,7 @@ import com.tal.hebrewdino.ui.domain.LevelSession
 import com.tal.hebrewdino.ui.domain.Season2EarlyStationQaPolicy
 import com.tal.hebrewdino.ui.game.ChildGameAudioHooks
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -39,7 +40,7 @@ internal object PictureStartsWithActions {
         rawVoice: RawVoicePlayer?,
         audioRuntime: GameAudioRuntimeState,
         advanceAfterRound: suspend (Boolean) -> Unit,
-        onWrongFeedback: (wrongPickedLetter: String?, wrongPickedLetterAlreadySpoken: Boolean) -> Unit,
+        onWrongFeedback: (wrongPickedLetter: String?, wrongPickedLetterAlreadySpoken: Boolean) -> Job?,
         season2HadCoachIntervention: Boolean = false,
     ) {
         if (!gameViewModel.consumeTapCooldown()) return
@@ -196,9 +197,12 @@ internal object PictureStartsWithActions {
                             try {
                                 rawVoice.playRawBlocking(resId)
                                 if (audioEnabled) ChildGameAudioHooks.onWrong()
-                                onWrongFeedback(picked, true)
+                                val feedbackJob = onWrongFeedback(picked, true)
+                                GameAudioActions.joinSilently(feedbackJob)
                             } finally {
-                                gameViewModel.inputLocked = false
+                                if (!isSeason2QuizChapter) {
+                                    gameViewModel.inputLocked = false
+                                }
                             }
                         }
                     } else {

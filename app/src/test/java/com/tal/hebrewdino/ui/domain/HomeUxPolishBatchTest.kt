@@ -73,7 +73,7 @@ class HomeUxPolishBatchTest {
     fun seasonsScreen_release_includes_season1_and_season2_only() {
         val seasons = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/screens/SeasonsScreen.kt")
         assertTrue(seasons.contains("seasonId = 2"))
-        assertTrue(seasons.contains("enabled = true"))
+        assertTrue(seasons.contains("SeasonAvailabilityPolicy.isSeason2Enabled()"))
         assertTrue(seasons.contains("if (BuildConfig.DEBUG)"))
         val nav = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/AppNavSystemGraph.kt")
         assertTrue(nav.contains("onOpenSeason2 = {"))

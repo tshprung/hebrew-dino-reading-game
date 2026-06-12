@@ -808,10 +808,6 @@ internal fun GameQuestionHost(
                         onChoiceWordPreview =
                             if (
                                 ui.audioEnabled &&
-                                    !Season2StationQaPolicy.shouldOrchestrateWhichWordCorrectPraiseInStation(
-                                        gameplayChapterId = ui.chapterId,
-                                        season2UxStationId = ui.season2Chapter1UxStationId,
-                                    ) &&
                                     Season2StationQaPolicy.isWhichWordStartsWithStation(
                                         gameplayChapterId = ui.chapterId,
                                         season2UxStationId = ui.season2Chapter1UxStationId,

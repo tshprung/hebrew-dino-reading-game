@@ -136,7 +136,7 @@ class Season2MapEntryVoicePolicyTest {
                 puzzleMapExplainHeard = false,
             ),
         )
-        assertTrue(
+        assertFalse(
             Season2MapEntryVoicePolicy.shouldPlayPuzzleExplainBeforeEntry(
                 chapterId = 2,
                 completedStationCount = 0,

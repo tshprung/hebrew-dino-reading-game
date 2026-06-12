@@ -51,8 +51,7 @@ object Season2StationAudio {
             (chapterId == Season2ChapterIds.Chapter6Mosasaurus && stationId == 6)
 
     fun usesImageToWordRawWordClips(chapterId: Int): Boolean =
-        chapterId == 3 ||
-            chapterId == 6 ||
+        chapterId in listOf(1, 2, 3, 4, 5, 6) ||
             chapterId == Season2ChapterIds.Chapter1Tyrannosaurus ||
             isSeason2ImageToWordLayout(chapterId, stationId = 5) ||
             isSeason2ImageToWordLayout(chapterId, stationId = 6) ||

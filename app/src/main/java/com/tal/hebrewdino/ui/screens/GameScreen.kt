@@ -730,7 +730,8 @@ fun GameScreen(
         wrongWordCatalogId: String? = null,
         wrongPickedLetterAlreadySpoken: Boolean = false,
         wrongWordAlreadySpoken: Boolean = false,
-    ) {
+        skipTryAgainAudio: Boolean = false,
+    ): Job? {
         val detector = season2GuessingDetector
         val s2StationId = season2Chapter1StationId
         val keepPopBalloonsInputUnlocked =
@@ -750,7 +751,7 @@ fun GameScreen(
             ) {
                 season2Station6ConsecutiveWrongs = 0
                 val companion = chapter1CompanionCharacter ?: DinoCharacter.Dino
-                scope.launch {
+                return scope.launch {
                     try {
                         cancelFeedbackVoice()
                         if (!keepPopBalloonsInputUnlocked) {
@@ -787,21 +788,33 @@ fun GameScreen(
                     }
                 }
             } else {
-                scope.launch {
+                return scope.launch {
                     try {
                         if (!keepPopBalloonsInputUnlocked) {
                             gameViewModel.inputLocked = true
                         }
-                        if (audioEnabled && chapter1PlayerAddress != null) {
-                            playAddressAwareTryAgainBlocking(
-                                chapterId = chapterId,
-                                stationId = stationId,
-                                playerAddress = chapter1PlayerAddress,
-                                rawVoice = rawVoice,
-                                voice = voice,
-                                context = "GameScreen.onWrongFeedback(s2QuizTryAgain)",
-                            )
-                        } else if (audioEnabled) {
+                        if (
+                            !skipTryAgainAudio &&
+                                audioEnabled &&
+                                chapter1PlayerAddress != null
+                        ) {
+                            val tryAgainJob =
+                                GameAudioActions.launchFeedbackVoiceNoCancel(
+                                    audioEnabled = true,
+                                    scope = this,
+                                    audioRuntime = audioRuntime,
+                                ) {
+                                    playAddressAwareTryAgainBlocking(
+                                        chapterId = chapterId,
+                                        stationId = stationId,
+                                        playerAddress = chapter1PlayerAddress,
+                                        rawVoice = rawVoice,
+                                        voice = voice,
+                                        context = "GameScreen.onWrongFeedback(s2QuizTryAgain)",
+                                    )
+                                }
+                            GameAudioActions.joinSilently(tryAgainJob)
+                        } else if (audioEnabled && !skipTryAgainAudio) {
                             ChildGameAudioHooks.onWrong()
                         }
                         optionsShake.animateTo(7f, tween(70))
@@ -812,7 +825,6 @@ fun GameScreen(
                     }
                 }
             }
-            return
         }
         if (detector != null && s2StationId != null && chapter1PlayerAddress != null) {
             val shouldCoach = detector.recordWrongAttempt()
@@ -849,7 +861,7 @@ fun GameScreen(
                             gameViewModel.inputLocked = false
                         }
                     }
-                return
+                return season2CoachJob
             }
         }
         WrongFeedbackActions.trigger(
@@ -878,6 +890,7 @@ fun GameScreen(
             chapter1PlayerAddress = chapter1PlayerAddress,
             rawVoice = rawVoice,
         )
+        return null
     }
 
 
@@ -1092,7 +1105,9 @@ fun GameScreen(
                                 if (audioEnabled && isSeason2BalloonStation) {
                                     GameAudioActions.awaitFeedbackVoice(audioRuntime, 5000L)
                                 }
-                                onWrongFeedback()
+                                val feedbackJob =
+                                    onWrongFeedback(skipTryAgainAudio = isSeason2BalloonStation)
+                                GameAudioActions.joinSilently(feedbackJob)
                             }
                             return
                         }

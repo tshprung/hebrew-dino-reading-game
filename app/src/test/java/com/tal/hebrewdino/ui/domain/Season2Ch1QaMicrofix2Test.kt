@@ -71,7 +71,7 @@ class Season2Ch1QaMicrofix2Test {
     @Test
     fun ch1_map_entry_single_instruction_voice() {
         assertFalse(Season2Ch1QaPolicy.shouldPlayPuzzleExplainBeforeMapEntry(registryChapterId = 1))
-        assertTrue(Season2Ch1QaPolicy.shouldPlayPuzzleExplainBeforeMapEntry(registryChapterId = 2))
+        assertFalse(Season2Ch1QaPolicy.shouldPlayPuzzleExplainBeforeMapEntry(registryChapterId = 2))
         assertFalse(
             Season2MapEntryVoicePolicy.shouldPlayPuzzleExplainBeforeEntry(
                 chapterId = 1,
@@ -85,7 +85,7 @@ class Season2Ch1QaMicrofix2Test {
 
     @Test
     fun s1_unchanged() {
-        assertTrue(Season2Ch1QaPolicy.shouldPlayPuzzleExplainBeforeMapEntry(registryChapterId = 2))
+        assertFalse(Season2Ch1QaPolicy.shouldPlayPuzzleExplainBeforeMapEntry(registryChapterId = 2))
         assertTrue(
             Season2ChapterFlowPolicy.shouldRequestFirstTimeChapterReward(
                 stationId = Season2Chapter1StationOrder.FINALE_STATION,

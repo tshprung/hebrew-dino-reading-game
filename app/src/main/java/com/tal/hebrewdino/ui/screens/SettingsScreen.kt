@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -17,7 +18,6 @@ import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -41,6 +41,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.semantics.Role
 import com.tal.hebrewdino.ui.data.DinoCharacter
 import com.tal.hebrewdino.ui.data.PlayerAddress
+import com.tal.hebrewdino.ui.domain.Season2ChapterRegistry
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -49,20 +50,36 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 
 private data class ChapterResetRow(
     val id: Int,
-    val label: String,
+    val buttonLabel: String,
+    val dialogLabel: String = buttonLabel,
 )
 
-private val chapterResetRows =
+private val season1ChapterResetRows =
     listOf(
-        ChapterResetRow(1, "פרק 1 — מצא את הביצה"),
-        ChapterResetRow(2, "פרק 2 — עקבות לביצה הורודה"),
-        ChapterResetRow(3, "פרק 3 — הביצה הורודה"),
-        ChapterResetRow(4, "פרק 4 — סיבוך בדרך"),
-        ChapterResetRow(5, "פרק 5 — הביצה השלישית"),
-        ChapterResetRow(6, "פרק 6 — חוזרים הביתה"),
+        ChapterResetRow(1, "פרק 1", "פרק 1 — מצא את הביצה"),
+        ChapterResetRow(2, "פרק 2", "פרק 2 — עקבות לביצה הורודה"),
+        ChapterResetRow(3, "פרק 3", "פרק 3 — הביצה הורודה"),
+        ChapterResetRow(4, "פרק 4", "פרק 4 — סיבוך בדרך"),
+        ChapterResetRow(5, "פרק 5", "פרק 5 — הביצה השלישית"),
+        ChapterResetRow(6, "פרק 6", "פרק 6 — חוזרים הביתה"),
     )
 
-internal fun chapterResetRowIdsForTest(): List<Int> = chapterResetRows.map { it.id }
+private val season2ChapterResetRows: List<ChapterResetRow> by lazy {
+    (1..Season2ChapterRegistry.CHAPTER_COUNT).map { chapterId ->
+        val creatureName =
+            Season2ChapterRegistry.chapter(chapterId)?.dinosaurNameHebrew
+                ?: "דינוזאור מסתורי"
+        ChapterResetRow(
+            id = chapterId,
+            buttonLabel = "פרק $chapterId",
+            dialogLabel = "פרק $chapterId — $creatureName",
+        )
+    }
+}
+
+internal fun chapterResetRowIdsForTest(): List<Int> = season1ChapterResetRows.map { it.id }
+
+internal fun season2ChapterResetRowIdsForTest(): List<Int> = season2ChapterResetRows.map { it.id }
 
 private const val TestTagBackgroundMusicToggle: String = "settings_bg_music_toggle"
 
@@ -76,14 +93,18 @@ fun SettingsScreen(
     onPlayerAddressChange: (PlayerAddress) -> Unit,
     onResetAll: () -> Unit,
     onResetChapters: (Set<Int>) -> Unit,
+    season2Enabled: Boolean,
+    onResetSeason2Chapters: (Set<Int>) -> Unit,
     onResetSeason2: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var showResetAllDialog by remember { mutableStateOf(false) }
-    var showResetChaptersDialog by remember { mutableStateOf(false) }
+    var showResetSeason1ChaptersDialog by remember { mutableStateOf(false) }
+    var showResetSeason2ChaptersDialog by remember { mutableStateOf(false) }
     var showResetSeason2Dialog by remember { mutableStateOf(false) }
-    var selectedChapters by remember { mutableStateOf(setOf<Int>()) }
+    var selectedSeason1Chapters by remember { mutableStateOf(setOf<Int>()) }
+    var selectedSeason2Chapters by remember { mutableStateOf(setOf<Int>()) }
     var progressExpanded by remember { mutableStateOf(false) }
     var managementExpanded by remember { mutableStateOf(false) }
 
@@ -163,61 +184,67 @@ fun SettingsScreen(
             SettingsExpandableSectionCard(
                 title = "התקדמות",
                 helperTextCollapsed = "איפוס פרקים נבחרים בלבד.",
-                helperTextExpanded = "סמנו פרק אחד או יותר, ואז יאופסו רק ההתקדמות שלהם.",
+                helperTextExpanded = "סמנו פרקים בכפתורים, ואז יאופסו רק ההתקדמות שלהם בעונה שנבחרה.",
                 expanded = progressExpanded,
                 onExpandedChange = { progressExpanded = it },
             ) {
-                chapterResetRows.forEach { row ->
-                    Row(
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 2.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Start,
-                    ) {
-                        Checkbox(
-                            checked = row.id in selectedChapters,
-                            onCheckedChange = { checked ->
-                                selectedChapters =
-                                    if (checked) {
-                                        selectedChapters + row.id
-                                    } else {
-                                        selectedChapters - row.id
-                                    }
-                            },
-                        )
-                        Text(
-                            text = row.label,
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = Color(0xFF0B2B3D),
-                            modifier = Modifier.weight(1f),
-                        )
-                    }
-                }
-
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    TextButton(
-                        onClick = { selectedChapters = chapterResetRows.map { it.id }.toSet() },
-                    ) {
-                        Text("בחר הכל")
-                    }
-                    TextButton(onClick = { selectedChapters = emptySet() }) {
-                        Text("נקה בחירה")
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(10.dp))
-
+                Text(
+                    text = "עונה 1",
+                    style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
+                    color = Color(0xFF0B2B3D).copy(alpha = 0.92f),
+                )
+                ChapterSelectionToggleGrid(
+                    rows = season1ChapterResetRows,
+                    selected = selectedSeason1Chapters,
+                    onSelectionChange = { selectedSeason1Chapters = it },
+                )
+                ChapterSelectionActionsRow(
+                    rows = season1ChapterResetRows,
+                    selected = selectedSeason1Chapters,
+                    onSelectAll = { selectedSeason1Chapters = season1ChapterResetRows.map { it.id }.toSet() },
+                    onClear = { selectedSeason1Chapters = emptySet() },
+                )
                 OutlinedButton(
-                    onClick = { if (selectedChapters.isNotEmpty()) showResetChaptersDialog = true },
-                    enabled = selectedChapters.isNotEmpty(),
+                    onClick = {
+                        if (selectedSeason1Chapters.isNotEmpty()) {
+                            showResetSeason1ChaptersDialog = true
+                        }
+                    },
+                    enabled = selectedSeason1Chapters.isNotEmpty(),
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    Text("אפס פרקים נבחרים")
+                    Text("אפס פרקים נבחרים (עונה 1)")
+                }
+
+                if (season2Enabled) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = "עונה 2",
+                        style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
+                        color = Color(0xFF0B2B3D).copy(alpha = 0.92f),
+                    )
+                    ChapterSelectionToggleGrid(
+                        rows = season2ChapterResetRows,
+                        selected = selectedSeason2Chapters,
+                        onSelectionChange = { selectedSeason2Chapters = it },
+                    )
+                    ChapterSelectionActionsRow(
+                        rows = season2ChapterResetRows,
+                        selected = selectedSeason2Chapters,
+                        onSelectAll = { selectedSeason2Chapters = season2ChapterResetRows.map { it.id }.toSet() },
+                        onClear = { selectedSeason2Chapters = emptySet() },
+                    )
+                    OutlinedButton(
+                        onClick = {
+                            if (selectedSeason2Chapters.isNotEmpty()) {
+                                showResetSeason2ChaptersDialog = true
+                            }
+                        },
+                        enabled = selectedSeason2Chapters.isNotEmpty(),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text("אפס פרקים נבחרים (עונה 2)")
+                    }
                 }
             }
 
@@ -240,19 +267,21 @@ fun SettingsScreen(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                Text(
-                    text = "איפוס עונה 2 מאפס רק את ההתקדמות של עונה 2.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color(0xFF0B2B3D).copy(alpha = 0.84f),
-                    modifier = Modifier.fillMaxWidth(),
-                    textAlign = TextAlign.Start,
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                OutlinedButton(
-                    onClick = { showResetSeason2Dialog = true },
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Text("איפוס עונה 2")
+                if (season2Enabled) {
+                    Text(
+                        text = "איפוס עונה 2 מאפס את כל ההתקדמות של עונה 2 (כולל מבוא העונה).",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color(0xFF0B2B3D).copy(alpha = 0.84f),
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = TextAlign.Start,
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedButton(
+                        onClick = { showResetSeason2Dialog = true },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text("איפוס עונה 2 מלא")
+                    }
                 }
             }
 
@@ -279,7 +308,8 @@ fun SettingsScreen(
                 TextButton(
                     onClick = {
                         showResetAllDialog = false
-                        selectedChapters = emptySet()
+                        selectedSeason1Chapters = emptySet()
+                        selectedSeason2Chapters = emptySet()
                         onResetAll()
                     },
                 ) {
@@ -294,36 +324,30 @@ fun SettingsScreen(
         )
     }
 
-    if (showResetChaptersDialog) {
-        val sorted = selectedChapters.sorted()
-        val names = sorted.map { id -> chapterResetRows.first { it.id == id }.label }
-        AlertDialog(
-            onDismissRequest = { showResetChaptersDialog = false },
-            title = { Text(text = "איפוס פרקים נבחרים") },
-            text = {
-                Text(
-                    text =
-                        "לאפס את ההתקדמות בפרקים הבאים?\n\n" +
-                            names.joinToString("\n") +
-                            "\n\nפעולה זו לא ניתנת לביטול.",
-                    textAlign = TextAlign.Start,
-                )
+    if (showResetSeason1ChaptersDialog) {
+        ChapterResetConfirmDialog(
+            title = "איפוס פרקים נבחרים (עונה 1)",
+            selectedIds = selectedSeason1Chapters,
+            rows = season1ChapterResetRows,
+            onDismiss = { showResetSeason1ChaptersDialog = false },
+            onConfirm = {
+                showResetSeason1ChaptersDialog = false
+                onResetChapters(selectedSeason1Chapters.toSet())
+                selectedSeason1Chapters = emptySet()
             },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        showResetChaptersDialog = false
-                        onResetChapters(selectedChapters.toSet())
-                        selectedChapters = emptySet()
-                    },
-                ) {
-                    Text("כן, לאפס")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showResetChaptersDialog = false }) {
-                    Text("ביטול")
-                }
+        )
+    }
+
+    if (showResetSeason2ChaptersDialog) {
+        ChapterResetConfirmDialog(
+            title = "איפוס פרקים נבחרים (עונה 2)",
+            selectedIds = selectedSeason2Chapters,
+            rows = season2ChapterResetRows,
+            onDismiss = { showResetSeason2ChaptersDialog = false },
+            onConfirm = {
+                showResetSeason2ChaptersDialog = false
+                onResetSeason2Chapters(selectedSeason2Chapters.toSet())
+                selectedSeason2Chapters = emptySet()
             },
         )
     }
@@ -355,6 +379,137 @@ fun SettingsScreen(
             },
         )
     }
+}
+
+@Composable
+private fun ChapterSelectionToggleGrid(
+    rows: List<ChapterResetRow>,
+    selected: Set<Int>,
+    onSelectionChange: (Set<Int>) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier.fillMaxWidth().padding(top = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        rows.chunked(3).forEach { rowGroup ->
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                rowGroup.forEach { row ->
+                    val isSelected = row.id in selected
+                    val containerColor =
+                        if (isSelected) {
+                            Color(0xFF2AA6C9).copy(alpha = 0.20f)
+                        } else {
+                            Color.White.copy(alpha = 0.90f)
+                        }
+                    val border =
+                        if (isSelected) {
+                            BorderStroke(1.dp, Color(0xFF2AA6C9).copy(alpha = 0.55f))
+                        } else {
+                            BorderStroke(1.dp, Color(0xFF0B2B3D).copy(alpha = 0.14f))
+                        }
+                    OutlinedButton(
+                        onClick = {
+                            onSelectionChange(
+                                if (isSelected) {
+                                    selected - row.id
+                                } else {
+                                    selected + row.id
+                                },
+                            )
+                        },
+                        modifier =
+                            Modifier
+                                .weight(1f)
+                                .defaultMinSize(minHeight = 44.dp),
+                        colors =
+                            ButtonDefaults.outlinedButtonColors(
+                                containerColor = containerColor,
+                                contentColor = Color(0xFF0B2B3D),
+                            ),
+                        border = border,
+                        shape = RoundedCornerShape(14.dp),
+                    ) {
+                        Text(
+                            text = row.buttonLabel,
+                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                            textAlign = TextAlign.Center,
+                        )
+                    }
+                }
+                repeat(3 - rowGroup.size) {
+                    Spacer(modifier = Modifier.weight(1f))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ChapterSelectionActionsRow(
+    rows: List<ChapterResetRow>,
+    selected: Set<Int>,
+    onSelectAll: () -> Unit,
+    onClear: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier.fillMaxWidth().padding(top = 6.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        TextButton(onClick = onSelectAll) {
+            Text("בחר הכל")
+        }
+        TextButton(onClick = onClear) {
+            Text("נקה בחירה")
+        }
+        if (selected.isNotEmpty()) {
+            Text(
+                text = "נבחרו ${selected.size} מתוך ${rows.size}",
+                style = MaterialTheme.typography.bodySmall,
+                color = Color(0xFF0B2B3D).copy(alpha = 0.72f),
+                modifier = Modifier.align(Alignment.CenterVertically),
+            )
+        }
+    }
+}
+
+@Composable
+private fun ChapterResetConfirmDialog(
+    title: String,
+    selectedIds: Set<Int>,
+    rows: List<ChapterResetRow>,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit,
+) {
+    val names =
+        selectedIds.sorted().map { id -> rows.first { it.id == id }.dialogLabel }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(text = title) },
+        text = {
+            Text(
+                text =
+                    "לאפס את ההתקדמות בפרקים הבאים?\n\n" +
+                        names.joinToString("\n") +
+                        "\n\nפעולה זו לא ניתנת לביטול.",
+                textAlign = TextAlign.Start,
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = onConfirm) {
+                Text("כן, לאפס")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("ביטול")
+            }
+        },
+    )
 }
 
 @Composable

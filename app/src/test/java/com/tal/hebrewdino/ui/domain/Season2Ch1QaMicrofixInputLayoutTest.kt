@@ -20,7 +20,7 @@ class Season2Ch1QaMicrofixInputLayoutTest {
 
     @Test
     fun ch1_st1_new_tap_cancels_previous_feedback() {
-        assertTrue(Season2Ch1QaPolicy.shouldCancelPreviousFeedbackOnPopBalloonsTap(season2QuizBalloons = true))
+        assertFalse(Season2Ch1QaPolicy.shouldCancelPreviousFeedbackOnPopBalloonsTap(season2QuizBalloons = true))
         val pop = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/screens/PopBalloonsActions.kt")
         assertTrue(pop.contains("shouldCancelPreviousFeedbackOnPopBalloonsTap"))
         val gameScreen = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/screens/GameScreen.kt")

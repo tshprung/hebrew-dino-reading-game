@@ -36,7 +36,7 @@ class Season2Ch2St6WordPartsMicrofixTest {
     @Test
     fun hint_left_away_from_image() {
         val policy = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/domain/Season2WordPartsUxPolicy.kt")
-        assertTrue(policy.contains("HintPhysicalLeftDp = 95.dp"))
+        assertTrue(policy.contains("HintPhysicalLeftDp = 114.dp"))
         val ui = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/game/Season2WordPartsGame.kt")
         assertTrue(ui.contains("x = -Season2WordPartsUxPolicy.HintPhysicalLeftDp"))
     }

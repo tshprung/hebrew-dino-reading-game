@@ -20,6 +20,7 @@ class Season2PropagateCh1ApprovedStationUxTest {
         assertTrue(Season2StationQaPolicy.shouldKeepPopBalloonsInputUnlockedDuringFeedback(Season2Chapter1StationOrder.POP_BALLOONS))
         val pop = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/screens/PopBalloonsActions.kt")
         assertTrue(pop.contains("shouldCancelPreviousFeedbackOnPopBalloonsTap"))
+        assertFalse(Season2Ch1QaPolicy.shouldCancelPreviousFeedbackOnPopBalloonsTap(season2QuizBalloons = true))
     }
 
     @Test
@@ -107,9 +108,11 @@ class Season2PropagateCh1ApprovedStationUxTest {
 
     @Test
     fun no_duplicate_try_again_representative_stations() {
-        assertFalse(Season2Ch1QaPolicy.shouldPlayTryAgainInPopBalloonsSfx(season2QuizBalloons = true))
+        assertTrue(Season2Ch1QaPolicy.shouldPlayTryAgainInPopBalloonsSfx(season2QuizBalloons = true))
         val picture = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/screens/PictureStartsWithActions.kt")
-        assertTrue(picture.contains("onWrongFeedback"))
+        assertTrue(picture.contains("joinSilently(feedbackJob)"))
+        val gameScreen = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/screens/GameScreen.kt")
+        assertTrue(gameScreen.contains("skipTryAgainAudio = isSeason2BalloonStation"))
     }
 
     @Test

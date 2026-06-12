@@ -15,6 +15,7 @@ import com.tal.hebrewdino.ui.domain.Season2StationAudio
 import com.tal.hebrewdino.ui.domain.TrainingV1Config
 import com.tal.hebrewdino.ui.game.ChildGameAudioHooks
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
 private fun usesImageToWordRawWordClips(chapterId: Int): Boolean =
@@ -43,7 +44,7 @@ internal object ImageMatchActions {
         rawVoice: RawVoicePlayer?,
         audioRuntime: GameAudioRuntimeState,
         advanceAfterRound: suspend (Boolean) -> Unit,
-        onWrongFeedback: (wrongWordCatalogId: String?, wrongWordAlreadySpoken: Boolean) -> Unit,
+        onWrongFeedback: (wrongWordCatalogId: String?, wrongWordAlreadySpoken: Boolean) -> Job?,
         season2HadCoachIntervention: Boolean = false,
         season2Chapter1UxStationId: Int? = null,
     ): Boolean {
@@ -94,7 +95,8 @@ internal object ImageMatchActions {
                 AnswerResult.Wrong -> {
                     if (audioEnabled) ChildGameAudioHooks.onWrong()
                     HintPulseActions.registerWrongTapForHintPulse(gameViewModel)
-                    onWrongFeedback(choiceId, true)
+                    val feedbackJob = onWrongFeedback(choiceId, true)
+                    GameAudioActions.joinSilently(feedbackJob)
                 }
                 else -> Unit
             }
@@ -303,7 +305,7 @@ internal object ImageMatchActions {
         rawVoice: RawVoicePlayer?,
         audioRuntime: GameAudioRuntimeState,
         advanceAfterRound: suspend (Boolean) -> Unit,
-        onWrongFeedback: (wrongWordCatalogId: String?, wrongWordAlreadySpoken: Boolean) -> Unit,
+        onWrongFeedback: (wrongWordCatalogId: String?, wrongWordAlreadySpoken: Boolean) -> Job?,
         season2HadCoachIntervention: Boolean = false,
         season2Chapter1UxStationId: Int? = null,
     ): Boolean {
@@ -371,7 +373,8 @@ internal object ImageMatchActions {
                         )
                         if (audioEnabled) ChildGameAudioHooks.onWrong()
                         HintPulseActions.registerWrongTapForHintPulse(gameViewModel)
-                        onWrongFeedback(choiceId, true)
+                        val feedbackJob = onWrongFeedback(choiceId, true)
+                        GameAudioActions.joinSilently(feedbackJob)
                     }
                     false
                 }
@@ -496,7 +499,8 @@ internal object ImageMatchActions {
                         )
                         if (audioEnabled) ChildGameAudioHooks.onWrong()
                         HintPulseActions.registerWrongTapForHintPulse(gameViewModel)
-                        onWrongFeedback(choiceId, true)
+                        val feedbackJob = onWrongFeedback(choiceId, true)
+                        GameAudioActions.joinSilently(feedbackJob)
                     }
                 } else {
                     if (audioEnabled) ChildGameAudioHooks.onWrong()

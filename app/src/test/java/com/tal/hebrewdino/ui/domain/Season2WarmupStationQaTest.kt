@@ -70,7 +70,7 @@ class Season2WarmupStationQaTest {
             readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/screens/Season2MemoryMatchStationScreen.kt")
         assertTrue(memory.contains("TextAlign.Center"))
         val wordParts = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/game/Season2WordPartsGame.kt")
-        assertTrue(wordParts.contains("HintOptionsExtraPhysicalLeftDp"))
+        assertFalse(wordParts.contains("HintOptionsExtraPhysicalLeftDp"))
         val picture = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/game/PictureStartsWithGame.kt")
         assertTrue(picture.contains("HalfCmPhysicalLeftDp"))
     }

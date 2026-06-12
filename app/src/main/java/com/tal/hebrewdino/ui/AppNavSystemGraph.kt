@@ -27,6 +27,7 @@ import com.tal.hebrewdino.ui.data.AudioPrefs
 import com.tal.hebrewdino.ui.data.DinoCharacter
 import com.tal.hebrewdino.ui.data.ParentInfoPrefs
 import com.tal.hebrewdino.ui.data.Season2ProgressPrefs
+import com.tal.hebrewdino.ui.domain.SeasonAvailabilityPolicy
 import com.tal.hebrewdino.ui.domain.ParentInfoPolicy
 import com.tal.hebrewdino.ui.domain.Season2Chapter1StationOrder
 import com.tal.hebrewdino.ui.domain.Season2ChapterRegistry
@@ -438,6 +439,12 @@ internal fun NavGraphBuilder.systemAndTrainingGraph(host: AppNavHostState) {
                     host.navController.navigate(NavRoutes.Chapters) {
                         popUpTo(NavRoutes.Settings) { inclusive = true }
                     }
+                }
+            },
+            season2Enabled = SeasonAvailabilityPolicy.isSeason2Enabled(),
+            onResetSeason2Chapters = { chapterIds ->
+                host.scope.launch {
+                    season2Progress.resetChapters(chapterIds)
                 }
             },
             onResetSeason2 = {

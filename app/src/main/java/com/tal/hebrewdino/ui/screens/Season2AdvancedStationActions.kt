@@ -15,6 +15,7 @@ import com.tal.hebrewdino.ui.domain.Season2WordPartsCatalog
 import com.tal.hebrewdino.ui.game.ChildGameAudioHooks
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.milliseconds
@@ -81,7 +82,7 @@ internal object Season2AdvancedStationActions {
         rawVoice: RawVoicePlayer?,
         audioRuntime: GameAudioRuntimeState,
         advanceAfterRound: suspend (Boolean) -> Unit,
-        onWrongFeedback: () -> Unit,
+        onWrongFeedback: () -> Job?,
         season2HadCoachIntervention: Boolean = false,
     ) {
         if (gameViewModel.wordPartsCompletedEquation != null) return
@@ -180,7 +181,8 @@ internal object Season2AdvancedStationActions {
                         }
                         AnswerResult.Wrong -> {
                             if (audioEnabled) ChildGameAudioHooks.onWrong()
-                            onWrongFeedback()
+                            val feedbackJob = onWrongFeedback()
+                            GameAudioActions.joinSilently(feedbackJob)
                             if (!willPlayFocusAfterWrong) {
                                 delay(350.milliseconds)
                                 gameViewModel.inputLocked = false

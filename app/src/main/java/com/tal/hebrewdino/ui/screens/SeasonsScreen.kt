@@ -44,6 +44,7 @@ import androidx.compose.ui.unit.dp
 import com.tal.hebrewdino.R
 import com.tal.hebrewdino.BuildConfig
 import com.tal.hebrewdino.ui.companion.CompanionAssets
+import com.tal.hebrewdino.ui.domain.SeasonAvailabilityPolicy
 import com.tal.hebrewdino.ui.companion.CompanionDinoPortrait
 import com.tal.hebrewdino.ui.data.DinoCharacter
 
@@ -79,7 +80,7 @@ fun SeasonsScreen(
                     seasonId = 1,
                     title = "עונה 1: המסע הראשון",
                     subtitle = "6 פרקים + אימון",
-                    enabled = true,
+                    enabled = SeasonAvailabilityPolicy.isSeasonEnabled(seasonId = 1),
                     heroKind = SeasonHeroKind.SelectedCompanion,
                 ),
             )
@@ -88,7 +89,7 @@ fun SeasonsScreen(
                     seasonId = 2,
                     title = "עונה 2: מגלים דינוזאורים",
                     subtitle = "מפה מסתורית — גלו דינוזאורים חבויים",
-                    enabled = true,
+                    enabled = SeasonAvailabilityPolicy.isSeason2Enabled(),
                     heroKind = SeasonHeroKind.Season2Overview,
                 ),
             )

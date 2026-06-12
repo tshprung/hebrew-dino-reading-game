@@ -355,15 +355,7 @@ fun Season2WordPartsGame(
                     modifier =
                         Modifier
                             .fillMaxWidth()
-                            .absoluteOffset(
-                                x =
-                                    -Season2WordPartsUxPolicy.OptionsPhysicalLeftDp -
-                                        if (hintEquationText != null) {
-                                            Season2WordPartsUxPolicy.HintOptionsExtraPhysicalLeftDp
-                                        } else {
-                                            0.dp
-                                        },
-                            ),
+                            .absoluteOffset(x = -Season2WordPartsUxPolicy.OptionsPhysicalLeftDp),
                     horizontalArrangement = Arrangement.spacedBy(scaledDp(if (isCompact) 6.dp else 8.dp), Alignment.CenterHorizontally),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {

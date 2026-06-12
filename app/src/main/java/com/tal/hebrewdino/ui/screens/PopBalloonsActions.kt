@@ -637,7 +637,7 @@ internal object PopBalloonsActions {
             Season2EarlyStationQaPolicy.shouldPlayBalloonPraiseOnCorrectPop(season2QuizBalloons) ||
                 Season2StationAudio.isSeason2GameplayChapter(chapterId)
         if (!season2BalloonPraise) return
-        delay(90)
+        delay(Season2WarmupStationQaPolicy.BalloonLetterToPraiseGapMs)
         val praiseRes =
             InStationPraiseAudio.pick(
                 avoidRawResId = lastPraiseRawResId?.takeIf { it != 0 },

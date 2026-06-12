@@ -118,10 +118,26 @@ class Season2ProgressPrefs(private val context: Context) {
     }
 
     suspend fun resetSeason2() {
+        resetChapters((1..6).toSet())
         context.dataStore.edit { prefs ->
-            prefs[completedChaptersKey] = ""
             prefs.remove(seasonIntroDismissedKey)
-            for (ch in 1..6) {
+        }
+    }
+
+    /** Clears saved Season 2 progress for the given chapter numbers only (1–6). */
+    suspend fun resetChapters(chapterIds: Set<Int>) {
+        val ids = chapterIds.filter { it in 1..6 }.toSet()
+        if (ids.isEmpty()) return
+        context.dataStore.edit { prefs ->
+            val raw = prefs[completedChaptersKey].orEmpty()
+            val completed =
+                raw.split(",")
+                    .mapNotNull { it.trim().toIntOrNull() }
+                    .filter { it in 1..6 }
+                    .toMutableSet()
+            completed.removeAll(ids)
+            prefs[completedChaptersKey] = completed.sorted().joinToString(",")
+            for (ch in ids) {
                 prefs[completedStationsKeyForChapter(ch)] = ""
                 prefs.remove(introDismissedKeyForChapter(ch))
                 prefs.remove(puzzleMapExplainHeardKeyForChapter(ch))

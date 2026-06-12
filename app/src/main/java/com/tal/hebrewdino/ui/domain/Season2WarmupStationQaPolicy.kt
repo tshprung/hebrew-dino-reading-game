@@ -9,6 +9,9 @@ object Season2WarmupStationQaPolicy {
   const val PickLetterQuestionCount: Int = 6
   const val PictureStartsWithQuestionCount: Int = 6
 
+  /** Gap between balloon letter name and in-station praise (halved per Ch1-St1 QA). */
+  const val BalloonLetterToPraiseGapMs: Long = 45L
+
   /** Physical left nudge ≈0.5cm (matches [com.tal.hebrewdino.ui.screens.SixStationArcHalfCmNudge]). */
   val HalfCmPhysicalLeftDp: Dp = 19.dp
 

@@ -41,8 +41,7 @@ object Season2Ch1QaPolicy {
     fun shouldKeepPopBalloonsInputUnlockedDuringFeedback(season2UxStationId: Int?): Boolean =
         Season2StationQaPolicy.shouldKeepPopBalloonsInputUnlockedDuringFeedback(season2UxStationId)
 
-    fun shouldCancelPreviousFeedbackOnPopBalloonsTap(season2QuizBalloons: Boolean): Boolean =
-        season2QuizBalloons
+    fun shouldCancelPreviousFeedbackOnPopBalloonsTap(season2QuizBalloons: Boolean): Boolean = false
 
     fun shouldAllowTapDuringPopBalloonsWrongRecover(season2UxStationId: Int?): Boolean =
         Season2StationQaPolicy.shouldAllowTapDuringPopBalloonsWrongRecover(season2UxStationId)
@@ -80,7 +79,7 @@ object Season2Ch1QaPolicy {
             Season2StationUx.stationKindForGameplayChapter(gameplayChapterId, stationId) ==
                 Season2ChapterStationPlans.StationKind.PictureStartsWith
 
-    fun shouldPlayTryAgainInPopBalloonsSfx(season2QuizBalloons: Boolean): Boolean = !season2QuizBalloons
+    fun shouldPlayTryAgainInPopBalloonsSfx(season2QuizBalloons: Boolean): Boolean = true
 
     fun shouldOrchestrateMapEntryFromChapterList(
         progressHydrated: Boolean,
@@ -102,8 +101,8 @@ object Season2Ch1QaPolicy {
         entryFromChapterSelect: Boolean,
     ): Boolean = chapterFullyRevealed && entryFromChapterSelect
 
-    /** Ch1 map entry: map-entry clip only — skip puzzle-explain duplicate. */
-    fun shouldPlayPuzzleExplainBeforeMapEntry(registryChapterId: Int): Boolean = registryChapterId != 1
+    /** All chapters: narrator map-entry clip only (Ch1 model — no puzzle-explain before entry). */
+    fun shouldPlayPuzzleExplainBeforeMapEntry(registryChapterId: Int): Boolean = false
 
     fun isCh1FinalePictureToWord(
         gameplayChapterId: Int,
