@@ -112,7 +112,7 @@ fun Season2ChapterStationScreen(
             season2Progress.markStationCompleted(chapterId, stationId)
 
             val requestCelebration =
-                if (chapterId in 1..6) {
+                if (chapterId in 1..Season2ChapterRegistry.CHAPTER_COUNT) {
                     Season2ChapterFlowPolicy.shouldRequestFirstTimeChapterReward(
                         stationId = stationId,
                         wasStationAlreadyDone = wasStationDone,
@@ -152,9 +152,8 @@ fun Season2ChapterStationScreen(
 
 
 
-    when (stationId) {
-
-        Season2Chapter1StationOrder.MEMORY_MATCH -> {
+    when {
+        Season2Chapter1StationOrder.isMemoryMatchStation(chapterId, stationId) -> {
 
             Season2MemoryMatchStationScreen(
 
@@ -258,39 +257,10 @@ private fun resolveStationRouting(
 
     }
 
-    if (stationId == Season2Chapter1StationOrder.FINALE_STATION) {
-        return Season2StationRouting(
-            gameplayStationId = stationId,
-            gameplayChapterId = chapterDef.gameplayChapterId,
-            plan = Season2Chapter1StationOrder.quizPlan(chapterId, stationId),
-        )
-    }
-
-    val gameplayStationId =
-        when (stationId) {
-            Season2Chapter1StationOrder.POP_BALLOONS -> Chapter1StationOrder.BALLOON_POP
-            Season2Chapter1StationOrder.PICK_LETTER -> Chapter1StationOrder.TAP_LETTER
-            Season2Chapter1StationOrder.PICTURE_STARTS_WITH -> 1
-            Season2Chapter1StationOrder.WHICH_WORD_STARTS_WITH -> Chapter1StationOrder.PICTURE_PICK_ALL
-            else -> stationId
-        }
-
-    val gameplayChapterId =
-        when (stationId) {
-            Season2Chapter1StationOrder.PICTURE_STARTS_WITH -> 3
-            else -> 1
-        }
-
-    val plan =
-        when (gameplayChapterId) {
-            3 -> com.tal.hebrewdino.ui.domain.StationQuizPlans.chapter3(gameplayStationId)
-            else -> com.tal.hebrewdino.ui.domain.StationQuizPlans.chapter1(gameplayStationId)
-        }
-
     return Season2StationRouting(
-        gameplayStationId = gameplayStationId,
-        gameplayChapterId = gameplayChapterId,
-        plan = plan,
+        gameplayStationId = stationId,
+        gameplayChapterId = chapterDef.gameplayChapterId,
+        plan = Season2Chapter1StationOrder.quizPlan(chapterId, stationId),
     )
 
 }

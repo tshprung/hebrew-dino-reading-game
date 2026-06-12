@@ -20,31 +20,25 @@ class Chapter6StationBehaviorTest {
     }
 
     @Test
-    fun chapter6_station3_balloons_has_10_options_and_is_single_target_letter() {
+    fun chapter6_station3_dragWordToPicture_generatesQuestion() {
         val plan = StationQuizPlans.chapter6(3)
+        assertEquals(StationQuizMode.DragWordToPicture, plan.mode)
+        assertEquals(2, plan.dragWordToPicturePairCount)
         val session = LevelSession(plan = plan, letterPoolSpec = Chapter6LetterPoolSpec)
         val q = session.currentQuestion
         assertNotNull(q)
-        assertTrue(q is Question.PopBalloonsQuestion)
-        val pq = q as Question.PopBalloonsQuestion
-        assertEquals(10, pq.options.size)
-        assertTrue(pq.correctAnswer.isNotBlank())
-        assertTrue(pq.options.contains(pq.correctAnswer))
-        assertTrue(session.chapter3PopAllLettersCurrentWord() == null)
+        assertTrue(q is Question.DragWordToPictureQuestion)
     }
 
     @Test
-    fun chapter6_station4_highlightedInWord_correctLetter_matches_question() {
+    fun chapter6_station4_dragMissingLetter_generatesQuestion() {
         val plan = StationQuizPlans.chapter6(4)
+        assertEquals(StationQuizMode.DragMissingLetter, plan.mode)
+        assertEquals(0, plan.dragMissingLetterIndex)
         val session = LevelSession(plan = plan, letterPoolSpec = Chapter6LetterPoolSpec)
         val q = session.currentQuestion
         assertNotNull(q)
-        assertTrue(q is Question.PopBalloonsQuestion)
-        val pq = q as Question.PopBalloonsQuestion
-        val round = session.highlightedLetterInWordRound(0)
-        assertNotNull(round)
-        assertEquals(round!!.correctLetter, pq.correctAnswer)
-        assertTrue(pq.options.contains(round.correctLetter))
+        assertTrue(q is Question.DragMissingLetterQuestion)
     }
 
     @Test
@@ -62,4 +56,3 @@ class Chapter6StationBehaviorTest {
         assertEquals("ch6_mid_boost", NavRoutes.Ch6MidBoost)
     }
 }
-

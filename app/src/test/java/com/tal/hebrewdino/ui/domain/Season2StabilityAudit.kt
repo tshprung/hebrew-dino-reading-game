@@ -19,7 +19,7 @@ object Season2StabilityAudit {
 
     val intendedFinaleRouting: List<StationExpectation> =
         listOf(
-            StationExpectation(1, 6, Season2ChapterStationPlans.StationKind.PictureToWord, advancedMode = Season2AdvancedStationMode.PictureToWord),
+            StationExpectation(1, 6, Season2ChapterStationPlans.StationKind.DragMissingLetter),
             StationExpectation(
                 2,
                 6,
@@ -42,9 +42,15 @@ object Season2StabilityAudit {
                 advancedMode = Season2AdvancedStationMode.WordParts,
             ),
             StationExpectation(4, 6, Season2ChapterStationPlans.StationKind.MatchLetterToWord),
-            StationExpectation(5, 5, Season2ChapterStationPlans.StationKind.MissingFirstLetter, advancedMode = Season2AdvancedStationMode.MissingFirstLetter),
-            StationExpectation(6, 5, Season2ChapterStationPlans.StationKind.Rhyming, advancedMode = Season2AdvancedStationMode.Rhyming),
-            StationExpectation(6, 6, Season2ChapterStationPlans.StationKind.PictureToWord, advancedMode = Season2AdvancedStationMode.PictureToWord),
+            StationExpectation(
+                5,
+                6,
+                Season2ChapterStationPlans.StationKind.WordParts,
+                wordPartsMode = Season2WordPartsPresentationMode.GuidedWordParts,
+                advancedMode = Season2AdvancedStationMode.WordParts,
+            ),
+            StationExpectation(6, 4, Season2ChapterStationPlans.StationKind.Rhyming, advancedMode = Season2AdvancedStationMode.Rhyming),
+            StationExpectation(6, 6, Season2ChapterStationPlans.StationKind.MatchLetterToWord),
         )
 
     fun legacyUnusedMapRawResIds(): List<Int> =
@@ -66,15 +72,31 @@ object Season2StabilityAudit {
             return Season2Chapter1StationOrder.quizPlan(chapterIndex, stationId).questionCount
         }
         val ctx = Season2ChapterStationPlans.contextFor(chapterIndex) ?: return null
-        if (stationId == Season2Chapter1StationOrder.MEMORY_MATCH) return null
+        if (
+            chapterIndex >= 3 &&
+                Season2ChapterStationPlans.stationKind(chapterIndex, stationId) ==
+                Season2ChapterStationPlans.StationKind.MemoryMatch
+        ) {
+            return null
+        }
+        if (chapterIndex == 2 && stationId == Season2Chapter1StationOrder.MEMORY_MATCH) return null
         return Season2ChapterStationPlans.quizPlan(ctx, stationId).questionCount
     }
 
     fun stationsBelowSixRounds(): Map<String, Int> {
         val out = linkedMapOf<String, Int>()
-        for (chapter in 1..6) {
+        for (chapter in 1..Season2ChapterRegistry.CHAPTER_COUNT) {
             for (station in 1..6) {
-                if (chapter >= 3 && station == 4) continue
+                if (
+                    chapter == 2 && station == Season2Chapter1StationOrder.MEMORY_MATCH ||
+                        (
+                            chapter >= 3 &&
+                                Season2ChapterStationPlans.stationKind(chapter, station) ==
+                                Season2ChapterStationPlans.StationKind.MemoryMatch
+                        )
+                ) {
+                    continue
+                }
                 val count = questionCountFor(chapter, station) ?: continue
                 if (count < 6) {
                     out["Ch$chapter-St$station"] = count
@@ -85,7 +107,7 @@ object Season2StabilityAudit {
     }
 
     fun lettersPerChapter(): Map<Int, List<String>> =
-        (1..6).mapNotNull { index ->
+        (1..Season2ChapterRegistry.CHAPTER_COUNT).mapNotNull { index ->
             Season2ChapterRegistry.chapter(index)?.let { index to it.letters }
         }.toMap()
 

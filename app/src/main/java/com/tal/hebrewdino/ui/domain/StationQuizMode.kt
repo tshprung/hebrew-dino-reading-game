@@ -12,4 +12,8 @@ enum class StationQuizMode {
     PictureStartsWith,
     ImageMatch,
     FinaleSlot,
+    /** Drag each written word card onto its matching picture (not player-facing yet). */
+    DragWordToPicture,
+    /** Drag the missing letter into a partial word slot (not player-facing yet). */
+    DragMissingLetter,
 }

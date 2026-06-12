@@ -13,24 +13,31 @@ class Season2Chapter3StationMappingTest {
     private val ctx = Season2ChapterStationPlans.contextFor(3)!!
 
     @Test
-    fun ch3_station1_mapsToPopBalloons_planAndTemplate() {
+    fun ch3_station1_mapsToPickLetter_planAndTemplate() {
         val plan = Season2ChapterStationPlans.quizPlan(ctx, 1)
         val spec = StationBehaviorRegistry.getStationUiSpec(ch3GameplayId, 1)
-        assertEquals(StationQuizMode.PopBalloons, plan.mode)
-        assertEquals(StationTemplateId.PopBalloons, spec.templateId)
-        assertTrue(spec.popBalloonsCompactLandscapePhoneTuning)
-        assertTrue(spec.audioStagingPopBalloons)
-        assertFalse(spec.audioStagingPickLetter)
-    }
-
-    @Test
-    fun ch3_station2_mapsToPickLetter_planAndTemplate() {
-        val plan = Season2ChapterStationPlans.quizPlan(ctx, 2)
-        val spec = StationBehaviorRegistry.getStationUiSpec(ch3GameplayId, 2)
         assertEquals(StationQuizMode.PickLetter, plan.mode)
         assertEquals(StationTemplateId.PickLetter, spec.templateId)
         assertTrue(spec.audioStagingPickLetter)
         assertFalse(spec.audioStagingPopBalloons)
+    }
+
+    @Test
+    fun ch3_station2_mapsToPictureStartsWith_planAndTemplate() {
+        val plan = Season2ChapterStationPlans.quizPlan(ctx, 2)
+        val spec = StationBehaviorRegistry.getStationUiSpec(ch3GameplayId, 2)
+        assertEquals(StationQuizMode.PictureStartsWith, plan.mode)
+        assertEquals(StationTemplateId.PictureStartsWith, spec.templateId)
+        assertFalse(spec.audioStagingPickLetter)
+    }
+
+    @Test
+    fun ch3_station3_mapsToDragMissingLetter_planAndTemplate() {
+        val plan = Season2ChapterStationPlans.quizPlan(ctx, 3)
+        val spec = StationBehaviorRegistry.getStationUiSpec(ch3GameplayId, 3)
+        assertEquals(StationQuizMode.DragMissingLetter, plan.mode)
+        assertEquals(StationTemplateId.DragMissingLetter, spec.templateId)
+        assertEquals(0, plan.dragMissingLetterIndex)
     }
 
     @Test
@@ -100,22 +107,34 @@ class Season2Chapter3StationMappingTest {
     }
 
     @Test
-    fun ch1_ch2_stationMappings_unchanged() {
+    fun ch1_ch2_stationMappings_matchDragWiring() {
         assertEquals(
             StationTemplateId.PopBalloons,
-            StationBehaviorRegistry.getStationUiSpec(Season2ChapterIds.Chapter1Tyrannosaurus, 2).templateId,
-        )
-        assertEquals(
-            StationTemplateId.PickLetter,
             StationBehaviorRegistry.getStationUiSpec(Season2ChapterIds.Chapter1Tyrannosaurus, 1).templateId,
         )
         assertEquals(
-            StationTemplateId.PopBalloons,
-            StationBehaviorRegistry.getStationUiSpec(Season2ChapterIds.Chapter2Triceratops, 2).templateId,
+            StationTemplateId.PickLetter,
+            StationBehaviorRegistry.getStationUiSpec(Season2ChapterIds.Chapter1Tyrannosaurus, 2).templateId,
+        )
+        assertEquals(
+            StationTemplateId.DragWordToPicture,
+            StationBehaviorRegistry.getStationUiSpec(Season2ChapterIds.Chapter1Tyrannosaurus, 4).templateId,
+        )
+        assertEquals(
+            StationTemplateId.DragMissingLetter,
+            StationBehaviorRegistry.getStationUiSpec(Season2ChapterIds.Chapter1Tyrannosaurus, 6).templateId,
         )
         assertEquals(
             StationTemplateId.PickLetter,
             StationBehaviorRegistry.getStationUiSpec(Season2ChapterIds.Chapter2Triceratops, 1).templateId,
+        )
+        assertEquals(
+            StationTemplateId.DragWordToPicture,
+            StationBehaviorRegistry.getStationUiSpec(Season2ChapterIds.Chapter2Triceratops, 2).templateId,
+        )
+        assertEquals(
+            StationTemplateId.WordParts,
+            StationBehaviorRegistry.getStationUiSpec(Season2ChapterIds.Chapter2Triceratops, 6).templateId,
         )
         assertNull(StationQuizPlans.chapter1(1).season2AdvancedMode)
     }

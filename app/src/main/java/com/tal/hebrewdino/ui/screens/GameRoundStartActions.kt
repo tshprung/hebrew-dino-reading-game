@@ -63,6 +63,8 @@ internal object GameRoundStartActions {
         gameViewModel.station2PinnedBalloonLetter = null
         gameViewModel.station2PinnedBalloonColor = null
         gameViewModel.wordPartsCompletedEquation = null
+        gameViewModel.dragWordRoundCompleting = false
+        gameViewModel.dragMissingLetterCompleting = false
         gameViewModel.dinoTalking = false
         cancelFeedbackVoice()
         val q: Question = session.currentQuestion ?: return

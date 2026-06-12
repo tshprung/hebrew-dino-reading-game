@@ -753,5 +753,8 @@ internal suspend fun speakPromptForQuestion(
                 ),
             )
         }
+        is Question.DragWordToPictureQuestion,
+        is Question.DragMissingLetterQuestion,
+        -> Unit
     }
 }

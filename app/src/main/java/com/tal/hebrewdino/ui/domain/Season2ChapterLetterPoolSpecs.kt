@@ -29,3 +29,9 @@ object Season2Chapter6LetterPoolSpec : Season2ChapterLetterPool {
     override val groups: List<List<String>> = listOf(Season2ChapterContent.ch6Letters)
     override val wordCatalogIds: List<String> = Season2ChapterContent.ch6Words
 }
+
+object Season2Chapter7LetterPoolSpec : Season2ChapterLetterPool {
+    override val chapterIndex: Int = 7
+    override val groups: List<List<String>> = listOf(Season2ChapterContent.ch7Letters)
+    override val wordCatalogIds: List<String> = Season2ChapterContent.ch7Words
+}

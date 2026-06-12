@@ -8,11 +8,11 @@ import org.junit.Test
 class Season2PropagateCh1ApprovedStationUxTest {
     @Test
     fun audit_station_type_mapping_ch2_6() {
-        assertEquals(Season2ChapterStationPlans.StationKind.WhichWordStartsWith, Season2StationQaPolicy.expectedStationKind(2, 5))
+        assertEquals(Season2ChapterStationPlans.StationKind.DragMissingLetter, Season2StationQaPolicy.expectedStationKind(2, 5))
         assertEquals(Season2ChapterStationPlans.StationKind.WordParts, Season2StationQaPolicy.expectedStationKind(2, 6))
         assertEquals(Season2ChapterStationPlans.StationKind.PictureToWord, Season2StationQaPolicy.expectedStationKind(4, 5))
-        assertEquals(Season2ChapterStationPlans.StationKind.WhichWordStartsWith, Season2StationQaPolicy.expectedStationKind(5, 6))
-        assertEquals(Season2ChapterStationPlans.StationKind.PictureToWord, Season2StationQaPolicy.expectedStationKind(6, 6))
+        assertEquals(Season2ChapterStationPlans.StationKind.WordParts, Season2StationQaPolicy.expectedStationKind(5, 6))
+        assertEquals(Season2ChapterStationPlans.StationKind.MatchLetterToWord, Season2StationQaPolicy.expectedStationKind(6, 6))
     }
 
     @Test
@@ -35,7 +35,7 @@ class Season2PropagateCh1ApprovedStationUxTest {
         assertTrue(
             Season2StationQaPolicy.shouldSkipAdvanceRoundPraiseBecausePlayedInStation(
                 Season2ChapterIds.Chapter3Stegosaurus,
-                Season2Chapter1StationOrder.PICTURE_STARTS_WITH,
+                season2UxStationId = 2,
             ),
         )
         assertTrue(Season2EarlyStationQaPolicy.shouldReplayWordForPictureStartsWithCoach(Season2Chapter1StationOrder.PICTURE_STARTS_WITH))
@@ -60,7 +60,7 @@ class Season2PropagateCh1ApprovedStationUxTest {
         assertTrue(
             Season2StationQaPolicy.shouldSkipPictureToWordAssetPraiseOnLastRound(
                 Season2ChapterIds.Chapter6Mosasaurus,
-                season2UxStationId = 6,
+                season2UxStationId = 5,
                 isLast = true,
             ),
         )
@@ -93,13 +93,13 @@ class Season2PropagateCh1ApprovedStationUxTest {
         assertTrue(
             Season2StationQaPolicy.shouldOrchestrateWhichWordCorrectPraiseInStation(
                 Season2ChapterIds.Chapter5Ankylosaurus,
-                season2UxStationId = 6,
+                season2UxStationId = 4,
             ),
         )
         assertTrue(
             Season2StationQaPolicy.shouldSkipAdvanceRoundPraiseBecausePlayedInStation(
                 Season2ChapterIds.Chapter5Ankylosaurus,
-                season2UxStationId = 6,
+                season2UxStationId = 4,
             ),
         )
         val advance = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/screens/AdvanceAfterRoundActions.kt")

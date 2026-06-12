@@ -116,36 +116,28 @@ class Season2Ch1QaPolishBatchTest {
     }
 
     @Test
-    fun ch1_st6_image_tap_word_only() {
+    fun ch1_st6_dragMissingLetter_pictureTapReplayWired() {
         val gameScreen = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/screens/GameScreen.kt")
-        assertTrue(gameScreen.contains("replayPictureToWordTargetWordOnly"))
-        val audio = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/domain/Season2StationAudio.kt")
-        assertTrue(audio.contains("replayPictureToWordTargetWordOnly"))
-    }
-
-    @Test
-    fun ch1_st6_focus_replay_instruction_plus_word() {
-        assertTrue(
-            Season2StationQaPolicy.shouldReplayPictureToWordCoachWithInstruction(
+        assertTrue(gameScreen.contains("handleDragMissingLetterPictureTap"))
+        assertFalse(
+            Season2StationQaPolicy.isPictureToWordStation(
                 Season2ChapterIds.Chapter1Tyrannosaurus,
                 Season2Chapter1StationOrder.FINALE_STATION,
             ),
         )
-        val coach = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/domain/Season2GuessingCoach.kt")
-        assertTrue(coach.contains("replayPictureToWordCoachInstructionAndWord"))
     }
 
     @Test
-    fun ch1_st6_single_correct_praise() {
-        assertTrue(
-            Season2StationQaPolicy.shouldSkipPictureToWordAssetPraiseOnLastRound(
-                Season2ChapterIds.Chapter1Tyrannosaurus,
-                Season2Chapter1StationOrder.FINALE_STATION,
-                isLast = true,
-            ),
-        )
-        val advance = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/screens/AdvanceAfterRoundActions.kt")
-        assertTrue(advance.contains("isPictureToWordStation"))
+    fun ch1_st6_dragMissingLetter_usesGenericFeedback() {
+        val actions = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/screens/DragMissingLetterActions.kt")
+        assertTrue(actions.contains("AudioClips.SfxCorrect"))
+        assertTrue(actions.contains("AudioClips.SfxWrong"))
+    }
+
+    @Test
+    fun ch1_st6_single_correct_praise_guard() {
+        val session = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/domain/LevelSession.kt")
+        assertTrue(session.contains("dragMissingLetterRoundScored"))
     }
 
     @Test

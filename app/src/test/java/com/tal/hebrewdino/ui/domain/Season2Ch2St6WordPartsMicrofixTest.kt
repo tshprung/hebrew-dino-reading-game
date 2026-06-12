@@ -82,7 +82,7 @@ class Season2Ch2St6WordPartsMicrofixTest {
             ),
         )
         val stationScreen = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/screens/Season2ChapterStationScreen.kt")
-        assertTrue(stationScreen.contains("chapterId in 1..6"))
+        assertTrue(stationScreen.contains("Season2ChapterRegistry.CHAPTER_COUNT"))
         assertTrue(stationScreen.contains("Season2ChapterFlowPolicy.shouldRequestFirstTimeChapterReward"))
     }
 

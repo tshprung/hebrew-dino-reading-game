@@ -13,12 +13,12 @@ import com.tal.hebrewdino.ui.domain.Question.RhymingQuestion
 import com.tal.hebrewdino.ui.domain.Question.WordPartsQuestion
 import kotlinx.coroutines.delay
 
-/** Season 2 gameplay audio routing (chapter IDs 101–106). */
+/** Season 2 gameplay audio routing (chapter IDs 101–107). */
 object Season2StationAudio {
     private const val MISSING_TAG = "MissingContent"
 
     fun isSeason2GameplayChapter(chapterId: Int): Boolean =
-        chapterId in Season2ChapterIds.Chapter1Tyrannosaurus..Season2ChapterIds.Chapter6Mosasaurus
+        chapterId in Season2ChapterIds.Chapter1Tyrannosaurus..Season2ChapterIds.Chapter7Pteranodon
 
     /** Chapters 3–6 gameplay IDs — six-station arc with address-aware warmup audio. */
     fun isSeason2WarmupChapter(chapterId: Int): Boolean =

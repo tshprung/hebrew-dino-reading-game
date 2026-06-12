@@ -32,7 +32,7 @@ object Season2ChapterContent {
 
     val ch5Words =
         listOf(
-            "w_ש_1", "w_ש_2",
+            "w_ש_1", "w_ש_2", "w_ש_4",
             "w_ח_1", "w_ח_3",
             "w_ר_1", "w_ר_3",
             "w_ק_1", "w_ק_2",
@@ -60,4 +60,40 @@ object Season2ChapterContent {
         )
 
     val ch6Letters = listOf("ב", "ח", "ר", "ק", "ש", "ס", "ד", "כ", "פ", "צ")
+
+    val ch1Words =
+        listOf(
+            "w_ז_1", "w_ז_2", "w_ז_3",
+            "w_י_3", "w_י_4",
+            "w_ס_1", "w_ס_4",
+            "w_ע_1", "w_ע_7",
+            "w_מ_2", "w_מ_3",
+            "w_ל_1", "w_ל_2",
+        )
+
+    val ch1Letters = listOf("ז", "י", "ס", "ע", "מ", "ל")
+
+    val ch2Words =
+        listOf(
+            "w_ח_1", "w_ח_2", "w_ח_3",
+            "w_ר_1", "w_ר_3", "w_ר_4",
+            "w_ק_1", "w_ק_2", "w_ק_3",
+            "w_ש_1", "w_ש_2", "w_ש_4",
+            "w_מ_2", "w_מ_3",
+            "w_פ_2",
+        )
+
+    val ch2Letters = listOf("ח", "ר", "ק", "ש", "מ")
+
+    /** Deduped union of Season 2 Chapters 1–6 catalog ids (review pool for Ch7). */
+    val season2UnionWordCatalogIds: List<String> =
+        (ch1Words + ch2Words + ch3Words + ch4Words + ch5Words + ch6Words).distinct()
+
+    /** Deduped union of Season 2 Chapters 1–6 taught letters (no new letters in Ch7). */
+    val season2UnionLetters: List<String> =
+        (ch1Letters + ch2Letters + ch3Letters + ch4Letters + ch5Letters + ch6Letters).distinct()
+
+    val ch7Words: List<String> = season2UnionWordCatalogIds
+
+    val ch7Letters: List<String> = season2UnionLetters
 }

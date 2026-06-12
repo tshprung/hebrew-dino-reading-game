@@ -18,12 +18,11 @@ class Season2WordPartsQaCorrectionBatchTest {
     private val ch3 = Season2ChapterIds.Chapter3Stegosaurus
 
     @Test
-    fun ch1_station6_pictureToWordInstruction_matchesProvenPattern() {
-        val text = Season2StationThemeCopy.pictureToWordInstruction(Season2StationTheme.Standard)
-        assertEquals("\u200Fאיזו מילה מתאימה לתמונה?", text)
+    fun ch1_station6_dragMissingLetter_wiredWithTargetWordReplay() {
         val spec = StationBehaviorRegistry.getStationUiSpec(ch1, 6)
-        assertEquals(text, spec.imageToWordInstructionText)
+        assertEquals(StationTemplateId.DragMissingLetter, spec.templateId)
         assertEquals(StationReplayMode.TargetWordOnly, spec.replayMode)
+        assertEquals(StationQuizMode.DragMissingLetter, Season2Chapter1StationOrder.quizPlan(1, 6).mode)
     }
 
     @Test
@@ -99,7 +98,8 @@ class Season2WordPartsQaCorrectionBatchTest {
 
     @Test
     fun season2_popBalloons_noIntroPulse() {
-        val spec = StationBehaviorRegistry.getStationUiSpec(ch3, 1)
+        val ch4 = Season2ChapterIds.Chapter4Brachiosaurus
+        val spec = StationBehaviorRegistry.getStationUiSpec(ch4, 1)
         assertEquals(StationTemplateId.PopBalloons, spec.templateId)
         assertFalse(spec.showBetweenRoundIntroPulse)
         val ch2Spec = StationBehaviorRegistry.getStationUiSpec(ch2, 1)

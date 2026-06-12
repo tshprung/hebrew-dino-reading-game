@@ -295,6 +295,8 @@ internal suspend fun playIntroPrompt(
                 is Question.MissingFirstLetterQuestion -> q.correctLetter
                 is Question.WordPartsQuestion -> q.word.first().toString()
                 is Question.RhymingQuestion -> q.targetWord.first().toString()
+                is Question.DragWordToPictureQuestion -> null
+                is Question.DragMissingLetterQuestion -> q.correctLetter
             }
         if (target != null) {
             val letterResId = AudioClips.letterNameRawResId(target)

@@ -11,6 +11,7 @@ enum class Season2StationTheme {
     HighLeaves,
     LetterArmor,
     UnderwaterBubbles,
+    FlyingSky,
 }
 
 enum class Season2ChapterLockReason {
@@ -56,7 +57,7 @@ data class Season2ChapterDefinition(
 
 /** Authoritative Season 2 chapter content registry. */
 object Season2ChapterRegistry {
-    const val CHAPTER_COUNT: Int = 6
+    const val CHAPTER_COUNT: Int = 7
 
     val chapters: List<Season2ChapterDefinition> by lazy { buildChapters() }
 
@@ -181,6 +182,18 @@ object Season2ChapterRegistry {
                 theme = Season2StationTheme.UnderwaterBubbles,
                 focus = "חזרה מעורבבת + חרוזים",
                 mapIntro = { _ -> Season2Copy.ch6MapIntroStoryLines() },
+            ),
+            wiredChapter(
+                index = 7,
+                name = "פטרנודון",
+                mysteryLabel = "יצור מעופף מסתורי",
+                poster = R.drawable.season2_ch7_pteranodon_poster,
+                letters = Season2ChapterContent.ch7Letters,
+                words = Season2ChapterContent.ch7Words,
+                letterPoolSpec = Season2Chapter7LetterPoolSpec,
+                theme = Season2StationTheme.FlyingSky,
+                focus = "חזרה על כל עונת 2 — פריחה בשמיים",
+                mapIntro = { _ -> Season2Copy.ch7MapIntroStoryLines() },
             ),
         )
 

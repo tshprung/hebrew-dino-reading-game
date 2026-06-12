@@ -10,9 +10,9 @@ import org.junit.Test
 
 class Season2ChapterRegistryTest {
     @Test
-    fun registry_hasSixChapters() {
-        assertEquals(6, Season2ChapterRegistry.CHAPTER_COUNT)
-        assertEquals(6, Season2ChapterRegistry.chapters.size)
+    fun registry_hasSevenChapters() {
+        assertEquals(7, Season2ChapterRegistry.CHAPTER_COUNT)
+        assertEquals(7, Season2ChapterRegistry.chapters.size)
     }
 
     @Test
@@ -37,30 +37,30 @@ class Season2ChapterRegistryTest {
     }
 
     @Test
-    fun allSixChapters_playableWhenCatalogAndStationsValidate() {
-        assertEquals((1..6).toList(), Season2ChapterRegistry.playableChapterIndices())
-        for (index in 3..6) {
+    fun allSevenChapters_playableWhenCatalogAndStationsValidate() {
+        assertEquals((1..7).toList(), Season2ChapterRegistry.playableChapterIndices())
+        for (index in 3..7) {
             assertTrue(Season2ChapterRegistry.isPlayable(index))
         }
     }
 
     @Test
-    fun chapters3Through6_haveUniquePosterAssets() {
+    fun chapters3Through7_haveUniquePosterAssets() {
         val trexPoster = Season2ChapterRegistry.chapter(1)!!.posterPuzzleResId
         val posters =
-            (3..6).map { index ->
+            (3..7).map { index ->
                 val def = Season2ChapterRegistry.chapter(index)!!
                 assertNotNull(def.posterPuzzleResId)
                 assertNotEquals(trexPoster, def.posterPuzzleResId)
                 def.posterPuzzleResId!!
             }.toSet()
-        assertEquals(4, posters.size)
+        assertEquals(5, posters.size)
     }
 
     @Test
     fun lockedChapters_doNotReuseTrexPoster() {
         val trexPoster = Season2ChapterRegistry.chapter(1)!!.posterPuzzleResId
-        for (index in 2..6) {
+        for (index in 2..7) {
             val poster = Season2ChapterRegistry.chapter(index)?.posterPuzzleResId
             assertNotNull("Chapter $index should have its own poster", poster)
             assertNotEquals(
@@ -83,7 +83,7 @@ class Season2ChapterRegistryTest {
     fun revealedName_onlyForQaReadyChapters() {
         assertEquals("טירנוזאורוס", Season2ChapterRegistry.revealedName(1))
         assertEquals("טריצרטופס", Season2ChapterRegistry.revealedName(2))
-        for (index in 3..6) {
+        for (index in 3..7) {
             val def = Season2ChapterRegistry.chapter(index)!!
             if (def.isPlayable) {
                 assertEquals(def.dinosaurNameHebrew, Season2ChapterRegistry.revealedName(index))
@@ -91,6 +91,7 @@ class Season2ChapterRegistryTest {
                 assertNull(Season2ChapterRegistry.revealedName(index))
             }
         }
+        assertEquals("פטרנודון", Season2ChapterRegistry.revealedName(7))
     }
 
     @Test

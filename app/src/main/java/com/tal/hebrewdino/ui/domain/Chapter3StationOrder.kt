@@ -28,13 +28,7 @@ object Chapter3StationOrder {
                     imageMatchCaptionSizeMultiplier = 1f,
                     imageMatchPictureSizeMultiplier = 1f,
                 )
-            3 ->
-                StationQuizPlan(
-                    mode = StationQuizMode.PopBalloons,
-                    questionCount = 6,
-                    initialGroupIndex = 0,
-                    optionCount = 10,
-                )
+            3 -> Season1DragStationQuizPlans.dragWordToPicture(initialGroupIndex = 0)
             // Station 4 — find highlighted letter in word.
             4 ->
                 StationQuizPlan(

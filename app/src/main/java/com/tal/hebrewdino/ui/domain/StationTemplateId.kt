@@ -18,5 +18,9 @@ enum class StationTemplateId {
     MatchLetterToWord,
     ImageToWord,
     WordParts,
+    /** Not player-facing until drag interaction is wired (batch 2+). */
+    DragWordToPicture,
+    /** Not player-facing until drag interaction is wired (batch 2+). */
+    DragMissingLetter,
 }
 

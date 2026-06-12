@@ -13,6 +13,7 @@ object Season2StationThemeCopy {
             Season2StationTheme.HighLeaves -> " · עלים גבוהים"
             Season2StationTheme.LetterArmor -> " · שריון אותיות"
             Season2StationTheme.UnderwaterBubbles -> " · בועות מתחת למים"
+            Season2StationTheme.FlyingSky -> " · שמי פרהיסטוריים"
             Season2StationTheme.Standard -> null
         }
 
@@ -40,7 +41,9 @@ object Season2StationThemeCopy {
 
     fun rhymingInstruction(theme: Season2StationTheme): String =
         when (theme) {
-            Season2StationTheme.UnderwaterBubbles -> "\u200Fאיזו מילה מתחרזת עם?"
+            Season2StationTheme.UnderwaterBubbles,
+            Season2StationTheme.FlyingSky,
+            -> "\u200Fאיזו מילה מתחרזת עם?"
             else -> "\u200Fאיזו מילה מתחרזת עם?"
         }
 }

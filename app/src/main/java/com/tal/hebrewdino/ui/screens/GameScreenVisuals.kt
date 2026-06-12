@@ -325,6 +325,8 @@ internal fun IntroPulse(
             is Question.MissingFirstLetterQuestion -> question.partialWord
             is Question.WordPartsQuestion -> question.word
             is Question.RhymingQuestion -> question.targetWord
+            is Question.DragWordToPictureQuestion -> question.pairs.first().word
+            is Question.DragMissingLetterQuestion -> question.partialWord
         }
     BoxWithConstraints(modifier = modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
         val narrow = maxWidth < 380.dp

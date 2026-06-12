@@ -3,6 +3,20 @@ package com.tal.hebrewdino.ui.domain
 import androidx.annotation.ColorInt
 import com.tal.hebrewdino.R
 
+/** Picture target for [Question.DragWordToPictureQuestion]. */
+data class DragWordPicturePair(
+    val catalogEntryId: String,
+    val word: String,
+    val tileDrawable: Int,
+    @param:ColorInt val tintArgb: Int,
+)
+
+/** Draggable written word card for [Question.DragWordToPictureQuestion]. */
+data class WordCard(
+    val catalogEntryId: String,
+    val word: String,
+)
+
 sealed class Question {
     data class PopBalloonsQuestion(
         val correctAnswer: String,
@@ -110,6 +124,56 @@ sealed class Question {
             require(
                 splitOptions.any { it.firstPart == firstPart && it.secondPart == correctPart },
             ) { "correct split must appear in splitOptions for $word" }
+        }
+    }
+
+    /**
+     * Several picture cards and the same words as draggable cards; match each word to its picture.
+     * Not player-facing until GameQuestionHost drag UI is wired.
+     */
+    data class DragWordToPictureQuestion(
+        val pairs: List<DragWordPicturePair>,
+        val wordBank: List<WordCard>,
+    ) : Question() {
+        init {
+            require(pairs.size in 2..3) { "drag-word-to-picture needs 2..3 pairs" }
+            require(pairs.map { it.catalogEntryId }.distinct().size == pairs.size) {
+                "drag-word-to-picture pairs must have unique catalog ids"
+            }
+            val pairIds = pairs.map { it.catalogEntryId }.toSet()
+            val bankIds = wordBank.map { it.catalogEntryId }.toSet()
+            require(bankIds == pairIds) {
+                "wordBank must contain exactly the pair catalog ids"
+            }
+            require(wordBank.map { it.word }.toSet().size == wordBank.size) {
+                "wordBank words must be unique"
+            }
+        }
+    }
+
+    /**
+     * Picture + partial word with one missing letter; drag the correct letter into the slot.
+     * Not player-facing until GameQuestionHost drag UI is wired.
+     */
+    data class DragMissingLetterQuestion(
+        val word: String,
+        val catalogEntryId: String,
+        val tileDrawable: Int,
+        @param:ColorInt val tintArgb: Int,
+        /** 0-based index into [word] graphemes (0 = first visible Hebrew letter). */
+        val missingIndex: Int,
+        /** RTL display, e.g. "_ג" for דג with missing first letter. */
+        val partialWord: String,
+        val correctLetter: String,
+        val optionLetters: List<String>,
+    ) : Question() {
+        init {
+            require(word.isNotEmpty() && correctLetter.length == 1)
+            require(missingIndex in word.indices)
+            require(word[missingIndex].toString() == correctLetter)
+            require(correctLetter in optionLetters)
+            require(optionLetters.distinct().size == optionLetters.size)
+            require(partialWord.contains("_"))
         }
     }
 

@@ -92,10 +92,20 @@ class Season2AdvancedStationGeneratorsTest {
 
     @Test
     fun chapterStationPlans_advancedStationsValidate() {
-        for (chapterIndex in 3..6) {
+        val advancedStations =
+            listOf(
+                3 to 5,
+                3 to 6,
+                4 to 5,
+                5 to 5,
+                5 to 6,
+                6 to 4,
+                6 to 5,
+            )
+        for ((chapterIndex, stationId) in advancedStations) {
             val ctx = Season2ChapterStationPlans.contextFor(chapterIndex)!!
-            val issues = Season2ChapterStationPlans.validateStation(ctx, 5)
-            assertTrue("ch$chapterIndex st5: $issues", issues.isEmpty())
+            val issues = Season2ChapterStationPlans.validateStation(ctx, stationId)
+            assertTrue("ch$chapterIndex st$stationId: $issues", issues.isEmpty())
         }
     }
 
@@ -108,16 +118,16 @@ class Season2AdvancedStationGeneratorsTest {
     }
 
     @Test
-    fun season2_ch1_ch2_finaleUsesAdvancedRamp() {
+    fun season2_ch1_ch2_finaleUsesExpectedModes() {
         assertEquals(
-            Season2AdvancedStationMode.PictureToWord,
-            Season2Chapter1StationOrder.quizPlan(chapterIndex = 1, stationId = 6).season2AdvancedMode,
+            StationQuizMode.DragMissingLetter,
+            Season2Chapter1StationOrder.quizPlan(chapterIndex = 1, stationId = 6).mode,
         )
         assertEquals(
             Season2AdvancedStationMode.WordParts,
             Season2Chapter1StationOrder.quizPlan(chapterIndex = 2, stationId = 6).season2AdvancedMode,
         )
-        assertNull(Season2Chapter1StationOrder.quizPlan(chapterIndex = 1, stationId = 1).season2AdvancedMode)
+        assertEquals(StationQuizMode.PopBalloons, Season2Chapter1StationOrder.quizPlan(chapterIndex = 1, stationId = 1).mode)
     }
 
     @Test

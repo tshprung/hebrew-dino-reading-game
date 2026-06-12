@@ -135,17 +135,27 @@ object Season2StationQaPolicy {
         uxStationId: Int,
     ): Season2ChapterStationPlans.StationKind? =
         when (registryChapterIndex) {
-            2 ->
+            1 ->
                 when (uxStationId) {
                     1 -> Season2ChapterStationPlans.StationKind.PopBalloons
                     2 -> Season2ChapterStationPlans.StationKind.PickLetter
                     3 -> Season2ChapterStationPlans.StationKind.PictureStartsWith
-                    4 -> Season2ChapterStationPlans.StationKind.MemoryMatch
+                    4 -> Season2ChapterStationPlans.StationKind.DragWordToPicture
                     5 -> Season2ChapterStationPlans.StationKind.WhichWordStartsWith
+                    6 -> Season2ChapterStationPlans.StationKind.DragMissingLetter
+                    else -> null
+                }
+            2 ->
+                when (uxStationId) {
+                    1 -> Season2ChapterStationPlans.StationKind.PickLetter
+                    2 -> Season2ChapterStationPlans.StationKind.DragWordToPicture
+                    3 -> Season2ChapterStationPlans.StationKind.PictureStartsWith
+                    4 -> Season2ChapterStationPlans.StationKind.MemoryMatch
+                    5 -> Season2ChapterStationPlans.StationKind.DragMissingLetter
                     6 -> Season2ChapterStationPlans.StationKind.WordParts
                     else -> null
                 }
-            in 3..6 -> Season2ChapterStationPlans.stationKind(registryChapterIndex, uxStationId)
+            in 3..7 -> Season2ChapterStationPlans.stationKind(registryChapterIndex, uxStationId)
             else -> null
         }
 }

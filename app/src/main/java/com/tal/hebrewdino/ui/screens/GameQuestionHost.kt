@@ -37,9 +37,13 @@ import com.tal.hebrewdino.ui.domain.Season2StationQaPolicy
 import com.tal.hebrewdino.ui.domain.Season2StationUx
 import com.tal.hebrewdino.ui.domain.StationQuizMode
 import com.tal.hebrewdino.ui.domain.StationQuizPlan
+import com.tal.hebrewdino.ui.domain.DragMissingLetterCopy
+import com.tal.hebrewdino.ui.domain.DragWordToPictureCopy
 import com.tal.hebrewdino.ui.domain.StationTemplateId
 import com.tal.hebrewdino.ui.domain.TrainingV1Config
 import com.tal.hebrewdino.ui.game.ChildGameAudioHooks
+import com.tal.hebrewdino.ui.game.DragMissingLetterGame
+import com.tal.hebrewdino.ui.game.DragWordToPictureGame
 import com.tal.hebrewdino.ui.game.Season2MissingFirstLetterGame
 import com.tal.hebrewdino.ui.game.Season2RhymingGame
 import com.tal.hebrewdino.ui.game.Season2WordPartsGame
@@ -167,6 +171,11 @@ internal data class GameQuestionHostHandlers(
     val handleMissingFirstLetterPick: (picked: String) -> Unit,
     val handleWordPartsPick: (picked: Question.WordPartsSplitOption) -> Unit,
     val handleRhymingPick: (choiceId: String) -> Unit,
+    val handleDragWordToPictureDrop: (wordCatalogId: String, pictureCatalogId: String) -> Boolean,
+    val handleDragWordToPictureRoundComplete: () -> Unit,
+    val handleDragWordToPicturePictureTap: (catalogEntryId: String) -> Unit,
+    val handleDragMissingLetterPlace: (letter: String) -> Boolean,
+    val handleDragMissingLetterPictureTap: () -> Unit,
     val handleAdvancedReplayWord: () -> Unit,
     val handleWordPartsPictureTap: () -> Unit,
     val handleWordPartsHintRevealAudio: () -> Unit,
@@ -834,6 +843,41 @@ internal fun GameQuestionHost(
                     )
                 }
             }
+        is Question.DragWordToPictureQuestion ->
+            DragWordToPictureGame(
+                question = current,
+                contentKey = deps.session.currentIndex,
+                instructionText = DragWordToPictureCopy.Instruction,
+                enabled = state.enabled && !deps.gameViewModel.inputLocked,
+                shakeEpoch = state.shakeEpoch,
+                onPictureTapReplayWord =
+                    if (ui.audioEnabled) {
+                        { catalogId -> handlers.handleDragWordToPicturePictureTap(catalogId) }
+                    } else {
+                        null
+                    },
+                onDropAttempt = { wordId, pictureId ->
+                    handlers.handleDragWordToPictureDrop(wordId, pictureId)
+                },
+                onRoundComplete = { handlers.handleDragWordToPictureRoundComplete() },
+                modifier = Modifier.fillMaxSize(),
+            )
+        is Question.DragMissingLetterQuestion ->
+            DragMissingLetterGame(
+                question = current,
+                contentKey = deps.session.currentIndex,
+                instructionText = DragMissingLetterCopy.Instruction,
+                enabled = state.enabled && !deps.gameViewModel.inputLocked,
+                shakeEpoch = state.shakeEpoch,
+                onPictureTapReplayWord =
+                    if (ui.audioEnabled) {
+                        { handlers.handleDragMissingLetterPictureTap() }
+                    } else {
+                        null
+                    },
+                onLetterPlaced = { letter -> handlers.handleDragMissingLetterPlace(letter) },
+                modifier = Modifier.fillMaxSize(),
+            )
         is Question.MissingFirstLetterQuestion ->
             Season2MissingFirstLetterGame(
                 question = current,

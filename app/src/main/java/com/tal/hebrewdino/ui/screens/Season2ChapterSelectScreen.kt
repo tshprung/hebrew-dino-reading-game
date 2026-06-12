@@ -100,6 +100,10 @@ fun Season2ChapterSelectScreen(
     val chapter2Stations by season2Progress.completedStationsFlow(2).collectAsState(initial = emptySet())
     var showSeasonIntro by remember { mutableStateOf(false) }
 
+    LaunchedEffect(Unit) {
+        season2Progress.migrateStationPlanProgressIfNeeded()
+    }
+
     LaunchedEffect(requestSeasonIntro) {
         if (Season2IntroFlow.shouldShowSeasonIntro(requestSeasonIntro)) {
             showSeasonIntro = true

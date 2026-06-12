@@ -22,7 +22,12 @@ class Season2ChapterWiringTest {
         for (chapterIndex in 3..6) {
             val ctx = Season2ChapterStationPlans.contextFor(chapterIndex)!!
             for (stationId in 1..Season2ChapterStationPlans.STATION_COUNT) {
-                if (stationId == Season2Chapter1StationOrder.MEMORY_MATCH) continue
+                if (
+                    Season2ChapterStationPlans.stationKind(chapterIndex, stationId) ==
+                        Season2ChapterStationPlans.StationKind.MemoryMatch
+                ) {
+                    continue
+                }
                 val plan = Season2ChapterStationPlans.quizPlan(ctx, stationId)
                 assertNotNull("ch$chapterIndex st$stationId", plan.mode)
             }
@@ -33,9 +38,9 @@ class Season2ChapterWiringTest {
     fun advancedStationKinds_perChapter() {
         assertEquals(Season2ChapterStationPlans.StationKind.WordParts, Season2ChapterStationPlans.stationKind(3, 5))
         assertEquals(Season2ChapterStationPlans.StationKind.PictureToWord, Season2ChapterStationPlans.stationKind(4, 5))
-        assertEquals(Season2ChapterStationPlans.StationKind.MissingFirstLetter, Season2ChapterStationPlans.stationKind(5, 5))
-        assertEquals(Season2ChapterStationPlans.StationKind.Rhyming, Season2ChapterStationPlans.stationKind(6, 5))
-        assertEquals(Season2ChapterStationPlans.StationKind.PictureToWord, Season2ChapterStationPlans.stationKind(6, 6))
+        assertEquals(Season2ChapterStationPlans.StationKind.Rhyming, Season2ChapterStationPlans.stationKind(5, 5))
+        assertEquals(Season2ChapterStationPlans.StationKind.Rhyming, Season2ChapterStationPlans.stationKind(6, 4))
+        assertEquals(Season2ChapterStationPlans.StationKind.MatchLetterToWord, Season2ChapterStationPlans.stationKind(6, 6))
     }
 
     @Test

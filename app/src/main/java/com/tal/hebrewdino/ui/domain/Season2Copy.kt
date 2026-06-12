@@ -66,6 +66,8 @@ object Season2Copy {
 
     fun ch6MapIntroStoryLines(): List<String> = chapterMapIntroStoryLines(6)
 
+    fun ch7MapIntroStoryLines(): List<String> = chapterMapIntroStoryLines(7)
+
     fun chapterMapIntroStoryLines(chapterIndex: Int): List<String> =
         when (chapterIndex) {
             1 ->
@@ -96,6 +98,11 @@ object Season2Copy {
             6 ->
                 listOf(
                     rtl("במפה הזאת מסתתר יצור ימי קדום וענקי, שחי מתחת לגלים."),
+                    rtl("בואו נגלה מי זה!"),
+                )
+            7 ->
+                listOf(
+                    rtl("במפה הזאת מסתתר יצור פרהיסטורי ענק שעף בשמיים."),
                     rtl("בואו נגלה מי זה!"),
                 )
             else -> error("Unknown chapter intro: $chapterIndex")

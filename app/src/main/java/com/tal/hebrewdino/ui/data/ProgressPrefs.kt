@@ -19,6 +19,18 @@ import kotlinx.coroutines.flow.map
 class ProgressPrefs internal constructor(private val dataStore: DataStore<Preferences>) {
     constructor(context: Context) : this(context.dataStore)
 
+    companion object {
+        /**
+         * Bump when Season 1 station order/types change per chapter.
+         * Clears per-station completion for affected chapters so stale completions do not
+         * point at different station kinds at the same station number.
+         */
+        const val STATION_PLAN_VERSION: Int = 1
+    }
+
+    private val stationPlanVersionKey: Preferences.Key<Int> =
+        intPreferencesKey("season1_station_plan_version")
+
     private val unlockedLevelKey: Preferences.Key<Int> = intPreferencesKey("unlocked_level")
     private val completedLevelsKey: Preferences.Key<String> = stringPreferencesKey("completed_levels")
     private val beachIntroSeenKey: Preferences.Key<Boolean> = booleanPreferencesKey("beach_intro_seen")
@@ -343,6 +355,43 @@ class ProgressPrefs internal constructor(private val dataStore: DataStore<Prefer
     }
 
     /** One-shot repair if debug / older builds wrote chapter 2 unlock beyond [Chapter2Config.STATION_COUNT]. */
+    /**
+     * Clears Season 1 station completion for chapters whose station plans changed.
+     * Safe to call on app entry; no-op when already migrated.
+     */
+    suspend fun migrateSeason1StationPlanProgressIfNeeded() {
+        dataStore.edit { prefs ->
+            val stored = prefs[stationPlanVersionKey] ?: 0
+            if (stored >= STATION_PLAN_VERSION) return@edit
+            val affectedChapters = listOf(2, 3, 5, 6)
+            val hadProgress =
+                affectedChapters.any { ch ->
+                    when (ch) {
+                        2 -> prefs[chapter2CompletedStationsKey].orEmpty().isNotBlank()
+                        3 -> prefs[chapter3CompletedStationsKey].orEmpty().isNotBlank()
+                        5 -> prefs[chapter5CompletedStationsKey].orEmpty().isNotBlank()
+                        6 -> prefs[chapter6CompletedStationsKey].orEmpty().isNotBlank()
+                        else -> false
+                    }
+                }
+            if (hadProgress) {
+                prefs[chapter2CompletedStationsKey] = ""
+                prefs[chapter2UnlockedStationKey] = 1
+                prefs[chapter2CompletedKey] = false
+                prefs[chapter3CompletedStationsKey] = ""
+                prefs[chapter3UnlockedStationKey] = 1
+                prefs[chapter3CompletedKey] = false
+                prefs[chapter5CompletedStationsKey] = ""
+                prefs[chapter5UnlockedStationKey] = 1
+                prefs[chapter5CompletedKey] = false
+                prefs[chapter6CompletedStationsKey] = ""
+                prefs[chapter6UnlockedStationKey] = 1
+                prefs[chapter6CompletedKey] = false
+            }
+            prefs[stationPlanVersionKey] = STATION_PLAN_VERSION
+        }
+    }
+
     suspend fun repairChapter2ProgressIfNeeded() {
         dataStore.edit { prefs ->
             val u = prefs[chapter2UnlockedStationKey] ?: 1

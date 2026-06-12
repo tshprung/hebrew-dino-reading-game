@@ -47,6 +47,8 @@ internal suspend fun playChapter1AddressAwareIntro(
                 is Question.MissingFirstLetterQuestion -> q.correctLetter
                 is Question.WordPartsQuestion -> q.word.first().toString()
                 is Question.RhymingQuestion -> q.targetWord.first().toString()
+                is Question.DragWordToPictureQuestion -> null
+                is Question.DragMissingLetterQuestion -> q.correctLetter
             } ?: return false
         sfx.stopAllStreams()
         rawVoice.playRawBlocking(instructionRaw)

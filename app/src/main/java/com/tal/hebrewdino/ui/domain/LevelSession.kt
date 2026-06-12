@@ -25,6 +25,15 @@ class LevelSession(
     /** Season 2 advanced modes: track correct catalog ids already shown this session. */
     private val season2AdvancedUsedCorrectIds: MutableSet<String> = mutableSetOf()
 
+    /** Drag word→picture: avoid repeating the same correct words across rounds. */
+    private val dragWordToPictureUsedIds: MutableSet<String> = mutableSetOf()
+
+    private var dragWordRoundScored: Boolean = false
+
+    private val dragMissingLetterUsedIds: MutableSet<String> = mutableSetOf()
+
+    private var dragMissingLetterRoundScored: Boolean = false
+
     /** Season 2 content: avoid words outside the curated easy-to-draw sets. */
     private fun season2BannedCatalogIdsForLetter(letter: String): Set<String> {
         val allow: Set<String> =
@@ -449,6 +458,53 @@ class LevelSession(
                             val (a, b) = nextTwoDistinctCorrect(group)
                             FinaleSlotGenerator.generate(rnd, group, a, b)
                         }
+                        StationQuizMode.DragWordToPicture -> {
+                            val wordIds = plan.season2WordCatalogIds ?: episodeWordCatalogIds()
+                            require(wordIds.isNotEmpty()) {
+                                "DragWordToPicture needs word catalog ids"
+                            }
+                            val pairCount =
+                                (plan.dragWordToPicturePairCount ?: 2).coerceIn(2, 3)
+                            DragStationGenerators.dragWordToPicture(
+                                rnd = rnd,
+                                wordCatalogIds = wordIds,
+                                pairCount = pairCount,
+                                excludeCorrectIds = dragWordToPictureUsedIds,
+                            ).also { generated ->
+                                generated.pairs.forEach { dragWordToPictureUsedIds.add(it.catalogEntryId) }
+                            }
+                        }
+                        StationQuizMode.DragMissingLetter -> {
+                            val wordIds = plan.season2WordCatalogIds ?: episodeWordCatalogIds()
+                            val missingIndex = (plan.dragMissingLetterIndex ?: 0).coerceAtLeast(0)
+                            val eligible =
+                                wordIds.filter { catalogId ->
+                                    DragStationGenerators.isValidForDragMissingLetter(
+                                        catalogId,
+                                        missingIndex,
+                                    )
+                                }
+                            require(eligible.isNotEmpty()) {
+                                "DragMissingLetter needs eligible words for missingIndex=$missingIndex"
+                            }
+                            val pool =
+                                eligible.filter { it !in dragMissingLetterUsedIds }.ifEmpty {
+                                    eligible
+                                }
+                            val catalogId = pool[currentIndex % pool.size]
+                            DragStationGenerators.dragMissingLetter(
+                                rnd = rnd,
+                                catalogId = catalogId,
+                                distractorLetters =
+                                    plan.season2AdvancedDistractorLetters.ifEmpty {
+                                        episodeOptionLetters()
+                                    },
+                                missingIndex = missingIndex,
+                                optionCount = plan.optionCount ?: 4,
+                            ).also { generated ->
+                                dragMissingLetterUsedIds.add(generated.catalogEntryId)
+                            }
+                        }
                     }
             }
             return _currentQuestion
@@ -466,8 +522,10 @@ class LevelSession(
                 is Question.MissingFirstLetterQuestion,
                 is Question.WordPartsQuestion,
                 is Question.RhymingQuestion,
+                is Question.DragWordToPictureQuestion,
+                is Question.DragMissingLetterQuestion,
                 ->
-                    error("Use grid / imageMatch / pictureStartsWith / finale / advanced APIs")
+                    error("Use grid / imageMatch / pictureStartsWith / finale / advanced / drag APIs")
             }
         return applyOutcome(correct)
     }
@@ -511,6 +569,59 @@ class LevelSession(
         return applyOutcome(choiceId == q.correctChoiceId)
     }
 
+    fun validateDragMissingLetter(letter: String): Boolean {
+        val q = currentQuestion as? Question.DragMissingLetterQuestion ?: return false
+        return letter == q.correctLetter
+    }
+
+    fun submitDragMissingLetter(letter: String): AnswerResult {
+        val q = currentQuestion as? Question.DragMissingLetterQuestion ?: return AnswerResult.Finished
+        if (dragMissingLetterRoundScored) {
+            return if (letter == q.correctLetter) AnswerResult.Correct else AnswerResult.Wrong
+        }
+        val ok = letter == q.correctLetter
+        if (ok) {
+            dragMissingLetterRoundScored = true
+        }
+        return applyOutcome(ok)
+    }
+
+    fun validateDragWordToPicturePlacement(
+        wordCatalogId: String,
+        pictureCatalogId: String,
+    ): Boolean {
+        val q = currentQuestion as? Question.DragWordToPictureQuestion ?: return false
+        return wordCatalogId == pictureCatalogId &&
+            q.pairs.any { it.catalogEntryId == pictureCatalogId }
+    }
+
+    fun completeDragWordToPictureRound(): AnswerResult {
+        val q = currentQuestion as? Question.DragWordToPictureQuestion ?: return AnswerResult.Finished
+        if (dragWordRoundScored) return AnswerResult.Correct
+        dragWordRoundScored = true
+        dragWordToPictureUsedIds.addAll(q.pairs.map { it.catalogEntryId })
+        return applyOutcome(true)
+    }
+
+    fun submitDragWordToPicture(placements: Map<String, String>): AnswerResult {
+        val q = currentQuestion as? Question.DragWordToPictureQuestion ?: return AnswerResult.Finished
+        val ok =
+            q.pairs.all { pair ->
+                placements[pair.catalogEntryId] == pair.catalogEntryId
+            }
+        return if (ok) completeDragWordToPictureRound() else applyOutcome(false)
+    }
+
+    private fun episodeWordCatalogIds(): List<String> {
+        val letters = letterGroup().toSet()
+        return LessonWordCatalog.entries
+            .filter { entry ->
+                entry.letter in letters &&
+                    Season2StationContentValidator.wordAssetCheck(entry.id)?.isValid == true
+            }
+            .map { it.id }
+    }
+
     private fun applyOutcome(correct: Boolean): AnswerResult {
         if (correct) {
             correctCount += 1
@@ -538,6 +649,8 @@ class LevelSession(
         if (currentIndex >= questionCount) return
         currentIndex += 1
         _currentQuestion = null
+        dragWordRoundScored = false
+        dragMissingLetterRoundScored = false
     }
 
     private fun moveGroup(delta: Int) {

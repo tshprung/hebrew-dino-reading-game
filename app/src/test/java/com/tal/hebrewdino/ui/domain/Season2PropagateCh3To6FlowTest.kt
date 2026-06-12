@@ -7,7 +7,7 @@ import org.junit.Test
 class Season2PropagateCh3To6FlowTest {
     @Test
     fun first_time_reward_only_on_st6_ch3_to_ch6() {
-        for (chapter in 3..6) {
+        for (chapter in 3..7) {
             assertTrue(
                 "ch$chapter first-time st6",
                 Season2ChapterFlowPolicy.shouldRequestFirstTimeChapterReward(
@@ -39,7 +39,7 @@ class Season2PropagateCh3To6FlowTest {
     fun chapter_station_screen_uses_unified_flow_policy() {
         val stationScreen =
             readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/screens/Season2ChapterStationScreen.kt")
-        assertTrue(stationScreen.contains("chapterId in 1..6"))
+        assertTrue(stationScreen.contains("Season2ChapterRegistry.CHAPTER_COUNT"))
         assertTrue(stationScreen.contains("Season2ChapterFlowPolicy.shouldRequestFirstTimeChapterReward"))
     }
 

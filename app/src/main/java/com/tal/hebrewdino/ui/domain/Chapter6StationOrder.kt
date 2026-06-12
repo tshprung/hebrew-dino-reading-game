@@ -30,21 +30,8 @@ object Chapter6StationOrder {
                     imageMatchCaptionSizeMultiplier = 1f,
                     imageMatchPictureSizeMultiplier = 1f,
                 )
-            3 ->
-                StationQuizPlan(
-                    mode = StationQuizMode.PopBalloons,
-                    questionCount = 6,
-                    initialGroupIndex = 0,
-                    optionCount = 10,
-                )
-            4 ->
-                StationQuizPlan(
-                    mode = StationQuizMode.PickLetter,
-                    questionCount = Chapter3EpisodeContent.STATION_4_ROUND_COUNT,
-                    initialGroupIndex = 0,
-                    highlightedLetterInWordPickLetter = true,
-                    optionCount = 6,
-                )
+            3 -> Season1DragStationQuizPlans.dragWordToPicture(initialGroupIndex = 0)
+            4 -> Season1DragStationQuizPlans.dragMissingLetter()
             5 ->
                 StationQuizPlan(
                     mode = StationQuizMode.PickLetter,

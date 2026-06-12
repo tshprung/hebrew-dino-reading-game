@@ -16,18 +16,19 @@ class Season2GlobalizeCh1ApprovedFixesTest {
             4 to "במפה הזאת מסתתר דינוזאור עם צוואר ארוך מאוד, שמגיע עד העלים הגבוהים. בואו נגלה מי זה!",
             5 to "במפה הזאת מסתתר דינוזאור עם שריון חזק וזנב כבד. בואו נגלה מי זה!",
             6 to "במפה הזאת מסתתר יצור ימי קדום וענקי, שחי מתחת לגלים. בואו נגלה מי זה!",
+            7 to "במפה הזאת מסתתר יצור פרהיסטורי ענק שעף בשמיים. בואו נגלה מי זה!",
         )
 
     @Test
     fun S2_all_chapter_intro_texts_match_expected() {
-        (1..6).forEach { chapterIndex ->
+        (1..7).forEach { chapterIndex ->
             val lines = Season2Copy.chapterMapIntroStoryLines(chapterIndex)
             assertEquals(2, lines.size)
             val combined = lines.joinToString(" ") { it.replace("\u200F", "") }
             assertEquals(expectedIntroBodies[chapterIndex], combined)
             assertFalse(lines.any { line -> line.any { c -> c.code in 0x0591..0x05C7 } })
         }
-        (1..6).forEach { chapterIndex ->
+        (1..7).forEach { chapterIndex ->
             val registryLines =
                 Season2ChapterRegistry.chapter(chapterIndex)!!.mapIntroStoryLines(PlayerAddress.Boy)
             assertEquals(Season2Copy.chapterMapIntroStoryLines(chapterIndex), registryLines)
@@ -157,7 +158,7 @@ class Season2GlobalizeCh1ApprovedFixesTest {
 
     @Test
     fun content_progression_unchanged() {
-        assertEquals(6, Season2ChapterRegistry.CHAPTER_COUNT)
+        assertEquals(7, Season2ChapterRegistry.CHAPTER_COUNT)
         assertEquals(6, Season2StandardRevealOrder.STATION_COUNT)
         assertNotNull(Season2ChapterStationPlans.contextFor(3))
         assertNotNull(Season2ChapterStationPlans.contextFor(6))

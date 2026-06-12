@@ -65,6 +65,8 @@ internal class GameViewModel(
     var balloonHelpHintLetter: String? by mutableStateOf(null)
     var wordPartsCompletedEquation: String? by mutableStateOf(null)
     var wordPartsHintRevealWord: String? by mutableStateOf(null)
+    var dragWordRoundCompleting: Boolean by mutableStateOf(false)
+    var dragMissingLetterCompleting: Boolean by mutableStateOf(false)
 
     var episode4HelpClearJob: Job? = null
     var balloonHelpClearJob: Job? = null

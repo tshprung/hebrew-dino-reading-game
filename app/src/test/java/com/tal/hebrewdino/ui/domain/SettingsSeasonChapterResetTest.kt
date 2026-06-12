@@ -13,8 +13,8 @@ class SettingsSeasonChapterResetTest {
     }
 
     @Test
-    fun season2_reset_rows_cover_six_chapters() {
-        assertEquals(listOf(1, 2, 3, 4, 5, 6), season2ChapterResetRowIdsForTest())
+    fun season2_reset_rows_cover_seven_chapters() {
+        assertEquals((1..Season2ChapterRegistry.CHAPTER_COUNT).toList(), season2ChapterResetRowIdsForTest())
     }
 
     @Test

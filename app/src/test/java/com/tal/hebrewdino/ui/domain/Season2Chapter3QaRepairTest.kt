@@ -28,12 +28,12 @@ class Season2Chapter3QaRepairTest {
     }
 
     @Test
-    fun ch3_station3_noIntroPulse_andHelpEnabled() {
-        val spec = StationBehaviorRegistry.getStationUiSpec(ch3GameplayId, 3)
+    fun ch3_station2_noIntroPulse_andHelpEnabled() {
+        val spec = StationBehaviorRegistry.getStationUiSpec(ch3GameplayId, 2)
         assertEquals(StationTemplateId.PictureStartsWith, spec.templateId)
         assertFalse(spec.showBetweenRoundIntroPulse)
         assertTrue(spec.helpControlsEnabled)
-        assertTrue(Season2StationUx.isWarmupPictureStartsWith(ch3GameplayId, 3))
+        assertTrue(Season2StationUx.isWarmupPictureStartsWith(ch3GameplayId, 2))
     }
 
     @Test
@@ -77,17 +77,13 @@ class Season2Chapter3QaRepairTest {
     }
 
     @Test
-    fun ch1_ch2_stationMappings_unchanged() {
+    fun ch1_ch2_stationMappings_matchDragWiring() {
         assertEquals(
             StationTemplateId.PopBalloons,
-            StationBehaviorRegistry.getStationUiSpec(Season2ChapterIds.Chapter1Tyrannosaurus, 2).templateId,
-        )
-        assertEquals(
-            StationTemplateId.PickLetter,
             StationBehaviorRegistry.getStationUiSpec(Season2ChapterIds.Chapter1Tyrannosaurus, 1).templateId,
         )
         assertEquals(
-            StationTemplateId.PopBalloons,
+            StationTemplateId.DragWordToPicture,
             StationBehaviorRegistry.getStationUiSpec(Season2ChapterIds.Chapter2Triceratops, 2).templateId,
         )
         assertFalse(

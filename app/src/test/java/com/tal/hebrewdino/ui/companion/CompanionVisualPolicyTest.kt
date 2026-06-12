@@ -13,7 +13,7 @@ import org.junit.Test
 class CompanionVisualPolicyTest {
     @Test
     fun season2GameplayChapters_requireSelectedCompanion() {
-        for (chapterId in Season2ChapterIds.Chapter1Tyrannosaurus..Season2ChapterIds.Chapter6Mosasaurus) {
+        for (chapterId in Season2ChapterIds.Chapter1Tyrannosaurus..Season2ChapterIds.Chapter7Pteranodon) {
             assertTrue(
                 "chapterId=$chapterId",
                 CompanionVisualPolicy.expectsSelectedCompanion(chapterId),

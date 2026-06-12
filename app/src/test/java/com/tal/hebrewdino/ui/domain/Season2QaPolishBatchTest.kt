@@ -65,7 +65,7 @@ class Season2QaPolishBatchTest {
 
     @Test
     fun season2PickLetter_hasNoInitialTargetLetterIntroPulse() {
-        val spec = StationBehaviorRegistry.getStationUiSpec(Season2ChapterIds.Chapter1Tyrannosaurus, 1)
+        val spec = StationBehaviorRegistry.getStationUiSpec(Season2ChapterIds.Chapter1Tyrannosaurus, 2)
         assertEquals(StationTemplateId.PickLetter, spec.templateId)
         assertFalse(spec.showBetweenRoundIntroPulse)
     }
@@ -97,10 +97,10 @@ class Season2QaPolishBatchTest {
     }
 
     @Test
-    fun ch1Ch2_stationMappings_unchangedAfterPolish() {
+    fun ch1Ch2_stationMappings_matchDragWiring() {
         assertEquals(
             StationTemplateId.PopBalloons,
-            StationBehaviorRegistry.getStationUiSpec(Season2ChapterIds.Chapter1Tyrannosaurus, 2).templateId,
+            StationBehaviorRegistry.getStationUiSpec(Season2ChapterIds.Chapter1Tyrannosaurus, 1).templateId,
         )
         assertEquals(
             StationTemplateId.PickLetter,

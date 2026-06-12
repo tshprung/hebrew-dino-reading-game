@@ -58,13 +58,28 @@ data class StationQuizPlan(
     val season2StationTheme: Season2StationTheme = Season2StationTheme.Standard,
     /** Word-parts presentation ramp (visible / guided / hidden). */
     val season2WordPartsPresentationMode: Season2WordPartsPresentationMode? = null,
+    /** When [mode] is [StationQuizMode.DragWordToPicture], number of picture/word pairs (2 or 3). */
+    val dragWordToPicturePairCount: Int? = null,
+    /** When [mode] is [StationQuizMode.DragMissingLetter], 0-based grapheme index of the missing letter. */
+    val dragMissingLetterIndex: Int? = null,
 )
 
 object StationQuizPlans {
     fun chapter1(stationId: Int): StationQuizPlan = Chapter1StationOrder.quizPlan(stationId)
 
-    /** Chapters 2–4 reuse the same six-station plan as chapter 1 ([Chapter1StationOrder]); letters/art/intros differ. */
-    fun chapter2(stationId: Int): StationQuizPlan = Chapter1StationOrder.quizPlan(stationId)
+    fun chapter2(stationId: Int): StationQuizPlan =
+        Chapter2StationOrder.quizPlan(stationId).let { plan ->
+            when (stationId) {
+                1 ->
+                    plan.copy(optionCount = 5)
+                3 ->
+                    plan.copy(
+                        optionCount = 5,
+                        sortOptionLetters = true,
+                    )
+                else -> plan
+            }
+        }
 
     fun chapter3(stationId: Int): StationQuizPlan =
         Chapter3StationOrder.quizPlan(stationId).let { plan ->
@@ -104,29 +119,44 @@ object StationQuizPlans {
     }
 
     fun chapter5(stationId: Int): StationQuizPlan =
-        Chapter1StationOrder.quizPlan(stationId)
+        Chapter5StationOrder.quizPlan(stationId)
             .copy(listenOnlyTargetPrompt = false)
             .let { base ->
                 when (stationId) {
-                    Chapter1StationOrder.TAP_LETTER ->
-                        base.copy(
-                            optionCount = 5
-                        )
-                    Chapter1StationOrder.REVEAL_THEN_CHOOSE ->
-                        base.copy(
-                            findLetterGridMaxTargetCount = 4
-                        )
-                    Chapter1StationOrder.PICTURE_PICK_ONE ->
+                    1 ->
                         base.copy(
                             optionCount = 5,
-                            sortOptionLetters = true
+                        )
+                    3 ->
+                        base.copy(
+                            findLetterGridMaxTargetCount = 4,
+                        )
+                    4 ->
+                        base.copy(
+                            optionCount = 5,
+                            sortOptionLetters = true,
                         )
                     else -> base
                 }
             }
 
     fun chapter6(stationId: Int): StationQuizPlan =
-        chapter3(stationId)
+        Chapter6StationOrder.quizPlan(stationId).let { plan ->
+            when (stationId) {
+                1 ->
+                    plan.copy(
+                        optionCount = 5,
+                        sortOptionLetters = true,
+                    )
+                5 ->
+                    plan.copy(
+                        optionCount = 6,
+                        sortOptionLetters = true,
+                        listenOnlyTargetPrompt = true,
+                    )
+                else -> plan
+            }
+        }
 
     fun trainingV1(stationId: Int): StationQuizPlan =
         when (stationId) {

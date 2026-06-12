@@ -1386,6 +1386,79 @@ fun GameScreen(
                         )
                     }
 
+                    fun handleDragWordToPictureDrop(
+                        wordCatalogId: String,
+                        pictureCatalogId: String,
+                    ): Boolean {
+                        val accepted =
+                            DragWordToPictureActions.handleDropAttempt(
+                                wordCatalogId = wordCatalogId,
+                                pictureCatalogId = pictureCatalogId,
+                                gameViewModel = gameViewModel,
+                                cancelFeedbackVoice = cancelFeedbackVoiceCb,
+                                audioEnabled = audioEnabled,
+                                sfx = sfx,
+                                session = session,
+                                scope = scope,
+                                onWrongFeedback = { onWrongFeedback() },
+                            )
+                        if (!accepted) {
+                            gameViewModel.shakeEpoch += 1
+                        }
+                        return accepted
+                    }
+
+                    fun handleDragWordToPictureRoundComplete() {
+                        DragWordToPictureActions.handleRoundComplete(
+                            gameViewModel = gameViewModel,
+                            cancelFeedbackVoice = cancelFeedbackVoiceCb,
+                            audioEnabled = audioEnabled,
+                            session = session,
+                            scope = scope,
+                            advanceAfterRound = { isLast -> advanceAfterRound(isLast) },
+                        )
+                    }
+
+                    fun handleDragWordToPicturePictureTap(catalogEntryId: String) {
+                        Season2AdvancedStationActions.replayWordByCatalogId(
+                            catalogId = catalogEntryId,
+                            chapterId = chapterId,
+                            stationId = stationId,
+                            rawVoice = rawVoice,
+                            scope = scope,
+                            audioRuntime = audioRuntime,
+                            audioEnabled = audioEnabled,
+                        )
+                    }
+
+                    fun handleDragMissingLetterPlace(letter: String): Boolean {
+                        val accepted =
+                            DragMissingLetterActions.handleLetterPlaced(
+                                letter = letter,
+                                gameViewModel = gameViewModel,
+                                cancelFeedbackVoice = cancelFeedbackVoiceCb,
+                                audioEnabled = audioEnabled,
+                                sfx = sfx,
+                                session = session,
+                                scope = scope,
+                                onWrongFeedback = { wrongPickedLetter, wrongPickedLetterAlreadySpoken ->
+                                    onWrongFeedback(
+                                        wrongPickedLetter = wrongPickedLetter,
+                                        wrongPickedLetterAlreadySpoken = wrongPickedLetterAlreadySpoken,
+                                    )
+                                },
+                                advanceAfterRound = { isLast -> advanceAfterRound(isLast) },
+                            )
+                        if (!accepted) {
+                            gameViewModel.shakeEpoch += 1
+                        }
+                        return accepted
+                    }
+
+                    fun handleDragMissingLetterPictureTap() {
+                        handleAdvancedReplayWord()
+                    }
+
                     fun handleImageMatchAttempt(choiceId: String): Boolean {
                         return ImageMatchActions.handleImageMatchAttempt(
                             choiceId = choiceId,
@@ -1506,6 +1579,11 @@ fun GameScreen(
                                 handleMissingFirstLetterPick = ::handleMissingFirstLetterPick,
                                 handleWordPartsPick = ::handleWordPartsPick,
                                 handleRhymingPick = ::handleRhymingPick,
+                                handleDragWordToPictureDrop = ::handleDragWordToPictureDrop,
+                                handleDragWordToPictureRoundComplete = ::handleDragWordToPictureRoundComplete,
+                                handleDragWordToPicturePictureTap = ::handleDragWordToPicturePictureTap,
+                                handleDragMissingLetterPlace = ::handleDragMissingLetterPlace,
+                                handleDragMissingLetterPictureTap = ::handleDragMissingLetterPictureTap,
                                 handleAdvancedReplayWord = ::handleAdvancedReplayWord,
                                 handleWordPartsPictureTap = ::handleWordPartsPictureTap,
                                 handleWordPartsHintRevealAudio = ::handleWordPartsHintRevealAudio,

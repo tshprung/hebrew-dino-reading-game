@@ -78,9 +78,9 @@ class Season2QaFeedbackBatchTest {
     }
 
     @Test
-    fun ch3_station3_pictureStartsWith_hasFiveOptions() {
+    fun ch3_station2_pictureStartsWith_hasFiveOptions() {
         val ctx = Season2ChapterStationPlans.contextFor(3)!!
-        val plan = Season2ChapterStationPlans.quizPlan(ctx, 3)
+        val plan = Season2ChapterStationPlans.quizPlan(ctx, 2)
         assertEquals(5, plan.optionCount)
         assertEquals(5, Season2ChapterContent.ch3Letters.distinct().size)
     }

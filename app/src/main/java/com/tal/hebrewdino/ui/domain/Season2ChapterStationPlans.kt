@@ -5,7 +5,7 @@ package com.tal.hebrewdino.ui.domain
  * Chapters 1–2 keep [Season2Chapter1StationOrder].
  */
 object Season2ChapterStationPlans {
-    const val STATION_COUNT: Int = Season2Chapter1StationOrder.STATION_COUNT
+    const val STATION_COUNT: Int = 6
 
     data class ChapterStationContext(
         val chapterIndex: Int,
@@ -26,6 +26,10 @@ object Season2ChapterStationPlans {
         Rhyming,
         WhichWordStartsWith,
         MatchLetterToWord,
+        /** Future: drag word cards onto matching pictures. */
+        DragWordToPicture,
+        /** Future: drag missing letter into partial word. */
+        DragMissingLetter,
     }
 
     fun contextFor(chapterIndex: Int): ChapterStationContext? =
@@ -62,18 +66,26 @@ object Season2ChapterStationPlans {
                     memoryMatchLetters = Season2ChapterContent.ch6Letters.take(6),
                     theme = Season2StationTheme.UnderwaterBubbles,
                 )
+            7 ->
+                ChapterStationContext(
+                    chapterIndex = 7,
+                    wordCatalogIds = Season2ChapterContent.ch7Words,
+                    letters = Season2ChapterContent.ch7Letters,
+                    memoryMatchLetters = Season2ChapterContent.ch7Letters.take(6),
+                    theme = Season2StationTheme.FlyingSky,
+                )
             else -> null
         }
 
     fun stationKind(chapterIndex: Int, stationId: Int): StationKind {
-        require(chapterIndex in 3..6) { "stationKind only for chapters 3–6" }
+        require(chapterIndex in 3..7) { "stationKind only for chapters 3–7" }
         return when (chapterIndex) {
             3 ->
                 when (stationId) {
-                    1 -> StationKind.PopBalloons
-                    2 -> StationKind.PickLetter
-                    3 -> StationKind.PictureStartsWith
-                    4 -> StationKind.MemoryMatch
+                    1 -> StationKind.PickLetter
+                    2 -> StationKind.PictureStartsWith
+                    3 -> StationKind.DragMissingLetter
+                    4 -> StationKind.DragWordToPicture
                     5 -> StationKind.WordParts
                     6 -> StationKind.WordParts
                     else -> error("stationId=$stationId")
@@ -82,30 +94,40 @@ object Season2ChapterStationPlans {
                 when (stationId) {
                     1 -> StationKind.PopBalloons
                     2 -> StationKind.PickLetter
-                    3 -> StationKind.PictureStartsWith
-                    4 -> StationKind.MemoryMatch
+                    3 -> StationKind.DragWordToPicture
+                    4 -> StationKind.DragMissingLetter
                     5 -> StationKind.PictureToWord
                     6 -> StationKind.MatchLetterToWord
                     else -> error("stationId=$stationId")
                 }
             5 ->
                 when (stationId) {
-                    1 -> StationKind.PopBalloons
-                    2 -> StationKind.PickLetter
-                    3 -> StationKind.PictureStartsWith
-                    4 -> StationKind.MemoryMatch
-                    5 -> StationKind.MissingFirstLetter
-                    6 -> StationKind.WhichWordStartsWith
+                    1 -> StationKind.PickLetter
+                    2 -> StationKind.DragWordToPicture
+                    3 -> StationKind.DragMissingLetter
+                    4 -> StationKind.WhichWordStartsWith
+                    5 -> StationKind.Rhyming
+                    6 -> StationKind.WordParts
                     else -> error("stationId=$stationId")
                 }
             6 ->
                 when (stationId) {
-                    1 -> StationKind.PopBalloons
-                    2 -> StationKind.PickLetter
-                    3 -> StationKind.PictureStartsWith
-                    4 -> StationKind.MemoryMatch
-                    5 -> StationKind.Rhyming
-                    6 -> StationKind.PictureToWord
+                    1 -> StationKind.PickLetter
+                    2 -> StationKind.DragWordToPicture
+                    3 -> StationKind.DragMissingLetter
+                    4 -> StationKind.Rhyming
+                    5 -> StationKind.PictureToWord
+                    6 -> StationKind.MatchLetterToWord
+                    else -> error("stationId=$stationId")
+                }
+            7 ->
+                when (stationId) {
+                    1 -> StationKind.DragWordToPicture
+                    2 -> StationKind.DragMissingLetter
+                    3 -> StationKind.MemoryMatch
+                    4 -> StationKind.Rhyming
+                    5 -> StationKind.WordParts
+                    6 -> StationKind.MatchLetterToWord
                     else -> error("stationId=$stationId")
                 }
             else -> error("chapterIndex=$chapterIndex")
@@ -129,9 +151,6 @@ object Season2ChapterStationPlans {
         stationId: Int,
     ): StationQuizPlan {
         val sid = stationId.coerceIn(1, STATION_COUNT)
-        if (sid == Season2Chapter1StationOrder.MEMORY_MATCH) {
-            return Season2Chapter1StationOrder.quizPlan(chapterIndex = 1, stationId = sid)
-        }
         return when (stationKind(chapterIndex, sid)) {
             StationKind.PopBalloons ->
                 StationQuizPlan(
@@ -176,6 +195,21 @@ object Season2ChapterStationPlans {
                     imageMatchPictureSizeMultiplier = 1f,
                     imageMatchChoiceCount = 3,
                 )
+            StationKind.DragWordToPicture ->
+                Season2DragStationQuizPlans.dragWordToPicture(
+                    wordCatalogIds = wordCatalogIds,
+                    theme = theme,
+                    pairCount = dragWordPairCount(chapterIndex, wordCatalogIds),
+                    questionCount = 4,
+                )
+            StationKind.DragMissingLetter ->
+                Season2DragStationQuizPlans.dragMissingLetter(
+                    wordCatalogIds = wordCatalogIds,
+                    letters = letters,
+                    theme = theme,
+                    missingIndex = dragMissingLetterIndex(chapterIndex),
+                    questionCount = 4,
+                )
             StationKind.WordParts -> {
                 val wordPartsMode =
                     when (chapterIndex) {
@@ -183,6 +217,16 @@ object Season2ChapterStationPlans {
                             when (sid) {
                                 5 -> Season2WordPartsPresentationMode.GuidedWordParts
                                 6 -> Season2WordPartsPresentationMode.HiddenWordPartsChallenge
+                                else -> null
+                            }
+                        5 ->
+                            when (sid) {
+                                6 -> Season2WordPartsPresentationMode.GuidedWordParts
+                                else -> null
+                            }
+                        7 ->
+                            when (sid) {
+                                5 -> Season2WordPartsPresentationMode.HiddenWordPartsChallenge
                                 else -> null
                             }
                         else -> null
@@ -229,6 +273,14 @@ object Season2ChapterStationPlans {
                 error("Memory match has no quiz plan")
         }
     }
+
+    private fun dragWordPairCount(chapterIndex: Int, wordCatalogIds: List<String>): Int =
+        when (chapterIndex) {
+            3, 7 -> if (wordCatalogIds.size >= 3) 3 else 2
+            else -> 2
+        }
+
+    private fun dragMissingLetterIndex(chapterIndex: Int): Int = 0
 
     private fun advancedPlan(
         mode: Season2AdvancedStationMode,

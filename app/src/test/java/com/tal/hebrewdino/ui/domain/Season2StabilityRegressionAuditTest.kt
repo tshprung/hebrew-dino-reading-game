@@ -21,10 +21,10 @@ import java.io.File
 class Season2StabilityRegressionAuditTest {
     // --- 1. Station routing ---
     @Test
-    fun routing_ch1St6_isPictureToWord() {
+    fun routing_ch1St6_isDragMissingLetter() {
         val plan = Season2Chapter1StationOrder.quizPlan(1, 6)
-        assertEquals(Season2AdvancedStationMode.PictureToWord, plan.season2AdvancedMode)
-        assertEquals(6, plan.questionCount)
+        assertEquals(StationQuizMode.DragMissingLetter, plan.mode)
+        assertEquals(0, plan.dragMissingLetterIndex)
     }
 
     @Test
@@ -274,11 +274,11 @@ class Season2StabilityRegressionAuditTest {
 
     // --- 7. Ch3 St3 ---
     @Test
-    fun ch3_st3_fiveUniqueLetterChoicesFromChapterPool() {
-        val plan = Season2ChapterStationPlans.quizPlan(Season2ChapterStationPlans.contextFor(3)!!, 3)
+    fun ch3_st2_fiveUniqueLetterChoicesFromChapterPool() {
+        val plan = Season2ChapterStationPlans.quizPlan(Season2ChapterStationPlans.contextFor(3)!!, 2)
         assertEquals(5, plan.optionCount)
         assertEquals(listOf("ג", "נ", "פ", "צ", "ש"), Season2ChapterContent.ch3Letters)
-        val spec = StationBehaviorRegistry.getStationUiSpec(Season2ChapterIds.Chapter3Stegosaurus, 3)
+        val spec = StationBehaviorRegistry.getStationUiSpec(Season2ChapterIds.Chapter3Stegosaurus, 2)
         assertEquals(StationTemplateId.PictureStartsWith, spec.templateId)
     }
 
@@ -337,7 +337,7 @@ class Season2StabilityRegressionAuditTest {
     // --- 10. Content coverage ---
     @Test
     fun content_allPlayableChapters_passAssetValidation() {
-        (1..6).forEach { index ->
+        (1..Season2ChapterRegistry.CHAPTER_COUNT).forEach { index ->
             val ch = Season2ChapterRegistry.chapter(index)!!
             assertTrue("Ch$index missing: ${ch.validation.missingAssets}", ch.validation.qaReady)
         }

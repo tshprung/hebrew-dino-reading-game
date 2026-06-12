@@ -17,13 +17,12 @@ class Season2PedagogicalRampBatchTest {
     private val ch3 = Season2ChapterIds.Chapter3Stegosaurus
 
     @Test
-    fun ch1_station6_isPictureToWord() {
+    fun ch1_station6_isDragMissingLetter() {
         val plan = Season2Chapter1StationOrder.quizPlan(chapterIndex = 1, stationId = 6)
-        assertEquals(Season2AdvancedStationMode.PictureToWord, plan.season2AdvancedMode)
-        assertEquals(3, plan.imageMatchChoiceCount)
+        assertEquals(StationQuizMode.DragMissingLetter, plan.mode)
+        assertEquals(0, plan.dragMissingLetterIndex)
         val spec = StationBehaviorRegistry.getStationUiSpec(ch1, 6)
-        assertEquals(StationTemplateId.ImageToWord, spec.templateId)
-        assertTrue(spec.helpControlsEnabled)
+        assertEquals(StationTemplateId.DragMissingLetter, spec.templateId)
     }
 
     @Test

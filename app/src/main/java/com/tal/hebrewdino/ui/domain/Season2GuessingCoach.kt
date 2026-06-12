@@ -221,6 +221,9 @@ object Season2GuessingCoach {
 
                         )
 
+            Season2ChapterStationPlans.StationKind.DragWordToPicture,
+            Season2ChapterStationPlans.StationKind.DragMissingLetter,
+            -> Unit
         }
 
     }

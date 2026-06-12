@@ -1,7 +1,7 @@
 package com.tal.hebrewdino.ui.domain
 
 /**
- * Season 2 chapter indexes (1..6) are used in UX (chapter select, puzzle posters, progress prefs).
+ * Season 2 chapter indexes (1..7) are used in UX (chapter select, puzzle posters, progress prefs).
  *
  * For station gameplay we use a **separate chapterId range** so Season 2 does not collide with Season 1
  * station behavior registry.
@@ -13,6 +13,7 @@ object Season2ChapterIds {
     const val Chapter4Brachiosaurus: Int = 104
     const val Chapter5Ankylosaurus: Int = 105
     const val Chapter6Mosasaurus: Int = 106
+    const val Chapter7Pteranodon: Int = 107
 
     fun chapterGameplayId(chapterIndex: Int): Int =
         when (chapterIndex) {
@@ -22,6 +23,7 @@ object Season2ChapterIds {
             4 -> Chapter4Brachiosaurus
             5 -> Chapter5Ankylosaurus
             6 -> Chapter6Mosasaurus
+            7 -> Chapter7Pteranodon
             else -> 100 + chapterIndex
         }
 }

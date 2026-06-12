@@ -136,6 +136,7 @@ fun AppNav() {
         }
 
     LaunchedEffect(Unit) {
+        progress.migrateSeason1StationPlanProgressIfNeeded()
         progress.repairChapter2ProgressIfNeeded()
         progress.repairChapter3ProgressIfNeeded()
         progress.repairChapter4ProgressIfNeeded()

@@ -9,9 +9,9 @@ class Season2WarmupStationQaTest {
     @Test
     fun warmup_question_counts_plus_two_rounds() {
         val ctx = Season2ChapterStationPlans.contextFor(3)!!
-        assertEquals(5, Season2ChapterStationPlans.quizPlan(ctx, 1).questionCount)
+        assertEquals(6, Season2ChapterStationPlans.quizPlan(ctx, 1).questionCount)
         assertEquals(6, Season2ChapterStationPlans.quizPlan(ctx, 2).questionCount)
-        assertEquals(6, Season2ChapterStationPlans.quizPlan(ctx, 3).questionCount)
+        assertEquals(4, Season2ChapterStationPlans.quizPlan(ctx, 3).questionCount)
         val ch4 = Season2ChapterStationPlans.contextFor(4)!!
         assertEquals(5, Season2ChapterStationPlans.quizPlan(ch4, 1).questionCount)
         assertEquals(6, Season2ChapterStationPlans.quizPlan(ch4, 2).questionCount)

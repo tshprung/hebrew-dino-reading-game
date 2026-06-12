@@ -38,6 +38,7 @@ object StationBehaviorRegistry {
                 Season2ChapterIds.Chapter4Brachiosaurus,
                 Season2ChapterIds.Chapter5Ankylosaurus,
                 Season2ChapterIds.Chapter6Mosasaurus,
+                Season2ChapterIds.Chapter7Pteranodon,
                 -> season2ChapterQuizPlan(chapterId, sid)
                 TrainingV1Config.CHAPTER_ID -> StationQuizPlans.trainingV1(sid)
                 else -> error("Unsupported chapterId=$chapterId")
@@ -45,10 +46,10 @@ object StationBehaviorRegistry {
         val base =
             when (chapterId) {
             1 -> sixStationUiSpec(chapterId = 1, sid, plan)
-            2 -> sixStationUiSpec(chapterId = 2, sid, plan)
+            2 -> learningArcUiSpecByMode(chapterId = 2, stationId = sid, plan = plan)
             3 -> chapter3UiSpec(sid, plan)
             4 -> episode4UiSpec(sid, plan)
-            5 -> sixStationUiSpec(chapterId = 5, sid, plan)
+            5 -> learningArcUiSpecByMode(chapterId = 5, stationId = sid, plan = plan)
             6 -> chapter6UiSpec(stationId.coerceIn(1, Chapter6Config.STATION_COUNT), plan)
             TrainingV1Config.CHAPTER_ID -> trainingV1UiSpec(sid, plan)
             Season2ChapterIds.Chapter1Tyrannosaurus ->
@@ -69,6 +70,7 @@ object StationBehaviorRegistry {
             Season2ChapterIds.Chapter4Brachiosaurus,
             Season2ChapterIds.Chapter5Ankylosaurus,
             Season2ChapterIds.Chapter6Mosasaurus,
+            Season2ChapterIds.Chapter7Pteranodon,
             -> season2ArcUiSpec(chapterId = chapterId, stationId = sid, plan = plan)
             else -> error("Unsupported chapterId=$chapterId")
         }
@@ -93,10 +95,7 @@ object StationBehaviorRegistry {
                 )
         val popBalloonsHelpControlsEnabled =
             base.templateId == StationTemplateId.PopBalloons &&
-                (
-                    ((chapterId == 3 || chapterId == 6) && sid == 3) ||
-                        (chapterId == TrainingV1Config.CHAPTER_ID && sid == TrainingV1Config.STATION_WORD_BALLOONS)
-                )
+                (chapterId == TrainingV1Config.CHAPTER_ID && sid == TrainingV1Config.STATION_WORD_BALLOONS)
         return base.copy(
             audioStagingPickLetter = audioStagingPickLetter,
             audioStagingPopBalloons = audioStagingPopBalloons,
@@ -204,8 +203,8 @@ object StationBehaviorRegistry {
         val listenOnly = plan.listenOnlyTargetPrompt
         val isSagaEpisode = chapterId in 1..5
         val findGridSagaRevealStation =
-            (chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) &&
-                stationId == REVEAL_THEN_CHOOSE
+            plan.mode == StationQuizMode.FindLetterGrid &&
+                chapterId in listOf(1, 2, 4, 5)
         val findGridUseEpisode4HelpHints =
             stationId == REVEAL_THEN_CHOOSE ||
                 (chapterId == TrainingV1Config.CHAPTER_ID &&
@@ -289,13 +288,15 @@ object StationBehaviorRegistry {
         val listenOnly = plan.listenOnlyTargetPrompt
         val isSagaEpisode = chapterId in 1..5
         val popBalloonsCompactLandscapePhoneTuning =
-            (chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) && stationId == BALLOON_POP ||
-                ((chapterId == 3 || chapterId == 6) && stationId == 3) ||
+            plan.mode == StationQuizMode.PopBalloons &&
                 (
-                    Season2StationAudio.isSeason2WarmupChapter(chapterId) &&
-                        stationId == Season2Chapter1StationOrder.POP_BALLOONS
-                ) ||
-                (chapterId == TrainingV1Config.CHAPTER_ID && stationId == TrainingV1Config.STATION_WORD_BALLOONS)
+                    chapterId in 1..5 ||
+                        (
+                            Season2StationAudio.isSeason2WarmupChapter(chapterId) &&
+                                stationId == Season2Chapter1StationOrder.POP_BALLOONS
+                        ) ||
+                        (chapterId == TrainingV1Config.CHAPTER_ID && stationId == TrainingV1Config.STATION_WORD_BALLOONS)
+                )
         return StationUiSpec(
             chapterId = chapterId,
             stationId = stationId,
@@ -308,8 +309,7 @@ object StationBehaviorRegistry {
             quizMode = plan.mode,
             showBetweenRoundIntroPulse =
                 !isPopAllLetters &&
-                    !(isSagaEpisode && stationId == BALLOON_POP) &&
-                    !((chapterId == 3 || chapterId == 6) && stationId == 3) &&
+                    !(isSagaEpisode && plan.mode == StationQuizMode.PopBalloons) &&
                     !Season2StationAudio.isSeason2GameplayChapter(chapterId) &&
                     chapterId != TrainingV1Config.CHAPTER_ID,
             findGridMaxTargetCount = plan.findLetterGridMaxTargetCount,
@@ -340,7 +340,84 @@ object StationBehaviorRegistry {
         )
     }
 
-    /** Chapters 1, 2, 5 share [Chapter1StationOrder]; Ch5 is listen-only saga. */
+    /** Chapters 2 and 5 — station order differs from [Chapter1StationOrder]; route by quiz mode. */
+    private fun learningArcUiSpecByMode(
+        chapterId: Int,
+        stationId: Int,
+        plan: StationQuizPlan,
+    ): StationUiSpec =
+        when (plan.mode) {
+            StationQuizMode.PickLetter -> pickLetterSpec(chapterId, stationId, plan)
+            StationQuizMode.PopBalloons -> popBalloonsSpec(chapterId, stationId, plan)
+            StationQuizMode.FindLetterGrid -> findLetterGridSpec(chapterId, stationId, plan)
+            StationQuizMode.PictureStartsWith ->
+                pictureStartsWithSpec(chapterId, stationId, plan).let { base ->
+                    if (chapterId in listOf(2, 5)) {
+                        base.copy(
+                            pictureStartsWithCompactLandscapeRtlWrapInstruction = true,
+                            pictureStartsWithVerticalNudgeDp = 19f,
+                        )
+                    } else {
+                        base
+                    }
+                }
+            StationQuizMode.ImageMatch ->
+                if (stationId == FINALE_PICTURE_LETTER_MATCH) {
+                    matchLetterToWordSpec(
+                        chapterId = chapterId,
+                        stationId = stationId,
+                        plan = plan,
+                        extraVariants = arrayOf(StationVariant.Finale),
+                    ).copy(riskNotes = "Finale match UI; learning arc (Ch$chapterId).")
+                } else {
+                    learningImageMatchSpec(chapterId, stationId, plan)
+                }
+            StationQuizMode.DragWordToPicture ->
+                dragWordToPictureSpec(chapterId, stationId, plan)
+                    .copy(riskNotes = "Season 1 drag word to picture (Ch$chapterId).")
+            StationQuizMode.DragMissingLetter ->
+                dragMissingLetterSpec(chapterId, stationId, plan)
+                    .copy(riskNotes = "Season 1 drag missing letter (Ch$chapterId).")
+            else ->
+                error("Unexpected learning arc mode=${plan.mode} chapterId=$chapterId stationId=$stationId")
+        }
+
+    private fun learningImageMatchSpec(
+        chapterId: Int,
+        stationId: Int,
+        plan: StationQuizPlan,
+    ): StationUiSpec {
+        val listenOnly = plan.listenOnlyTargetPrompt
+        return StationUiSpec(
+            chapterId = chapterId,
+            stationId = stationId,
+            templateId = StationTemplateId.ImageMatch,
+            variants = variantsFor(listenOnly),
+            quizMode = plan.mode,
+            showBetweenRoundIntroPulse = false,
+            findGridMaxTargetCount = plan.findLetterGridMaxTargetCount,
+            helpControlsEnabled = listenOnly,
+            replayMode = if (listenOnly) StationReplayMode.TargetLetterOnly else StationReplayMode.None,
+            hintMode = if (listenOnly) StationHintMode.TemporaryTargetLetter else StationHintMode.None,
+            hintDurationMs = if (listenOnly) 1470L else null,
+            imageMatchShowTargetLetterChip = !listenOnly,
+            imageMatchHeaderInstructionOverride =
+                if (listenOnly) {
+                    StationInstructionCopy.ImageMatchListenFirst
+                } else {
+                    StationInstructionCopy.ImageMatchFindWordStartingWithLetter
+                },
+            imageMatchHeaderReadablePanel = true,
+            imageMatchCompactLandscapeRtlWrapHeaderInstruction = true,
+            imageMatchHeaderTopPaddingDp = 29f,
+            imageMatchTargetLetterChipOffsetYDp = 0f,
+            imageMatchVerticalNudgeDp = 19f,
+            imageMatchSuppressEntryPulseEpoch = true,
+            riskNotes = "Image match; learning arc by mode (Ch$chapterId).",
+        )
+    }
+
+    /** Chapters 1 and 4 follow [Chapter1StationOrder] slot numbering. */
     private fun sixStationUiSpec(chapterId: Int, stationId: Int, plan: StationQuizPlan): StationUiSpec {
         val listenOnly = plan.listenOnlyTargetPrompt
         return when (stationId) {
@@ -423,8 +500,7 @@ object StationBehaviorRegistry {
                     contentTopInsetDp = 56f,
                     riskNotes = "Ch3 st2 match letter + word; unified MatchLetterToWord template.",
                 )
-            3 ->
-                popBalloonsSpec(chapterId = 3, stationId = stationId, plan = plan, isPopAllLetters = false)
+            3 -> dragWordToPictureSpec(chapterId = 3, stationId = stationId, plan = plan)
             4 ->
                 pickLetterSpec(
                     chapterId = 3,
@@ -645,27 +721,11 @@ object StationBehaviorRegistry {
                     riskNotes = "Ch6 st2 match letter + word; aligned with Chapter 3 station 2.",
                 )
             3 ->
-                popBalloonsSpec(chapterId = 6, stationId = stationId, plan = plan, isPopAllLetters = false)
-                    .copy(
-                        riskNotes = "Ch6 st3 pop-all; aligned with Chapter 3 station 3.",
-                    )
+                dragWordToPictureSpec(chapterId = 6, stationId = stationId, plan = plan)
+                    .copy(riskNotes = "Ch6 st3 drag word to picture.")
             4 ->
-                pickLetterSpec(
-                    chapterId = 6,
-                    stationId = stationId,
-                    plan = plan,
-                    extraVariants = arrayOf(StationVariant.HighlightedLetterInWord, StationVariant.HelpColumn),
-                ).copy(
-                    variants = variantsFor(listenOnly = false, StationVariant.HighlightedLetterInWord, StationVariant.HelpColumn),
-                    helpControlsEnabled = true,
-                    replayMode = StationReplayMode.ExistingStationSpecific,
-                    hintMode = StationHintMode.None,
-                    hintDurationMs = null,
-                    pickLetterInstructionOverride = null,
-                    pickLetterHighlightedInWordInstruction = StationInstructionCopy.PickLetterHighlightedInWord,
-                    contentTopInsetDp = 56f,
-                    riskNotes = "Ch6 st4 highlighted letter in word; aligned with Chapter 3 station 4.",
-                )
+                dragMissingLetterSpec(chapterId = 6, stationId = stationId, plan = plan)
+                    .copy(riskNotes = "Ch6 st4 drag missing letter.")
             5 ->
                 pickLetterSpec(
                     chapterId = 6,
@@ -698,23 +758,8 @@ object StationBehaviorRegistry {
 
     private fun season2ChapterIndex(gameplayChapterId: Int): Int = gameplayChapterId - 100
 
-    private fun season2EarlyChapterQuizPlan(chapterIndex: Int, uxStationId: Int): StationQuizPlan {
-        if (uxStationId == Season2Chapter1StationOrder.FINALE_STATION) {
-            return Season2Chapter1StationOrder.quizPlan(chapterIndex, uxStationId)
-        }
-        val gameplayStationId =
-            when (uxStationId) {
-                Season2Chapter1StationOrder.POP_BALLOONS -> BALLOON_POP
-                Season2Chapter1StationOrder.PICK_LETTER -> TAP_LETTER
-                Season2Chapter1StationOrder.PICTURE_STARTS_WITH -> 1
-                Season2Chapter1StationOrder.WHICH_WORD_STARTS_WITH -> PICTURE_PICK_ALL
-                else -> uxStationId
-            }
-        return when (uxStationId) {
-            Season2Chapter1StationOrder.PICTURE_STARTS_WITH -> StationQuizPlans.chapter3(gameplayStationId)
-            else -> StationQuizPlans.chapter1(gameplayStationId)
-        }
-    }
+    private fun season2EarlyChapterQuizPlan(chapterIndex: Int, uxStationId: Int): StationQuizPlan =
+        Season2Chapter1StationOrder.quizPlan(chapterIndex, uxStationId)
 
     private fun season2EarlyChapterUiSpec(
         chapterId: Int,
@@ -722,11 +767,7 @@ object StationBehaviorRegistry {
         stationId: Int,
         plan: StationQuizPlan,
     ): StationUiSpec =
-        if (plan.season2AdvancedMode != null) {
-            season2AdvancedUiSpec(chapterId, stationId, plan)
-        } else {
-            sixStationUiSpec(chapterId = chapterId, stationId = stationId, plan = plan)
-        }
+        season2UxStationUiSpec(chapterId = chapterId, stationId = stationId, plan = plan)
 
     private fun season2ChapterQuizPlan(gameplayChapterId: Int, stationId: Int): StationQuizPlan {
         val chapterIndex = season2ChapterIndex(gameplayChapterId)
@@ -758,12 +799,75 @@ object StationBehaviorRegistry {
                     plan = plan,
                     extraVariants = arrayOf(StationVariant.Finale),
                 ).copy(riskNotes = "Season 2 match-letter-to-word finale.")
+            Season2ChapterStationPlans.StationKind.DragWordToPicture ->
+                dragWordToPictureSpec(chapterId, stationId, plan)
+            Season2ChapterStationPlans.StationKind.DragMissingLetter ->
+                dragMissingLetterSpec(chapterId, stationId, plan)
             Season2ChapterStationPlans.StationKind.MemoryMatch ->
                 error("Memory match uses dedicated screen (chapterId=$chapterId stationId=$stationId)")
             else ->
                 error("Unexpected Season2 arc kind for chapterId=$chapterId stationId=$stationId")
         }
     }
+
+    private fun season2UxStationUiSpec(
+        chapterId: Int,
+        stationId: Int,
+        plan: StationQuizPlan,
+    ): StationUiSpec {
+        when (plan.mode) {
+            StationQuizMode.DragWordToPicture -> return dragWordToPictureSpec(chapterId, stationId, plan)
+            StationQuizMode.DragMissingLetter -> return dragMissingLetterSpec(chapterId, stationId, plan)
+            StationQuizMode.PopBalloons -> return popBalloonsSpec(chapterId, stationId, plan)
+            StationQuizMode.PickLetter ->
+                if (plan.season2AdvancedMode == null) {
+                    return pickLetterSpec(chapterId, stationId, plan)
+                }
+            StationQuizMode.PictureStartsWith -> return pictureStartsWithSpec(chapterId, stationId, plan)
+            StationQuizMode.ImageMatch -> return whichWordStartsWithImageMatchSpec(chapterId, stationId, plan)
+            else -> Unit
+        }
+        if (plan.season2AdvancedMode != null) {
+            return season2AdvancedUiSpec(chapterId, stationId, plan)
+        }
+        error("Unexpected Season2 plan mode=${plan.mode} for chapterId=$chapterId stationId=$stationId")
+    }
+
+    private fun dragWordToPictureSpec(
+        chapterId: Int,
+        stationId: Int,
+        plan: StationQuizPlan,
+    ): StationUiSpec =
+        StationUiSpec(
+            chapterId = chapterId,
+            stationId = stationId,
+            templateId = StationTemplateId.DragWordToPicture,
+            variants = variantsFor(listenOnly = false),
+            quizMode = plan.mode,
+            showBetweenRoundIntroPulse = false,
+            helpControlsEnabled = false,
+            replayMode = StationReplayMode.TargetWordOnly,
+            hintMode = StationHintMode.None,
+            riskNotes = "Season 2 drag word to picture.",
+        )
+
+    private fun dragMissingLetterSpec(
+        chapterId: Int,
+        stationId: Int,
+        plan: StationQuizPlan,
+    ): StationUiSpec =
+        StationUiSpec(
+            chapterId = chapterId,
+            stationId = stationId,
+            templateId = StationTemplateId.DragMissingLetter,
+            variants = variantsFor(listenOnly = false),
+            quizMode = plan.mode,
+            showBetweenRoundIntroPulse = false,
+            helpControlsEnabled = false,
+            replayMode = StationReplayMode.TargetWordOnly,
+            hintMode = StationHintMode.None,
+            riskNotes = "Season 2 drag missing letter.",
+        )
 
     private fun whichWordStartsWithImageMatchSpec(
         chapterId: Int,
