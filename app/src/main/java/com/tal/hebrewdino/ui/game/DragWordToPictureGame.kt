@@ -281,15 +281,13 @@ fun DragWordToPictureGame(
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 LessonChoiceCard(
                                     choice = choice,
-                                    enabled = enabled && lockedWordId == null,
+                                    enabled = enabled && onPictureTapReplayWord != null,
                                     showWordCaption = false,
                                     cardWidth = pictureCardWidth,
                                     cardHeight = pictureCardHeight,
                                     captionFontSize = 1.sp,
                                     onClick = {
-                                        if (onPictureTapReplayWord != null && lockedWordId == null) {
-                                            onPictureTapReplayWord(pair.catalogEntryId)
-                                        }
+                                        onPictureTapReplayWord?.invoke(pair.catalogEntryId)
                                     },
                                     modifier =
                                         Modifier

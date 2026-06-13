@@ -25,14 +25,17 @@ class Season1DragProgressionTest {
         val plan = StationQuizPlans.chapter5(2)
         assertEquals(StationQuizMode.DragMissingLetter, plan.mode)
         assertEquals(0, plan.dragMissingLetterIndex)
+        assertEquals(6, plan.questionCount)
     }
 
     @Test
     fun season1_chapter6_hasBothDragStations() {
         assertEquals(StationQuizMode.DragWordToPicture, StationQuizPlans.chapter6(3).mode)
         assertEquals(StationQuizMode.DragMissingLetter, StationQuizPlans.chapter6(4).mode)
-        assertEquals(2, StationQuizPlans.chapter6(3).dragWordToPicturePairCount)
+        assertEquals(5, StationQuizPlans.chapter6(3).questionCount)
+        assertEquals(3, StationQuizPlans.chapter6(3).dragWordToPicturePairCount)
         assertEquals(0, StationQuizPlans.chapter6(4).dragMissingLetterIndex)
+        assertEquals(6, StationQuizPlans.chapter6(4).questionCount)
     }
 
     @Test
@@ -51,7 +54,8 @@ class Season1DragProgressionTest {
     fun season1_dragStations_useConservativeSettings() {
         val ch6DragWord = StationQuizPlans.chapter6(3)
         assertEquals(StationQuizMode.DragWordToPicture, ch6DragWord.mode)
-        assertEquals(2, ch6DragWord.dragWordToPicturePairCount)
+        assertEquals(5, ch6DragWord.questionCount)
+        assertEquals(3, ch6DragWord.dragWordToPicturePairCount)
         val ch3DragWord = StationQuizPlans.chapter3(3)
         assertEquals(StationQuizMode.DragWordToPicture, ch3DragWord.mode)
         assertEquals(3, ch3DragWord.dragWordToPicturePairCount)
@@ -64,6 +68,7 @@ class Season1DragProgressionTest {
         for (plan in dragMissingPlans) {
             assertEquals(StationQuizMode.DragMissingLetter, plan.mode)
             assertEquals(0, plan.dragMissingLetterIndex)
+            assertEquals(6, plan.questionCount)
         }
     }
 

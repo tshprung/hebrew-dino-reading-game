@@ -13,8 +13,7 @@ import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
 import com.tal.hebrewdino.ui.domain.HebrewLetterOrder
 import com.tal.hebrewdino.ui.domain.Question
 import com.tal.hebrewdino.ui.domain.StationUiSpec
-import com.tal.hebrewdino.ui.domain.TrainingInstructionCopy
-import com.tal.hebrewdino.ui.domain.TrainingV1Config
+import com.tal.hebrewdino.ui.domain.TrainingV1SourceStation
 import com.tal.hebrewdino.ui.data.PlayerAddress
 
 @Composable
@@ -44,12 +43,9 @@ internal fun PickLetterQuestionRenderer(
     onPick: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val (effectiveChapterId, effectiveStationId) = TrainingV1SourceStation.resolve(chapterId, stationId)
     val resolvedPickLetterInstructionOverride =
         when {
-            chapterId == TrainingV1Config.CHAPTER_ID &&
-                stationId == TrainingV1Config.STATION_HEAR_LETTER_CHOOSE &&
-                chapter1PlayerAddress != null ->
-                TrainingInstructionCopy.pickLetter(chapter1PlayerAddress)
             (chapterId == 3 || chapterId == 6) &&
                 stationId == 5 &&
                 isChapter3AudioLetterRecognitionStation &&
@@ -58,8 +54,8 @@ internal fun PickLetterQuestionRenderer(
                     PlayerAddress.Boy -> "\u200Fבחר את האות"
                     PlayerAddress.Girl -> "\u200Fבחרי את האות"
                 }
-            (chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) &&
-                stationId == Chapter1StationOrder.TAP_LETTER &&
+            (effectiveChapterId == 1 || effectiveChapterId == 2 || effectiveChapterId == 4 || effectiveChapterId == 5) &&
+                effectiveStationId == Chapter1StationOrder.TAP_LETTER &&
                 chapter1PlayerAddress != null ->
                 when (chapter1PlayerAddress) {
                     PlayerAddress.Boy -> "\u200Fבחר את האות:"
@@ -82,9 +78,7 @@ internal fun PickLetterQuestionRenderer(
         val pickLetterBoxTopPaddingDp =
             when {
                 sagaUsesPickLetterAudioStaging -> SixStationArcHalfCmNudge
-                chapterId == 6 && stationId == 4 -> SixStationArcHalfCmNudge
                 chapterId == 6 && stationId == 5 -> SixStationArcHalfCmNudge
-                chapterId == TrainingV1Config.CHAPTER_ID && stationId == TrainingV1Config.STATION_HEAR_LETTER_CHOOSE -> SixStationArcHalfCmNudge
                 else -> 0.dp
             }
         val pinnedCorrect = station1PinnedCorrectLetter

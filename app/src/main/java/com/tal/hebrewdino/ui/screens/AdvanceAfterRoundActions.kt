@@ -9,6 +9,7 @@ import com.tal.hebrewdino.ui.audio.RawVoicePlayer
 import com.tal.hebrewdino.ui.audio.VoicePlayer
 import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
 import com.tal.hebrewdino.ui.domain.LevelSession
+import com.tal.hebrewdino.ui.domain.Season1StationAudio
 import com.tal.hebrewdino.ui.domain.SixStationArcQaPolicy
 import com.tal.hebrewdino.ui.domain.Season2PostFocusCorrectPolicy
 import com.tal.hebrewdino.ui.domain.Season2StationAudio
@@ -78,9 +79,15 @@ internal object AdvanceAfterRoundActions {
                 stationId == TrainingV1Config.STATION_MATCH_LETTER_TO_WORD
         val finaleMatchLetterStation =
             sagaEpisode && stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH
+        val stationUiSpec = StationBehaviorRegistry.getStationUiSpec(chapterId, stationId)
         val dragWordToPictureStation =
-            StationBehaviorRegistry.getStationUiSpec(chapterId, stationId).templateId ==
-                StationTemplateId.DragWordToPicture
+            stationUiSpec.templateId == StationTemplateId.DragWordToPicture
+        val stableDragStation =
+            dragWordToPictureStation ||
+                (
+                    stationUiSpec.templateId == StationTemplateId.DragMissingLetter &&
+                        Season1StationAudio.isSeason1DragMissingLetterStation(chapterId, stationId)
+                )
         val skipInterRoundFeedback =
             Season2StationQaPolicy.shouldSkipAdvanceRoundInterRoundFeedback(
                 gameplayChapterId = chapterId,
@@ -98,7 +105,7 @@ internal object AdvanceAfterRoundActions {
                 else -> gameFeedback.playCorrect()
             }
         }
-        if (!suppressInGameDinoProgress && !(isChapter3HighlightedLetterInWordStation && ch3SpellMidWord) && !dragWordToPictureStation) {
+        if (!suppressInGameDinoProgress && !(isChapter3HighlightedLetterInWordStation && ch3SpellMidWord) && !stableDragStation) {
             gameViewModel.dinoVisual = DinoVisual.Jump
         }
         val suppressSagaAdvancePraise =
@@ -120,16 +127,10 @@ internal object AdvanceAfterRoundActions {
                     season2Chapter1UxStationId,
                 ) &&
                 Random.nextFloat() < Episode1PraiseChance
-        /** Ch3/Ch6 st5, Ch6 st6, and Training st1/2/3 already play praise in action handlers. */
-        val trainingInStationPraiseAlreadyPlayed =
-            chapterId == TrainingV1Config.CHAPTER_ID &&
-                (stationId == TrainingV1Config.STATION_HEAR_LETTER_CHOOSE ||
-                    stationId == TrainingV1Config.STATION_WHICH_WORD_STARTS_WITH_LETTER ||
-                    stationId == TrainingV1Config.STATION_PICTURE_CHOOSE_WORD)
+        /** Ch3/Ch6 st5, Ch6 st6 already play praise in action handlers. */
         val inStationPraiseAlreadyPlayed =
             isChapter3AudioLetterRecognitionStation ||
                 (chapterId == 6 && stationId == 6) ||
-                trainingInStationPraiseAlreadyPlayed ||
                 Season2StationAudio.isPictureToWordStation(chapterId, stationId) ||
                 Season2StationQaPolicy.shouldSkipAdvanceRoundPraiseBecausePlayedInStation(
                     chapterId,
@@ -191,7 +192,7 @@ internal object AdvanceAfterRoundActions {
                 )
             }
         }
-        if (!suppressInGameDinoProgress && !(isChapter3HighlightedLetterInWordStation && ch3SpellMidWord) && !dragWordToPictureStation) {
+        if (!suppressInGameDinoProgress && !(isChapter3HighlightedLetterInWordStation && ch3SpellMidWord) && !stableDragStation) {
             dinoForward.animateTo(dinoForward.value + forwardDir * 12f, spring(dampingRatio = 0.75f, stiffness = 520f))
         }
         val strongerSuccessPulse =
@@ -203,7 +204,7 @@ internal object AdvanceAfterRoundActions {
                     SixStationArcQaPolicy.isSagaWhichWordStartsWithStation(chapterId, stationId) ||
                     stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH)) ||
                 trainingMatchLetterStation
-        if (!(isChapter3HighlightedLetterInWordStation && ch3SpellMidWord) && !dragWordToPictureStation) {
+        if (!(isChapter3HighlightedLetterInWordStation && ch3SpellMidWord) && !stableDragStation) {
             playSuccessPulse(
                 scope,
                 dinoScale,
@@ -252,11 +253,11 @@ internal object AdvanceAfterRoundActions {
         }
         val betweenFadeMs =
             when {
-                dragWordToPictureStation -> 0
+                stableDragStation -> 0
                 tightBetweenRounds -> 40
                 else -> BetweenQuestionFadeMs
             }
-        if (!dragWordToPictureStation) {
+        if (!stableDragStation) {
             contentAlpha.animateTo(0f, tween(betweenFadeMs))
         }
         if (!waitPraiseBeforeFade && !tightBetweenRounds) {
@@ -264,6 +265,11 @@ internal object AdvanceAfterRoundActions {
         }
         if (!tightBetweenRounds) {
             delay(5.milliseconds)
+        }
+        // Stable drag stations skip content fade; hide play UI before advancing so the next
+        // question is not composited for a frame while phase is still Play.
+        if (stableDragStation) {
+            gameViewModel.phase = GamePhase.Intro
         }
         session.nextQuestion()
         if (session.currentQuestion == null && !gameViewModel.completionCallbackFired) {
@@ -276,7 +282,7 @@ internal object AdvanceAfterRoundActions {
             }
             onComplete(stationId, session.correctCount, session.mistakeCount)
         }
-        if (!dragWordToPictureStation) {
+        if (!stableDragStation) {
             contentAlpha.animateTo(1f, tween(betweenFadeMs))
         }
     }

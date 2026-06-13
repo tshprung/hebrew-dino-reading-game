@@ -62,16 +62,7 @@ fun TrainingV1RoundScreen(
     val stationId =
         trainingStationOrderV1.getOrNull(round - 1)
             ?: TrainingV1Config.STATION_HEAR_LETTER_CHOOSE
-    val basePlan = StationQuizPlans.trainingV1(stationId)
-    val plan =
-        when {
-            stationId == TrainingV1Config.STATION_WHICH_WORD_STARTS_WITH_LETTER && (round == 2 || round == 9) ->
-                basePlan.copy(
-                    imageMatchCaptionSizeMultiplier = basePlan.imageMatchCaptionSizeMultiplier * 0.50f,
-                    imageMatchPictureSizeMultiplier = basePlan.imageMatchPictureSizeMultiplier * 0.50f,
-                )
-            else -> basePlan
-        }
+    val plan = StationQuizPlans.trainingV1(stationId)
     LetterQuizStationScreen(
         stationId = stationId,
         chapterId = TrainingV1Config.CHAPTER_ID,

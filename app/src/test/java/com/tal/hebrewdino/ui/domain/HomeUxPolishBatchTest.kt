@@ -75,10 +75,12 @@ class HomeUxPolishBatchTest {
         assertTrue(seasons.contains("seasonId = 2"))
         assertTrue(seasons.contains("SeasonAvailabilityPolicy.isSeason2Enabled()"))
         assertTrue(seasons.contains("if (BuildConfig.DEBUG)"))
+        val policy = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/domain/SeasonAvailabilityPolicy.kt")
+        assertTrue(policy.contains("2 -> BuildConfig.DEBUG"))
         val nav = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/AppNavSystemGraph.kt")
         assertTrue(nav.contains("onOpenSeason2 = {"))
         assertTrue(nav.contains("NavRoutes.Season2ChapterSelect"))
-        assertFalse(nav.contains("if (BuildConfig.DEBUG) {\n                    {\n                        host.navController.navigate(NavRoutes.Season2ChapterSelect)"))
+        assertTrue(nav.contains("if (!SeasonAvailabilityPolicy.isSeason2Enabled())"))
     }
 
     @Test

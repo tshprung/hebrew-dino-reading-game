@@ -49,6 +49,18 @@ class RawVoicePlayer(context: Context) {
         player = null
     }
 
+    suspend fun rawDurationMs(@RawRes rawResId: Int): Long {
+        if (rawResId == 0) return 0L
+        return withContext(Dispatchers.IO) {
+            val mp = MediaPlayer.create(appContext, rawResId) ?: return@withContext 0L
+            try {
+                mp.duration.toLong().coerceAtLeast(0L)
+            } finally {
+                mp.release()
+            }
+        }
+    }
+
     suspend fun playRawBlocking(@RawRes rawResId: Int) {
         if (rawResId == 0) {
             reportFailure(

@@ -9,8 +9,6 @@ import com.tal.hebrewdino.ui.domain.LessonChoice
 import com.tal.hebrewdino.ui.domain.Question
 import com.tal.hebrewdino.ui.domain.Season2Ch1QaPolicy
 import com.tal.hebrewdino.ui.domain.StationUiSpec
-import com.tal.hebrewdino.ui.domain.TrainingInstructionCopy
-import com.tal.hebrewdino.ui.domain.TrainingV1Config
 import com.tal.hebrewdino.ui.layout.ScreenFit
 
 @Composable
@@ -42,10 +40,6 @@ internal fun ImageMatchQuestionRenderer(
         Season2Ch1QaPolicy.isWhichWordStartsWithLayoutStation(chapterId, stationId)
     val rawHeaderInstructionText =
         when {
-            chapterId == TrainingV1Config.CHAPTER_ID &&
-                stationId == TrainingV1Config.STATION_WHICH_WORD_STARTS_WITH_LETTER &&
-                chapter1PlayerAddress != null ->
-                TrainingInstructionCopy.pictureStartsWith(chapter1PlayerAddress)
             stationUiSpec.imageMatchSagaWhichWordStation &&
                 chapter1PlayerAddress != null ->
                 when (chapter1PlayerAddress) {

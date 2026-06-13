@@ -86,11 +86,39 @@ object Season2GuessingCoach {
     ) {
         when (stationUiSpec.templateId) {
             StationTemplateId.DragWordToPicture -> {
+                if (
+                    Season1StationAudio.isSeason1DragWordToPictureStation(
+                        stationUiSpec.chapterId,
+                        stationUiSpec.stationId,
+                    )
+                ) {
+                    Season1StationAudio.playDragWordToPictureInstruction(
+                        rawVoice = rawVoice,
+                        chapterId = stationUiSpec.chapterId,
+                        stationId = stationUiSpec.stationId,
+                        context = "Season2GuessingCoach.replayForSeason1Template(DragWordToPicture)",
+                    )
+                    return
+                }
                 val q = question as? Question.DragWordToPictureQuestion ?: return
                 val catalogId = q.pairs.firstOrNull()?.catalogEntryId ?: return
                 playWordRaw(catalogId, rawVoice, uxStationId)
             }
             StationTemplateId.DragMissingLetter -> {
+                if (
+                    Season1StationAudio.isSeason1DragMissingLetterStation(
+                        stationUiSpec.chapterId,
+                        stationUiSpec.stationId,
+                    )
+                ) {
+                    Season1StationAudio.playDragMissingLetterInstruction(
+                        rawVoice = rawVoice,
+                        chapterId = stationUiSpec.chapterId,
+                        stationId = stationUiSpec.stationId,
+                        context = "Season2GuessingCoach.replayForSeason1Template(DragMissingLetter)",
+                    )
+                    return
+                }
                 val q = question as? Question.DragMissingLetterQuestion ?: return
                 playWordRaw(q.catalogEntryId, rawVoice, uxStationId)
             }

@@ -232,23 +232,12 @@ internal fun GameQuestionHost(
                 entryPulseScale = state.entryPulseScale,
                 optionsShakePx = state.optionsShakePx,
                 onSagaGridLetterTapped =
-                    if (ui.sagaUsesFindGridAudioStaging) {
+                    if (ui.audioEnabled) {
                         { tapped -> handlers.handleFindGridSagaGridLetterTapped(tapped, current) }
                     } else {
                         null
                     },
-                onCorrectTap =
-                    if (ui.audioEnabled && !ui.sagaUsesFindGridAudioStaging) {
-                        {
-                            FindGridActions.handleNonStagedCorrectTap(
-                                audioEnabled = ui.audioEnabled,
-                                scope = deps.scope,
-                                sfx = deps.sfx,
-                            )
-                        }
-                    } else {
-                        null
-                    },
+                onCorrectTap = null,
                 onCellTapped = { index -> handlers.handleFindGridCellTapped(index, current) },
                 onCompleted = { handlers.handleFindGridCompleted() },
                 modifier = Modifier.fillMaxSize(),
@@ -768,26 +757,9 @@ internal fun GameQuestionHost(
                         } else {
                             null
                         }
-                    val imageMatchExtraNudgeDp =
-                        if (ui.chapterId == TrainingV1Config.CHAPTER_ID &&
-                            ui.stationId == TrainingV1Config.STATION_WHICH_WORD_STARTS_WITH_LETTER &&
-                            ui.trainingRoundIndex == 9
-                        ) {
-                            SixStationArcHalfCmNudge
-                        } else {
-                            0.dp
-                        }
-                    val effectiveStationUiSpec =
-                        if (imageMatchExtraNudgeDp != 0.dp) {
-                            ui.stationUiSpec.copy(
-                                imageMatchVerticalNudgeDp = ui.stationUiSpec.imageMatchVerticalNudgeDp + imageMatchExtraNudgeDp.value,
-                            )
-                        } else {
-                            ui.stationUiSpec
-                        }
                     ImageMatchQuestionRenderer(
                         current = current,
-                        stationUiSpec = effectiveStationUiSpec,
+                        stationUiSpec = ui.stationUiSpec,
                         chapter1PlayerAddress = ui.chapter1PlayerAddress,
                         isCompactLandscapePhone = ui.isCompactLandscapePhone,
                         headerInstructionFontScale =
@@ -795,7 +767,6 @@ internal fun GameQuestionHost(
                                 Season2StationUx.stationKindForGameplayChapter(ui.chapterId, ui.stationId) ==
                                     Season2ChapterStationPlans.StationKind.WhichWordStartsWith ->
                                     1.15f
-                                ui.chapterId == TrainingV1Config.CHAPTER_ID -> 1.35f
                                 else -> 1.35f * 2f
                             },
                         listenOnlyTemporaryHintLetter = listenOnlyTemporaryHintLetter,
@@ -871,6 +842,7 @@ internal fun GameQuestionHost(
                 question = current,
                 contentKey = deps.session.currentIndex,
                 instructionText = DragMissingLetterCopy.Instruction,
+                sideBySideLayout = ui.stationUiSpec.dragMissingLetterSideBySideLayout,
                 enabled = state.enabled && !deps.gameViewModel.inputLocked,
                 shakeEpoch = state.shakeEpoch,
                 onPictureTapReplayWord =
@@ -879,6 +851,7 @@ internal fun GameQuestionHost(
                     } else {
                         null
                     },
+                onLetterSelected = null,
                 onLetterPlaced = { letter -> handlers.handleDragMissingLetterPlace(letter) },
                 modifier = Modifier.fillMaxSize(),
             )

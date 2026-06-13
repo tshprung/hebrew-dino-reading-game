@@ -11,7 +11,6 @@ import com.tal.hebrewdino.ui.domain.InstructionPanelStyle
 import com.tal.hebrewdino.ui.domain.Question
 import com.tal.hebrewdino.ui.domain.StationInstructionCopy
 import com.tal.hebrewdino.ui.domain.StationUiSpec
-import com.tal.hebrewdino.ui.domain.TrainingV1Config
 import com.tal.hebrewdino.ui.data.PlayerAddress
 import com.tal.hebrewdino.ui.game.FindLetterGridGame
 import com.tal.hebrewdino.ui.layout.ScreenFit
@@ -46,11 +45,8 @@ fun FindLetterGridStationContent(
     val isCompactLandscapePhone = ScreenFit.isCompactLandscapePhone()
     val suppressHeaderTargetLetter =
         sagaUsesFindGridAudioStaging && stationUiSpec.findGridSuppressHeaderTargetLetter
-    val isTrainingStation4 =
-        stationUiSpec.chapterId == TrainingV1Config.CHAPTER_ID &&
-            stationUiSpec.stationId == TrainingV1Config.STATION_FIND_HEARD_LETTER_IN_GRID
     val inlineInstructionText =
-        if (isSagaRevealStation || isTrainingStation4) {
+        if (isSagaRevealStation) {
             val resolvedChapter1FindLetterOverride =
                 if (stationUiSpec.findGridSagaRevealStation && chapter1PlayerAddress != null) {
                     when (chapter1PlayerAddress) {
@@ -70,7 +66,6 @@ fun FindLetterGridStationContent(
             null
         }
 
-    val trainingExtraDown = if (isTrainingStation4) 15.dp else 0.dp
     FindLetterGridGame(
         question = question,
         hideListenOnlyHeaderTargetLetter = stationUiSpec.findGridHideListenOnlyHeaderTargetLetter,
@@ -86,7 +81,7 @@ fun FindLetterGridStationContent(
         cellSideScale =
             when {
                 isCompactLandscapePhone -> 0.9f
-                isSagaRevealStation || isTrainingStation4 -> 0.9f
+                isSagaRevealStation -> 0.9f
                 else -> 1f
             },
         contentNudgeDownFraction = 0f,
@@ -97,7 +92,7 @@ fun FindLetterGridStationContent(
         gridLetterSizeMultiplier =
             when {
                 sagaUsesFindGridAudioStaging -> 1.5f
-                isTrainingStation4 -> 1.5f
+                isSagaRevealStation -> 1.5f
                 else -> 1f
             },
         correctCellPeakScale = if (sagaUsesFindGridAudioStaging) 1.30f else 1.12f,
@@ -109,7 +104,6 @@ fun FindLetterGridStationContent(
             modifier
                 .fillMaxSize()
                 .scale(entryPulseScale)
-                .offset { IntOffset(optionsShakePx.toInt(), 0) }
-                .then(if (trainingExtraDown != 0.dp) Modifier.offset(y = trainingExtraDown) else Modifier),
+                .offset { IntOffset(optionsShakePx.toInt(), 0) },
     )
 }

@@ -30,8 +30,16 @@ object Chapter6StationOrder {
                     imageMatchCaptionSizeMultiplier = 1f,
                     imageMatchPictureSizeMultiplier = 1f,
                 )
-            3 -> Season1DragStationQuizPlans.dragWordToPicture(initialGroupIndex = 0)
-            4 -> Season1DragStationQuizPlans.dragMissingLetter()
+            3 ->
+                Season1DragStationQuizPlans.dragWordToPicture(
+                    questionCount = 5,
+                    pairCount = 3,
+                    initialGroupIndex = 0,
+                )
+            4 ->
+                Season1DragStationQuizPlans.dragMissingLetter(questionCount = 6).copy(
+                    season2WordCatalogIds = Chapter6Config.dragMissingLetterWordCatalogIds(),
+                )
             5 ->
                 StationQuizPlan(
                     mode = StationQuizMode.PickLetter,

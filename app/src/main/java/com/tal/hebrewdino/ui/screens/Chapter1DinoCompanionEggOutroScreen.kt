@@ -1,7 +1,6 @@
 package com.tal.hebrewdino.ui.screens
 
 
-
 import androidx.compose.foundation.Image
 
 import androidx.compose.foundation.layout.Arrangement
@@ -95,7 +94,6 @@ import com.tal.hebrewdino.ui.data.PlayerAddress
 import com.tal.hebrewdino.ui.layout.ScreenFit
 
 
-
 /** Season 1 Ch.1 finale: selected companion + one glowing found egg. */
 
 @Composable
@@ -110,7 +108,7 @@ fun Chapter1DinoCompanionEggOutroScreen(
 
     modifier: Modifier = Modifier,
 
-) {
+    ) {
 
     val context = LocalContext.current
     val isDebuggable = remember {
@@ -125,13 +123,16 @@ fun Chapter1DinoCompanionEggOutroScreen(
     var phase by remember { mutableStateOf(OutroPhase.Companion) }
     val isCompactLandscapePhone = ScreenFit.isCompactLandscapePhone()
 
-    val (portraitW, portraitH) = Chapter1DinoCompanionPilot.finalePortraitSize(isCompactLandscapePhone)
+    val (portraitW, portraitH) = Chapter1DinoCompanionPilot.finalePortraitSize(
+        isCompactLandscapePhone
+    )
 
     val foundEggSize = if (isCompactLandscapePhone) 140.dp else 176.dp
     val bubblePortraitW = if (isCompactLandscapePhone) 148.dp else 168.dp
     val bubblePortraitH = bubblePortraitW
 
-    val assets = remember(companionCharacter) { Chapter1DinoCompanionPilot.assets(companionCharacter) }
+    val assets =
+        remember(companionCharacter) { Chapter1DinoCompanionPilot.assets(companionCharacter) }
 
     val finaleText =
 
@@ -251,7 +252,7 @@ fun Chapter1DinoCompanionEggOutroScreen(
 
             contentScale = ContentScale.Crop,
 
-        )
+            )
 
 
 
@@ -269,7 +270,7 @@ fun Chapter1DinoCompanionEggOutroScreen(
 
             horizontalAlignment = Alignment.CenterHorizontally,
 
-        ) {
+            ) {
 
             Spacer(modifier = Modifier.height(4.dp))
 
@@ -286,7 +287,7 @@ fun Chapter1DinoCompanionEggOutroScreen(
 
                 horizontalAlignment = Alignment.CenterHorizontally,
 
-            ) {
+                ) {
 
                 if (phase == OutroPhase.Companion) {
                     androidx.compose.foundation.layout.Row(
@@ -302,7 +303,10 @@ fun Chapter1DinoCompanionEggOutroScreen(
                             poseRes = assets.poseHappy,
                             talkFrameResIds = assets.talkFrameResIds,
                             isTalking = voicePlaying,
-                            modifier = Modifier.size(width = bubblePortraitW, height = bubblePortraitH),
+                            modifier = Modifier.size(
+                                width = bubblePortraitW,
+                                height = bubblePortraitH
+                            ),
                             contentDescription = companionCharacter.displayNameHebrew(),
                         )
                     }
@@ -349,14 +353,14 @@ fun Chapter1DinoCompanionEggOutroScreen(
                         .widthIn(min = 180.dp, max = 320.dp)
                         .height(52.dp),
 
-            ) {
+                ) {
 
                 Text(
 
                     text = if (voicePlaying) "\u200Fהמשך" else "\u200Fנמשיך במסע!",
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
 
-                )
+                    )
 
             }
 

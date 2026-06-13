@@ -11,6 +11,7 @@ import com.tal.hebrewdino.ui.companion.playAddressAwareTryAgainBlocking
 import com.tal.hebrewdino.ui.companion.playLetterThenAddressAwareTryAgain
 import com.tal.hebrewdino.ui.data.PlayerAddress
 import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
+import com.tal.hebrewdino.ui.domain.Season1StationAudio
 import com.tal.hebrewdino.ui.domain.Season2StationAudio
 import com.tal.hebrewdino.ui.domain.Season2WarmupStationQaPolicy
 import com.tal.hebrewdino.ui.feedback.GameFeedback
@@ -283,7 +284,8 @@ internal object WrongFeedbackActions {
                                     stationId,
                                 )
                         ) &&
-                        !(chapterId == 3 && stationId == 3)
+                        !(chapterId == 3 && stationId == 3) &&
+                        !(chapterId == 6 && stationId == 3)
                 if (allowWrongSfx) {
                     gameFeedback.playWrong()
                     onWrongHook()
@@ -602,7 +604,8 @@ internal object WrongFeedbackActions {
                                 (chapterId == 1 || chapterId == 2) &&
                                     stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH ->
                                     0L
-                                (chapterId == 3 || chapterId == 6) && stationId == 4 -> 0L
+                                chapterId == 3 && stationId == 4 -> 0L
+                                Season1StationAudio.isSeason1DragMissingLetterStation(chapterId, stationId) -> 110L
                                 else -> 110L
                             }
                         delay(feedbackDelayMs)
@@ -680,7 +683,9 @@ internal object WrongFeedbackActions {
 
                         if (wrongPickedLetter != null) {
                             if (!wrongPickedLetterAlreadySpoken) {
-                                if (chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) {
+                                if (chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5 ||
+                                    Season1StationAudio.isSeason1DragMissingLetterStation(chapterId, stationId)
+                                ) {
                                     val resId = AudioClips.letterNameRawResId(wrongPickedLetter)
                                     if (resId == null) {
                                         android.util.Log.e(
@@ -702,7 +707,9 @@ internal object WrongFeedbackActions {
                                     } else {
                                         rawVoice.playRawBlocking(resId)
                                     }
-                                } else if (chapterId == 3 || chapterId == 6) {
+                                } else if ((chapterId == 3 || chapterId == 6) &&
+                                    !Season1StationAudio.isSeason1DragMissingLetterStation(chapterId, stationId)
+                                ) {
                                     val resId = AudioClips.letterNameRawResId(wrongPickedLetter)
                                     if (resId == null) {
                                         android.util.Log.e(

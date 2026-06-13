@@ -59,5 +59,23 @@ object Chapter6Config {
             .map { it.word to it.id }
             .distinctBy { it.first }
             .toList()
+
+    /**
+     * Ch6 st4 drag-missing-letter uses Chapter 4 review words only so rounds stay fresh
+     * after Ch5 st2 (which draws from the Chapter 5 letter batch).
+     */
+    fun dragMissingLetterWordCatalogIds(): List<String> {
+        val ch4Letters = Chapter4Config.letters.toSet()
+        return LessonWordCatalog.entries
+            .asSequence()
+            .filter { it.letter in ch4Letters }
+            .map { it.id }
+            .filter { catalogId ->
+                DragStationGenerators.isValidForDragMissingLetter(catalogId, missingIndex = 0) &&
+                    Season2StationContentValidator.wordAssetCheck(catalogId)?.isValid == true
+            }
+            .distinct()
+            .toList()
+    }
 }
 

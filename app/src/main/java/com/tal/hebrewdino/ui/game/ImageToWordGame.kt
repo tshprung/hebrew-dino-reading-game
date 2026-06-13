@@ -24,7 +24,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -57,14 +56,9 @@ import com.tal.hebrewdino.ui.domain.Question
 import com.tal.hebrewdino.ui.domain.Season2ChapterIds
 import com.tal.hebrewdino.ui.domain.Season2Ch1QaPolicy
 import com.tal.hebrewdino.ui.domain.Season2StationAudio
-import com.tal.hebrewdino.ui.domain.TrainingV1Config
+import com.tal.hebrewdino.ui.domain.TrainingV1SourceStation
 import com.tal.hebrewdino.ui.layout.ScreenFit
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlin.time.Duration.Companion.milliseconds
-
-private const val TrainingV1ImageToWordReplayButtonTag: String = "training_v1_image_to_word_replay"
-private const val TrainingV1ImageToWordHintButtonTag: String = "training_v1_image_to_word_hint"
 
 @SuppressLint("UnusedBoxWithConstraintsScope")
 @Composable
@@ -75,7 +69,7 @@ fun ImageToWordGame(
     instructionText: String,
     chapterId: Int? = null,
     stationId: Int? = null,
-    /** Training chapter: 1-based round index (e.g. 3 and 8 are ImageToWord). */
+    /** Unused; kept for call-site stability. */
     trainingRoundIndex: Int? = null,
     onPictureTapReplayWord: (() -> Unit)? = null,
     innerPictureScaleForChoice: (LessonChoice) -> Float = { choice -> Chapter1Station5And6ImageMatchInnerScale.innerScale(choice) },
@@ -99,12 +93,14 @@ fun ImageToWordGame(
         val w = maxWidth
         val density = LocalDensity.current
         val isCompactLandscapePhone = ScreenFit.isCompactLandscapePhone()
-        val isTrainingStation3 =
-            chapterId == TrainingV1Config.CHAPTER_ID && stationId == TrainingV1Config.STATION_PICTURE_CHOOSE_WORD
-        val isTrainingImageToWordRound38 =
-            isTrainingStation3 && trainingRoundIndex in setOf(3, 8)
-        val isChapter3Station6ImageToWord = chapterId == 3 && stationId == 6
-        val isChapter6Station6ImageToWord = chapterId == 6 && stationId == 6
+        val (layoutChapterId, layoutStationId) =
+            if (chapterId != null && stationId != null) {
+                TrainingV1SourceStation.resolve(chapterId, stationId)
+            } else {
+                chapterId to stationId
+            }
+        val isChapter3Station6ImageToWord = layoutChapterId == 3 && layoutStationId == 6
+        val isChapter6Station6ImageToWord = layoutChapterId == 6 && layoutStationId == 6
         val isSeason2ImageToWord =
             chapterId != null &&
                 stationId != null &&
@@ -113,7 +109,7 @@ fun ImageToWordGame(
             isSeason2ImageToWord && chapterId == Season2ChapterIds.Chapter1Tyrannosaurus
         val isChapter3Or6Station6ImageToWord =
             isChapter3Station6ImageToWord || isChapter6Station6ImageToWord || isSeason2ImageToWord
-        val isInstructionWrapContent = isTrainingImageToWordRound38 || isChapter3Or6Station6ImageToWord
+        val isInstructionWrapContent = isChapter3Or6Station6ImageToWord
 
         // Match the same card sizing math as PictureStartsWith/ImageMatch (Episode 1/2 station 4).
         val cardGap = 10.dp
@@ -131,11 +127,8 @@ fun ImageToWordGame(
         if (isChapter3Or6Station6ImageToWord) {
             pictureCardW = (pictureCardW * 1.40f).coerceAtMost(w - 48.dp)
         }
-        if (isTrainingImageToWordRound38) {
-            pictureCardW = (pictureCardW * 1.30f).coerceAtMost(w - 48.dp)
-        }
         val pictureCardH = pictureCardW * LessonChoiceCardPictureAspect
-        val chapter3Station6ExtraDown = if (chapterId == 3 && stationId == 6) 19.dp else 0.dp
+        val chapter3Station6ExtraDown = if (layoutChapterId == 3 && layoutStationId == 6) 19.dp else 0.dp
         val chapter6Station6ExtraDown =
             when {
                 chapterId == 6 && stationId == 6 -> 38.dp
@@ -145,15 +138,8 @@ fun ImageToWordGame(
                 isSeason2ImageToWord -> 12.dp
                 else -> 0.dp
             }
-        // Training rounds 3 and 8 (ImageToWord): ~5 mm lower than default (~19 dp).
-        val trainingImageToWordExtraDown =
-            if (isTrainingImageToWordRound38) {
-                19.dp
-            } else {
-                0.dp
-            }
         val baseDown = if (isCompactLandscapePhone) (-10).dp else 0.dp
-        val totalDown = baseDown + chapter3Station6ExtraDown + chapter6Station6ExtraDown + trainingImageToWordExtraDown
+        val totalDown = baseDown + chapter3Station6ExtraDown + chapter6Station6ExtraDown
         var hintLetter by remember(contentKey) { mutableStateOf<String?>(null) }
         var hintEpoch by remember(contentKey) { mutableIntStateOf(0) }
 
@@ -246,7 +232,6 @@ fun ImageToWordGame(
                         text = instructionText,
                         fontSize =
                             when {
-                                isTrainingStation3 && isCompactLandscapePhone -> 18.sp
                                 isCompactLandscapePhone -> 20.sp
                                 else -> 24.sp
                             },
@@ -315,7 +300,6 @@ fun ImageToWordGame(
                         density = density,
                         chapterId = chapterId,
                         stationId = stationId,
-                        isTrainingStation3 = isTrainingStation3,
                         isChapter3Or6Station6ImageToWord = isChapter3Or6Station6ImageToWord,
                         successChoiceId = successChoiceId,
                         wrongFlashChoiceId = wrongFlashChoiceId,
@@ -327,44 +311,6 @@ fun ImageToWordGame(
                             wrongFlashEpoch += 1
                         },
                     )
-                }
-            }
-        }
-
-        if (isTrainingStation3) {
-            Column(
-                modifier =
-                    Modifier
-                        .align(Alignment.CenterStart)
-                        .padding(start = 10.dp)
-                        .widthIn(max = 118.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                FilledTonalButton(
-                    onClick = { onPictureTapReplayWord?.invoke() },
-                    enabled = enabled && onPictureTapReplayWord != null,
-                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 8.dp),
-                    modifier = Modifier.testTag(TrainingV1ImageToWordReplayButtonTag),
-                ) {
-                    Text("🔊 שוב", fontSize = 22.sp)
-                }
-                FilledTonalButton(
-                    onClick = {
-                        val first = question.targetWord.firstOrNull()?.toString() ?: return@FilledTonalButton
-                        hintLetter = first
-                        hintEpoch += 1
-                        val epoch = hintEpoch
-                        scope.launch {
-                            delay(2100L.milliseconds)
-                            if (hintEpoch == epoch) hintLetter = null
-                        }
-                    },
-                    enabled = enabled,
-                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 8.dp),
-                    modifier = Modifier.testTag(TrainingV1ImageToWordHintButtonTag),
-                ) {
-                    Text("רמז", fontSize = 22.sp)
                 }
             }
         }
@@ -467,7 +413,6 @@ private fun Ch1FinaleImageToWordAlignedContent(
                             density = density,
                             chapterId = chapterId,
                             stationId = stationId,
-                            isTrainingStation3 = false,
                             isChapter3Or6Station6ImageToWord = true,
                             successChoiceId = successChoiceId,
                             wrongFlashChoiceId = wrongFlashChoiceId,
@@ -496,7 +441,6 @@ private fun ImageToWordOptionsRow(
     density: androidx.compose.ui.unit.Density,
     chapterId: Int?,
     stationId: Int?,
-    isTrainingStation3: Boolean,
     isChapter3Or6Station6ImageToWord: Boolean,
     successChoiceId: String?,
     wrongFlashChoiceId: String?,
@@ -512,7 +456,7 @@ private fun ImageToWordOptionsRow(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         val hasLockedCorrectChoice =
-            (isChapter3Or6Station6ImageToWord || isTrainingStation3) && successChoiceId != null
+            isChapter3Or6Station6ImageToWord && successChoiceId != null
         question.choices.forEach { choice ->
             val scale = remember(choice.id, contentKey) { Animatable(1f) }
             val flash = remember(choice.id, contentKey) { Animatable(0f) }
@@ -530,7 +474,6 @@ private fun ImageToWordOptionsRow(
                     word = choice.word,
                     sizeMultiplier =
                         when {
-                            isTrainingStation3 && choice.word == "היפופוטם" -> 1.05f
                             isChapter3Or6Station6ImageToWord -> 1.25f * 0.70f
                             else -> 1.25f
                         },
@@ -591,7 +534,7 @@ private fun ImageToWordOptionsRow(
                         .padding(horizontal = 10.dp, vertical = 6.dp),
                 contentAlignment = Alignment.Center,
             ) {
-                if (isTrainingStation3 || isChapter3Or6Station6ImageToWord) {
+                if (isChapter3Or6Station6ImageToWord) {
                     AutoFitSingleLineText(
                         text = choice.word,
                         maxWidth = optionW - 20.dp,

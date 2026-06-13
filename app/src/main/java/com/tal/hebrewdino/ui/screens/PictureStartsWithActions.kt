@@ -65,9 +65,10 @@ internal object PictureStartsWithActions {
                         gameViewModel.correctTapPulseLetter = picked
                         gameViewModel.correctTapPulseEpoch += 1
                         cancelFeedbackVoice()
-                        val applyImmediateLetterNameAudio =
-                            chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5 ||
-                                isSeason2QuizChapter
+                val applyImmediateLetterNameAudio =
+                    chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5 ||
+                        isSeason2QuizChapter ||
+                        ((chapterId == 3 || chapterId == 6) && stationId == 1)
                         val job =
                             GameAudioActions.launchFeedbackVoiceNoCancel(
                                 audioEnabled = true,
@@ -129,7 +130,39 @@ internal object PictureStartsWithActions {
                         gameViewModel.correctTapPulseLetter = picked
                         gameViewModel.correctTapPulseEpoch += 1
                         if ((chapterId == 3 || chapterId == 6) && stationId == 1) {
+                            gameViewModel.inputLocked = true
                             if (audioEnabled) {
+                                val letterJob =
+                                    GameAudioActions.launchFeedbackVoiceNoCancel(
+                                        audioEnabled = true,
+                                        scope = scope,
+                                        audioRuntime = audioRuntime,
+                                    ) {
+                                        val resId = AudioClips.letterNameRawResId(picked)
+                                        when {
+                                            resId == null -> {
+                                                android.util.Log.e(
+                                                    "MissingContent",
+                                                    "Missing required letter-name audio. chapterId=$chapterId stationId=$stationId context=PictureStartsWithActions.handlePick(correct,ch3Or6St1) stage=missing raw letter-name mapping letter='$picked'",
+                                                )
+                                                rawVoice?.playRawBlocking(0)
+                                            }
+                                            rawVoice == null -> {
+                                                android.util.Log.e(
+                                                    "MissingContent",
+                                                    "Missing required letter-name audio. chapterId=$chapterId stationId=$stationId context=PictureStartsWithActions.handlePick(correct,ch3Or6St1) stage=rawVoice=null expectedRawResId=$resId",
+                                                )
+                                                voice.playRequiredBlocking(
+                                                    assetPath = "",
+                                                    context = "PictureStartsWithActions.handlePick(correct,ch3Or6St1,rawVoice=null)",
+                                                    chapterId = chapterId,
+                                                    stationId = stationId,
+                                                )
+                                            }
+                                            else -> rawVoice.playRawBlocking(resId)
+                                        }
+                                    }
+                                GameAudioActions.joinSilently(letterJob)
                                 GameAudioActions.awaitTrackedVoices(audioRuntime, 10000L)
                             }
                             delay(Chapter3Or6Station1SuccessHoldMs)
@@ -151,9 +184,10 @@ internal object PictureStartsWithActions {
                 if (useLetterStagingWrong) {
                     gameViewModel.station4WrongFlashLetter = picked
                     gameViewModel.station4WrongFlashEpoch += 1
-                    val applyImmediateLetterNameAudio =
-                        chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5 ||
-                            isSeason2QuizChapter
+                val applyImmediateLetterNameAudio =
+                    chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5 ||
+                        isSeason2QuizChapter ||
+                        ((chapterId == 3 || chapterId == 6) && stationId == 1)
                     if (audioEnabled && applyImmediateLetterNameAudio) {
                         val resId = AudioClips.letterNameRawResId(picked)
                         if (resId == null) {
@@ -222,10 +256,38 @@ internal object PictureStartsWithActions {
                         }
                     }
                 } else {
-                    if (audioEnabled) ChildGameAudioHooks.onWrong()
                     if (audioEnabled && (chapterId == 3 || chapterId == 6) && stationId == 1) {
-                        onWrongFeedback(null, true)
+                        val resId = AudioClips.letterNameRawResId(picked)
+                        if (resId == null) {
+                            android.util.Log.e(
+                                "MissingContent",
+                                "Missing required letter-name audio. chapterId=$chapterId stationId=$stationId context=PictureStartsWithActions.handlePick(wrong,ch3Or6St1) stage=missing raw letter-name mapping letter='$picked'",
+                            )
+                            if (audioEnabled) ChildGameAudioHooks.onWrong()
+                            onWrongFeedback(picked, false)
+                            return
+                        }
+                        if (rawVoice == null) {
+                            android.util.Log.e(
+                                "MissingContent",
+                                "Missing required letter-name audio. chapterId=$chapterId stationId=$stationId context=PictureStartsWithActions.handlePick(wrong,ch3Or6St1) stage=rawVoice=null expectedRawResId=$resId",
+                            )
+                            if (audioEnabled) ChildGameAudioHooks.onWrong()
+                            onWrongFeedback(picked, false)
+                            return
+                        }
+                        gameViewModel.inputLocked = true
+                        scope.launch {
+                            try {
+                                rawVoice.playRawBlocking(resId)
+                                if (audioEnabled) ChildGameAudioHooks.onWrong()
+                                onWrongFeedback(picked, true)
+                            } finally {
+                                gameViewModel.inputLocked = false
+                            }
+                        }
                     } else {
+                        if (audioEnabled) ChildGameAudioHooks.onWrong()
                         onWrongFeedback(null, false)
                     }
                 }

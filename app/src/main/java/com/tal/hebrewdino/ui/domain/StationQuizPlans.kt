@@ -158,66 +158,7 @@ object StationQuizPlans {
             }
         }
 
-    fun trainingV1(stationId: Int): StationQuizPlan =
-        when (stationId) {
-            TrainingV1Config.STATION_HEAR_LETTER_CHOOSE ->
-                StationQuizPlan(
-                    mode = StationQuizMode.PickLetter,
-                    questionCount = 1,
-                    initialGroupIndex = 0,
-                    optionCount = 6,
-                    listenOnlyTargetPrompt = true,
-                    sortOptionLetters = true,
-                )
-            TrainingV1Config.STATION_WHICH_WORD_STARTS_WITH_LETTER ->
-                StationQuizPlan(
-                    mode = StationQuizMode.ImageMatch,
-                    questionCount = 1,
-                    initialGroupIndex = 0,
-                    imageMatchChoiceCount = 3,
-                    imageMatchAlwaysThreeChoices = true,
-                    imageMatchCaptionSizeMultiplier = 2.0f,
-                    imageMatchPictureSizeMultiplier = 1.15f,
-                )
-            TrainingV1Config.STATION_PICTURE_CHOOSE_WORD ->
-                StationQuizPlan(
-                    mode = StationQuizMode.ImageMatch,
-                    questionCount = 1,
-                    initialGroupIndex = 0,
-                    imageMatchChoiceCount = 3,
-                    imageMatchAlwaysThreeChoices = true,
-                    imageMatchCaptionSizeMultiplier = 1.05f,
-                    imageMatchPictureSizeMultiplier = 1.05f,
-                )
-            TrainingV1Config.STATION_FIND_HEARD_LETTER_IN_GRID ->
-                StationQuizPlan(
-                    mode = StationQuizMode.FindLetterGrid,
-                    questionCount = 1,
-                    initialGroupIndex = 0,
-                    listenOnlyTargetPrompt = true,
-                    findLetterGridMaxTargetCount = 4,
-                )
-            TrainingV1Config.STATION_WORD_BALLOONS ->
-                StationQuizPlan(
-                    mode = StationQuizMode.PopBalloons,
-                    questionCount = 1,
-                    initialGroupIndex = 0,
-                    popAllLettersInWord = false,
-                    optionCount = 10,
-                )
-            TrainingV1Config.STATION_MATCH_LETTER_TO_WORD ->
-                StationQuizPlan(
-                    mode = StationQuizMode.ImageMatch,
-                    questionCount = 1,
-                    initialGroupIndex = 0,
-                    imageMatchChoiceCount = 3,
-                    imageMatchAlwaysThreeChoices = true,
-                    imageMatchCaptionSizeMultiplier = 1.5f,
-                    imageMatchPictureSizeMultiplier = 1f,
-                    forbidVehicleSynonymsTogether = true,
-                )
-            else -> error("Unknown Training v1 stationId=$stationId")
-        }
+    fun trainingV1(stationId: Int): StationQuizPlan = TrainingV1SourceStation.sourceQuizPlan(stationId)
 
     // Season 2 stations are routed explicitly from Season2 screens; no shared plan entry needed here.
 }

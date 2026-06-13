@@ -24,6 +24,8 @@ class StationBehaviorRegistryTest {
             stationId == FINALE_PICTURE_LETTER_MATCH
         ) {
             "התאימו כל אות למילה שמתחילה בה"
+        } else if ((chapterId == 3 || chapterId == 6) && stationId == 2) {
+            "התאימו כל אות למילה שמתחילה בה"
         } else {
             StationInstructionCopy.MatchLetterFinale
         }
@@ -229,10 +231,14 @@ class StationBehaviorRegistryTest {
     }
 
     @Test
-    fun chapter6_station3_dragWordToPicture_usesTwoPairs() {
+    fun chapter6_station3_dragWordToPicture_matchesChapter3() {
         val p3 = StationQuizPlans.chapter6(3)
         assertEquals(StationQuizMode.DragWordToPicture, p3.mode)
-        assertEquals(2, p3.dragWordToPicturePairCount)
+        assertEquals(5, p3.questionCount)
+        assertEquals(3, p3.dragWordToPicturePairCount)
+        val ch3Spec = StationBehaviorRegistry.getStationUiSpec(3, 3)
+        val ch6Spec = StationBehaviorRegistry.getStationUiSpec(6, 3)
+        assertEquals(ch3Spec.layoutComparable(), ch6Spec.layoutComparable())
     }
 
     @Test
@@ -247,7 +253,7 @@ class StationBehaviorRegistryTest {
     @Test
     fun chapter6_station_layout_matches_chapter3_except_station4() {
         // Ch3 st3 has dedicated drag-word layout polish; Ch3 st4 differs from Ch6 st4 by design.
-        for (stationId in listOf(1, 2, 5, 6)) {
+        for (stationId in listOf(1, 2, 3, 5, 6)) {
             val ch3 = StationBehaviorRegistry.getStationUiSpec(3, stationId).layoutComparable()
             val ch6 = StationBehaviorRegistry.getStationUiSpec(6, stationId).layoutComparable()
             assertEquals("Station $stationId layout must match between ch3 and ch6", ch3, ch6)
@@ -405,6 +411,25 @@ class StationBehaviorRegistryTest {
     }
 
     @Test
+    fun chapter5_station2_dragMissingLetter_usesSideBySideLayout() {
+        assertTrue(StationBehaviorRegistry.getStationUiSpec(5, 2).dragMissingLetterSideBySideLayout)
+    }
+
+    @Test
+    fun chapter6_station4_dragMissingLetter_matchesChapter5Station2Layout() {
+        val ch5 = StationBehaviorRegistry.getStationUiSpec(5, 2)
+        val ch6 = StationBehaviorRegistry.getStationUiSpec(6, 4)
+        assertEquals(StationTemplateId.DragMissingLetter, ch6.templateId)
+        assertTrue(ch6.dragMissingLetterSideBySideLayout)
+        assertEquals(ch5.layoutComparable(), ch6.layoutComparable())
+        assertEquals(StationQuizPlans.chapter5(2).questionCount, StationQuizPlans.chapter6(4).questionCount)
+        assertEquals(
+            StationQuizPlans.chapter5(2).dragMissingLetterIndex,
+            StationQuizPlans.chapter6(4).dragMissingLetterIndex,
+        )
+    }
+
+    @Test
     fun episode4_finale_matchLetterInstructionText_present() {
         assertEquals(
             "התאימו כל אות למילה שמתחילה בה",
@@ -450,8 +475,10 @@ class StationBehaviorRegistryTest {
                 TrainingV1Config.CHAPTER_ID,
                 TrainingV1Config.STATION_WORD_BALLOONS,
             )
-        assertTrue(training.popBalloonsUseSoundPoolPrompt)
-        assertTrue(training.popBalloonsHelpControlsEnabled)
+        val ch1Balloons = StationBehaviorRegistry.getStationUiSpec(1, BALLOON_POP)
+        assertEquals(ch1Balloons.popBalloonsUseSoundPoolPrompt, training.popBalloonsUseSoundPoolPrompt)
+        assertEquals(ch1Balloons.popBalloonsHelpControlsEnabled, training.popBalloonsHelpControlsEnabled)
+        assertEquals(ch1Balloons.balloonInstructionOverride, training.balloonInstructionOverride)
         assertFalse(StationBehaviorRegistry.getStationUiSpec(3, 3).popBalloonsUseSoundPoolPrompt)
         assertFalse(StationBehaviorRegistry.getStationUiSpec(3, 3).popBalloonsHelpControlsEnabled)
     }

@@ -1,9 +1,11 @@
 package com.tal.hebrewdino.ui.screens
 
 import com.tal.hebrewdino.ui.audio.AudioClips
+import com.tal.hebrewdino.ui.audio.RawVoicePlayer
 import com.tal.hebrewdino.ui.audio.SoundPoolPlayer
 import com.tal.hebrewdino.ui.domain.AnswerResult
 import com.tal.hebrewdino.ui.domain.LevelSession
+import com.tal.hebrewdino.ui.domain.Season1StationAudio
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -23,6 +25,10 @@ internal object DragWordToPictureActions {
         sfx: SoundPoolPlayer,
         session: LevelSession,
         scope: CoroutineScope,
+        chapterId: Int,
+        stationId: Int,
+        rawVoice: RawVoicePlayer?,
+        audioRuntime: GameAudioRuntimeState,
         onWrongFeedback: () -> Job?,
     ): Boolean {
         if (gameViewModel.dragWordRoundCompleting) return false
@@ -40,7 +46,23 @@ internal object DragWordToPictureActions {
             return false
         }
         if (audioEnabled) {
-            scope.launch {
+            GameAudioActions.launchFeedbackVoiceNoCancel(
+                audioEnabled = true,
+                scope = scope,
+                audioRuntime = audioRuntime,
+            ) {
+                if (
+                    rawVoice != null &&
+                        Season1StationAudio.isSeason1DragWordToPictureStation(chapterId, stationId)
+                ) {
+                    Season1StationAudio.playDragWordToPictureWord(
+                        rawVoice = rawVoice,
+                        catalogEntryId = wordCatalogId,
+                        chapterId = chapterId,
+                        stationId = stationId,
+                        context = "DragWordToPictureActions.handleDropAttempt(correct)",
+                    )
+                }
                 sfx.playFirstAvailable(AudioClips.SfxCorrect, volume = 0.58f)
             }
         }
@@ -49,27 +71,33 @@ internal object DragWordToPictureActions {
 
     fun handleRoundComplete(
         gameViewModel: GameViewModel,
-        cancelFeedbackVoice: () -> Unit,
         audioEnabled: Boolean,
         session: LevelSession,
         scope: CoroutineScope,
+        chapterId: Int,
+        stationId: Int,
+        audioRuntime: GameAudioRuntimeState,
         advanceAfterRound: suspend (Boolean) -> Unit,
     ) {
         if (gameViewModel.dragWordRoundCompleting) return
         gameViewModel.dragWordRoundCompleting = true
         gameViewModel.inputLocked = true
-        cancelFeedbackVoice()
-        when (session.completeDragWordToPictureRound()) {
-            AnswerResult.Correct -> {
-                scope.launch {
-                    delay(350.milliseconds)
+        scope.launch {
+            if (
+                audioEnabled &&
+                    Season1StationAudio.isSeason1DragWordToPictureStation(chapterId, stationId)
+            ) {
+                GameAudioActions.awaitFeedbackVoice(audioRuntime, 10_000L)
+            }
+            when (session.completeDragWordToPictureRound()) {
+                AnswerResult.Correct -> {
                     val isLast = session.currentIndex >= session.totalQuestions - 1
                     advanceAfterRound(isLast)
                 }
-            }
-            else -> {
-                gameViewModel.dragWordRoundCompleting = false
-                gameViewModel.inputLocked = false
+                else -> {
+                    gameViewModel.dragWordRoundCompleting = false
+                    gameViewModel.inputLocked = false
+                }
             }
         }
     }

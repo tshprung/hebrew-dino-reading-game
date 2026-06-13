@@ -9,6 +9,7 @@ import com.tal.hebrewdino.ui.audio.withVoiceDuck
 import com.tal.hebrewdino.ui.data.PlayerAddress
 import com.tal.hebrewdino.ui.domain.LevelSession
 import com.tal.hebrewdino.ui.domain.Question
+import com.tal.hebrewdino.ui.domain.Season1StationAudio
 import com.tal.hebrewdino.ui.domain.StationTemplateId
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
@@ -123,8 +124,26 @@ internal object GameRoundStartActions {
         delay(introDurationMs)
         gameViewModel.phase = GamePhase.Play
         gameViewModel.inputLocked = false
-        if (stationTemplateId != StationTemplateId.DragWordToPicture) {
+        val stableDragRoundStart =
+            stationTemplateId == StationTemplateId.DragWordToPicture ||
+                (
+                    stationTemplateId == StationTemplateId.DragMissingLetter &&
+                        Season1StationAudio.isSeason1DragMissingLetterStation(chapterId, stationId)
+                )
+        if (!stableDragRoundStart) {
             gameViewModel.entryPulseEpoch += 1
+        }
+        if (
+            stableDragRoundStart &&
+                (
+                    stationTemplateId == StationTemplateId.DragMissingLetter ||
+                        (
+                            stationTemplateId == StationTemplateId.DragWordToPicture &&
+                                Season1StationAudio.isSeason1DragWordToPictureStation(chapterId, stationId)
+                        )
+                )
+        ) {
+            gameViewModel.shakeEpoch = 0
         }
         if (sagaUsesFindGridAudioStaging && session.currentIndex == 0) {
             gameViewModel.hintPulseEpoch += 1

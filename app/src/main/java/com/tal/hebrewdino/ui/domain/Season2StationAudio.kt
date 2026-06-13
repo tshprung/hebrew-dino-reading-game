@@ -25,7 +25,9 @@ object Season2StationAudio {
         chapterId in Season2ChapterIds.Chapter3Stegosaurus..Season2ChapterIds.Chapter6Mosasaurus
 
     fun usesChapter1StyleAddressAwareIntro(chapterId: Int): Boolean =
-        chapterId in listOf(1, 2, 4, 5) || isSeason2GameplayChapter(chapterId)
+        chapterId in listOf(1, 2, 4, 5) ||
+            chapterId == TrainingV1Config.CHAPTER_ID ||
+            isSeason2GameplayChapter(chapterId)
 
     fun usesPictureStartsWithAddressAwareIntro(
         chapterId: Int,
@@ -36,7 +38,8 @@ object Season2StationAudio {
         chapterId: Int,
         stationId: Int,
     ): Boolean {
-        if ((chapterId == 3 || chapterId == 6) && stationId == 6) return true
+        val (resolvedChapterId, resolvedStationId) = TrainingV1SourceStation.resolve(chapterId, stationId)
+        if ((resolvedChapterId == 3 || resolvedChapterId == 6) && resolvedStationId == 6) return true
         if (chapterId == Season2ChapterIds.Chapter1Tyrannosaurus && stationId == Season2Chapter1StationOrder.FINALE_STATION) {
             return true
         }

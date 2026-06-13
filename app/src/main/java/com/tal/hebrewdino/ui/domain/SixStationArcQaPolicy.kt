@@ -21,19 +21,22 @@ object SixStationArcQaPolicy {
 
     /** Saga picture-starts-with slot (Ch1 st4 equivalent), regardless of physical station index. */
     fun isSagaPictureStartsWithStation(chapterId: Int, stationId: Int): Boolean {
-        val plan = planForSagaChapter(chapterId, stationId) ?: return false
+        val (resolvedChapterId, resolvedStationId) = TrainingV1SourceStation.resolve(chapterId, stationId)
+        val plan = planForSagaChapter(resolvedChapterId, resolvedStationId) ?: return false
         return plan.mode == StationQuizMode.PictureStartsWith && !plan.listenOnlyTargetPrompt
     }
 
     /** Saga pop-balloons slot (Ch1 st2 equivalent), regardless of physical station index. */
     fun isSagaPopBalloonsStation(chapterId: Int, stationId: Int): Boolean {
-        val plan = planForSagaChapter(chapterId, stationId) ?: return false
+        val (resolvedChapterId, resolvedStationId) = TrainingV1SourceStation.resolve(chapterId, stationId)
+        val plan = planForSagaChapter(resolvedChapterId, resolvedStationId) ?: return false
         return plan.mode == StationQuizMode.PopBalloons && !plan.listenOnlyTargetPrompt
     }
 
     /** Saga which-word slot (Ch1 st5 equivalent), regardless of physical station index. */
     fun isSagaWhichWordStartsWithStation(chapterId: Int, stationId: Int): Boolean {
-        val plan = planForSagaChapter(chapterId, stationId) ?: return false
+        val (resolvedChapterId, resolvedStationId) = TrainingV1SourceStation.resolve(chapterId, stationId)
+        val plan = planForSagaChapter(resolvedChapterId, resolvedStationId) ?: return false
         return plan.mode == StationQuizMode.ImageMatch &&
             plan.imageMatchAlwaysThreeChoices &&
             plan.initialGroupIndex == whichWordReferencePlan.initialGroupIndex &&
@@ -41,7 +44,8 @@ object SixStationArcQaPolicy {
     }
 
     fun earlyArcUxStationId(chapterId: Int, stationId: Int): Int? {
-        if (chapterId !in sagaChapterRange) return null
+        val (resolvedChapterId, _) = TrainingV1SourceStation.resolve(chapterId, stationId)
+        if (resolvedChapterId !in sagaChapterRange) return null
         if (isSagaPopBalloonsStation(chapterId, stationId)) {
             return Season2Chapter1StationOrder.POP_BALLOONS
         }

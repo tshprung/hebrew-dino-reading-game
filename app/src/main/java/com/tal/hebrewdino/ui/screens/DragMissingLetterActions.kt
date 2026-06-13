@@ -1,9 +1,12 @@
 package com.tal.hebrewdino.ui.screens
 
 import com.tal.hebrewdino.ui.audio.AudioClips
+import com.tal.hebrewdino.ui.audio.RawVoicePlayer
 import com.tal.hebrewdino.ui.audio.SoundPoolPlayer
 import com.tal.hebrewdino.ui.domain.AnswerResult
 import com.tal.hebrewdino.ui.domain.LevelSession
+import com.tal.hebrewdino.ui.domain.Question
+import com.tal.hebrewdino.ui.domain.Season1StationAudio
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -21,6 +24,9 @@ internal object DragMissingLetterActions {
         sfx: SoundPoolPlayer,
         session: LevelSession,
         scope: CoroutineScope,
+        chapterId: Int,
+        stationId: Int,
+        rawVoice: RawVoicePlayer?,
         onWrongFeedback: (wrongPickedLetter: String?, wrongPickedLetterAlreadySpoken: Boolean) -> Unit,
         advanceAfterRound: suspend (Boolean) -> Unit,
     ): Boolean {
@@ -29,15 +35,29 @@ internal object DragMissingLetterActions {
         cancelFeedbackVoice()
         when (session.submitDragMissingLetter(letter)) {
             AnswerResult.Correct -> {
-                if (audioEnabled) {
-                    scope.launch {
-                        sfx.playFirstAvailable(AudioClips.SfxCorrect, volume = 0.58f)
-                    }
-                }
+                val catalogId =
+                    (session.currentQuestion as? Question.DragMissingLetterQuestion)?.catalogEntryId
                 gameViewModel.dragMissingLetterCompleting = true
                 gameViewModel.inputLocked = true
                 scope.launch {
-                    delay(400.milliseconds)
+                    if (audioEnabled) {
+                        if (
+                            rawVoice != null &&
+                                Season1StationAudio.isSeason1DragMissingLetterStation(chapterId, stationId)
+                        ) {
+                            Season1StationAudio.playDragMissingLetterCorrectFeedback(
+                                rawVoice = rawVoice,
+                                letter = letter,
+                                catalogEntryId = catalogId,
+                                chapterId = chapterId,
+                                stationId = stationId,
+                                sfx = sfx,
+                            )
+                        } else {
+                            sfx.playFirstAvailable(AudioClips.SfxCorrect, volume = 0.58f)
+                        }
+                    }
+                    delay(280.milliseconds)
                     val isLast = session.currentIndex >= session.totalQuestions - 1
                     advanceAfterRound(isLast)
                 }

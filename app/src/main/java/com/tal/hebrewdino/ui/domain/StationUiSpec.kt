@@ -208,6 +208,8 @@ data class StationUiSpec(
      * that show a large instruction row / banner (spec-driven; default keeps existing layout).
      */
     val contentTopInsetDp: Float? = null,
+    /** WIRED: Ch5 st2 — picture and partial word side-by-side; letter bank pinned to bottom. */
+    val dragMissingLetterSideBySideLayout: Boolean = false,
     /** [DOCS] Human-readable registry notes (not read by UI). */
     val riskNotes: String = "",
 )

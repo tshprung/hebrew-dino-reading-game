@@ -13,7 +13,7 @@ import com.tal.hebrewdino.ui.domain.Season2EarlyStationQaPolicy
 import com.tal.hebrewdino.ui.domain.Season2StationQaPolicy
 import com.tal.hebrewdino.ui.domain.Season2StationAudio
 import com.tal.hebrewdino.ui.domain.SixStationArcQaPolicy
-import com.tal.hebrewdino.ui.domain.TrainingV1Config
+import com.tal.hebrewdino.ui.domain.TrainingV1SourceStation
 import com.tal.hebrewdino.ui.game.ChildGameAudioHooks
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -411,56 +411,12 @@ internal object ImageMatchActions {
                         audioRuntime = audioRuntime,
                     ) {
                         when {
-                            chapterId == TrainingV1Config.CHAPTER_ID &&
-                                stationId == TrainingV1Config.STATION_WHICH_WORD_STARTS_WITH_LETTER -> {
-                                val wordResId = AudioClips.wordRawResIdByCatalogId(choiceId)
-                                if (wordResId == null) {
-                                    android.util.Log.e(
-                                        "MissingContent",
-                                        "Missing required word audio. chapterId=$chapterId stationId=$stationId context=ImageMatchActions.handleImageMatchAttempt(correct,training) stage=missing raw word mapping catalogId='$choiceId'",
-                                    )
-                                    if (rawVoice != null) {
-                                        rawVoice.playRawBlocking(0)
-                                    } else {
-                                        voice.playRequiredBlocking(
-                                            assetPath = "",
-                                            context = "ImageMatchActions.handleImageMatchAttempt(correct,training,missingWordMapping,rawVoice=null)",
-                                            chapterId = chapterId,
-                                            stationId = stationId,
-                                        )
-                                    }
-                                    return@launchFeedbackVoiceNoCancel
-                                }
-                                if (rawVoice == null) {
-                                    android.util.Log.e(
-                                        "MissingContent",
-                                        "Missing required word audio. chapterId=$chapterId stationId=$stationId context=ImageMatchActions.handleImageMatchAttempt(correct,training) stage=rawVoice=null expectedRawResId=$wordResId",
-                                    )
-                                    voice.playRequiredBlocking(
-                                        assetPath = "",
-                                        context = "ImageMatchActions.handleImageMatchAttempt(correct,training,rawVoice=null)",
-                                        chapterId = chapterId,
-                                        stationId = stationId,
-                                    )
-                                    return@launchFeedbackVoiceNoCancel
-                                }
-                                rawVoice.playRawBlocking(wordResId)
-                                GameAudioActions.playPraiseNoImmediateRepeat(
-                                    voice = voice,
-                                    audioRuntime = audioRuntime,
-                                    candidates = ImageToWordPraiseCandidates,
-                                    chapterId = chapterId,
-                                    stationId = stationId,
-                                    context = "ImageMatchActions.handleImageMatchPick(correct,trainingPraise)",
-                                    rawVoice = rawVoice,
-                                )
-                            }
-                            sagaEpisode &&
-                                SixStationArcQaPolicy.isSagaWhichWordStartsWithStation(
-                                    chapterId,
-                                    stationId,
-                                ) -> {
-                                if (chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) {
+                            SixStationArcQaPolicy.isSagaWhichWordStartsWithStation(
+                                chapterId,
+                                stationId,
+                            ) -> {
+                                val (arcChapterId, _) = TrainingV1SourceStation.resolve(chapterId, stationId)
+                                if (arcChapterId == 1 || arcChapterId == 2 || arcChapterId == 4 || arcChapterId == 5) {
                                     val wordResId = AudioClips.wordRawResIdByCatalogId(choiceId)
                                     if (wordResId == null) {
                                         android.util.Log.e(
@@ -523,8 +479,7 @@ internal object ImageMatchActions {
             }
             AnswerResult.Wrong -> {
                 val playTappedWordFirst =
-                    sagaEpisode &&
-                        SixStationArcQaPolicy.isSagaWhichWordStartsWithStation(chapterId, stationId)
+                    SixStationArcQaPolicy.isSagaWhichWordStartsWithStation(chapterId, stationId)
                 if (playTappedWordFirst) {
                     scope.launch {
                         playImageToWordTappedOptionAudio(
@@ -543,10 +498,6 @@ internal object ImageMatchActions {
                     if (audioEnabled) ChildGameAudioHooks.onWrong()
                     HintPulseActions.registerWrongTapForHintPulse(gameViewModel)
                     when {
-                        chapterId == TrainingV1Config.CHAPTER_ID &&
-                            stationId == TrainingV1Config.STATION_WHICH_WORD_STARTS_WITH_LETTER ->
-                            onWrongFeedback(choiceId, false)
-
                         else ->
                             onWrongFeedback(null, false)
                     }

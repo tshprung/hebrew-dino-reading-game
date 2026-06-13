@@ -13,6 +13,7 @@ import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
 import com.tal.hebrewdino.ui.domain.SixStationArcQaPolicy
 import com.tal.hebrewdino.ui.domain.Question
 import com.tal.hebrewdino.ui.domain.TrainingV1Config
+import com.tal.hebrewdino.ui.domain.TrainingV1SourceStation
 import kotlinx.coroutines.delay
 import kotlin.random.Random
 
@@ -577,9 +578,7 @@ internal suspend fun speakPromptForQuestion(
         }
         is Question.ImageMatchQuestion -> {
             if (
-                Season2StationAudio.isPictureToWordStation(chapterId, stationId) ||
-                    (chapterId == TrainingV1Config.CHAPTER_ID &&
-                        stationId == TrainingV1Config.STATION_PICTURE_CHOOSE_WORD)
+                Season2StationAudio.isPictureToWordStation(chapterId, stationId)
             ) {
                 Season2StationAudio.speakPictureToWordRoundPrompt(
                     chapterId = chapterId,
@@ -590,51 +589,7 @@ internal suspend fun speakPromptForQuestion(
                 )
                 return
             }
-            if (chapterId == TrainingV1Config.CHAPTER_ID &&
-                stationId == TrainingV1Config.STATION_WHICH_WORD_STARTS_WITH_LETTER
-            ) {
-                if (rawVoice == null) {
-                    android.util.Log.e(
-                        "MissingContent",
-                        "Missing required station prompt audio. chapterId=$chapterId stationId=$stationId context=speakPromptForQuestion(TrainingImageMatchWhichWordStartsWith) stage=rawVoice=null expectedInstructionRawRes!=null",
-                    )
-                    voice.playRequiredBlocking(
-                        assetPath = "",
-                        context = "speakPromptForQuestion(TrainingImageMatchWhichWordStartsWith,rawVoice=null)",
-                        chapterId = chapterId,
-                        stationId = stationId,
-                    )
-                    return
-                }
-                if (playerAddress == null) {
-                    android.util.Log.e(
-                        "MissingContent",
-                        "Missing required station prompt audio. chapterId=$chapterId stationId=$stationId context=speakPromptForQuestion(TrainingImageMatchWhichWordStartsWith) stage=playerAddress=null expectedInstructionKind=WhichWordStartsWith",
-                    )
-                    rawVoice.playRawBlocking(0)
-                    return
-                }
-                val letterResId = AudioClips.letterNameRawResId(q.targetLetter)
-                if (letterResId == null) {
-                    android.util.Log.e(
-                        "MissingContent",
-                        "Missing required station prompt audio. chapterId=$chapterId stationId=$stationId context=speakPromptForQuestion(TrainingImageMatchWhichWordStartsWith) stage=missing raw letter-name mapping targetLetter='${q.targetLetter}'",
-                    )
-                    rawVoice.playRawBlocking(0)
-                    return
-                }
-                rawVoice.playRawBlocking(
-                    Chapter1AddressAwareAudio.instructionRawRes(
-                        kind = Chapter1AddressAwareAudio.InstructionKind.WhichWordStartsWith,
-                        address = playerAddress,
-                    ),
-                )
-                rawVoice.playRawBlocking(letterResId)
-                return
-            }
-            if (isSagaEpisodeForPrompt(chapterId) &&
-                SixStationArcQaPolicy.isSagaWhichWordStartsWithStation(chapterId, stationId)
-            ) {
+            if (SixStationArcQaPolicy.isSagaWhichWordStartsWithStation(chapterId, stationId)) {
                 // Episode 1 station 5: "איזו מילה מתחילה באות" + letter name (SoundPool overlap when duration parses).
                 if (!requiredChapters) return
                 val letterResId = AudioClips.letterNameRawResId(q.targetLetter)
@@ -674,7 +629,12 @@ internal suspend fun speakPromptForQuestion(
                     ),
                 )
                 rawVoice.playRawBlocking(letterResId)
-            } else if (isSagaEpisodeForPrompt(chapterId) && stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH) {
+            } else if (
+                TrainingV1SourceStation.resolve(chapterId, stationId).let { (arcChapterId, arcStationId) ->
+                    arcChapterId in SagaChapterRangeForAudioPrompts &&
+                        arcStationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH
+                }
+            ) {
                 // Station 6: "ליחצו על אות והמילה שמתחילה באותה האות".
                 if (!requiredChapters) return
                 if (rawVoice == null) {

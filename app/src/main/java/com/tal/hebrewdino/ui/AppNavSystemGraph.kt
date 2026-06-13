@@ -150,13 +150,15 @@ internal fun NavGraphBuilder.systemAndTrainingGraph(host: AppNavHostState) {
                 host.navController.navigate(NavRoutes.Chapters) { launchSingleTop = true }
             },
             onOpenSeason2 = {
-                host.navController.navigate(NavRoutes.Season2ChapterSelect) {
-                    popUpTo(NavRoutes.Season2ChapterSelect) { inclusive = true }
-                    launchSingleTop = true
+                if (SeasonAvailabilityPolicy.isSeason2Enabled()) {
+                    host.navController.navigate(NavRoutes.Season2ChapterSelect) {
+                        popUpTo(NavRoutes.Season2ChapterSelect) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                    host.navController.currentBackStackEntry
+                        ?.savedStateHandle
+                        ?.set(Season2NavKeys.SHOW_SEASON_INTRO, true)
                 }
-                host.navController.currentBackStackEntry
-                    ?.savedStateHandle
-                    ?.set(Season2NavKeys.SHOW_SEASON_INTRO, true)
             },
             onBackToOpening = {
                 host.navController.navigate(NavRoutes.Opening) {
@@ -168,6 +170,10 @@ internal fun NavGraphBuilder.systemAndTrainingGraph(host: AppNavHostState) {
     }
 
     composable(NavRoutes.Season2ChapterSelect) { backStackEntry ->
+        if (!SeasonAvailabilityPolicy.isSeason2Enabled()) {
+            host.navController.popBackStack()
+            return@composable
+        }
         val requestSeasonIntro by
             backStackEntry.savedStateHandle
                 .getStateFlow(Season2NavKeys.SHOW_SEASON_INTRO, false)
@@ -195,6 +201,10 @@ internal fun NavGraphBuilder.systemAndTrainingGraph(host: AppNavHostState) {
         route = NavRoutes.Season2PuzzleMapPrototype,
         arguments = listOf(navArgument("chapterId") { type = NavType.IntType }),
     ) { backStackEntry ->
+        if (!SeasonAvailabilityPolicy.isSeason2Enabled()) {
+            host.navController.popBackStack()
+            return@composable
+        }
         val chapterId = backStackEntry.arguments?.getInt("chapterId") ?: 1
         if (!Season2ChapterRegistry.isPlayable(chapterId)) {
             host.navController.popBackStack()
@@ -257,6 +267,10 @@ internal fun NavGraphBuilder.systemAndTrainingGraph(host: AppNavHostState) {
                 navArgument("stationId") { type = NavType.IntType },
             ),
     ) { backStackEntry ->
+        if (!SeasonAvailabilityPolicy.isSeason2Enabled()) {
+            host.navController.popBackStack()
+            return@composable
+        }
         val chapterId = backStackEntry.arguments?.getInt("chapterId") ?: 1
         if (!Season2ChapterRegistry.isPlayable(chapterId)) {
             host.navController.popBackStack()

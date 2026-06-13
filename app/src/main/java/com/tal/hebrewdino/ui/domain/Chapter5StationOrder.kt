@@ -13,7 +13,7 @@ object Chapter5StationOrder {
     fun quizPlan(stationId: Int): StationQuizPlan =
         when (stationId.coerceIn(1, Chapter5Config.STATION_COUNT)) {
             1 -> Chapter1StationOrder.quizPlan(TAP_LETTER)
-            2 -> Season1DragStationQuizPlans.dragMissingLetter()
+            2 -> Season1DragStationQuizPlans.dragMissingLetter(questionCount = 6)
             3 -> Chapter1StationOrder.quizPlan(REVEAL_THEN_CHOOSE)
             4 -> Chapter1StationOrder.quizPlan(PICTURE_PICK_ONE)
             5 -> Chapter1StationOrder.quizPlan(PICTURE_PICK_ALL)

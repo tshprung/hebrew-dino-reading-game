@@ -1013,6 +1013,7 @@ fun GameScreen(
                         FindGridActions.handleSagaGridLetterTapped(
                             audioEnabled = audioEnabled,
                             chapterId = chapterId,
+                            stationId = stationId,
                             tapped = tapped,
                             question = question,
                             scope = scope,
@@ -1030,6 +1031,7 @@ fun GameScreen(
                         FindGridActions.handleCellTapped(
                             gameViewModel = gameViewModel,
                             sagaUsesFindGridAudioStaging = sagaUsesFindGridAudioStaging,
+                            speakLetterNameOnGridTap = audioEnabled,
                             cancelFeedbackVoice = cancelFeedbackVoiceCb,
                             session = session,
                             onWrongFeedback = { wrongPickedLetter, wrongPickedLetterAlreadySpoken ->
@@ -1444,6 +1446,10 @@ fun GameScreen(
                                 sfx = sfx,
                                 session = session,
                                 scope = scope,
+                                chapterId = chapterId,
+                                stationId = stationId,
+                                rawVoice = rawVoice,
+                                audioRuntime = audioRuntime,
                                 onWrongFeedback = { onWrongFeedback() },
                             )
                         if (!accepted) {
@@ -1455,24 +1461,43 @@ fun GameScreen(
                     fun handleDragWordToPictureRoundComplete() {
                         DragWordToPictureActions.handleRoundComplete(
                             gameViewModel = gameViewModel,
-                            cancelFeedbackVoice = cancelFeedbackVoiceCb,
                             audioEnabled = audioEnabled,
                             session = session,
                             scope = scope,
+                            chapterId = chapterId,
+                            stationId = stationId,
+                            audioRuntime = audioRuntime,
                             advanceAfterRound = { isLast -> advanceAfterRound(isLast) },
                         )
                     }
 
                     fun handleDragWordToPicturePictureTap(catalogEntryId: String) {
-                        Season2AdvancedStationActions.replayWordByCatalogId(
-                            catalogId = catalogEntryId,
-                            chapterId = chapterId,
-                            stationId = stationId,
-                            rawVoice = rawVoice,
-                            scope = scope,
-                            audioRuntime = audioRuntime,
-                            audioEnabled = audioEnabled,
-                        )
+                        if (!audioEnabled || rawVoice == null) return
+                        if (
+                            !com.tal.hebrewdino.ui.domain.Season1StationAudio
+                                .isSeason1DragWordToPictureStation(chapterId, stationId)
+                        ) {
+                            Season2AdvancedStationActions.replayWordByCatalogId(
+                                catalogId = catalogEntryId,
+                                chapterId = chapterId,
+                                stationId = stationId,
+                                rawVoice = rawVoice,
+                                scope = scope,
+                                audioRuntime = audioRuntime,
+                                audioEnabled = audioEnabled,
+                            )
+                            return
+                        }
+                        cancelFeedbackVoice()
+                        scope.launch {
+                            com.tal.hebrewdino.ui.domain.Season1StationAudio.playDragWordToPictureWord(
+                                rawVoice = rawVoice,
+                                catalogEntryId = catalogEntryId,
+                                chapterId = chapterId,
+                                stationId = stationId,
+                                context = "GameScreen.handleDragWordToPicturePictureTap",
+                            )
+                        }
                     }
 
                     fun handleDragMissingLetterPlace(letter: String): Boolean {
@@ -1485,6 +1510,9 @@ fun GameScreen(
                                 sfx = sfx,
                                 session = session,
                                 scope = scope,
+                                chapterId = chapterId,
+                                stationId = stationId,
+                                rawVoice = rawVoice,
                                 onWrongFeedback = { wrongPickedLetter, wrongPickedLetterAlreadySpoken ->
                                     onWrongFeedback(
                                         wrongPickedLetter = wrongPickedLetter,
@@ -1500,7 +1528,33 @@ fun GameScreen(
                     }
 
                     fun handleDragMissingLetterPictureTap() {
-                        handleAdvancedReplayWord()
+                        val q = session.currentQuestion as? Question.DragMissingLetterQuestion ?: return
+                        if (!audioEnabled) return
+                        scope.launch {
+                            if (
+                                com.tal.hebrewdino.ui.domain.Season1StationAudio
+                                    .isSeason1DragMissingLetterStation(chapterId, stationId) &&
+                                    rawVoice != null
+                            ) {
+                                com.tal.hebrewdino.ui.domain.Season1StationAudio.playDragMissingLetterWord(
+                                    rawVoice = rawVoice,
+                                    catalogEntryId = q.catalogEntryId,
+                                    chapterId = chapterId,
+                                    stationId = stationId,
+                                    context = "GameScreen.handleDragMissingLetterPictureTap",
+                                )
+                            } else {
+                                Season2AdvancedStationActions.replayWordByCatalogId(
+                                    catalogId = q.catalogEntryId,
+                                    chapterId = chapterId,
+                                    stationId = stationId,
+                                    rawVoice = rawVoice,
+                                    scope = scope,
+                                    audioRuntime = audioRuntime,
+                                    audioEnabled = audioEnabled,
+                                )
+                            }
+                        }
                     }
 
                     fun handleImageMatchAttempt(choiceId: String): Boolean {

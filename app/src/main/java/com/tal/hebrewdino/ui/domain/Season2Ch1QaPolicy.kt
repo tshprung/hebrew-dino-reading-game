@@ -49,17 +49,13 @@ object Season2Ch1QaPolicy {
     /** WhichWordStartsWith compact layout — S1 PICTURE_PICK_ALL, S2 gameplay, training. */
     fun isWhichWordStartsWithLayoutStation(chapterId: Int?, stationId: Int?): Boolean {
         if (chapterId == null || stationId == null) return false
-        if ((chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) &&
-            SixStationArcQaPolicy.isSagaWhichWordStartsWithStation(chapterId, stationId)
+        val (resolvedChapterId, resolvedStationId) = TrainingV1SourceStation.resolve(chapterId, stationId)
+        if ((resolvedChapterId == 1 || resolvedChapterId == 2 || resolvedChapterId == 4 || resolvedChapterId == 5) &&
+            SixStationArcQaPolicy.isSagaWhichWordStartsWithStation(resolvedChapterId, resolvedStationId)
         ) {
             return true
         }
         if (Season2StationUx.isWhichWordStartsWithStation(chapterId, stationId)) return true
-        if (chapterId == TrainingV1Config.CHAPTER_ID &&
-            stationId == TrainingV1Config.STATION_WHICH_WORD_STARTS_WITH_LETTER
-        ) {
-            return true
-        }
         return false
     }
 

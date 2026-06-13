@@ -1,5 +1,5 @@
 package com.tal.hebrewdino.ui.domain
 
 object DragWordToPictureCopy {
-    const val Instruction: String = "\u200Fגררו כל מילה לתמונה המתאימה"
+    const val Instruction: String = "\u200Fגררו כל מילה אל התמונה המתאימה."
 }

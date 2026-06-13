@@ -16,8 +16,9 @@ object Season2StationQaPolicy {
         return null
     }
 
-    /** S1 six-station arc chapters resolve QA policies by UX station index, not physical slot. */
-    private val earlyArcGameplayChapterIds: Set<Int> = setOf(1, 2, 3, 4, 5)
+    /** S1 six-station arc + training resolve QA policies by UX station index, not physical slot. */
+    private val earlyArcGameplayChapterIds: Set<Int> =
+        setOf(1, 2, 3, 4, 5, TrainingV1Config.CHAPTER_ID)
 
     /** Ch2 st1–5 routes through S1 gameplay chapter ids — resolve by UX station index. */
     private fun earlyArcStationKind(season2UxStationId: Int): Season2ChapterStationPlans.StationKind? =

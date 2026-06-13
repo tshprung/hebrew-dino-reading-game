@@ -167,9 +167,6 @@ internal object PickLetterActions {
             Season2WarmupStationQaPolicy.usesRawLetterNameStationFeedback(chapterId)
         when (session.submitAnswer(picked)) {
             AnswerResult.Correct -> {
-                val isTrainingStation1 =
-                    chapterId == TrainingV1Config.CHAPTER_ID &&
-                        stationId == TrainingV1Config.STATION_HEAR_LETTER_CHOOSE
                 if (audioEnabled && !sagaUsesPickLetterAudioStaging) {
                     ChildGameAudioHooks.onCorrect()
                 }
@@ -378,60 +375,6 @@ internal object PickLetterActions {
                                         rawVoice = rawVoice,
                                     )
                                 }
-                            }
-                        GameAudioActions.joinSilently(job)
-                        val isLast = session.currentIndex >= session.totalQuestions - 1
-                        advanceAfterRound(isLast, false)
-                    }
-                } else if (audioEnabled && isTrainingStation1) {
-                    scope.launch {
-                        cancelFeedbackVoice()
-                        val praise = AudioClips.station1CorrectPraiseTailCandidates()
-                        val job =
-                            GameAudioActions.launchFeedbackVoiceNoCancel(
-                                audioEnabled = true,
-                                scope = scope,
-                                audioRuntime = audioRuntime,
-                            ) {
-                                val resId = AudioClips.letterNameRawResId(picked)
-                                if (resId == null) {
-                                    android.util.Log.e(
-                                        "MissingContent",
-                                        "Missing required letter-name audio. chapterId=$chapterId stationId=$stationId context=PickLetterActions.handlePick(correct,training) stage=missing raw letter-name mapping letter='$picked'",
-                                    )
-                                    if (rawVoice != null) {
-                                        rawVoice.playRawBlocking(0)
-                                    } else {
-                                        voice.playRequiredBlocking(
-                                            assetPath = "",
-                                            context = "PickLetterActions.handlePick(correct,training,missingLetterNameMapping,rawVoice=null)",
-                                            chapterId = chapterId,
-                                            stationId = stationId,
-                                        )
-                                    }
-                                } else if (rawVoice == null) {
-                                    android.util.Log.e(
-                                        "MissingContent",
-                                        "Missing required letter-name audio. chapterId=$chapterId stationId=$stationId context=PickLetterActions.handlePick(correct,training) stage=rawVoice=null expectedRawResId=$resId",
-                                    )
-                                    voice.playRequiredBlocking(
-                                        assetPath = "",
-                                        context = "PickLetterActions.handlePick(correct,training,rawVoice=null)",
-                                        chapterId = chapterId,
-                                        stationId = stationId,
-                                    )
-                                } else {
-                                    rawVoice.playRawBlocking(resId)
-                                }
-                                GameAudioActions.playPraiseNoImmediateRepeat(
-                                    voice = voice,
-                                    audioRuntime = audioRuntime,
-                                    candidates = praise,
-                                    chapterId = chapterId,
-                                    stationId = stationId,
-                                    context = "PickLetterActions.handlePick(correct,trainingPraise)",
-                                    rawVoice = rawVoice,
-                                )
                             }
                         GameAudioActions.joinSilently(job)
                         val isLast = session.currentIndex >= session.totalQuestions - 1

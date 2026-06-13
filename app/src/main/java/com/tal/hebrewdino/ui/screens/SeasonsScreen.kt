@@ -89,6 +89,12 @@ fun SeasonsScreen(
                     seasonId = 2,
                     title = "עונה 2: מגלים דינוזאורים",
                     subtitle = "מפה מסתורית — גלו דינוזאורים חבויים",
+                    status =
+                        if (SeasonAvailabilityPolicy.isSeason2Enabled()) {
+                            null
+                        } else {
+                            "בקרוב"
+                        },
                     enabled = SeasonAvailabilityPolicy.isSeason2Enabled(),
                     heroKind = SeasonHeroKind.Season2Overview,
                 ),

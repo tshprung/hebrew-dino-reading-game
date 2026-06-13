@@ -10,6 +10,7 @@ import com.tal.hebrewdino.ui.data.PlayerAddress
 import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
 import com.tal.hebrewdino.ui.domain.LevelSession
 import com.tal.hebrewdino.ui.domain.Question
+import com.tal.hebrewdino.ui.domain.Season1StationAudio
 import com.tal.hebrewdino.ui.domain.Season2StationAudio
 import com.tal.hebrewdino.ui.domain.SixStationArcQaPolicy
 import com.tal.hebrewdino.ui.domain.StationTemplateId
@@ -55,6 +56,71 @@ internal suspend fun playIntroPrompt(
         ) {
             return
         }
+    }
+
+    if (
+        stationTemplateId == StationTemplateId.DragWordToPicture &&
+            q is Question.DragWordToPictureQuestion &&
+            Season1StationAudio.isSeason1DragWordToPictureStation(chapterId, stationId)
+    ) {
+        if (session.currentIndex == 0) {
+            sfx.stopAllStreams()
+            if (rawVoice == null) {
+                android.util.Log.e(
+                    "MissingContent",
+                    "Missing required station prompt audio. chapterId=$chapterId stationId=$stationId context=playIntroPrompt(DragWordToPicture) stage=rawVoice=null expectedInstructionRawRes=${Season1StationAudio.dragWordToPictureInstructionRawResId()}",
+                )
+                voice.playRequiredBlocking(
+                    assetPath = "",
+                    context = "playIntroPrompt(DragWordToPicture,rawVoice=null)",
+                    chapterId = chapterId,
+                    stationId = stationId,
+                )
+                return
+            }
+            rawVoice.playRawBlocking(Season1StationAudio.dragWordToPictureInstructionRawResId())
+        }
+        return
+    }
+
+    if (
+        stationTemplateId == StationTemplateId.DragMissingLetter &&
+            q is Question.DragMissingLetterQuestion &&
+            Season1StationAudio.isSeason1DragMissingLetterStation(chapterId, stationId)
+    ) {
+        sfx.stopAllStreams()
+        if (rawVoice == null) {
+            android.util.Log.e(
+                "MissingContent",
+                "Missing required station prompt audio. chapterId=$chapterId stationId=$stationId context=playIntroPrompt(DragMissingLetter) stage=rawVoice=null expectedInstructionRawRes=${Season1StationAudio.dragMissingLetterInstructionRawResId()}",
+            )
+            voice.playRequiredBlocking(
+                assetPath = "",
+                context = "playIntroPrompt(DragMissingLetter,rawVoice=null)",
+                chapterId = chapterId,
+                stationId = stationId,
+            )
+            return
+        }
+        if (session.currentIndex == 0) {
+            Season1StationAudio.playDragMissingLetterRoundIntro(
+                rawVoice = rawVoice,
+                catalogEntryId = q.catalogEntryId,
+                chapterId = chapterId,
+                stationId = stationId,
+                includeInstruction = true,
+                context = "playIntroPrompt(DragMissingLetter)",
+            )
+        } else {
+            Season1StationAudio.playDragMissingLetterWord(
+                rawVoice = rawVoice,
+                catalogEntryId = q.catalogEntryId,
+                chapterId = chapterId,
+                stationId = stationId,
+                context = "playIntroPrompt(DragMissingLetterWord)",
+            )
+        }
+        return
     }
 
     if (isChapter3HighlightedLetterInWordStation && q is Question.PopBalloonsQuestion) {
@@ -251,10 +317,7 @@ internal suspend fun playIntroPrompt(
 
     if (stationTemplateId == StationTemplateId.ImageToWord && q is Question.ImageMatchQuestion) {
         sfx.stopAllStreams()
-        if (
-            Season2StationAudio.isPictureToWordStation(chapterId, stationId) ||
-                chapterId == TrainingV1Config.CHAPTER_ID
-        ) {
+        if (Season2StationAudio.isPictureToWordStation(chapterId, stationId)) {
             Season2StationAudio.speakPictureToWordRoundPrompt(
                 chapterId = chapterId,
                 stationId = stationId,
@@ -445,131 +508,6 @@ internal suspend fun playIntroPrompt(
         return
     }
 
-    if (chapterId == TrainingV1Config.CHAPTER_ID &&
-        stationId == TrainingV1Config.STATION_HEAR_LETTER_CHOOSE &&
-        q is Question.PopBalloonsQuestion
-    ) {
-        sfx.stopAllStreams()
-        if (rawVoice == null) {
-            android.util.Log.e(
-                "MissingContent",
-                "Missing required station prompt audio. chapterId=$chapterId stationId=$stationId context=playIntroPrompt(TrainingHearLetterChoose) stage=rawVoice=null expectedInstructionRawRes!=null",
-            )
-            voice.playRequiredBlocking(
-                assetPath = "",
-                context = "playIntroPrompt(TrainingHearLetterChoose,rawVoice=null)",
-                chapterId = chapterId,
-                stationId = stationId,
-            )
-            return
-        }
-        if (chapter1PlayerAddress == null) {
-            android.util.Log.e(
-                "MissingContent",
-                "Missing required station prompt audio. chapterId=$chapterId stationId=$stationId context=playIntroPrompt(TrainingHearLetterChoose) stage=playerAddress=null expectedInstructionKind=PickLetter",
-            )
-            rawVoice.playRawBlocking(0)
-            return
-        }
-        rawVoice.playRawBlocking(
-            Chapter1AddressAwareAudio.instructionRawRes(
-                kind = Chapter1AddressAwareAudio.InstructionKind.PickLetter,
-                address = chapter1PlayerAddress,
-            ),
-        )
-        val resId = AudioClips.letterNameRawResId(q.correctAnswer)
-        if (resId == null) {
-            android.util.Log.e(
-                "MissingContent",
-                "Missing required letter-name audio. chapterId=$chapterId stationId=$stationId context=playIntroPrompt(TrainingHearLetterChoose) stage=missing raw letter-name mapping letter='${q.correctAnswer}'",
-            )
-            rawVoice.playRawBlocking(0)
-            return
-        }
-        rawVoice.playRawBlocking(resId)
-        return
-    }
-
-    if (chapterId == TrainingV1Config.CHAPTER_ID &&
-        stationId == TrainingV1Config.STATION_WHICH_WORD_STARTS_WITH_LETTER &&
-        q is Question.ImageMatchQuestion
-    ) {
-        sfx.stopAllStreams()
-        if (rawVoice == null) {
-            android.util.Log.e(
-                "MissingContent",
-                "Missing required station prompt audio. chapterId=$chapterId stationId=$stationId context=playIntroPrompt(TrainingImageMatchWhichWordStartsWith) stage=rawVoice=null expectedInstructionRawRes!=null",
-            )
-            voice.playRequiredBlocking(
-                assetPath = "",
-                context = "playIntroPrompt(TrainingImageMatchWhichWordStartsWith,rawVoice=null)",
-                chapterId = chapterId,
-                stationId = stationId,
-            )
-            return
-        }
-        if (chapter1PlayerAddress == null) {
-            android.util.Log.e(
-                "MissingContent",
-                "Missing required station prompt audio. chapterId=$chapterId stationId=$stationId context=playIntroPrompt(TrainingImageMatchWhichWordStartsWith) stage=playerAddress=null expectedInstructionKind=WhichWordStartsWith",
-            )
-            rawVoice.playRawBlocking(0)
-            return
-        }
-        rawVoice.playRawBlocking(
-            Chapter1AddressAwareAudio.instructionRawRes(
-                kind = Chapter1AddressAwareAudio.InstructionKind.WhichWordStartsWith,
-                address = chapter1PlayerAddress,
-            ),
-        )
-        val resId = AudioClips.letterNameRawResId(q.targetLetter)
-        if (resId == null) {
-            android.util.Log.e(
-                "MissingContent",
-                "Missing required letter-name audio. chapterId=$chapterId stationId=$stationId context=playIntroPrompt(TrainingImageMatchWhichWordStartsWith) stage=missing raw letter-name mapping letter='${q.targetLetter}'",
-            )
-            rawVoice.playRawBlocking(0)
-            return
-        }
-        rawVoice.playRawBlocking(resId)
-        return
-    }
-
-    if (chapterId == TrainingV1Config.CHAPTER_ID &&
-        stationId == TrainingV1Config.STATION_MATCH_LETTER_TO_WORD &&
-        q is Question.ImageMatchQuestion
-    ) {
-        sfx.stopAllStreams()
-        if (rawVoice == null) {
-            android.util.Log.e(
-                "MissingContent",
-                "Missing required station prompt audio. chapterId=$chapterId stationId=$stationId context=playIntroPrompt(TrainingMatchLetterToWord) stage=rawVoice=null expectedInstructionRawRes!=null",
-            )
-            voice.playRequiredBlocking(
-                assetPath = "",
-                context = "playIntroPrompt(TrainingMatchLetterToWord,rawVoice=null)",
-                chapterId = chapterId,
-                stationId = stationId,
-            )
-            return
-        }
-        if (chapter1PlayerAddress == null) {
-            android.util.Log.e(
-                "MissingContent",
-                "Missing required station prompt audio. chapterId=$chapterId stationId=$stationId context=playIntroPrompt(TrainingMatchLetterToWord) stage=playerAddress=null expectedInstructionKind=MatchLetterToWord",
-            )
-            rawVoice.playRawBlocking(0)
-            return
-        }
-        rawVoice.playRawBlocking(
-            Chapter1AddressAwareAudio.instructionRawRes(
-                kind = Chapter1AddressAwareAudio.InstructionKind.MatchLetterToWord,
-                address = chapter1PlayerAddress,
-            ),
-        )
-        return
-    }
-
     if (
         Season2StationAudio.usesPictureStartsWithAddressAwareIntro(chapterId, isSagaEpisode) &&
         SixStationArcQaPolicy.isSagaPictureStartsWithStation(chapterId, stationId) &&
@@ -619,8 +557,7 @@ internal suspend fun playIntroPrompt(
 
     if ((sagaUsesPopBalloonsAudioStaging ||
             planPopAllLettersInWord ||
-            (chapterId == 6 && stationId == 3) ||
-            (chapterId == TrainingV1Config.CHAPTER_ID && stationId == TrainingV1Config.STATION_WORD_BALLOONS)) &&
+            (chapterId == 6 && stationId == 3)) &&
         q is Question.PopBalloonsQuestion
     ) {
         if (planPopAllLettersInWord) {

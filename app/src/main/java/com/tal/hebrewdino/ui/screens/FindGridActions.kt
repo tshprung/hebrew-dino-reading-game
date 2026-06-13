@@ -13,6 +13,7 @@ internal object FindGridActions {
     fun handleSagaGridLetterTapped(
         audioEnabled: Boolean,
         chapterId: Int,
+        stationId: Int,
         tapped: String,
         question: Question.FindLetterGridQuestion,
         scope: CoroutineScope,
@@ -22,7 +23,6 @@ internal object FindGridActions {
         audioRuntime: GameAudioRuntimeState,
     ) {
         if (!audioEnabled) return
-        if (!(chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5)) return
         cancelFeedbackVoice()
         sfx.stopAllStreams()
         val isCorrect = tapped == question.targetLetter
@@ -35,7 +35,7 @@ internal object FindGridActions {
             if (resId == null) {
                 android.util.Log.e(
                     "MissingContent",
-                    "Missing required letter-name audio. chapterId=$chapterId stationId=null context=FindGridActions.handleSagaGridLetterTapped(letterNameFirst) stage=missing raw letter-name mapping letter='$tapped'",
+                    "Missing required letter-name audio. chapterId=$chapterId stationId=$stationId context=FindGridActions.handleSagaGridLetterTapped(letterNameFirst) stage=missing raw letter-name mapping letter='$tapped'",
                 )
                 rawVoice.playRawBlocking(0)
                 return@launchFeedbackVoiceNoCancel
@@ -49,20 +49,10 @@ internal object FindGridActions {
         }
     }
 
-    fun handleNonStagedCorrectTap(
-        audioEnabled: Boolean,
-        scope: CoroutineScope,
-        sfx: SoundPoolPlayer,
-    ) {
-        if (!audioEnabled) return
-        scope.launch {
-            sfx.playFirstAvailable(AudioClips.SfxCorrect, volume = 0.58f)
-        }
-    }
-
     fun handleCellTapped(
         gameViewModel: GameViewModel,
         sagaUsesFindGridAudioStaging: Boolean,
+        speakLetterNameOnGridTap: Boolean,
         cancelFeedbackVoice: () -> Unit,
         session: LevelSession,
         onWrongFeedback: (wrongPickedLetter: String?, wrongPickedLetterAlreadySpoken: Boolean) -> Unit,
@@ -77,7 +67,7 @@ internal object FindGridActions {
         session.wrongTap()
         gameViewModel.shakeEpoch += 1
         HintPulseActions.registerWrongTapForHintPulse(gameViewModel)
-        if (!sagaUsesFindGridAudioStaging) {
+        if (!sagaUsesFindGridAudioStaging && !speakLetterNameOnGridTap) {
             onWrongFeedback(tappedLetter, false)
         }
     }
