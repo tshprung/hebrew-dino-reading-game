@@ -102,30 +102,6 @@ class Season2ProgressPrefs(private val context: Context) {
         }
     }
 
-    val seasonIntroDismissedFlow: Flow<Boolean> =
-        context.dataStore.data.map { prefs ->
-            prefs[seasonIntroDismissedKey] == "1"
-        }
-
-    suspend fun markSeasonIntroDismissed() {
-        context.dataStore.edit { prefs ->
-            prefs[seasonIntroDismissedKey] = "1"
-        }
-    }
-
-    fun introDismissedFlow(chapterId: Int): Flow<Boolean> =
-        context.dataStore.data.map { prefs ->
-            if (chapterId !in chapterRange) return@map false
-            prefs[introDismissedKeyForChapter(chapterId)] == "1"
-        }
-
-    suspend fun markIntroDismissed(chapterId: Int) {
-        if (chapterId !in chapterRange) return
-        context.dataStore.edit { prefs ->
-            prefs[introDismissedKeyForChapter(chapterId)] = "1"
-        }
-    }
-
     fun puzzleMapExplainHeardFlow(chapterId: Int): Flow<Boolean> =
         context.dataStore.data.map { prefs ->
             if (chapterId !in chapterRange) return@map false

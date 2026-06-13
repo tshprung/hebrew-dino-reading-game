@@ -13,7 +13,7 @@ import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
 import com.tal.hebrewdino.ui.domain.SixStationArcQaPolicy
 import com.tal.hebrewdino.ui.domain.Question
 import com.tal.hebrewdino.ui.domain.TrainingV1Config
-import com.tal.hebrewdino.ui.domain.TrainingV1SourceStation
+import com.tal.hebrewdino.ui.domain.Season2SourceStation
 import kotlinx.coroutines.delay
 import kotlin.random.Random
 
@@ -630,7 +630,7 @@ internal suspend fun speakPromptForQuestion(
                 )
                 rawVoice.playRawBlocking(letterResId)
             } else if (
-                TrainingV1SourceStation.resolve(chapterId, stationId).let { (arcChapterId, arcStationId) ->
+                Season2SourceStation.resolveForBehavior(chapterId, stationId).let { (arcChapterId, arcStationId) ->
                     arcChapterId in SagaChapterRangeForAudioPrompts &&
                         arcStationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH
                 }

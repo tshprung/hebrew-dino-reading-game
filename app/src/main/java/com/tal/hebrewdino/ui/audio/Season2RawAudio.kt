@@ -72,7 +72,7 @@ object Season2RawAudio {
             Success03,
         )
 
-    fun postFocusCorrectPool(_companion: DinoCharacter): IntArray = PostFocusCorrectPool
+    fun postFocusCorrectPool(): IntArray = PostFocusCorrectPool
 
     fun mapPraisePool(companion: DinoCharacter): IntArray =
         when (companion) {

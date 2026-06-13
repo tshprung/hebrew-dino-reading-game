@@ -49,7 +49,7 @@ object Season2MapEntryVoicePolicy {
         completedStationCount: Int,
         puzzleMapExplainHeard: Boolean,
     ): Boolean =
-        Season2Ch1QaPolicy.shouldPlayPuzzleExplainBeforeMapEntry(chapterId) &&
+        Season2Ch1QaPolicy.shouldPlayPuzzleExplainBeforeMapEntry() &&
             Season2StoryAudio.shouldPlayPuzzleMapExplain(
                 showChapterIntroOverlay = false,
                 completedStationCount = completedStationCount,

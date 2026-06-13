@@ -128,21 +128,12 @@ internal object GameRoundStartActions {
             stationTemplateId == StationTemplateId.DragWordToPicture ||
                 (
                     stationTemplateId == StationTemplateId.DragMissingLetter &&
-                        Season1StationAudio.isSeason1DragMissingLetterStation(chapterId, stationId)
+                        Season1StationAudio.isDragMissingLetterBehaviorStation(chapterId, stationId)
                 )
         if (!stableDragRoundStart) {
             gameViewModel.entryPulseEpoch += 1
         }
-        if (
-            stableDragRoundStart &&
-                (
-                    stationTemplateId == StationTemplateId.DragMissingLetter ||
-                        (
-                            stationTemplateId == StationTemplateId.DragWordToPicture &&
-                                Season1StationAudio.isSeason1DragWordToPictureStation(chapterId, stationId)
-                        )
-                )
-        ) {
+        if (stableDragRoundStart) {
             gameViewModel.shakeEpoch = 0
         }
         if (sagaUsesFindGridAudioStaging && session.currentIndex == 0) {

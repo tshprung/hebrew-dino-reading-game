@@ -391,7 +391,6 @@ fun GameScreen(
         }
     var season2HintText by remember(stationId) { mutableStateOf<String?>(null) }
     var season2HadCoachIntervention by remember(stationId) { mutableStateOf(false) }
-    var season2CoachJob by remember(stationId) { mutableStateOf<Job?>(null) }
     val isSeason2BalloonStation =
         companionCoachEnabled && plan.mode == StationQuizMode.PopBalloons
     var season2SkipBalloonStagingAwait by remember(stationId) { mutableStateOf(false) }
@@ -399,6 +398,10 @@ fun GameScreen(
     var lastSeason2FocusRawResId by remember(stationId) { mutableIntStateOf(0) }
     var lastSeason2BalloonPraiseRawResId by remember(stationId) { mutableIntStateOf(0) }
     var lastSeason2PostFocusPraiseRawResId by remember(stationId) { mutableIntStateOf(0) }
+    val recordCompanionPraisePlayed: (Int) -> Unit = { resId ->
+        lastSeason2PostFocusPraiseRawResId = resId
+        season2HadCoachIntervention = false
+    }
     val listenOnly = plan.listenOnlyTargetPrompt
     val stationUiSpec = remember(chapterId, stationId) { StationBehaviorRegistry.getStationUiSpec(chapterId, stationId) }
     val helpColumnEnabled = Episode4Help.isHelpColumnActive(stationUiSpec)
@@ -840,74 +843,6 @@ fun GameScreen(
                 }
             }
         }
-        if (detector != null && companionCoachEnabled && chapter1PlayerAddress != null) {
-            val shouldCoach = detector.recordWrongAttempt()
-            if (shouldCoach) {
-                season2CoachJob?.cancel()
-                season2CoachJob =
-                    scope.launch {
-                        try {
-                            cancelFeedbackVoice()
-                            if (!keepPopBalloonsInputUnlocked) {
-                                gameViewModel.inputLocked = true
-                            }
-                            gameViewModel.dinoVisual = DinoVisual.TryAgain
-                            optionsShake.animateTo(7f, tween(70))
-                            optionsShake.animateTo(0f, tween(140))
-                            season2HadCoachIntervention = true
-                            if (isSeason2BalloonStation) {
-                                if (audioEnabled && rawVoice != null) {
-                                    val companion = chapter1CompanionCharacter ?: DinoCharacter.Dino
-                                    val focusRes =
-                                        com.tal.hebrewdino.ui.audio.Season2CompanionFeedbackAudio.pickFocusLine(
-                                            companion = companion,
-                                            avoidRawResId = lastSeason2FocusRawResId,
-                                        )
-                                    lastSeason2FocusRawResId = focusRes
-                                    if (backgroundMusic != null) {
-                                        backgroundMusic.withVoiceDuck {
-                                            rawVoice.playRawBlocking(focusRes)
-                                        }
-                                    } else {
-                                        rawVoice.playRawBlocking(focusRes)
-                                    }
-                                }
-                                if (rawVoice != null) {
-                                    Season2GuessingCoach.replayPopBalloonsTargetLetterOnly(
-                                        session = session,
-                                        rawVoice = rawVoice,
-                                        uxStationId = coachUxStationId,
-                                    )
-                                }
-                            } else {
-                                season2HintText =
-                                    Season2GuessingHintCopy.coachBubbleText(
-                                        uxStationId = coachUxStationId,
-                                        playerAddress = chapter1PlayerAddress,
-                                        templateId = stationUiSpec.templateId,
-                                        gameplayChapterId = chapterId,
-                                    )
-                                Season2GuessingCoach.replayTargetAudio(
-                                    uxStationId = coachUxStationId,
-                                    session = session,
-                                    playerAddress = chapter1PlayerAddress,
-                                    rawVoice = rawVoice,
-                                    gameplayChapterId = chapterId,
-                                    chapterId = chapterId,
-                                    stationUiSpec = stationUiSpec,
-                                )
-                                delay(350.milliseconds)
-                                season2HintText = null
-                            }
-                            detector.onInterventionAcknowledged()
-                        } finally {
-                            gameViewModel.dinoVisual = DinoVisual.Idle
-                            gameViewModel.inputLocked = false
-                        }
-                    }
-                return season2CoachJob
-            }
-        }
         WrongFeedbackActions.trigger(
             scope = scope,
             gameViewModel = gameViewModel,
@@ -1218,6 +1153,10 @@ fun GameScreen(
                                 )
                             },
                             season2HadCoachIntervention = season2HadCoachIntervention,
+                            companionCharacter = chapter1CompanionCharacter,
+                            backgroundMusic = backgroundMusic,
+                            postFocusAvoidPraiseRawResId = lastSeason2PostFocusPraiseRawResId,
+                            onCompanionPraisePlayed = recordCompanionPraisePlayed,
                         )
                     }
 
@@ -1268,6 +1207,10 @@ fun GameScreen(
                             },
                             season2HadCoachIntervention = season2HadCoachIntervention,
                             season2Chapter1UxStationId = season2Chapter1StationId,
+                            companionCharacter = chapter1CompanionCharacter,
+                            backgroundMusic = backgroundMusic,
+                            postFocusAvoidPraiseRawResId = lastSeason2PostFocusPraiseRawResId,
+                            onCompanionPraisePlayed = recordCompanionPraisePlayed,
                         )
                     }
 
@@ -1414,6 +1357,10 @@ fun GameScreen(
                             advanceAfterRound = { isLast -> advanceAfterRound(isLast) },
                             onWrongFeedback = { onWrongFeedback() },
                             season2HadCoachIntervention = season2HadCoachIntervention,
+                            companionCharacter = chapter1CompanionCharacter,
+                            backgroundMusic = backgroundMusic,
+                            postFocusAvoidPraiseRawResId = lastSeason2PostFocusPraiseRawResId,
+                            onCompanionPraisePlayed = recordCompanionPraisePlayed,
                         )
                     }
 
@@ -1472,10 +1419,10 @@ fun GameScreen(
                     }
 
                     fun handleDragWordToPicturePictureTap(catalogEntryId: String) {
-                        if (!audioEnabled || rawVoice == null) return
+                        if (!audioEnabled) return
                         if (
                             !com.tal.hebrewdino.ui.domain.Season1StationAudio
-                                .isSeason1DragWordToPictureStation(chapterId, stationId)
+                                .isDragWordToPictureBehaviorStation(chapterId, stationId)
                         ) {
                             Season2AdvancedStationActions.replayWordByCatalogId(
                                 catalogId = catalogEntryId,
@@ -1533,8 +1480,7 @@ fun GameScreen(
                         scope.launch {
                             if (
                                 com.tal.hebrewdino.ui.domain.Season1StationAudio
-                                    .isSeason1DragMissingLetterStation(chapterId, stationId) &&
-                                    rawVoice != null
+                                    .isDragMissingLetterBehaviorStation(chapterId, stationId)
                             ) {
                                 com.tal.hebrewdino.ui.domain.Season1StationAudio.playDragMissingLetterWord(
                                     rawVoice = rawVoice,
@@ -1584,6 +1530,10 @@ fun GameScreen(
                             },
                             season2HadCoachIntervention = season2HadCoachIntervention,
                             season2Chapter1UxStationId = qaUxStationId,
+                            companionCharacter = chapter1CompanionCharacter,
+                            backgroundMusic = backgroundMusic,
+                            postFocusAvoidPraiseRawResId = lastSeason2PostFocusPraiseRawResId,
+                            onCompanionPraisePlayed = recordCompanionPraisePlayed,
                         )
                     }
 
@@ -1626,6 +1576,11 @@ fun GameScreen(
                                 showPopBalloonsTargetLetterChip = showPopBalloonsTargetLetterChip,
                                 chapter1PlayerAddress = chapter1PlayerAddress,
                                 season2Chapter1UxStationId = qaUxStationId,
+                                season2HadCoachIntervention = season2HadCoachIntervention,
+                                companionCharacter = chapter1CompanionCharacter,
+                                backgroundMusic = backgroundMusic,
+                                postFocusAvoidPraiseRawResId = lastSeason2PostFocusPraiseRawResId,
+                                onCompanionPraisePlayed = recordCompanionPraisePlayed,
                             ),
                         state =
                             GameQuestionHostState(

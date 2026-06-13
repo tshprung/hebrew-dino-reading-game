@@ -13,7 +13,7 @@ import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
 import com.tal.hebrewdino.ui.domain.HebrewLetterOrder
 import com.tal.hebrewdino.ui.domain.Question
 import com.tal.hebrewdino.ui.domain.StationUiSpec
-import com.tal.hebrewdino.ui.domain.TrainingV1SourceStation
+import com.tal.hebrewdino.ui.domain.Season2SourceStation
 import com.tal.hebrewdino.ui.data.PlayerAddress
 
 @Composable
@@ -43,7 +43,7 @@ internal fun PickLetterQuestionRenderer(
     onPick: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val (effectiveChapterId, effectiveStationId) = TrainingV1SourceStation.resolve(chapterId, stationId)
+    val (effectiveChapterId, effectiveStationId) = Season2SourceStation.resolveForBehavior(chapterId, stationId)
     val resolvedPickLetterInstructionOverride =
         when {
             (chapterId == 3 || chapterId == 6) &&

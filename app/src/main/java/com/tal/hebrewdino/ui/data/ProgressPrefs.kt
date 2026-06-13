@@ -766,47 +766,6 @@ class ProgressPrefs internal constructor(private val dataStore: DataStore<Prefer
         }
     }
 
-    suspend fun resetAll() {
-        dataStore.edit { prefs ->
-            prefs[unlockedLevelKey] = 1
-            prefs[completedLevelsKey] = ""
-            prefs[beachIntroSeenKey] = false
-            prefs[beachOutroSeenKey] = false
-            prefs[chapter1LettersIntroSeenKey] = false
-            prefs[chapter1MidBoostSeenKey] = false
-            prefs[chapter2IntroSeenKey] = false
-            prefs[chapter2LettersIntroSeenKey] = false
-            prefs[chapter2MidBoostSeenKey] = false
-            prefs[chapter2UnlockedStationKey] = 1
-            prefs[chapter2CompletedStationsKey] = ""
-            prefs[chapter2CompletedKey] = false
-            prefs[chapter3IntroSeenKey] = false
-            prefs[chapter3LettersIntroSeenKey] = false
-            prefs[chapter3MidBoostSeenKey] = false
-            prefs[chapter3UnlockedStationKey] = 1
-            prefs[chapter3CompletedStationsKey] = ""
-            prefs[chapter3CompletedKey] = false
-            prefs[chapter4IntroSeenKey] = false
-            prefs[chapter4LettersIntroSeenKey] = false
-            prefs[chapter4MidBoostSeenKey] = false
-            prefs[chapter4UnlockedStationKey] = 1
-            prefs[chapter4CompletedStationsKey] = ""
-            prefs[chapter4CompletedKey] = false
-            prefs[chapter5IntroSeenKey] = false
-            prefs[chapter5LettersIntroSeenKey] = false
-            prefs[chapter5MidBoostSeenKey] = false
-            prefs[chapter5UnlockedStationKey] = 1
-            prefs[chapter5CompletedStationsKey] = ""
-            prefs[chapter5CompletedKey] = false
-            prefs[chapter6IntroSeenKey] = false
-            prefs[chapter6LettersIntroSeenKey] = false
-            prefs[chapter6MidBoostSeenKey] = false
-            prefs[chapter6UnlockedStationKey] = 1
-            prefs[chapter6CompletedStationsKey] = ""
-            prefs[chapter6CompletedKey] = false
-        }
-    }
-
     suspend fun fullGameReset() {
         dataStore.edit { prefs ->
             prefs.remove(unlockedLevelKey)

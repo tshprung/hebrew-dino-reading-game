@@ -43,7 +43,7 @@ internal object DragMissingLetterActions {
                     if (audioEnabled) {
                         if (
                             rawVoice != null &&
-                                Season1StationAudio.isSeason1DragMissingLetterStation(chapterId, stationId)
+                                Season1StationAudio.isDragMissingLetterBehaviorStation(chapterId, stationId)
                         ) {
                             Season1StationAudio.playDragMissingLetterCorrectFeedback(
                                 rawVoice = rawVoice,

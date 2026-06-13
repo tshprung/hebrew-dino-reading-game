@@ -25,7 +25,7 @@ object Season2CompanionFeedbackAudio {
         companion: DinoCharacter,
         avoidRawResId: Int = 0,
         random: Random = Random,
-    ): Int = pickFromPool(Season2RawAudio.postFocusCorrectPool(companion), avoidRawResId, random)
+    ): Int = pickFromPool(Season2RawAudio.postFocusCorrectPool(), avoidRawResId, random)
 
     fun mapPraiseCaption(@RawRes rawResId: Int): String =
         Season2RawAudio.mapPraiseCaption(rawResId)

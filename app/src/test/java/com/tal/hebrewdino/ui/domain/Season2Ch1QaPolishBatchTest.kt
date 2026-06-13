@@ -9,8 +9,8 @@ import org.junit.Test
 class Season2Ch1QaPolishBatchTest {
     @Test
     fun ch1_st1_wrong_single_tryagain() {
-        assertFalse(Season2Ch1QaPolicy.shouldPlayTryAgainInPopBalloonsSfx(season2QuizBalloons = true))
-        assertTrue(Season2Ch1QaPolicy.shouldPlayTryAgainInPopBalloonsSfx(season2QuizBalloons = false))
+        assertTrue(Season2Ch1QaPolicy.shouldPlayTryAgainInPopBalloonsSfx())
+        assertTrue(Season2Ch1QaPolicy.shouldPlayTryAgainInPopBalloonsSfx())
         val source = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/screens/PopBalloonsActions.kt")
         assertTrue(source.contains("shouldPlayTryAgainInPopBalloonsSfx"))
     }

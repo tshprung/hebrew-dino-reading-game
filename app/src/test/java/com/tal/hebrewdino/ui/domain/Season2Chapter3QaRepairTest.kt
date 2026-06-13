@@ -28,11 +28,16 @@ class Season2Chapter3QaRepairTest {
     }
 
     @Test
-    fun ch3_station2_noIntroPulse_andHelpEnabled() {
+    fun ch3_station2_noIntroPulse_matchesSeason1SourcePictureStartsWith() {
         val spec = StationBehaviorRegistry.getStationUiSpec(ch3GameplayId, 2)
+        val sourceSpec =
+            StationBehaviorRegistry.getStationUiSpec(
+                1,
+                Chapter1StationOrder.PICTURE_PICK_ONE,
+            )
         assertEquals(StationTemplateId.PictureStartsWith, spec.templateId)
         assertFalse(spec.showBetweenRoundIntroPulse)
-        assertTrue(spec.helpControlsEnabled)
+        assertEquals(sourceSpec.helpControlsEnabled, spec.helpControlsEnabled)
         assertTrue(Season2StationUx.isWarmupPictureStartsWith(ch3GameplayId, 2))
     }
 

@@ -199,7 +199,7 @@ fun Season2PuzzleMapPrototypeScreen(
                 companion = companionCharacter,
                 avoidPraiseRawResId = lastMapPraiseRawResId,
             ) ?: return
-        if (!voice.isFirstReveal) {
+        if (voice is Season2StoryAudio.MapReturnVoice.CompanionPraise) {
             lastMapPraiseRawResId = voice.rawResId
         }
         mapReturnVoiceResId = voice.rawResId

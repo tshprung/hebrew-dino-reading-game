@@ -102,8 +102,8 @@ fun PopBalloonsInstructionHeaderBlock(
     correctAnswer: String,
     station2PinnedBalloonLetter: String?,
     station2PinnedBalloonColor: Color?,
-    compactLandscapePhoneTuning: Boolean = false,
     modifier: Modifier = Modifier,
+    compactLandscapePhoneTuning: Boolean = false,
 ) {
     val isCompactLandscapePhone = ScreenFit.isCompactLandscapePhone()
     val usePhoneTuning = compactLandscapePhoneTuning && isCompactLandscapePhone

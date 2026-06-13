@@ -123,7 +123,6 @@ object Season2AdvancedStationGenerators {
         }
         val target = Season2StationContentValidator.requireValidatedWord(pair.targetCatalogId)
         val rhyme = Season2StationContentValidator.requireValidatedWord(pair.rhymeCatalogId)
-        val allowed = wordCatalogIds.toSet()
         val distractorPool =
             wordCatalogIds
                 .map { Season2StationContentValidator.requireValidatedWord(it) }

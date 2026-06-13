@@ -86,7 +86,7 @@ internal object AdvanceAfterRoundActions {
             dragWordToPictureStation ||
                 (
                     stationUiSpec.templateId == StationTemplateId.DragMissingLetter &&
-                        Season1StationAudio.isSeason1DragMissingLetterStation(chapterId, stationId)
+                        Season1StationAudio.isDragMissingLetterBehaviorStation(chapterId, stationId)
                 )
         val skipInterRoundFeedback =
             Season2StationQaPolicy.shouldSkipAdvanceRoundInterRoundFeedback(

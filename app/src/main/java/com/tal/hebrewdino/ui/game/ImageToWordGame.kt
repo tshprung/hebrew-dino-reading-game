@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -39,7 +38,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
-import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -56,7 +54,7 @@ import com.tal.hebrewdino.ui.domain.Question
 import com.tal.hebrewdino.ui.domain.Season2ChapterIds
 import com.tal.hebrewdino.ui.domain.Season2Ch1QaPolicy
 import com.tal.hebrewdino.ui.domain.Season2StationAudio
-import com.tal.hebrewdino.ui.domain.TrainingV1SourceStation
+import com.tal.hebrewdino.ui.domain.Season2SourceStation
 import com.tal.hebrewdino.ui.layout.ScreenFit
 import kotlinx.coroutines.launch
 
@@ -95,7 +93,7 @@ fun ImageToWordGame(
         val isCompactLandscapePhone = ScreenFit.isCompactLandscapePhone()
         val (layoutChapterId, layoutStationId) =
             if (chapterId != null && stationId != null) {
-                TrainingV1SourceStation.resolve(chapterId, stationId)
+                Season2SourceStation.resolveForBehavior(chapterId, stationId)
             } else {
                 chapterId to stationId
             }
@@ -471,14 +469,11 @@ private fun ImageToWordOptionsRow(
                 captionFontSizeForWordCard(
                     density = density,
                     cardWidth = optionW,
-                    word = choice.word,
                     sizeMultiplier =
                         when {
                             isChapter3Or6Station6ImageToWord -> 1.25f * 0.70f
                             else -> 1.25f
                         },
-                    chapterId = chapterId,
-                    stationId = stationId,
                 )
             val captionStyle =
                 androidx.compose.ui.text.TextStyle(

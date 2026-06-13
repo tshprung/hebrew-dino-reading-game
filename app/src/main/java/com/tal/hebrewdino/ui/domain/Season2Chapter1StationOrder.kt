@@ -32,11 +32,29 @@ object Season2Chapter1StationOrder {
             Season2ChapterRegistry.chapter(chapterIndex)
                 ?: error("Season2 chapter $chapterIndex not in registry")
         val sid = stationId.coerceIn(1, STATION_COUNT)
-        return when (chapterIndex) {
-            1 -> chapter1QuizPlan(sid, chapterDef)
-            2 -> chapter2QuizPlan(sid, chapterDef)
-            else -> error("Season2Chapter1StationOrder only covers chapters 1–2")
+        val base =
+            when (chapterIndex) {
+                1 -> chapter1QuizPlan(sid, chapterDef)
+                2 -> chapter2QuizPlan(sid, chapterDef)
+                else -> error("Season2Chapter1StationOrder only covers chapters 1–2")
+            }
+        return alignQuizPlanToSourceIfParity(chapterIndex, sid, base)
+    }
+
+    private fun alignQuizPlanToSourceIfParity(
+        chapterIndex: Int,
+        stationId: Int,
+        plan: StationQuizPlan,
+    ): StationQuizPlan {
+        if (chapterIndex == 2 && stationId == MEMORY_MATCH) return plan
+        if (chapterIndex == 2 && stationId == FINALE_STATION && plan.season2AdvancedMode != null) {
+            return plan
         }
+        return Season2SourceStation.alignQuizPlanToSource(
+            Season2ChapterIds.chapterGameplayId(chapterIndex),
+            stationId,
+            plan,
+        )
     }
 
     private fun chapter1QuizPlan(

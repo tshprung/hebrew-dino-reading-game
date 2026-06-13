@@ -61,7 +61,7 @@ internal suspend fun playIntroPrompt(
     if (
         stationTemplateId == StationTemplateId.DragWordToPicture &&
             q is Question.DragWordToPictureQuestion &&
-            Season1StationAudio.isSeason1DragWordToPictureStation(chapterId, stationId)
+            Season1StationAudio.isDragWordToPictureBehaviorStation(chapterId, stationId)
     ) {
         if (session.currentIndex == 0) {
             sfx.stopAllStreams()
@@ -86,7 +86,7 @@ internal suspend fun playIntroPrompt(
     if (
         stationTemplateId == StationTemplateId.DragMissingLetter &&
             q is Question.DragMissingLetterQuestion &&
-            Season1StationAudio.isSeason1DragMissingLetterStation(chapterId, stationId)
+            Season1StationAudio.isDragMissingLetterBehaviorStation(chapterId, stationId)
     ) {
         sfx.stopAllStreams()
         if (rawVoice == null) {

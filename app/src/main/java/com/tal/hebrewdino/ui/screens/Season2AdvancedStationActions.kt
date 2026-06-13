@@ -2,9 +2,11 @@ package com.tal.hebrewdino.ui.screens
 
 import android.util.Log
 import com.tal.hebrewdino.ui.audio.AudioClips
+import com.tal.hebrewdino.ui.audio.BackgroundMusicPlayer
 import com.tal.hebrewdino.ui.audio.RawVoicePlayer
 import com.tal.hebrewdino.ui.audio.Season2WordPartsAudio
 import com.tal.hebrewdino.ui.audio.VoicePlayer
+import com.tal.hebrewdino.ui.data.DinoCharacter
 import com.tal.hebrewdino.ui.domain.AnswerResult
 import com.tal.hebrewdino.ui.domain.LevelSession
 import com.tal.hebrewdino.ui.domain.Question
@@ -84,6 +86,10 @@ internal object Season2AdvancedStationActions {
         advanceAfterRound: suspend (Boolean) -> Unit,
         onWrongFeedback: () -> Job?,
         season2HadCoachIntervention: Boolean = false,
+        companionCharacter: DinoCharacter? = null,
+        backgroundMusic: BackgroundMusicPlayer? = null,
+        postFocusAvoidPraiseRawResId: Int = 0,
+        onCompanionPraisePlayed: (Int) -> Unit = {},
     ) {
         if (gameViewModel.wordPartsCompletedEquation != null) return
         if (!gameViewModel.consumeTapCooldown()) return
@@ -152,21 +158,20 @@ internal object Season2AdvancedStationActions {
                                         "${correctQ.word} = ${correctQ.firstPart} + ${correctQ.correctPart}"
                                 }
                             }
-                            if (
-                                audioEnabled &&
-                                    rawVoice != null &&
-                                    !Season2EarlyStationQaPolicy.shouldSkipInStationCorrectPraiseAfterCoach(
-                                        season2HadCoachIntervention,
-                                    )
-                            ) {
-                                GameAudioActions.playPraiseNoImmediateRepeat(
+                            if (audioEnabled && rawVoice != null) {
+                                PostCoachCorrectPraiseActions.playInStationOrNarratorPraise(
+                                    hadCoachIntervention = season2HadCoachIntervention,
+                                    companion = companionCharacter,
+                                    rawVoice = rawVoice,
+                                    backgroundMusic = backgroundMusic,
                                     voice = voice,
                                     audioRuntime = audioRuntime,
-                                    candidates = emptyArray(),
                                     chapterId = chapterId,
                                     stationId = stationId,
+                                    narratorCandidates = emptyArray(),
+                                    avoidCompanionRawResId = postFocusAvoidPraiseRawResId,
                                     context = "Season2AdvancedStationActions.handleWordPartsPick(correct)",
-                                    rawVoice = rawVoice,
+                                    onCompanionPraisePlayed = onCompanionPraisePlayed,
                                 )
                             }
                             delay(

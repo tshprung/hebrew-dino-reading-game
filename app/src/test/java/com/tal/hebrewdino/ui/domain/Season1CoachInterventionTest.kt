@@ -85,8 +85,8 @@ class Season1CoachInterventionTest {
         assertTrue(gameScreen.contains("CompanionCoachPolicy.isEnabled"))
         assertTrue(gameScreen.contains("coachUxStationId"))
         assertTrue(gameScreen.contains("companionCoachEnabled"))
-        assertTrue(gameScreen.contains("replayPopBalloonsTargetLetterOnly"))
-        assertTrue(gameScreen.contains("replayForSeason1Template") || gameScreen.contains("stationUiSpec = stationUiSpec"))
+        assertTrue(gameScreen.contains("Season2GuessingCoach.replayTargetAudio"))
+        assertTrue(gameScreen.contains("stationUiSpec = stationUiSpec"))
     }
 
     @Test

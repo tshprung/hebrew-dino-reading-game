@@ -9,7 +9,7 @@ import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
 import com.tal.hebrewdino.ui.domain.Question
 import com.tal.hebrewdino.ui.domain.Season2StationAudio
 import com.tal.hebrewdino.ui.domain.StationTemplateId
-import com.tal.hebrewdino.ui.domain.TrainingV1SourceStation
+import com.tal.hebrewdino.ui.domain.Season2SourceStation
 import kotlinx.coroutines.delay
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -46,7 +46,7 @@ internal suspend fun playChapter1AddressAwareIntro(
     sfx: SoundPoolPlayer,
 ): Boolean {
     if (!Season2StationAudio.usesChapter1StyleAddressAwareIntro(chapterId) || playerAddress == null) return false
-    val (promptChapterId, promptStationId) = TrainingV1SourceStation.resolve(chapterId, stationId)
+    val (promptChapterId, promptStationId) = Season2SourceStation.resolveForBehavior(chapterId, stationId)
     val kind =
         Chapter1AddressAwareAudio.instructionKindFor(
             stationId = promptStationId,

@@ -27,11 +27,10 @@ fun Chapter3Station6ImageToWordStationContent(
     instructionText: String,
     chapterId: Int,
     stationId: Int,
-    trainingRoundIndex: Int? = null,
-    onPictureTapReplayWord: (() -> Unit)? = null,
-    onWordPressed: (String) -> Unit,
     onAttempt: (String) -> Boolean,
     modifier: Modifier = Modifier,
+    trainingRoundIndex: Int? = null,
+    onPictureTapReplayWord: (() -> Unit)? = null,
 ) {
     ImageToWordGame(
         question = question,
@@ -91,10 +90,10 @@ fun SagaImageMatchGameStationContent(
     chapterId: Int?,
     stationId: Int?,
     onAttempt: (String) -> Boolean,
-    onChoiceWordPreview: ((String) -> Unit)? = null,
     entryPulseScale: Float,
     verticalNudgeDp: Dp,
     modifier: Modifier = Modifier,
+    onChoiceWordPreview: ((String) -> Unit)? = null,
 ) {
     ImageMatchGame(
         question = question,

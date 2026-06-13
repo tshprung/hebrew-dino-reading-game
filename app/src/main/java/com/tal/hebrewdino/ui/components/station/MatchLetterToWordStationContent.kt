@@ -21,7 +21,6 @@ fun MatchLetterToWordStationContent(
     contentKey: Int,
     enabled: Boolean,
     compactWideSpread: Boolean,
-    letterTileSizeMultiplier: Float = 1f,
     onWordPressed: (String) -> Unit,
     onLetterPressed: (String) -> Unit,
     onCorrectMatch: (String) -> Unit,
@@ -37,6 +36,7 @@ fun MatchLetterToWordStationContent(
     entryPulseScale: Float,
     verticalNudgeDp: Dp,
     modifier: Modifier = Modifier,
+    letterTileSizeMultiplier: Float = 1f,
 ) {
     MatchLetterToWordGame(
         choices = choices,

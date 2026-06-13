@@ -21,10 +21,10 @@ import kotlin.math.min
 fun AutoFitSingleLineText(
     text: String,
     maxWidth: Dp,
-    maxHeight: Dp? = null,
     targetFontSize: TextUnit,
     style: TextStyle,
     modifier: Modifier = Modifier,
+    maxHeight: Dp? = null,
     minFontSize: TextUnit = 12.sp,
     textAlign: TextAlign = TextAlign.Center,
 ) {

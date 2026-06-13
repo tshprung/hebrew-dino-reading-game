@@ -13,14 +13,11 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
@@ -35,14 +32,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
@@ -57,7 +51,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.tal.hebrewdino.R
 import com.tal.hebrewdino.ui.components.learning.captionFontSizeForWordCard
-import com.tal.hebrewdino.ui.components.learning.LessonChoiceCard
 import com.tal.hebrewdino.ui.components.learning.LessonChoiceCardCaptionAreaHeight
 import com.tal.hebrewdino.ui.components.learning.LessonChoiceCardCaptionSpacerHeight
 import com.tal.hebrewdino.ui.components.learning.LessonChoiceCardPictureAspect
@@ -70,7 +63,6 @@ import com.tal.hebrewdino.ui.layout.ScreenFit
 import kotlin.math.roundToInt
 import kotlin.math.min
 import kotlin.random.Random
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 private fun Modifier.offsetYIfNonZero(y: Dp): Modifier =
@@ -536,7 +528,6 @@ fun MatchLetterToWordGame(
                                 captionFontSizeForWordCard(
                                     density = density,
                                     cardWidth = cardW,
-                                    word = ch.word,
                                     sizeMultiplier =
                                         (if (isPhoneSixStationArcStation6) captionSizeMultiplier * 0.92f else captionSizeMultiplier) *
                                             chapter6Station2CaptionBoost *
@@ -545,8 +536,6 @@ fun MatchLetterToWordGame(
                                             } else {
                                                 1f
                                             },
-                                    chapterId = chapterId,
-                                    stationId = stationId,
                                 )
                             val innerScale = innerPictureScaleForChoice(ch)
                             Chapter1Station4To6LessonChoiceCardSpec.Card(
@@ -807,10 +796,7 @@ fun MatchLetterToWordGame(
                                 captionFontSizeForWordCard(
                                     density = density,
                                     cardWidth = cardW,
-                                    word = ch.word,
                                     sizeMultiplier = captionSizeMultiplier * chapter6Station2CaptionBoost,
-                                    chapterId = chapterId,
-                                    stationId = stationId,
                                 )
                             val pop = remember(ch.id, contentKey) { Animatable(1f) }
                             val wrongFlash = remember(ch.id, contentKey) { Animatable(0f) }
@@ -1072,7 +1058,6 @@ private fun SixStationArcStation6Board(
                         captionFontSizeForWordCard(
                             density = density,
                             cardWidth = cardW,
-                            word = ch.word,
                             sizeMultiplier =
                                 captionSizeMultiplier *
                                     0.92f *
@@ -1082,8 +1067,6 @@ private fun SixStationArcStation6Board(
                                     } else {
                                         1f
                                     },
-                            chapterId = chapterId,
-                            stationId = stationId,
                         )
                     val innerScale = innerPictureScaleForChoice(ch)
                     Chapter1Station4To6LessonChoiceCardSpec.Card(

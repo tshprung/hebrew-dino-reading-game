@@ -58,10 +58,12 @@ val LessonChoiceCardCaptionSpacerHeight: Dp = 8.dp
 fun LessonChoiceCard(
     choice: LessonChoice,
     enabled: Boolean,
-    scale: Float = 1f,
-    showWordCaption: Boolean = true,
     cardWidth: Dp,
     cardHeight: Dp,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    scale: Float = 1f,
+    showWordCaption: Boolean = true,
     captionFontSize: TextUnit = 24.sp,
     innerPictureScale: Float = 1f,
     innerPictureScaleY: Float = innerPictureScale,
@@ -72,8 +74,6 @@ fun LessonChoiceCard(
     isSelected: Boolean = false,
     /** 0..1 red flash overlay for wrong pick feedback. */
     wrongFlashAlpha: Float = 0f,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
 ) {
     val density = LocalDensity.current
     val innerTranslateYPx = with(density) { innerPictureTranslateY.toPx() }

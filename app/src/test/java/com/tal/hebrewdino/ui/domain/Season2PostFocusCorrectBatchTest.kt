@@ -14,8 +14,8 @@ import kotlin.random.Random
 class Season2PostFocusCorrectBatchTest {
   @Test
   fun postFocus_pool_usesSharedSuccessClips_notRewardMapOrNarrator() {
-    val dino = Season2RawAudio.postFocusCorrectPool(DinoCharacter.Dino).toSet()
-    val dina = Season2RawAudio.postFocusCorrectPool(DinoCharacter.Dina).toSet()
+    val dino = Season2RawAudio.postFocusCorrectPool().toSet()
+    val dina = Season2RawAudio.postFocusCorrectPool().toSet()
     assertEquals(dino, dina)
     assertEquals(
         setOf(R.raw.season2_success_01, R.raw.season2_success_02, R.raw.season2_success_03),
@@ -84,10 +84,12 @@ class Season2PostFocusCorrectBatchTest {
     val picture = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/screens/PictureStartsWithActions.kt")
     val image = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/screens/ImageMatchActions.kt")
     val wordParts = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/screens/Season2AdvancedStationActions.kt")
-    assertTrue(pickLetter.contains("shouldSkipInStationCorrectPraiseAfterCoach"))
-    assertTrue(picture.contains("shouldSkipInStationCorrectPraiseAfterCoach"))
-    assertTrue(image.contains("shouldSkipInStationCorrectPraiseAfterCoach"))
-    assertTrue(wordParts.contains("shouldSkipInStationCorrectPraiseAfterCoach"))
+    val postCoachHelper = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/screens/PostCoachCorrectPraiseActions.kt")
+    assertTrue(postCoachHelper.contains("playInStationIfCoachHelped"))
+    assertTrue(pickLetter.contains("Season2PostFocusCorrectAudio") || pickLetter.contains("PostCoachCorrectPraiseActions"))
+    assertTrue(picture.contains("PostCoachCorrectPraiseActions"))
+    assertTrue(image.contains("PostCoachCorrectPraiseActions"))
+    assertTrue(wordParts.contains("PostCoachCorrectPraiseActions"))
   }
 
   @Test

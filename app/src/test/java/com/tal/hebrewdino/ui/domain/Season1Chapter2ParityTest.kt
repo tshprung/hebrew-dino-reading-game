@@ -150,6 +150,6 @@ class Season1Chapter2ParityTest {
                 Season2Chapter1StationOrder.POP_BALLOONS,
             ),
         )
-        assertFalse(Season2Ch1QaPolicy.shouldPlayTryAgainInPopBalloonsSfx(season2QuizBalloons = true))
+        assertTrue(Season2Ch1QaPolicy.shouldPlayTryAgainInPopBalloonsSfx())
     }
 }

@@ -39,8 +39,8 @@ class Season2CompanionFeedbackAudioTest {
 
     @Test
     fun postFocusCorrect_usesSharedSuccessPool() {
-        val dino = Season2RawAudio.postFocusCorrectPool(DinoCharacter.Dino).toSet()
-        val dina = Season2RawAudio.postFocusCorrectPool(DinoCharacter.Dina).toSet()
+        val dino = Season2RawAudio.postFocusCorrectPool().toSet()
+        val dina = Season2RawAudio.postFocusCorrectPool().toSet()
         assertEquals(dino, dina)
         assertTrue(R.raw.season2_success_01 in dino)
         assertFalse(R.raw.reward_dino_01 in dino)

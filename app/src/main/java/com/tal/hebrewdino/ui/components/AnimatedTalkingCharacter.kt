@@ -12,6 +12,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
+import kotlin.time.Duration.Companion.milliseconds
 
 @Composable
 fun AnimatedTalkingCharacter(
@@ -30,7 +31,7 @@ fun AnimatedTalkingCharacter(
             return@LaunchedEffect
         }
         while (isActive) {
-            delay(frameMillis)
+            delay(frameMillis.milliseconds)
             frameIndex = (frameIndex + 1) % talkFrameResIds.size
         }
     }

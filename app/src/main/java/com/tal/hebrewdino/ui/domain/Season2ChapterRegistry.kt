@@ -73,11 +73,6 @@ object Season2ChapterRegistry {
 
     fun posterResId(chapterIndex: Int): Int? = chapter(chapterIndex)?.posterResForUi()
 
-    fun missingAssetsForChapter(chapterIndex: Int): List<String> {
-        val def = chapter(chapterIndex) ?: return listOf("unknown chapter $chapterIndex")
-        return if (def.isQaReady) def.validation.missingAssets else def.missingAssetsReport
-    }
-
     fun isChapterComplete(
         chapterIndex: Int,
         completedChapters: Set<Int>,

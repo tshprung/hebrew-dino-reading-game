@@ -19,7 +19,6 @@ fun PictureStartsWithStationContent(
     question: Question.PictureStartsWithQuestion,
     instructionText: String,
     instructionReadablePanel: Boolean,
-    useCh1LayoutPilot: Boolean = false,
     showWordCaption: Boolean,
     onPictureTapReplayWord: (() -> Unit)?,
     temporaryStartingLetterHint: String?,
@@ -43,8 +42,9 @@ fun PictureStartsWithStationContent(
     entryPulseScale: Float,
     /** Non-zero for saga station 4 picture nudge (matches GameScreen SixStationArcHalfCmNudge). */
     verticalNudgeDp: Dp,
-    sagaPictureStartsWithStation: Boolean = false,
     modifier: Modifier = Modifier,
+    useCh1LayoutPilot: Boolean = false,
+    sagaPictureStartsWithStation: Boolean = false,
 ) {
     PictureStartsWithGame(
         question = question,

@@ -110,7 +110,12 @@ class Season2GlobalizeCh1ApprovedFixesTest {
             )
         sources.forEach { path ->
             val source = readProjectSource(path)
-            assertTrue("$path handles post-focus skip or praise", source.contains("shouldSkipInStationCorrectPraiseAfterCoach") || source.contains("afterCoachIntervention"))
+            assertTrue(
+                "$path handles post-focus companion or narrator praise",
+                source.contains("PostCoachCorrectPraiseActions") ||
+                    source.contains("shouldSkipInStationCorrectPraiseAfterCoach") ||
+                    source.contains("afterCoachIntervention"),
+            )
         }
     }
 

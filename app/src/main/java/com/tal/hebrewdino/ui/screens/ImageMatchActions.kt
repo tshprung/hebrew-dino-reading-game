@@ -1,9 +1,11 @@
 package com.tal.hebrewdino.ui.screens
 
 import com.tal.hebrewdino.ui.audio.AudioClips
+import com.tal.hebrewdino.ui.audio.BackgroundMusicPlayer
 import com.tal.hebrewdino.ui.audio.InStationPraiseAudio
 import com.tal.hebrewdino.ui.audio.RawVoicePlayer
 import com.tal.hebrewdino.ui.audio.VoicePlayer
+import com.tal.hebrewdino.ui.data.DinoCharacter
 import com.tal.hebrewdino.ui.domain.AnswerResult
 import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
 import com.tal.hebrewdino.ui.domain.LevelSession
@@ -13,7 +15,7 @@ import com.tal.hebrewdino.ui.domain.Season2EarlyStationQaPolicy
 import com.tal.hebrewdino.ui.domain.Season2StationQaPolicy
 import com.tal.hebrewdino.ui.domain.Season2StationAudio
 import com.tal.hebrewdino.ui.domain.SixStationArcQaPolicy
-import com.tal.hebrewdino.ui.domain.TrainingV1SourceStation
+import com.tal.hebrewdino.ui.domain.Season2SourceStation
 import com.tal.hebrewdino.ui.game.ChildGameAudioHooks
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -34,16 +36,25 @@ private val ImageToWordPraiseCandidates =
 
 private suspend fun playSagaWhichWordInStationPraise(
     season2HadCoachIntervention: Boolean,
+    companionCharacter: DinoCharacter?,
     rawVoice: RawVoicePlayer?,
+    backgroundMusic: BackgroundMusicPlayer?,
+    postFocusAvoidPraiseRawResId: Int,
+    onCompanionPraisePlayed: (Int) -> Unit,
     voice: VoicePlayer,
     chapterId: Int,
     stationId: Int,
 ) {
-    if (
-        Season2EarlyStationQaPolicy.shouldSkipInStationCorrectPraiseAfterCoach(
-            season2HadCoachIntervention,
+    val companionRes =
+        PostCoachCorrectPraiseActions.playInStationIfCoachHelped(
+            hadCoachIntervention = season2HadCoachIntervention,
+            companion = companionCharacter,
+            rawVoice = rawVoice,
+            backgroundMusic = backgroundMusic,
+            avoidRawResId = postFocusAvoidPraiseRawResId,
         )
-    ) {
+    if (companionRes != null) {
+        onCompanionPraisePlayed(companionRes)
         return
     }
     val praiseRes = InStationPraiseAudio.pick(avoidRawResId = null)
@@ -75,6 +86,10 @@ internal object ImageMatchActions {
         onWrongFeedback: (wrongWordCatalogId: String?, wrongWordAlreadySpoken: Boolean) -> Job?,
         season2HadCoachIntervention: Boolean = false,
         season2Chapter1UxStationId: Int? = null,
+        companionCharacter: DinoCharacter? = null,
+        backgroundMusic: BackgroundMusicPlayer? = null,
+        postFocusAvoidPraiseRawResId: Int = 0,
+        onCompanionPraisePlayed: (Int) -> Unit = {},
     ): Boolean {
         if (!gameViewModel.consumeTapCooldown()) return false
         val result = session.submitImageMatch(choiceId)
@@ -98,22 +113,26 @@ internal object ImageMatchActions {
                             scope = scope,
                             audioRuntime = audioRuntime,
                         ) {
-                            if (
-                                !Season2EarlyStationQaPolicy.shouldSkipInStationCorrectPraiseAfterCoach(
-                                    season2HadCoachIntervention,
-                                ) &&
-                                !Season2StationQaPolicy.shouldSkipPictureToWordAssetPraiseOnLastRound(
+                            val skipNarratorPraise =
+                                Season2StationQaPolicy.shouldSkipPictureToWordAssetPraiseOnLastRound(
                                     gameplayChapterId = chapterId,
                                     season2UxStationId = season2Chapter1UxStationId,
                                     isLast = isLast,
                                 )
-                            ) {
-                                GameAudioActions.playPraiseNoImmediateRepeat(
+                            if (!skipNarratorPraise) {
+                                PostCoachCorrectPraiseActions.playInStationOrNarratorPraise(
+                                    hadCoachIntervention = season2HadCoachIntervention,
+                                    companion = companionCharacter,
+                                    rawVoice = rawVoice,
+                                    backgroundMusic = backgroundMusic,
                                     voice = voice,
                                     audioRuntime = audioRuntime,
-                                    candidates = ImageToWordPraiseCandidates,
                                     chapterId = chapterId,
-                                    rawVoice = rawVoice,
+                                    stationId = null,
+                                    narratorCandidates = ImageToWordPraiseCandidates,
+                                    avoidCompanionRawResId = postFocusAvoidPraiseRawResId,
+                                    context = "ImageMatchActions.handleImageToWordAttempt(correct)",
+                                    onCompanionPraisePlayed = onCompanionPraisePlayed,
                                 )
                             }
                         }
@@ -336,6 +355,10 @@ internal object ImageMatchActions {
         onWrongFeedback: (wrongWordCatalogId: String?, wrongWordAlreadySpoken: Boolean) -> Job?,
         season2HadCoachIntervention: Boolean = false,
         season2Chapter1UxStationId: Int? = null,
+        companionCharacter: DinoCharacter? = null,
+        backgroundMusic: BackgroundMusicPlayer? = null,
+        postFocusAvoidPraiseRawResId: Int = 0,
+        onCompanionPraisePlayed: (Int) -> Unit = {},
     ): Boolean {
         if (!gameViewModel.consumeTapCooldown()) return false
         val resolvedUxStationId =
@@ -367,7 +390,11 @@ internal object ImageMatchActions {
                             )
                             playSagaWhichWordInStationPraise(
                                 season2HadCoachIntervention = season2HadCoachIntervention,
+                                companionCharacter = companionCharacter,
                                 rawVoice = rawVoice,
+                                backgroundMusic = backgroundMusic,
+                                postFocusAvoidPraiseRawResId = postFocusAvoidPraiseRawResId,
+                                onCompanionPraisePlayed = onCompanionPraisePlayed,
                                 voice = voice,
                                 chapterId = chapterId,
                                 stationId = stationId,
@@ -415,7 +442,7 @@ internal object ImageMatchActions {
                                 chapterId,
                                 stationId,
                             ) -> {
-                                val (arcChapterId, _) = TrainingV1SourceStation.resolve(chapterId, stationId)
+                                val (arcChapterId, _) = Season2SourceStation.resolveForBehavior(chapterId, stationId)
                                 if (arcChapterId == 1 || arcChapterId == 2 || arcChapterId == 4 || arcChapterId == 5) {
                                     val wordResId = AudioClips.wordRawResIdByCatalogId(choiceId)
                                     if (wordResId == null) {
@@ -451,7 +478,11 @@ internal object ImageMatchActions {
                                     rawVoice.playRawBlocking(wordResId)
                                     playSagaWhichWordInStationPraise(
                                         season2HadCoachIntervention = season2HadCoachIntervention,
+                                        companionCharacter = companionCharacter,
                                         rawVoice = rawVoice,
+                                        backgroundMusic = backgroundMusic,
+                                        postFocusAvoidPraiseRawResId = postFocusAvoidPraiseRawResId,
+                                        onCompanionPraisePlayed = onCompanionPraisePlayed,
                                         voice = voice,
                                         chapterId = chapterId,
                                         stationId = stationId,
@@ -460,7 +491,11 @@ internal object ImageMatchActions {
                                     voice.playBlocking(AudioClips.wordClipByCatalogId(choiceId))
                                     playSagaWhichWordInStationPraise(
                                         season2HadCoachIntervention = season2HadCoachIntervention,
+                                        companionCharacter = companionCharacter,
                                         rawVoice = rawVoice,
+                                        backgroundMusic = backgroundMusic,
+                                        postFocusAvoidPraiseRawResId = postFocusAvoidPraiseRawResId,
+                                        onCompanionPraisePlayed = onCompanionPraisePlayed,
                                         voice = voice,
                                         chapterId = chapterId,
                                         stationId = stationId,

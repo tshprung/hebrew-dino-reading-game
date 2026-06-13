@@ -151,7 +151,8 @@ object Season2ChapterStationPlans {
         stationId: Int,
     ): StationQuizPlan {
         val sid = stationId.coerceIn(1, STATION_COUNT)
-        return when (stationKind(chapterIndex, sid)) {
+        val kind = stationKind(chapterIndex, sid)
+        return when (kind) {
             StationKind.PopBalloons ->
                 StationQuizPlan(
                     mode = StationQuizMode.PopBalloons,
@@ -207,7 +208,7 @@ object Season2ChapterStationPlans {
                     wordCatalogIds = wordCatalogIds,
                     letters = letters,
                     theme = theme,
-                    missingIndex = dragMissingLetterIndex(chapterIndex),
+                    missingIndex = dragMissingLetterIndex(),
                     questionCount = 4,
                 )
             StationKind.WordParts -> {
@@ -271,6 +272,16 @@ object Season2ChapterStationPlans {
                 )
             StationKind.MemoryMatch ->
                 error("Memory match has no quiz plan")
+        }.let { base ->
+            if (!Season2SourceStation.shouldAlignQuizPlan(kind)) {
+                base
+            } else {
+                Season2SourceStation.alignQuizPlanToSource(
+                    Season2ChapterIds.chapterGameplayId(chapterIndex),
+                    sid,
+                    base,
+                )
+            }
         }
     }
 
@@ -280,7 +291,7 @@ object Season2ChapterStationPlans {
             else -> 2
         }
 
-    private fun dragMissingLetterIndex(chapterIndex: Int): Int = 0
+    private fun dragMissingLetterIndex(): Int = 0
 
     private fun advancedPlan(
         mode: Season2AdvancedStationMode,

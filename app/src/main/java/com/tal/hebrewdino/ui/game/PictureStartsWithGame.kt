@@ -243,10 +243,7 @@ fun PictureStartsWithGame(
                             captionFontSizeForWordCard(
                                 density = density,
                                 cardWidth = cardW,
-                                word = question.word,
                                 sizeMultiplier = phoneCardTextMultiplier,
-                                chapterId = chapterId,
-                                stationId = stationId,
                             )
                         val pictureTapReplays = onPictureTapReplayWord != null
                         Chapter1Station4To6LessonChoiceCardSpec.Card(
@@ -434,10 +431,7 @@ fun PictureStartsWithGame(
                     captionFontSizeForWordCard(
                         density = density,
                         cardWidth = cardW,
-                        word = question.word,
                         sizeMultiplier = promptWordSizeMultiplier,
-                        chapterId = chapterId,
-                        stationId = stationId,
                     )
                 val pictureTapReplays = onPictureTapReplayWord != null
                 Box(modifier = Modifier.offset(y = pictureCardExtraDownDp)) {

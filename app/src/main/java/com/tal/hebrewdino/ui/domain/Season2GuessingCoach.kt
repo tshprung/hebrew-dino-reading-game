@@ -13,7 +13,7 @@ import com.tal.hebrewdino.ui.companion.Chapter1AddressAwareAudio
 import com.tal.hebrewdino.ui.data.PlayerAddress
 
 import kotlinx.coroutines.delay
-
+import kotlin.time.Duration.Companion.milliseconds
 
 
 /** Replays the current learning target after a companion coach intervention. */
@@ -34,8 +34,23 @@ object Season2GuessingCoach {
             gameplayChapterId
                 ?.takeIf { Season2StationAudio.isSeason2GameplayChapter(it) }
                 ?.let { Season2StationUx.stationKindForGameplayChapter(it, uxStationId) }
+        val parityCoachSpec =
+            stationUiSpec
+                ?.takeIf {
+                    gameplayChapterId != null &&
+                        Season2SourceStation.hasParitySource(gameplayChapterId, uxStationId)
+                }
+                ?.let { Season2SourceStation.coachReplayUiSpec(it) }
 
         when {
+            parityCoachSpec != null ->
+                replayForSeason1Template(
+                    uxStationId = uxStationId,
+                    stationUiSpec = parityCoachSpec,
+                    question = question,
+                    playerAddress = playerAddress,
+                    rawVoice = rawVoice,
+                )
             arcKind != null ->
                 replayForArcStationKind(
                     kind = arcKind,
@@ -43,7 +58,7 @@ object Season2GuessingCoach {
                     question = question,
                     playerAddress = playerAddress,
                     rawVoice = rawVoice,
-                    gameplayChapterId = gameplayChapterId ?: 0,
+                    gameplayChapterId = gameplayChapterId,
                 )
             CompanionCoachPolicy.isSeason1Chapter(chapterId) && stationUiSpec != null ->
                 replayForSeason1Template(
@@ -63,7 +78,7 @@ object Season2GuessingCoach {
                 )
         }
 
-        delay(280)
+        delay(280.milliseconds)
     }
 
     /** Pop-balloons coach: target letter only (no narrator instruction replay). */
@@ -74,7 +89,7 @@ object Season2GuessingCoach {
     ) {
         val question = session.currentQuestion ?: return
         playTargetLetter(question, rawVoice, uxStationId)
-        delay(280)
+        delay(280.milliseconds)
     }
 
     private suspend fun replayForSeason1Template(
@@ -87,7 +102,7 @@ object Season2GuessingCoach {
         when (stationUiSpec.templateId) {
             StationTemplateId.DragWordToPicture -> {
                 if (
-                    Season1StationAudio.isSeason1DragWordToPictureStation(
+                    Season1StationAudio.isDragWordToPictureBehaviorStation(
                         stationUiSpec.chapterId,
                         stationUiSpec.stationId,
                     )
@@ -106,7 +121,7 @@ object Season2GuessingCoach {
             }
             StationTemplateId.DragMissingLetter -> {
                 if (
-                    Season1StationAudio.isSeason1DragMissingLetterStation(
+                    Season1StationAudio.isDragMissingLetterBehaviorStation(
                         stationUiSpec.chapterId,
                         stationUiSpec.stationId,
                     )
@@ -570,7 +585,7 @@ object Season2GuessingCoach {
         if (instructionRes != 0) {
             rawVoice.playRawBlocking(instructionRes)
             if (postInstructionGapMs > 0) {
-                delay(postInstructionGapMs)
+                delay(postInstructionGapMs.milliseconds)
             }
         }
     }

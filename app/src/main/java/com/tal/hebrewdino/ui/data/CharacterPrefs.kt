@@ -41,11 +41,6 @@ class CharacterPrefs(private val context: Context) {
             }
         }
 
-    val onboardingCompleteFlow: Flow<Boolean> =
-        kotlinx.coroutines.flow.combine(characterFlow, playerAddressFlow) { character, address ->
-            character != null && address != null
-        }
-
     suspend fun setCharacter(character: DinoCharacter) {
         context.dataStore.edit { it[characterKey] = character.name }
     }
@@ -54,17 +49,4 @@ class CharacterPrefs(private val context: Context) {
         context.dataStore.edit { it[playerAddressKey] = address.name }
     }
 
-    suspend fun setOnboardingDefaults() {
-        context.dataStore.edit {
-            it[characterKey] = DinoCharacter.Dino.name
-            it[playerAddressKey] = PlayerAddress.Boy.name
-        }
-    }
-
-    suspend fun clearOnboarding() {
-        context.dataStore.edit {
-            it.remove(characterKey)
-            it.remove(playerAddressKey)
-        }
-    }
 }

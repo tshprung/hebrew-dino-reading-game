@@ -25,6 +25,40 @@ class Season1DragWordToPictureAudioTest {
     }
 
     @Test
+    fun dragWordToPictureBehavior_includesSeason2ParityStations() {
+        assertTrue(
+            Season1StationAudio.isDragWordToPictureBehaviorStation(
+                Season2ChapterIds.Chapter1Tyrannosaurus,
+                Season2Chapter1StationOrder.MEMORY_MATCH,
+            ),
+        )
+        assertTrue(
+            Season1StationAudio.isDragWordToPictureBehaviorStation(
+                Season2ChapterIds.Chapter2Triceratops,
+                2,
+            ),
+        )
+        assertFalse(
+            Season1StationAudio.isDragWordToPictureBehaviorStation(
+                Season2ChapterIds.Chapter1Tyrannosaurus,
+                Season2Chapter1StationOrder.PICTURE_STARTS_WITH,
+            ),
+        )
+    }
+
+    @Test
+    fun dragWordRoundStart_resetsShakeEpochForAllStableDragStations() {
+        val source =
+            listOf(
+                java.io.File("app/src/main/java/com/tal/hebrewdino/ui/screens/GameRoundStartActions.kt"),
+                java.io.File("../app/src/main/java/com/tal/hebrewdino/ui/screens/GameRoundStartActions.kt"),
+            ).first { it.exists() }
+                .readText()
+        assertTrue(source.contains("if (stableDragRoundStart)"))
+        assertTrue(source.contains("gameViewModel.shakeEpoch = 0"))
+    }
+
+    @Test
     fun dragWordToPictureWordAndReplay_helpersExist() {
         val source =
             listOf(
@@ -33,6 +67,7 @@ class Season1DragWordToPictureAudioTest {
             ).first { it.exists() }
                 .readText()
         assertTrue(source.contains("fun playDragWordToPictureWord"))
+        assertTrue(source.contains("fun isDragWordToPictureBehaviorStation"))
     }
 
     @Test
@@ -53,7 +88,7 @@ class Season1DragWordToPictureAudioTest {
                 java.io.File("../app/src/main/java/com/tal/hebrewdino/ui/screens/DragWordToPictureActions.kt"),
             ).first { it.exists() }
                 .readText()
-        assertTrue(actionsSource.contains("playDragWordToPictureWord"))
+        assertTrue(actionsSource.contains("isDragWordToPictureBehaviorStation"))
         assertTrue(actionsSource.contains("handleDropAttempt(correct)"))
         assertTrue(actionsSource.contains("launchFeedbackVoiceNoCancel"))
         assertTrue(actionsSource.contains("awaitFeedbackVoice"))

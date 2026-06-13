@@ -605,7 +605,7 @@ internal object WrongFeedbackActions {
                                     stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH ->
                                     0L
                                 chapterId == 3 && stationId == 4 -> 0L
-                                Season1StationAudio.isSeason1DragMissingLetterStation(chapterId, stationId) -> 110L
+                                Season1StationAudio.isDragMissingLetterBehaviorStation(chapterId, stationId) -> 110L
                                 else -> 110L
                             }
                         delay(feedbackDelayMs)
@@ -684,7 +684,7 @@ internal object WrongFeedbackActions {
                         if (wrongPickedLetter != null) {
                             if (!wrongPickedLetterAlreadySpoken) {
                                 if (chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5 ||
-                                    Season1StationAudio.isSeason1DragMissingLetterStation(chapterId, stationId)
+                                    Season1StationAudio.isDragMissingLetterBehaviorStation(chapterId, stationId)
                                 ) {
                                     val resId = AudioClips.letterNameRawResId(wrongPickedLetter)
                                     if (resId == null) {
@@ -708,7 +708,7 @@ internal object WrongFeedbackActions {
                                         rawVoice.playRawBlocking(resId)
                                     }
                                 } else if ((chapterId == 3 || chapterId == 6) &&
-                                    !Season1StationAudio.isSeason1DragMissingLetterStation(chapterId, stationId)
+                                    !Season1StationAudio.isDragMissingLetterBehaviorStation(chapterId, stationId)
                                 ) {
                                     val resId = AudioClips.letterNameRawResId(wrongPickedLetter)
                                     if (resId == null) {

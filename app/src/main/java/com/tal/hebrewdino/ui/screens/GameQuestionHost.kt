@@ -16,10 +16,12 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import com.tal.hebrewdino.ui.audio.AudioClips
+import com.tal.hebrewdino.ui.audio.BackgroundMusicPlayer
 import com.tal.hebrewdino.ui.audio.RawVoicePlayer
 import com.tal.hebrewdino.ui.audio.SoundPoolPlayer
 import com.tal.hebrewdino.ui.audio.VoicePlayer
 import com.tal.hebrewdino.ui.components.TargetLetterHeaderChip
+import com.tal.hebrewdino.ui.data.DinoCharacter
 import com.tal.hebrewdino.ui.data.PlayerAddress
 import com.tal.hebrewdino.ui.domain.AnswerResult
 import com.tal.hebrewdino.ui.domain.Chapter1Station5And6ImageMatchInnerScale
@@ -120,6 +122,11 @@ internal data class GameQuestionHostUi(
     val showPopBalloonsTargetLetterChip: Boolean,
     val chapter1PlayerAddress: PlayerAddress?,
     val season2Chapter1UxStationId: Int? = null,
+    val season2HadCoachIntervention: Boolean = false,
+    val companionCharacter: DinoCharacter? = null,
+    val backgroundMusic: BackgroundMusicPlayer? = null,
+    val postFocusAvoidPraiseRawResId: Int = 0,
+    val onCompanionPraisePlayed: (Int) -> Unit = {},
 )
 
 internal data class GameQuestionHostState(
@@ -653,14 +660,19 @@ internal fun GameQuestionHost(
                                         audioRuntime = deps.audioRuntime,
                                         cancelFeedbackVoice = deps.cancelFeedbackVoice,
                                     ) {
-                                        GameAudioActions.playPraiseNoImmediateRepeat(
+                                        PostCoachCorrectPraiseActions.playInStationOrNarratorPraise(
+                                            hadCoachIntervention = ui.season2HadCoachIntervention,
+                                            companion = ui.companionCharacter,
+                                            rawVoice = deps.rawVoice,
+                                            backgroundMusic = ui.backgroundMusic,
                                             voice = deps.voice,
                                             audioRuntime = deps.audioRuntime,
-                                            candidates = MatchPraiseClips,
                                             chapterId = ui.chapterId,
                                             stationId = ui.stationId,
+                                            narratorCandidates = MatchPraiseClips,
+                                            avoidCompanionRawResId = ui.postFocusAvoidPraiseRawResId,
                                             context = "GameQuestionHost.handleMatchSolved(praise)",
-                                            rawVoice = deps.rawVoice,
+                                            onCompanionPraisePlayed = ui.onCompanionPraisePlayed,
                                         )
                                     }
                                 GameAudioActions.joinSilently(job)

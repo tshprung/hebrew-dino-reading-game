@@ -7,11 +7,7 @@ import androidx.compose.ui.unit.sp
 fun captionFontSizeForWordCard(
     density: Density,
     cardWidth: Dp,
-    word: String,
     sizeMultiplier: Float,
-    /** When set, allows chapter/station-specific caption tweaks (e.g. Ch2 station 5). */
-    chapterId: Int? = null,
-    stationId: Int? = null,
 ): TextUnit =
     with(density) {
         // Automatic sizing: this is only a *target* size.

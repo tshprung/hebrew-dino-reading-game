@@ -106,9 +106,9 @@ class Season2QaFixBatchTest {
     }
 
     @Test
-    fun wordLevelStationRoundCounts_preferSixWithinPoolLimits() {
+    fun wordLevelStationRoundCounts_matchParityOrWordPartsPool() {
         val ch1Plan = Season2Chapter1StationOrder.quizPlan(chapterIndex = 1, stationId = 6)
-        assertEquals(4, ch1Plan.questionCount)
+        assertEquals(6, ch1Plan.questionCount)
 
         val ch2Plan = Season2Chapter1StationOrder.quizPlan(chapterIndex = 2, stationId = 6)
         assertEquals(6, ch2Plan.questionCount)

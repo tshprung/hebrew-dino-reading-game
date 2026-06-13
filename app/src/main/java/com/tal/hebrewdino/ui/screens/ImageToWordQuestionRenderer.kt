@@ -32,7 +32,6 @@ internal fun ImageToWordQuestionRenderer(
         stationId = stationId,
         trainingRoundIndex = trainingRoundIndex,
         onPictureTapReplayWord = onPictureTapReplayWord,
-        onWordPressed = onWordPressed,
         onAttempt = onAttempt,
         modifier = modifier,
     )

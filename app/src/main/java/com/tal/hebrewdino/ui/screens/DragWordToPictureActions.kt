@@ -53,7 +53,7 @@ internal object DragWordToPictureActions {
             ) {
                 if (
                     rawVoice != null &&
-                        Season1StationAudio.isSeason1DragWordToPictureStation(chapterId, stationId)
+                        Season1StationAudio.isDragWordToPictureBehaviorStation(chapterId, stationId)
                 ) {
                     Season1StationAudio.playDragWordToPictureWord(
                         rawVoice = rawVoice,
@@ -85,7 +85,7 @@ internal object DragWordToPictureActions {
         scope.launch {
             if (
                 audioEnabled &&
-                    Season1StationAudio.isSeason1DragWordToPictureStation(chapterId, stationId)
+                    Season1StationAudio.isDragWordToPictureBehaviorStation(chapterId, stationId)
             ) {
                 GameAudioActions.awaitFeedbackVoice(audioRuntime, 10_000L)
             }

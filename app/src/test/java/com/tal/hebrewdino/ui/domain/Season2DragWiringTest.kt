@@ -91,13 +91,15 @@ class Season2DragWiringTest {
     }
 
     @Test
-    fun chapter1_dragPlans_useTwoPairsAndFirstMissingLetter() {
+    fun chapter1_dragPlans_matchSeason1SourceShape() {
         val dragWord = Season2Chapter1StationOrder.quizPlan(1, 4)
         assertEquals(StationQuizMode.DragWordToPicture, dragWord.mode)
-        assertEquals(2, dragWord.dragWordToPicturePairCount)
+        assertEquals(3, dragWord.dragWordToPicturePairCount)
+        assertEquals(5, dragWord.questionCount)
         val dragMissing = Season2Chapter1StationOrder.quizPlan(1, 6)
         assertEquals(StationQuizMode.DragMissingLetter, dragMissing.mode)
         assertEquals(0, dragMissing.dragMissingLetterIndex)
+        assertEquals(6, dragMissing.questionCount)
     }
 
     @Test

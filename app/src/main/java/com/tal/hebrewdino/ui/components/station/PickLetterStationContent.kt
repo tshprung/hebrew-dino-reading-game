@@ -60,12 +60,12 @@ fun PickLetterStationContent(
     correctPulseLetter: String?,
     correctPulseEpoch: Int,
     letterOptions: List<String>,
-    chapterId: Int? = null,
-    stationId: Int? = null,
-    strongLetterButtonFeedback: Boolean = false,
     onRepeatLetterClick: () -> Unit,
     onPick: (String) -> Unit,
     modifier: Modifier = Modifier,
+    chapterId: Int? = null,
+    stationId: Int? = null,
+    strongLetterButtonFeedback: Boolean = false,
 ) {
     val isCompactLandscapePhone = ScreenFit.isCompactLandscapePhone()
     val isPhoneSixStationArcStation1 =
@@ -219,7 +219,7 @@ fun PickLetterStationContent(
                     correctPulseEpoch = correctPulseEpoch,
                     strongPressFeedback = strongLetterButtonFeedback,
                     visualEnabled = enabled || pinnedMode,
-                    inputEnabled = enabled && !pinnedMode,
+                    inputEnabled = enabled,
                     onPick = onPick,
                     modifier =
                         Modifier

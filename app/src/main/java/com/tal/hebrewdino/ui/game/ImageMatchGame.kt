@@ -46,7 +46,6 @@ import com.tal.hebrewdino.ui.components.TargetLetterHeaderChip
 import com.tal.hebrewdino.ui.components.learning.LessonChoiceCardCaptionAreaHeight
 import com.tal.hebrewdino.ui.components.learning.LessonChoiceCardCaptionSpacerHeight
 import com.tal.hebrewdino.ui.domain.LessonChoice
-import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
 import com.tal.hebrewdino.ui.domain.Chapter1Station4To6LessonChoiceCardSpec
 import com.tal.hebrewdino.ui.domain.Season2Ch1QaPolicy
 import com.tal.hebrewdino.ui.domain.Season2StationUx
@@ -264,10 +263,7 @@ fun ImageMatchGame(
                                 captionFontSizeForWordCard(
                                     density = density,
                                     cardWidth = effectiveCardWTwo,
-                                    word = choice.word,
                                     sizeMultiplier = captionSizeMultiplier * 0.92f,
-                                    chapterId = chapterId,
-                                    stationId = stationId,
                                 )
                             Chapter1Station4To6LessonChoiceCardSpec.Card(
                                 choice = choice,
@@ -392,7 +388,6 @@ fun ImageMatchGame(
                                     captionFontSizeForWordCard(
                                         density = density,
                                         cardWidth = effectiveCardWTwo,
-                                        word = choice.word,
                                         sizeMultiplier =
                                             captionSizeMultiplier *
                                                 0.92f *
@@ -401,8 +396,6 @@ fun ImageMatchGame(
                                                 } else {
                                                     1f
                                                 },
-                                        chapterId = chapterId,
-                                        stationId = stationId,
                                     )
                                 val innerScale = innerPictureScaleForChoice(choice)
                                 Chapter1Station4To6LessonChoiceCardSpec.Card(
@@ -611,7 +604,6 @@ fun ImageMatchGame(
                                 captionFontSizeForWordCard(
                                     density = density,
                                     cardWidth = cardW,
-                                    word = choice.word,
                                     sizeMultiplier =
                                         captionSizeMultiplier *
                                             if (isCompactLandscapePhone && chapterId == 2 && choice.word == "היפופוטם") {
@@ -619,8 +611,6 @@ fun ImageMatchGame(
                                             } else {
                                                 1f
                                             },
-                                    chapterId = chapterId,
-                                    stationId = stationId,
                                 )
                             val innerScale = innerPictureScaleForChoice(choice)
                             Chapter1Station4To6LessonChoiceCardSpec.Card(

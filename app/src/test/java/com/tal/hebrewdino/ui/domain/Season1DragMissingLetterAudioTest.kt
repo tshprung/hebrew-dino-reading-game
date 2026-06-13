@@ -25,6 +25,35 @@ class Season1DragMissingLetterAudioTest {
     }
 
     @Test
+    fun dragMissingLetterBehavior_includesSeason2ParityStations() {
+        assertTrue(
+            Season1StationAudio.isDragMissingLetterBehaviorStation(
+                Season2ChapterIds.Chapter1Tyrannosaurus,
+                Season2Chapter1StationOrder.FINALE_STATION,
+            ),
+        )
+        assertTrue(
+            Season1StationAudio.isDragMissingLetterBehaviorStation(
+                Season2ChapterIds.Chapter2Triceratops,
+                5,
+            ),
+        )
+        assertEquals(
+            5 to 2,
+            Season1StationAudio.resolveDragMissingLetterBehavior(
+                Season2ChapterIds.Chapter1Tyrannosaurus,
+                Season2Chapter1StationOrder.FINALE_STATION,
+            ),
+        )
+        assertFalse(
+            Season1StationAudio.isDragMissingLetterBehaviorStation(
+                Season2ChapterIds.Chapter1Tyrannosaurus,
+                Season2Chapter1StationOrder.PICTURE_STARTS_WITH,
+            ),
+        )
+    }
+
+    @Test
     fun resolveDragMissingLetterBehavior_mapsBothStationsToCanonicalCh5St2() {
         assertEquals(5 to 2, Season1StationAudio.resolveDragMissingLetterBehavior(5, 2))
         assertEquals(5 to 2, Season1StationAudio.resolveDragMissingLetterBehavior(6, 4))
@@ -60,7 +89,8 @@ class Season1DragMissingLetterAudioTest {
                 java.io.File("../app/src/main/java/com/tal/hebrewdino/ui/screens/GameIntroPromptPlayer.kt"),
             ).first { it.exists() }
                 .readText()
-        assertTrue(introSource.contains("playDragMissingLetterRoundIntro"))
+        assertTrue(source.contains("fun isDragMissingLetterBehaviorStation"))
+        assertTrue(introSource.contains("isDragMissingLetterBehaviorStation"))
 
         val actionsSource =
             listOf(
@@ -68,7 +98,7 @@ class Season1DragMissingLetterAudioTest {
                 java.io.File("../app/src/main/java/com/tal/hebrewdino/ui/screens/DragMissingLetterActions.kt"),
             ).first { it.exists() }
                 .readText()
-        assertTrue(actionsSource.contains("playDragMissingLetterCorrectFeedback"))
+        assertTrue(actionsSource.contains("isDragMissingLetterBehaviorStation"))
 
         val hostSource =
             listOf(

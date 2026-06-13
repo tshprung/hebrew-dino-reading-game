@@ -60,7 +60,7 @@ internal object PopBalloonsActions {
     ) {
         if (!audioEnabled) return
         if (
-            Season2Ch1QaPolicy.shouldCancelPreviousFeedbackOnPopBalloonsTap(season2QuizBalloons) ||
+            Season2Ch1QaPolicy.shouldCancelPreviousFeedbackOnPopBalloonsTap() ||
                 !season2QuizBalloons
         ) {
             cancelFeedbackVoice()
@@ -356,7 +356,7 @@ internal object PopBalloonsActions {
                                 voice.playBlocking(letterClip)
                             }
                         }
-                        if (Season2Ch1QaPolicy.shouldPlayTryAgainInPopBalloonsSfx(season2QuizBalloons)) {
+                        if (Season2Ch1QaPolicy.shouldPlayTryAgainInPopBalloonsSfx()) {
                             playAddressAwareTryAgainBlocking(
                                 chapterId = chapterId,
                                 stationId = null,

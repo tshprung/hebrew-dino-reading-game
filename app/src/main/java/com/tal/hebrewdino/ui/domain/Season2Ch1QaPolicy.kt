@@ -41,7 +41,7 @@ object Season2Ch1QaPolicy {
     fun shouldKeepPopBalloonsInputUnlockedDuringFeedback(season2UxStationId: Int?): Boolean =
         Season2StationQaPolicy.shouldKeepPopBalloonsInputUnlockedDuringFeedback(season2UxStationId)
 
-    fun shouldCancelPreviousFeedbackOnPopBalloonsTap(season2QuizBalloons: Boolean): Boolean = false
+    fun shouldCancelPreviousFeedbackOnPopBalloonsTap(): Boolean = false
 
     fun shouldAllowTapDuringPopBalloonsWrongRecover(season2UxStationId: Int?): Boolean =
         Season2StationQaPolicy.shouldAllowTapDuringPopBalloonsWrongRecover(season2UxStationId)
@@ -49,7 +49,7 @@ object Season2Ch1QaPolicy {
     /** WhichWordStartsWith compact layout — S1 PICTURE_PICK_ALL, S2 gameplay, training. */
     fun isWhichWordStartsWithLayoutStation(chapterId: Int?, stationId: Int?): Boolean {
         if (chapterId == null || stationId == null) return false
-        val (resolvedChapterId, resolvedStationId) = TrainingV1SourceStation.resolve(chapterId, stationId)
+        val (resolvedChapterId, resolvedStationId) = Season2SourceStation.resolveForBehavior(chapterId, stationId)
         if ((resolvedChapterId == 1 || resolvedChapterId == 2 || resolvedChapterId == 4 || resolvedChapterId == 5) &&
             SixStationArcQaPolicy.isSagaWhichWordStartsWithStation(resolvedChapterId, resolvedStationId)
         ) {
@@ -59,24 +59,17 @@ object Season2Ch1QaPolicy {
         return false
     }
 
-    fun isWhichWordStartsWithLayoutPilot(season2UxStationId: Int?): Boolean =
-        season2UxStationId == Season2Chapter1StationOrder.WHICH_WORD_STARTS_WITH
-
     fun shouldHideFinaleHintButton(
         gameplayChapterId: Int,
         season2UxStationId: Int?,
     ): Boolean = isCh1FinalePictureToWord(gameplayChapterId, season2UxStationId)
 
+    /** Disabled — S2 PictureStartsWith uses Ch1 st4 parity (readable panel + address-aware intro). */
     fun isPictureStartsWithLayoutPilot(
-        gameplayChapterId: Int,
-        stationId: Int,
-    ): Boolean =
-        gameplayChapterId == Season2ChapterIds.Chapter1Tyrannosaurus &&
-            Season2StationUx.stationKindForGameplayChapter(gameplayChapterId, stationId) ==
-                Season2ChapterStationPlans.StationKind.PictureStartsWith
+    ): Boolean = false
 
-    /** Coach balloon stations skip narrator try-again; companion focus runs after two wrong taps. */
-    fun shouldPlayTryAgainInPopBalloonsSfx(season2QuizBalloons: Boolean): Boolean = !season2QuizBalloons
+    /** Every wrong balloon tap plays address-aware try-again after the popped letter. */
+    fun shouldPlayTryAgainInPopBalloonsSfx(): Boolean = true
 
     fun shouldOrchestrateMapEntryFromChapterList(
         progressHydrated: Boolean,
@@ -99,7 +92,7 @@ object Season2Ch1QaPolicy {
     ): Boolean = chapterFullyRevealed && entryFromChapterSelect
 
     /** All chapters: narrator map-entry clip only (Ch1 model — no puzzle-explain before entry). */
-    fun shouldPlayPuzzleExplainBeforeMapEntry(registryChapterId: Int): Boolean = false
+    fun shouldPlayPuzzleExplainBeforeMapEntry(): Boolean = false
 
     fun isCh1FinalePictureToWord(
         gameplayChapterId: Int,

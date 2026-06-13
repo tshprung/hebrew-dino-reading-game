@@ -1,8 +1,10 @@
 package com.tal.hebrewdino.ui.screens
 
 import com.tal.hebrewdino.ui.audio.AudioClips
+import com.tal.hebrewdino.ui.audio.BackgroundMusicPlayer
 import com.tal.hebrewdino.ui.audio.RawVoicePlayer
 import com.tal.hebrewdino.ui.audio.VoicePlayer
+import com.tal.hebrewdino.ui.data.DinoCharacter
 import com.tal.hebrewdino.ui.domain.AnswerResult
 import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
 import com.tal.hebrewdino.ui.domain.LevelSession
@@ -43,6 +45,10 @@ internal object PictureStartsWithActions {
         advanceAfterRound: suspend (Boolean) -> Unit,
         onWrongFeedback: (wrongPickedLetter: String?, wrongPickedLetterAlreadySpoken: Boolean) -> Job?,
         season2HadCoachIntervention: Boolean = false,
+        companionCharacter: DinoCharacter? = null,
+        backgroundMusic: BackgroundMusicPlayer? = null,
+        postFocusAvoidPraiseRawResId: Int = 0,
+        onCompanionPraisePlayed: (Int) -> Unit = {},
     ) {
         if (!gameViewModel.consumeTapCooldown()) return
         cancelFeedbackVoice()
@@ -105,21 +111,20 @@ internal object PictureStartsWithActions {
                                         voice.playBlocking(letterName)
                                     }
                                 }
-                                if (
-                                    !Season2EarlyStationQaPolicy.shouldSkipInStationCorrectPraiseAfterCoach(
-                                        season2HadCoachIntervention,
-                                    )
-                                ) {
-                                    GameAudioActions.playPraiseNoImmediateRepeat(
-                                        voice = voice,
-                                        audioRuntime = audioRuntime,
-                                        candidates = SagaPictureStartsWithPraiseCandidates,
-                                        chapterId = chapterId,
-                                        stationId = stationId,
-                                        context = "PictureStartsWithActions.handlePick(correct,praise)",
-                                        rawVoice = rawVoice,
-                                    )
-                                }
+                                PostCoachCorrectPraiseActions.playInStationOrNarratorPraise(
+                                    hadCoachIntervention = season2HadCoachIntervention,
+                                    companion = companionCharacter,
+                                    rawVoice = rawVoice,
+                                    backgroundMusic = backgroundMusic,
+                                    voice = voice,
+                                    audioRuntime = audioRuntime,
+                                    chapterId = chapterId,
+                                    stationId = stationId,
+                                    narratorCandidates = SagaPictureStartsWithPraiseCandidates,
+                                    avoidCompanionRawResId = postFocusAvoidPraiseRawResId,
+                                    context = "PictureStartsWithActions.handlePick(correct,praise)",
+                                    onCompanionPraisePlayed = onCompanionPraisePlayed,
+                                )
                             }
                         GameAudioActions.joinSilently(job)
                         val isLast = session.currentIndex >= session.totalQuestions - 1

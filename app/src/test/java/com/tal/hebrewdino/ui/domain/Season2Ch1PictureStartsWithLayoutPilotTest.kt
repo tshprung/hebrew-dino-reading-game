@@ -7,76 +7,60 @@ import org.junit.Test
 
 class Season2Ch1PictureStartsWithLayoutPilotTest {
     @Test
-    fun pilot_station_layout_flagged_only() {
-        assertTrue(
+    fun layout_pilot_disabled_for_ch1_parity() {
+        assertFalse(
             Season2Ch1QaPolicy.isPictureStartsWithLayoutPilot(
-                Season2ChapterIds.Chapter1Tyrannosaurus,
-                Season2Chapter1StationOrder.PICTURE_STARTS_WITH,
             ),
         )
         assertFalse(
             Season2Ch1QaPolicy.isPictureStartsWithLayoutPilot(
-                Season2ChapterIds.Chapter1Tyrannosaurus,
-                Season2Chapter1StationOrder.WHICH_WORD_STARTS_WITH,
             ),
         )
         assertFalse(
             Season2Ch1QaPolicy.isPictureStartsWithLayoutPilot(
-                1,
-                Chapter1StationOrder.PICTURE_PICK_ONE,
-            ),
-        )
-        assertFalse(
-            Season2Ch1QaPolicy.isPictureStartsWithLayoutPilot(
-                Season2ChapterIds.Chapter3Stegosaurus,
-                Season2Chapter1StationOrder.PICTURE_STARTS_WITH,
             ),
         )
     }
 
     @Test
-    fun instruction_between_progress_and_cards() {
-        val game = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/game/PictureStartsWithGame.kt")
-        assertTrue(game.contains("useCh1LayoutPilot"))
-        assertTrue(game.contains("if (useCh1LayoutPilot)"))
-        assertTrue(game.contains("Column(modifier = modifier.fillMaxSize())"))
+    fun ch1_picture_starts_with_matches_source_ui_spec() {
+        val source =
+            StationBehaviorRegistry.getStationUiSpec(1, Chapter1StationOrder.PICTURE_PICK_ONE)
+        val s2 =
+            StationBehaviorRegistry.getStationUiSpec(
+                Season2ChapterIds.Chapter1Tyrannosaurus,
+                Season2Chapter1StationOrder.PICTURE_STARTS_WITH,
+            )
+        assertTrue(source.pictureStartsWithReadablePanel)
+        assertTrue(s2.pictureStartsWithReadablePanel)
+        assertEquals(source.pictureStartsWithInstructionPanelStyle, s2.pictureStartsWithInstructionPanelStyle)
+        assertEquals(source.pictureStartsWithSagaStation, s2.pictureStartsWithSagaStation)
+        assertEquals(source.pictureStartsWithCompactLandscapeRtlWrapInstruction, s2.pictureStartsWithCompactLandscapeRtlWrapInstruction)
+        assertEquals(source.pictureStartsWithVerticalNudgeDp, s2.pictureStartsWithVerticalNudgeDp, 0.01f)
+    }
+
+    @Test
+    fun ch1_picture_starts_with_gets_address_aware_intro_audio() {
+        val chapterId = Season2ChapterIds.Chapter1Tyrannosaurus
+        val stationId = Season2Chapter1StationOrder.PICTURE_STARTS_WITH
+        assertTrue(SixStationArcQaPolicy.isSagaPictureStartsWithStation(chapterId, stationId))
+        assertTrue(
+            Season2StationAudio.usesPictureStartsWithAddressAwareIntro(
+                chapterId = chapterId,
+                isSagaEpisodeParam = false,
+            ),
+        )
+    }
+
+    @Test
+    fun readable_panel_not_suppressed_in_renderer() {
         val renderer =
             readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/screens/PictureStartsWithQuestionRenderer.kt")
-        assertTrue(renderer.contains("isPictureStartsWithLayoutPilot"))
         assertTrue(renderer.contains("instructionReadablePanel && !layoutPilot"))
-    }
-
-    @Test
-    fun cards_shifted_down() {
-        assertEquals(38, Season2Ch1QaPolicy.PictureStartsWithLayoutPilotCardsDownDp.value.toInt())
-        val game = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/game/PictureStartsWithGame.kt")
-        assertTrue(game.contains("PictureStartsWithLayoutPilotCardsDownDp"))
-    }
-
-    @Test
-    fun s1_unchanged() {
         assertFalse(
             Season2Ch1QaPolicy.isPictureStartsWithLayoutPilot(
-                1,
-                Chapter1StationOrder.PICTURE_PICK_ONE,
             ),
         )
-        val game = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/game/PictureStartsWithGame.kt")
-        assertTrue(game.contains("} else {"))
-        assertTrue(game.contains("instructionReadablePanel)"))
-    }
-
-    @Test
-    fun other_stations_unchanged() {
-        assertFalse(
-            Season2Ch1QaPolicy.isPictureStartsWithLayoutPilot(
-                Season2ChapterIds.Chapter2Triceratops,
-                Season2Chapter1StationOrder.PICTURE_STARTS_WITH,
-            ),
-        )
-        val game = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/game/PictureStartsWithGame.kt")
-        assertTrue(game.contains("align(Alignment.TopCenter)"))
-        assertTrue(game.contains("instructionReadablePanel)"))
     }
 
     private fun readProjectSource(relativePath: String): String {

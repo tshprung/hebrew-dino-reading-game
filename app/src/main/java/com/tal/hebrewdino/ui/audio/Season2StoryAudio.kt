@@ -71,11 +71,29 @@ object Season2StoryAudio {
             completedStationCount == 0 &&
             !puzzleMapExplainHeard
 
-    data class MapReturnVoice(
-        @RawRes val rawResId: Int,
-        val caption: String,
-        val isFirstReveal: Boolean,
-    )
+    /**
+     * Represents the voice narration and transcript for the puzzle map reveal.
+     */
+    sealed class MapReturnVoice {
+        @get:RawRes abstract val rawResId: Int
+        abstract val caption: String
+        abstract val isFirstReveal: Boolean
+
+        data class FirstReveal(
+            @get:RawRes override val rawResId: Int,
+            override val caption: String,
+        ) : MapReturnVoice() {
+            override val isFirstReveal: Boolean = true
+        }
+
+        /** Companion-specific praise for subsequent piece reveals (stations 2-5). */
+        data class CompanionPraise(
+            @get:RawRes override val rawResId: Int,
+            override val caption: String,
+        ) : MapReturnVoice() {
+            override val isFirstReveal: Boolean = false
+        }
+    }
 
     /** First station return uses shared first-reveal narration; later returns use companion map praise. */
     fun mapReturnVoice(
@@ -85,10 +103,9 @@ object Season2StoryAudio {
     ): MapReturnVoice? {
         if (completedCount !in 1..5) return null
         if (completedCount == 1) {
-            return MapReturnVoice(
+            return MapReturnVoice.FirstReveal(
                 rawResId = FirstReveal,
                 caption = firstRevealCaption(),
-                isFirstReveal = true,
             )
         }
         val praiseRes =
@@ -96,10 +113,9 @@ object Season2StoryAudio {
                 companion = companion,
                 avoidRawResId = avoidPraiseRawResId,
             )
-        return MapReturnVoice(
+        return MapReturnVoice.CompanionPraise(
             rawResId = praiseRes,
             caption = Season2CompanionFeedbackAudio.mapPraiseCaption(praiseRes),
-            isFirstReveal = false,
         )
     }
 }

@@ -28,35 +28,6 @@ object Season2AdvancedStationPlans {
             theme = theme,
         )
 
-    fun missingFirstLetterPlan(
-        wordCatalogIds: List<String>,
-        distractorLetters: List<String>,
-        theme: Season2StationTheme = Season2StationTheme.LetterArmor,
-    ) = Season2AdvancedStationPlan(
-        mode = Season2AdvancedStationMode.MissingFirstLetter,
-        wordCatalogIds = wordCatalogIds,
-        distractorLetters = distractorLetters,
-        theme = theme,
-    )
-
-    fun wordPartsPlan(
-        wordCatalogIds: List<String>,
-        theme: Season2StationTheme = Season2StationTheme.StegosaurusPlates,
-    ) = Season2AdvancedStationPlan(
-        mode = Season2AdvancedStationMode.WordParts,
-        wordCatalogIds = wordCatalogIds,
-        theme = theme,
-    )
-
-    fun rhymingPlan(
-        wordCatalogIds: List<String>,
-        theme: Season2StationTheme = Season2StationTheme.UnderwaterBubbles,
-    ) = Season2AdvancedStationPlan(
-        mode = Season2AdvancedStationMode.Rhyming,
-        wordCatalogIds = wordCatalogIds,
-        theme = theme,
-    )
-
     fun toStationQuizPlan(advanced: Season2AdvancedStationPlan): StationQuizPlan {
         val baseMode =
             when (advanced.mode) {

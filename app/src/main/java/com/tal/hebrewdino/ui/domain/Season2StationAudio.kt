@@ -32,13 +32,13 @@ object Season2StationAudio {
     fun usesPictureStartsWithAddressAwareIntro(
         chapterId: Int,
         isSagaEpisodeParam: Boolean,
-    ): Boolean = isSagaEpisodeParam || isSeason2WarmupChapter(chapterId)
+    ): Boolean = isSagaEpisodeParam || usesChapter1StyleAddressAwareIntro(chapterId)
 
     fun isPictureToWordStation(
         chapterId: Int,
         stationId: Int,
     ): Boolean {
-        val (resolvedChapterId, resolvedStationId) = TrainingV1SourceStation.resolve(chapterId, stationId)
+        val (resolvedChapterId, resolvedStationId) = Season2SourceStation.resolveForBehavior(chapterId, stationId)
         if ((resolvedChapterId == 3 || resolvedChapterId == 6) && resolvedStationId == 6) return true
         if (chapterId == Season2ChapterIds.Chapter1Tyrannosaurus && stationId == Season2Chapter1StationOrder.FINALE_STATION) {
             return true

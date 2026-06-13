@@ -26,10 +26,30 @@ object Season1StationAudio {
         stationId: Int,
     ): Boolean = (chapterId == 3 || chapterId == 6) && stationId == 3
 
+    /** S1 Ch3/Ch6 st3 and Season 2 parity stations mapped to that source. */
+    fun isDragWordToPictureBehaviorStation(
+        chapterId: Int,
+        stationId: Int,
+    ): Boolean {
+        val (resolvedChapterId, resolvedStationId) =
+            Season2SourceStation.resolveForBehavior(chapterId, stationId)
+        return isSeason1DragWordToPictureStation(resolvedChapterId, resolvedStationId)
+    }
+
     fun isSeason1DragMissingLetterStation(
         chapterId: Int,
         stationId: Int,
     ): Boolean = (chapterId == 5 && stationId == 2) || (chapterId == 6 && stationId == 4)
+
+    /** S1 Ch5 st2 / Ch6 st4 and Season 2 parity stations mapped to that source. */
+    fun isDragMissingLetterBehaviorStation(
+        chapterId: Int,
+        stationId: Int,
+    ): Boolean {
+        val (resolvedChapterId, resolvedStationId) =
+            Season2SourceStation.resolveForBehavior(chapterId, stationId)
+        return isSeason1DragMissingLetterStation(resolvedChapterId, resolvedStationId)
+    }
 
     /** Canonical Season 1 drag-missing-letter source (Ch5 st2). */
     const val SOURCE_CHAPTER_ID: Int = 5
@@ -37,7 +57,7 @@ object Season1StationAudio {
 
     /** Maps Ch6 st4 (and Ch5 st2) to the canonical behavior chapter/station ids. */
     fun resolveDragMissingLetterBehavior(chapterId: Int, stationId: Int): Pair<Int, Int> =
-        if (isSeason1DragMissingLetterStation(chapterId, stationId)) {
+        if (isDragMissingLetterBehaviorStation(chapterId, stationId)) {
             SOURCE_CHAPTER_ID to SOURCE_STATION_ID
         } else {
             chapterId to stationId
@@ -168,7 +188,7 @@ object Season1StationAudio {
                         }
                     val handoffDelayMs =
                         instructionDurationMs - DRAG_MISSING_LETTER_INSTRUCTION_TO_WORD_GAP_MS
-                    delay(handoffDelayMs)
+                    delay(handoffDelayMs.milliseconds)
                     rawVoice.stopNow()
                     instructionJob.cancel()
                 }

@@ -90,8 +90,8 @@ class Season2StoryAudioTest {
                 avoidPraiseRawResId = 0,
             )
         assertNotNull(first)
-        assertTrue(first!!.isFirstReveal)
-        assertEquals(R.raw.season2_first_reveal_01, first.rawResId)
+        assertTrue(first is Season2StoryAudio.MapReturnVoice.FirstReveal)
+        assertEquals(R.raw.season2_first_reveal_01, first!!.rawResId)
 
         val second =
             Season2StoryAudio.mapReturnVoice(
@@ -100,8 +100,8 @@ class Season2StoryAudioTest {
                 avoidPraiseRawResId = 0,
             )
         assertNotNull(second)
-        assertFalse(second!!.isFirstReveal)
-        assertNotEquals(R.raw.season2_first_reveal_01, second.rawResId)
+        assertTrue(second is Season2StoryAudio.MapReturnVoice.CompanionPraise)
+        assertNotEquals(R.raw.season2_first_reveal_01, second!!.rawResId)
     }
 
     @Test
@@ -113,9 +113,9 @@ class Season2StoryAudioTest {
                 avoidPraiseRawResId = 0,
             )
         assertNotNull(dinaSecond)
-        assertFalse(dinaSecond!!.isFirstReveal)
+        assertTrue(dinaSecond is Season2StoryAudio.MapReturnVoice.CompanionPraise)
         assertTrue(
-            Season2CompanionFeedbackAudio.mapPraiseCaption(dinaSecond.rawResId).isNotBlank(),
+            Season2CompanionFeedbackAudio.mapPraiseCaption(dinaSecond!!.rawResId).isNotBlank(),
         )
     }
 

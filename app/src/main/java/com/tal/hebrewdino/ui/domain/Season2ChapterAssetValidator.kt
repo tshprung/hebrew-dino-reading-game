@@ -1,12 +1,11 @@
 package com.tal.hebrewdino.ui.domain
 
-import androidx.annotation.DrawableRes
 import com.tal.hebrewdino.R
 import com.tal.hebrewdino.ui.audio.AudioClips
 
 /** Pure asset readiness checks for Season 2 chapters (unit-testable). */
 object Season2ChapterAssetValidator {
-    const val TREX_POSTER_RES: Int = R.drawable.season2_trex_puzzle_full
+    val TREX_POSTER_RES: Int = R.drawable.season2_trex_puzzle_full
 
     data class ValidationResult(
         val qaReady: Boolean,

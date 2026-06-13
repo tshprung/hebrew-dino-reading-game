@@ -68,7 +68,7 @@ class Season2RawAudioWiringTest {
         assertEquals(R.raw.season2_success_03, Season2RawAudio.Success03)
         assertEquals(
             setOf(R.raw.season2_success_01, R.raw.season2_success_02, R.raw.season2_success_03),
-            Season2RawAudio.postFocusCorrectPool(com.tal.hebrewdino.ui.data.DinoCharacter.Dino).toSet(),
+            Season2RawAudio.postFocusCorrectPool().toSet(),
         )
         assertEquals(R.raw.season2_replay_tile_instruction, Season2Copy.replayTileInstructionVoiceRawRes())
     }

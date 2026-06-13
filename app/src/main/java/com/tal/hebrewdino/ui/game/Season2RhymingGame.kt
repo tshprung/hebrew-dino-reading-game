@@ -107,7 +107,6 @@ fun Season2RhymingGame(
                     captionFontSizeForWordCard(
                         density = density,
                         cardWidth = targetCardW,
-                        word = targetChoice.word,
                         sizeMultiplier = if (isCompact) 1.1f else 1.2f,
                     ),
                 innerPictureScale = if (isCompact) 1.3f else 1.1f,
