@@ -92,9 +92,10 @@ fun Chapter3OutroScreen(
         storyContext = "Chapter3OutroScreen",
         useCompanionDinoArt = true,
         companionCharacter = companionCharacter ?: DinoCharacter.Dino,
+        foundEggDrawableRes = R.drawable.egg_pink_up,
         narrationPlaying = false,
         voiceRawResId = voiceRawResId,
-        dinoContentDescription = (companionCharacter ?: DinoCharacter.Dino).displayNameHebrew(),
+        dinoContentDescription = "ביצה ורודה",
         onContinue = onContinue,
         modifier = modifier,
     )

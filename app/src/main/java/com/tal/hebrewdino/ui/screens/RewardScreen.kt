@@ -54,7 +54,6 @@ import com.tal.hebrewdino.ui.companion.CompanionVisualPolicy
 import com.tal.hebrewdino.ui.data.DinoCharacter
 import com.tal.hebrewdino.ui.companion.CompanionDinoRewardCelebration
 import com.tal.hebrewdino.ui.companion.CompanionRewardCelebrationStyle
-import com.tal.hebrewdino.ui.companion.FoundEggCelebration
 import com.tal.hebrewdino.ui.companion.StoryReadablePanel
 import com.tal.hebrewdino.ui.domain.DevTools
 import com.tal.hebrewdino.ui.layout.ScreenFit
@@ -117,8 +116,6 @@ fun RewardScreen(
     chapter1DinoCompanionPilot: Boolean = false,
     chapter1CompanionCharacter: DinoCharacter? = null,
     showSelectedCompanionPortrait: Boolean = false,
-    /** Ch.3 station rewards: glowing pink egg instead of companion portrait. */
-    showPinkEggReward: Boolean = false,
     selectedCompanionCharacter: DinoCharacter? = null,
     /** Optional short raw success clip to play instead of generic reward voice (keeps visuals unchanged). */
     @RawRes rewardSuccessRawResId: Int? = null,
@@ -139,16 +136,14 @@ fun RewardScreen(
         )
         if (isDebuggable) throw IllegalStateException("Missing selected companion for RewardScreen. chapterId=$rewardChapterId stationId=$levelId detail=$detail")
     }
-    if (!chapter1DinoCompanionPilot && !showSelectedCompanionPortrait && !showPinkEggReward) {
-        reportMissingSelectedCompanion("legacy reward mascot disabled; require companion portrait or pink egg flags")
+    if (!chapter1DinoCompanionPilot && !showSelectedCompanionPortrait) {
+        reportMissingSelectedCompanion("legacy reward mascot disabled; require companion portrait flags")
     }
     if (chapter1DinoCompanionPilot && chapter1CompanionCharacter == null) {
         reportMissingSelectedCompanion("chapter1DinoCompanionPilot=true chapter1CompanionCharacter=null")
     }
-    if ((showSelectedCompanionPortrait || showPinkEggReward) && selectedCompanionCharacter == null) {
-        reportMissingSelectedCompanion(
-            "showSelectedCompanionPortrait=$showSelectedCompanionPortrait showPinkEggReward=$showPinkEggReward selectedCompanionCharacter=null",
-        )
+    if (showSelectedCompanionPortrait && selectedCompanionCharacter == null) {
+        reportMissingSelectedCompanion("showSelectedCompanionPortrait=true selectedCompanionCharacter=null")
     }
     fun reportRequiredRewardRawMissing(detail: String) {
         Log.e(
@@ -180,7 +175,7 @@ fun RewardScreen(
                 chapterId = rewardChapterId,
                 stationId = levelId,
             )
-        } else if (showSelectedCompanionPortrait) {
+        } else {
             CompanionVisualPolicy.requireSelectedCompanion(
                 character = selectedCompanionCharacter,
                 context = "RewardScreen.selectedPortrait",
@@ -188,8 +183,6 @@ fun RewardScreen(
                 chapterId = rewardChapterId,
                 stationId = levelId,
             )
-        } else {
-            null
         }
     val companionRewardStyle =
         remember(levelId, chapter1DinoCompanionPilot, showSelectedCompanionPortrait) {
@@ -366,38 +359,24 @@ fun RewardScreen(
                     modifier =
                         Modifier
                             .size(width = companionPortraitW, height = companionPortraitH)
-                            .then(
-                                if (showPinkEggReward) {
-                                    Modifier
-                                } else {
-                                    Modifier.drawBehind {
-                                        val base = size.minDimension * 0.55f
-                                        drawCircle(
-                                            color = Color(0xFFFFF59D).copy(alpha = 0.16f),
-                                            radius = base * 1.18f,
-                                        )
-                                        drawCircle(
-                                            color = Color(0xFFFFD54F).copy(alpha = 0.12f),
-                                            radius = base,
-                                        )
-                                    }
-                                },
-                            ),
+                            .drawBehind {
+                                val base = size.minDimension * 0.55f
+                                drawCircle(
+                                    color = Color(0xFFFFF59D).copy(alpha = 0.16f),
+                                    radius = base * 1.18f,
+                                )
+                                drawCircle(
+                                    color = Color(0xFFFFD54F).copy(alpha = 0.12f),
+                                    radius = base,
+                                )
+                            },
                 ) {
-                    if (showPinkEggReward) {
-                        FoundEggCelebration(
-                            eggDrawableRes = R.drawable.egg_pink_up,
-                            eggSize = minOf(companionPortraitW, companionPortraitH),
-                            modifier = Modifier.fillMaxSize(),
-                        )
-                    } else {
-                        CompanionDinoRewardCelebration(
-                            style = companionRewardStyle,
-                            isTalking = (chapter1DinoCompanionPilot || rewardSuccessRawResId != null) && companionVoicePlaying,
-                            companionCharacter = portraitCharacter!!,
-                            modifier = Modifier.fillMaxSize(),
-                        )
-                    }
+                    CompanionDinoRewardCelebration(
+                        style = companionRewardStyle,
+                        isTalking = (chapter1DinoCompanionPilot || rewardSuccessRawResId != null) && companionVoicePlaying,
+                        companionCharacter = portraitCharacter,
+                        modifier = Modifier.fillMaxSize(),
+                    )
                 }
                 if (chapter1DinoCompanionPilot) {
                     StoryReadablePanel(modifier = Modifier.weight(1f, fill = true)) {
@@ -502,38 +481,24 @@ fun RewardScreen(
                     modifier =
                         Modifier
                             .size(width = companionPortraitW, height = companionPortraitH)
-                            .then(
-                                if (showPinkEggReward) {
-                                    Modifier
-                                } else {
-                                    Modifier.drawBehind {
-                                        val base = size.minDimension * 0.56f
-                                        drawCircle(
-                                            color = Color(0xFFFFF59D).copy(alpha = 0.15f),
-                                            radius = base * 1.22f,
-                                        )
-                                        drawCircle(
-                                            color = Color(0xFFFFD54F).copy(alpha = 0.11f),
-                                            radius = base,
-                                        )
-                                    }
-                                },
-                            ),
+                            .drawBehind {
+                                val base = size.minDimension * 0.56f
+                                drawCircle(
+                                    color = Color(0xFFFFF59D).copy(alpha = 0.15f),
+                                    radius = base * 1.22f,
+                                )
+                                drawCircle(
+                                    color = Color(0xFFFFD54F).copy(alpha = 0.11f),
+                                    radius = base,
+                                )
+                            },
                 ) {
-                    if (showPinkEggReward) {
-                        FoundEggCelebration(
-                            eggDrawableRes = R.drawable.egg_pink_up,
-                            eggSize = minOf(companionPortraitW, companionPortraitH),
-                            modifier = Modifier.fillMaxSize(),
-                        )
-                    } else {
-                        CompanionDinoRewardCelebration(
-                            style = companionRewardStyle,
-                            isTalking = (chapter1DinoCompanionPilot || rewardSuccessRawResId != null) && companionVoicePlaying,
-                            companionCharacter = portraitCharacter!!,
-                            modifier = Modifier.fillMaxSize(),
-                        )
-                    }
+                    CompanionDinoRewardCelebration(
+                        style = companionRewardStyle,
+                        isTalking = (chapter1DinoCompanionPilot || rewardSuccessRawResId != null) && companionVoicePlaying,
+                        companionCharacter = portraitCharacter,
+                        modifier = Modifier.fillMaxSize(),
+                    )
                 }
                 Spacer(modifier = Modifier.height(6.dp))
 

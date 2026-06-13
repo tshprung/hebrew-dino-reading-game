@@ -2,6 +2,7 @@ package com.tal.hebrewdino.ui.screens
 
 import android.annotation.SuppressLint
 import android.util.Log
+import androidx.annotation.DrawableRes
 import androidx.annotation.RawRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -53,6 +54,7 @@ import com.tal.hebrewdino.ui.companion.Chapter1DinoCompanionPilot
 import com.tal.hebrewdino.ui.companion.Chapter1ForestStoryCharacters
 import com.tal.hebrewdino.ui.companion.CompanionAssets
 import com.tal.hebrewdino.ui.companion.CompanionGentleIdleMotion
+import com.tal.hebrewdino.ui.companion.FoundEggCelebration
 import com.tal.hebrewdino.ui.companion.MotherLostEggsCue
 import com.tal.hebrewdino.ui.components.AnimatedTalkingCharacter
 import com.tal.hebrewdino.ui.data.DinoCharacter
@@ -101,6 +103,8 @@ fun ChapterLobbyStoryLayout(
     showMotherLostEggsCue: Boolean = false,
     /** When false, story card shows title/body only (no Dino/mom portrait). */
     showStoryCharacterArt: Boolean = true,
+    /** When set, shows a glowing found egg instead of companion dino art. */
+    @DrawableRes foundEggDrawableRes: Int? = null,
     onContinue: () -> Unit,
     /** Optional content between title and body (e.g. Episode 4 clue row). */
     betweenTitleAndBody: (@Composable () -> Unit)? = null,
@@ -353,13 +357,20 @@ fun ChapterLobbyStoryLayout(
                                                         },
                                                 ),
                                         ) {
-                                            AnimatedTalkingCharacter(
-                                                idleRes = dinoIdleRes,
-                                                talkFrameResIds = dinoTalkResIds,
-                                                isTalking = talking,
-                                                modifier = Modifier.size(characterSize),
-                                                contentDescription = dinoContentDescription,
-                                            )
+                                            if (foundEggDrawableRes != null) {
+                                                FoundEggCelebration(
+                                                    eggDrawableRes = foundEggDrawableRes,
+                                                    eggSize = characterSize,
+                                                )
+                                            } else {
+                                                AnimatedTalkingCharacter(
+                                                    idleRes = dinoIdleRes,
+                                                    talkFrameResIds = dinoTalkResIds,
+                                                    isTalking = talking,
+                                                    modifier = Modifier.size(characterSize),
+                                                    contentDescription = dinoContentDescription,
+                                                )
+                                            }
                                             if (companion == ChapterLobbyCompanion.DinoAndMom) {
                                                 Spacer(modifier = Modifier.height(8.dp))
                                                 ChapterLobbyMomCharacter(
@@ -420,13 +431,20 @@ fun ChapterLobbyStoryLayout(
                                             verticalAlignment = Alignment.CenterVertically,
                                             horizontalArrangement = Arrangement.Center,
                                         ) {
-                                            AnimatedTalkingCharacter(
-                                                idleRes = dinoIdleRes,
-                                                talkFrameResIds = dinoTalkResIds,
-                                                isTalking = talking,
-                                                modifier = Modifier.size(92.dp),
-                                                contentDescription = dinoContentDescription,
-                                            )
+                                            if (foundEggDrawableRes != null) {
+                                                FoundEggCelebration(
+                                                    eggDrawableRes = foundEggDrawableRes,
+                                                    eggSize = 92.dp,
+                                                )
+                                            } else {
+                                                AnimatedTalkingCharacter(
+                                                    idleRes = dinoIdleRes,
+                                                    talkFrameResIds = dinoTalkResIds,
+                                                    isTalking = talking,
+                                                    modifier = Modifier.size(92.dp),
+                                                    contentDescription = dinoContentDescription,
+                                                )
+                                            }
                                             if (companion == ChapterLobbyCompanion.DinoAndMom) {
                                                 Spacer(modifier = Modifier.width(14.dp))
                                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
