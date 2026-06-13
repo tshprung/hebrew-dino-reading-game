@@ -7,7 +7,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
-import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
 import com.tal.hebrewdino.ui.domain.InstructionPanelStyle
 import com.tal.hebrewdino.ui.domain.Question
 import com.tal.hebrewdino.ui.domain.StationInstructionCopy
@@ -53,13 +52,7 @@ fun FindLetterGridStationContent(
     val inlineInstructionText =
         if (isSagaRevealStation || isTrainingStation4) {
             val resolvedChapter1FindLetterOverride =
-                if ((stationUiSpec.chapterId == 1 ||
-                        stationUiSpec.chapterId == 2 ||
-                        stationUiSpec.chapterId == 4 ||
-                        stationUiSpec.chapterId == 5) &&
-                    stationUiSpec.stationId == Chapter1StationOrder.REVEAL_THEN_CHOOSE &&
-                    chapter1PlayerAddress != null
-                ) {
+                if (stationUiSpec.findGridSagaRevealStation && chapter1PlayerAddress != null) {
                     when (chapter1PlayerAddress) {
                         PlayerAddress.Boy -> "\u200Fמצא את האות:"
                         PlayerAddress.Girl -> "\u200Fמצאי את האות:"
@@ -89,12 +82,7 @@ fun FindLetterGridStationContent(
         inlineInstructionReadablePanel =
             stationUiSpec.findGridInlineInstructionPanelStyle == InstructionPanelStyle.WhiteRounded,
         compactLandscapeTwoColumn =
-            isCompactLandscapePhone &&
-                (stationUiSpec.chapterId == 1 ||
-                    stationUiSpec.chapterId == 2 ||
-                    stationUiSpec.chapterId == 4 ||
-                    stationUiSpec.chapterId == 5) &&
-                stationUiSpec.stationId == Chapter1StationOrder.REVEAL_THEN_CHOOSE,
+            isCompactLandscapePhone && stationUiSpec.findGridSagaRevealStation,
         cellSideScale =
             when {
                 isCompactLandscapePhone -> 0.9f

@@ -5,7 +5,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.tal.hebrewdino.ui.components.station.SagaImageMatchGameStationContent
 import com.tal.hebrewdino.ui.data.PlayerAddress
-import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
 import com.tal.hebrewdino.ui.domain.LessonChoice
 import com.tal.hebrewdino.ui.domain.Question
 import com.tal.hebrewdino.ui.domain.Season2Ch1QaPolicy
@@ -47,8 +46,7 @@ internal fun ImageMatchQuestionRenderer(
                 stationId == TrainingV1Config.STATION_WHICH_WORD_STARTS_WITH_LETTER &&
                 chapter1PlayerAddress != null ->
                 TrainingInstructionCopy.pictureStartsWith(chapter1PlayerAddress)
-            (chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) &&
-                stationId == Chapter1StationOrder.PICTURE_PICK_ALL &&
+            stationUiSpec.imageMatchSagaWhichWordStation &&
                 chapter1PlayerAddress != null ->
                 when (chapter1PlayerAddress) {
                     PlayerAddress.Boy -> "\u200Fבחר את התמונה שמתחילה באות:"

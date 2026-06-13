@@ -295,6 +295,7 @@ internal fun NavGraphBuilder.systemAndTrainingGraph(host: AppNavHostState) {
             chapter6ComingSoon = host.chapter6ComingSoon,
             maxSelectableChapterId = host.maxSelectableChapterId,
             chaptersProgress = host.chaptersProgress,
+            chaptersUnlockProgress = host.chaptersUnlockProgress,
             companionCharacter = host.companionCharacter,
             onBackToSeasons = {
                 host.navController.navigate(NavRoutes.Seasons) {
@@ -307,40 +308,15 @@ internal fun NavGraphBuilder.systemAndTrainingGraph(host: AppNavHostState) {
                 showParentsGate = true
             },
             onOpenChapter = { chapterId ->
+                if (!host.canOpenSeason1Chapter(chapterId)) return@ChaptersScreen
                 when (chapterId) {
-                    1 -> {
-                        // Season 1 Ch.1: story/narrator intro, then companion intro, then chapter flow.
-                        host.navController.navigate(NavRoutes.StoryIntro)
-                    }
-                    2 -> {
-                        val canEnterChapter2 = host.beachOutroSeen || host.chapter1AllStationsComplete
-                        if (canEnterChapter2) host.navController.navigate(NavRoutes.Ch2Intro)
-                    }
-                    3 -> {
-                        if (host.chapter2Completed) {
-                            host.navController.navigate(NavRoutes.Ch3Intro)
-                        }
-                    }
-                    4 -> {
-                        if (host.chapter3Completed) {
-                            host.navController.navigate(NavRoutes.Ch4Intro)
-                        }
-                    }
-                    5 -> {
-                        if (host.chapter4Completed) {
-                            host.navController.navigate(NavRoutes.Ch5Intro)
-                        }
-                    }
-                    6 -> {
-                        if (host.chapter5Completed) {
-                            host.navController.navigate(NavRoutes.Ch6Intro)
-                        }
-                    }
-                    7 -> {
-                        if (host.chapter6Completed) {
-                            host.navController.navigate(NavRoutes.TrainingIntro)
-                        }
-                    }
+                    1 -> host.navController.navigate(NavRoutes.StoryIntro)
+                    2 -> host.navController.navigate(NavRoutes.Ch2Intro)
+                    3 -> host.navController.navigate(NavRoutes.Ch3Intro)
+                    4 -> host.navController.navigate(NavRoutes.Ch4Intro)
+                    5 -> host.navController.navigate(NavRoutes.Ch5Intro)
+                    6 -> host.navController.navigate(NavRoutes.Ch6Intro)
+                    7 -> host.navController.navigate(NavRoutes.TrainingIntro)
                     in 8..10 -> Unit
                 }
             },
@@ -409,6 +385,10 @@ internal fun NavGraphBuilder.systemAndTrainingGraph(host: AppNavHostState) {
         val audioPrefs = remember(context) { AudioPrefs(context.applicationContext) }
         val season2Progress = remember(context) { Season2ProgressPrefs(context.applicationContext) }
         val backgroundMusicEnabled by audioPrefs.backgroundMusicEnabledFlow.collectAsState(initial = true)
+        val season1ChapterUnlockWaivers by
+            host.progress.season1ChapterUnlockWaiversFlow.collectAsState(initial = emptySet())
+        val season2ChapterUnlockWaivers by
+            season2Progress.chapterUnlockWaiversFlow.collectAsState(initial = emptySet())
         SettingsScreen(
             backgroundMusicEnabled = backgroundMusicEnabled,
             onBackgroundMusicEnabledChange = { enabled ->
@@ -450,6 +430,18 @@ internal fun NavGraphBuilder.systemAndTrainingGraph(host: AppNavHostState) {
             onResetSeason2 = {
                 host.scope.launch {
                     season2Progress.resetSeason2()
+                }
+            },
+            season1ChapterUnlockWaivers = season1ChapterUnlockWaivers,
+            onSeason1ChapterUnlockWaiversChange = { chapterIds ->
+                host.scope.launch {
+                    host.progress.setSeason1ChapterUnlockWaivers(chapterIds)
+                }
+            },
+            season2ChapterUnlockWaivers = season2ChapterUnlockWaivers,
+            onSeason2ChapterUnlockWaiversChange = { chapterIds ->
+                host.scope.launch {
+                    season2Progress.setChapterUnlockWaivers(chapterIds)
                 }
             },
             onBack = { host.navController.popBackStack() },

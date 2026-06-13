@@ -48,13 +48,11 @@ class Season2PostFocusCorrectBatchTest {
   fun policy_playsOnlyAfterCoachIntervention() {
     assertTrue(
         Season2PostFocusCorrectPolicy.shouldPlayCompanionPraiseOnCorrect(
-            isSeason2QuizChapter = true,
             season2HadCoachIntervention = true,
         ),
     )
     assertFalse(
         Season2PostFocusCorrectPolicy.shouldPlayCompanionPraiseOnCorrect(
-            isSeason2QuizChapter = true,
             season2HadCoachIntervention = false,
         ),
     )

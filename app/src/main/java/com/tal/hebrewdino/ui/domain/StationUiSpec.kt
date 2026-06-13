@@ -132,6 +132,8 @@ data class StationUiSpec(
     val findGridSuppressHeaderTargetLetter: Boolean = false,
     /** WIRED: Saga station 3 grid reveal mode (episodes 1–5 station 3); affects [FindLetterGridStationContent]. */
     val findGridSagaRevealStation: Boolean = false,
+    /** WIRED: Saga picture-starts-with slot (Ch1 st4 equivalent); slot index varies by chapter reorder. */
+    val pictureStartsWithSagaStation: Boolean = false,
     val findGridUseEpisode4HelpHints: Boolean = false,
     val findGridUseChapter3ContextWordHint: Boolean = false,
     /** WIRED: Picture station instruction override (Ep4 st4); null uses GameScreen listen-only / default strings. */
@@ -177,6 +179,18 @@ data class StationUiSpec(
     val imageMatchHideWordCaptions: Boolean = false,
     /** WIRED: Force entry pulse epoch to 0 for this station (saga station 5 image match). */
     val imageMatchSuppressEntryPulseEpoch: Boolean = false,
+    /** WIRED: Saga which-word slot (Ch1 st5 equivalent); slot index varies by chapter reorder. */
+    val imageMatchSagaWhichWordStation: Boolean = false,
+    /** WIRED: White readable panel behind drag-word-to-picture instruction. */
+    val dragWordInstructionReadablePanel: Boolean = false,
+    /** WIRED: Extra top offset (dp) for drag-word instruction line. */
+    val dragWordInstructionDownDp: Float = 0f,
+    /** WIRED: Multiplier on horizontal gap between picture cards (1 = default). */
+    val dragWordPictureGapMultiplier: Float = 1f,
+    /** WIRED: Show visible empty drop slot under each picture. */
+    val dragWordEmphasizeDropZone: Boolean = false,
+    /** WIRED: Extra hit-test padding (dp) for picture drop targets while dragging. */
+    val dragWordDropTargetPaddingDp: Float = 12f,
     /** WIRED: [MatchLetterToWordGame] instructionReadablePanelOverride / chapter 3 station 2 panel. */
     val matchLetterInstructionReadablePanel: Boolean = false,
     /** WIRED: Persistent instructions for match-letter / finale UI; null falls back to game default copy. */

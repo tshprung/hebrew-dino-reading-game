@@ -11,6 +11,7 @@ import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
 import com.tal.hebrewdino.ui.domain.LevelSession
 import com.tal.hebrewdino.ui.domain.Question
 import com.tal.hebrewdino.ui.domain.Season2StationAudio
+import com.tal.hebrewdino.ui.domain.SixStationArcQaPolicy
 import com.tal.hebrewdino.ui.domain.StationTemplateId
 import com.tal.hebrewdino.ui.domain.TrainingV1Config
 
@@ -172,7 +173,7 @@ internal suspend fun playIntroPrompt(
     }
 
     if (stationTemplateId == StationTemplateId.ImageMatch &&
-        stationId == Chapter1StationOrder.PICTURE_PICK_ALL &&
+        SixStationArcQaPolicy.isSagaWhichWordStartsWithStation(chapterId, stationId) &&
         q is Question.ImageMatchQuestion
     ) {
         sfx.stopAllStreams()
@@ -571,7 +572,7 @@ internal suspend fun playIntroPrompt(
 
     if (
         Season2StationAudio.usesPictureStartsWithAddressAwareIntro(chapterId, isSagaEpisode) &&
-        stationId == Chapter1StationOrder.PICTURE_PICK_ONE &&
+        SixStationArcQaPolicy.isSagaPictureStartsWithStation(chapterId, stationId) &&
         q is Question.PictureStartsWithQuestion
     ) {
         if (rawVoice == null) {

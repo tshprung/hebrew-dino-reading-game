@@ -14,6 +14,7 @@ import com.tal.hebrewdino.ui.domain.Season2WarmupStationQaPolicy
 import com.tal.hebrewdino.ui.domain.TrainingV1Config
 import com.tal.hebrewdino.ui.game.ChildGameAudioHooks
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
 private val HighlightedWordDonePraiseCandidates =
@@ -43,7 +44,7 @@ internal object PickLetterActions {
         sfx: SoundPoolPlayer,
         rawVoice: RawVoicePlayer?,
         audioRuntime: GameAudioRuntimeState,
-        onWrongFeedback: (wrongPickedLetter: String, wrongPickedLetterAlreadySpoken: Boolean) -> Unit,
+        onWrongFeedback: (wrongPickedLetter: String, wrongPickedLetterAlreadySpoken: Boolean) -> Job?,
         advanceAfterRound: suspend (isLast: Boolean, ch3SpellMidWord: Boolean) -> Unit,
         season2HadCoachIntervention: Boolean = false,
         companionCharacter: DinoCharacter? = null,
@@ -53,6 +54,115 @@ internal object PickLetterActions {
     ) {
         if (!gameViewModel.consumeTapCooldown()) return
         cancelFeedbackVoice()
+        if (audioEnabled && isChapter3HighlightedLetterInWordStation) {
+            gameViewModel.inputLocked = true
+            scope.launch {
+                try {
+                    val resId = AudioClips.letterNameRawResId(picked)
+                    if (resId == null) {
+                        android.util.Log.e(
+                            "MissingContent",
+                            "Missing required letter-name audio. chapterId=$chapterId stationId=$stationId context=PickLetterActions.handlePick(ch3Highlighted,preTap) stage=missing raw letter-name mapping letter='$picked'",
+                        )
+                        rawVoice?.playRawBlocking(0)
+                    } else if (rawVoice == null) {
+                        android.util.Log.e(
+                            "MissingContent",
+                            "Missing required letter-name audio. chapterId=$chapterId stationId=$stationId context=PickLetterActions.handlePick(ch3Highlighted,preTap) stage=rawVoice=null expectedRawResId=$resId",
+                        )
+                        voice.playRequiredBlocking(
+                            assetPath = "",
+                            context = "PickLetterActions.handlePick(ch3Highlighted,preTap,rawVoice=null)",
+                            chapterId = chapterId,
+                            stationId = stationId,
+                        )
+                    } else {
+                        rawVoice.playRawBlocking(resId)
+                    }
+                    when (session.submitAnswer(picked)) {
+                        AnswerResult.Correct ->
+                            handleHighlightedInWordCorrectAfterLetter(
+                                picked = picked,
+                                gameViewModel = gameViewModel,
+                                chapterId = chapterId,
+                                stationId = stationId,
+                                session = session,
+                                scope = scope,
+                                sfx = sfx,
+                                voice = voice,
+                                rawVoice = rawVoice,
+                                audioRuntime = audioRuntime,
+                                advanceAfterRound = advanceAfterRound,
+                            )
+                        AnswerResult.Wrong -> {
+                            gameViewModel.shakeEpoch += 1
+                            HintPulseActions.registerWrongTapForHintPulse(gameViewModel)
+                            if (audioEnabled) ChildGameAudioHooks.onWrong()
+                            val feedbackJob = onWrongFeedback(picked, true)
+                            GameAudioActions.joinSilently(feedbackJob)
+                        }
+                        AnswerResult.Finished -> Unit
+                    }
+                } finally {
+                    gameViewModel.inputLocked = false
+                }
+            }
+            return
+        }
+        if (audioEnabled && isChapter3AudioLetterRecognitionStation) {
+            gameViewModel.inputLocked = true
+            scope.launch {
+                try {
+                    val resId = AudioClips.letterNameRawResId(picked)
+                    if (resId == null) {
+                        android.util.Log.e(
+                            "MissingContent",
+                            "Missing required letter-name audio. chapterId=$chapterId stationId=$stationId context=PickLetterActions.handlePick(ch3Audio,preTap) stage=missing raw letter-name mapping letter='$picked'",
+                        )
+                        rawVoice?.playRawBlocking(0)
+                    } else if (rawVoice == null) {
+                        android.util.Log.e(
+                            "MissingContent",
+                            "Missing required letter-name audio. chapterId=$chapterId stationId=$stationId context=PickLetterActions.handlePick(ch3Audio,preTap) stage=rawVoice=null expectedRawResId=$resId",
+                        )
+                        voice.playRequiredBlocking(
+                            assetPath = "",
+                            context = "PickLetterActions.handlePick(ch3Audio,preTap,rawVoice=null)",
+                            chapterId = chapterId,
+                            stationId = stationId,
+                        )
+                    } else {
+                        rawVoice.playRawBlocking(resId)
+                    }
+                    when (session.submitAnswer(picked)) {
+                        AnswerResult.Correct ->
+                            handleChapter3AudioRecognitionCorrectAfterLetter(
+                                picked = picked,
+                                gameViewModel = gameViewModel,
+                                chapterId = chapterId,
+                                stationId = stationId,
+                                session = session,
+                                scope = scope,
+                                voice = voice,
+                                rawVoice = rawVoice,
+                                audioRuntime = audioRuntime,
+                                advanceAfterRound = advanceAfterRound,
+                            )
+                        AnswerResult.Wrong -> {
+                            gameViewModel.shakeEpoch += 1
+                            HintPulseActions.registerWrongTapForHintPulse(gameViewModel)
+                            if (audioEnabled) ChildGameAudioHooks.onWrong()
+                            val feedbackJob = onWrongFeedback(picked, true)
+                            GameAudioActions.joinSilently(feedbackJob)
+                        }
+                        AnswerResult.Finished -> Unit
+                    }
+                } finally {
+                    gameViewModel.inputLocked = false
+                }
+            }
+            return
+        }
         val applyImmediateLetterNameAudio =
             Season2WarmupStationQaPolicy.usesRawLetterNameStationFeedback(chapterId)
         when (session.submitAnswer(picked)) {
@@ -429,5 +539,84 @@ internal object PickLetterActions {
             }
             AnswerResult.Finished -> {}
         }
+    }
+
+    private suspend fun handleHighlightedInWordCorrectAfterLetter(
+        picked: String,
+        gameViewModel: GameViewModel,
+        chapterId: Int,
+        stationId: Int,
+        session: LevelSession,
+        scope: CoroutineScope,
+        sfx: SoundPoolPlayer,
+        voice: VoicePlayer,
+        rawVoice: RawVoicePlayer?,
+        audioRuntime: GameAudioRuntimeState,
+        advanceAfterRound: suspend (isLast: Boolean, ch3SpellMidWord: Boolean) -> Unit,
+    ) {
+        ChildGameAudioHooks.onCorrect()
+        gameViewModel.correctTapPulseLetter = picked
+        gameViewModel.correctTapPulseEpoch += 1
+        gameViewModel.station1PinnedCorrectLetter = picked
+        val wordDone = session.highlightedLetterInWordCompletesWordAfterCorrectRound()
+        sfx.playFirstAvailable(AudioClips.SfxCorrect, volume = 0.62f)
+        if (wordDone) {
+            val job =
+                GameAudioActions.launchFeedbackVoiceNoCancel(
+                    audioEnabled = true,
+                    scope = scope,
+                    audioRuntime = audioRuntime,
+                ) {
+                    GameAudioActions.playPraiseNoImmediateRepeat(
+                        voice = voice,
+                        audioRuntime = audioRuntime,
+                        candidates = HighlightedWordDonePraiseCandidates,
+                        chapterId = chapterId,
+                        stationId = stationId,
+                        context = "PickLetterActions.handlePick(correct,highlightedWordDonePraise)",
+                        rawVoice = rawVoice,
+                    )
+                }
+            GameAudioActions.joinSilently(job)
+        }
+        val isLast = session.currentIndex >= session.totalQuestions - 1
+        advanceAfterRound(isLast, !wordDone)
+    }
+
+    private suspend fun handleChapter3AudioRecognitionCorrectAfterLetter(
+        picked: String,
+        gameViewModel: GameViewModel,
+        chapterId: Int,
+        stationId: Int,
+        session: LevelSession,
+        scope: CoroutineScope,
+        voice: VoicePlayer,
+        rawVoice: RawVoicePlayer?,
+        audioRuntime: GameAudioRuntimeState,
+        advanceAfterRound: suspend (isLast: Boolean, ch3SpellMidWord: Boolean) -> Unit,
+    ) {
+        ChildGameAudioHooks.onCorrect()
+        gameViewModel.correctTapPulseLetter = picked
+        gameViewModel.correctTapPulseEpoch += 1
+        gameViewModel.station1PinnedCorrectLetter = picked
+        val job =
+            GameAudioActions.launchFeedbackVoiceNoCancel(
+                audioEnabled = true,
+                scope = scope,
+                audioRuntime = audioRuntime,
+            ) {
+                GameAudioActions.playPraiseNoImmediateRepeat(
+                    voice = voice,
+                    audioRuntime = audioRuntime,
+                    candidates = HighlightedWordDonePraiseCandidates,
+                    chapterId = chapterId,
+                    stationId = stationId,
+                    context = "PickLetterActions.handlePick(correct,ch3AudioRecognitionPraise)",
+                    rawVoice = rawVoice,
+                )
+            }
+        GameAudioActions.joinSilently(job)
+        val isLast = session.currentIndex >= session.totalQuestions - 1
+        advanceAfterRound(isLast, false)
     }
 }

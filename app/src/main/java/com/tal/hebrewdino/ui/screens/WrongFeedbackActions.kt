@@ -20,6 +20,35 @@ import kotlinx.coroutines.launch
 import kotlin.random.Random
 
 internal object WrongFeedbackActions {
+    private fun shouldProtectTryAgainAudio(chapterId: Int, stationId: Int): Boolean =
+        (chapterId == 3 || chapterId == 6) && (stationId == 5 || stationId == 6)
+
+    private fun launchWrongFeedbackVoice(
+        protectTryAgainAudio: Boolean,
+        audioEnabled: Boolean,
+        scope: CoroutineScope,
+        audioRuntime: GameAudioRuntimeState,
+        cancelFeedbackVoice: () -> Unit,
+        play: suspend () -> Unit,
+    ) {
+        if (protectTryAgainAudio) {
+            GameAudioActions.launchFeedbackVoiceNoCancel(
+                audioEnabled = audioEnabled,
+                scope = scope,
+                audioRuntime = audioRuntime,
+                play = play,
+            )
+        } else {
+            GameAudioActions.launchFeedbackVoice(
+                audioEnabled = audioEnabled,
+                scope = scope,
+                audioRuntime = audioRuntime,
+                cancelFeedbackVoice = cancelFeedbackVoice,
+                play = play,
+            )
+        }
+    }
+
     private suspend fun playLetterThenTryAgainOnSoundPool(
         sfx: SoundPoolPlayer,
         letterClip: String,
@@ -106,14 +135,17 @@ internal object WrongFeedbackActions {
         chapter1PlayerAddress: PlayerAddress? = null,
         rawVoice: RawVoicePlayer? = null,
     ) {
+        val protectTryAgainAudio = shouldProtectTryAgainAudio(chapterId, stationId)
         scope.launch {
             gameViewModel.inputLocked = true
             gameViewModel.dinoVisual = DinoVisual.TryAgain
             val immediateCh1Ch2Station4Voice =
                 audioEnabled &&
                     sagaEpisode &&
-                    (chapterId == 1 || chapterId == 2) &&
-                    stationId == Chapter1StationOrder.PICTURE_PICK_ONE &&
+                    com.tal.hebrewdino.ui.domain.SixStationArcQaPolicy.isSagaPictureStartsWithStation(
+                        chapterId,
+                        stationId,
+                    ) &&
                     wrongPickedLetter != null &&
                     !wrongPickedLetterAlreadySpoken
             if (immediateCh1Ch2Station4Voice) {
@@ -224,7 +256,17 @@ internal object WrongFeedbackActions {
                 dinoSlip.animateTo(0f, tween(140))
             }
             val strongerWrongShake =
-                (sagaEpisode && (stationId == Chapter1StationOrder.PICTURE_PICK_ONE || stationId == Chapter1StationOrder.PICTURE_PICK_ALL))
+                (sagaEpisode &&
+                    (
+                        com.tal.hebrewdino.ui.domain.SixStationArcQaPolicy.isSagaPictureStartsWithStation(
+                            chapterId,
+                            stationId,
+                        ) ||
+                            com.tal.hebrewdino.ui.domain.SixStationArcQaPolicy.isSagaWhichWordStartsWithStation(
+                                chapterId,
+                                stationId,
+                            )
+                    ))
             playShake(
                 scope,
                 optionsShake,
@@ -234,7 +276,13 @@ internal object WrongFeedbackActions {
             if (audioEnabled) {
                 val allowWrongSfx =
                     (!(sagaUsesPickLetterAudioStaging) || isChapter3HighlightedLetterInWordStation || isChapter3AudioLetterRecognitionStation) &&
-                        !(sagaEpisode && stationId == Chapter1StationOrder.PICTURE_PICK_ALL) &&
+                        !(
+                            sagaEpisode &&
+                                com.tal.hebrewdino.ui.domain.SixStationArcQaPolicy.isSagaWhichWordStartsWithStation(
+                                    chapterId,
+                                    stationId,
+                                )
+                        ) &&
                         !(chapterId == 3 && stationId == 3)
                 if (allowWrongSfx) {
                     gameFeedback.playWrong()
@@ -415,7 +463,10 @@ internal object WrongFeedbackActions {
                     return@launch
                 }
                 if (sagaEpisode &&
-                    stationId == Chapter1StationOrder.PICTURE_PICK_ONE &&
+                    com.tal.hebrewdino.ui.domain.SixStationArcQaPolicy.isSagaPictureStartsWithStation(
+                        chapterId,
+                        stationId,
+                    ) &&
                     wrongPickedLetter != null &&
                     !immediateCh1Ch2Station4Voice
                 ) {
@@ -539,7 +590,8 @@ internal object WrongFeedbackActions {
                     return@launch
                 }
                 if (!immediateCh1Ch2Station4Voice) {
-                    GameAudioActions.launchFeedbackVoice(
+                    launchWrongFeedbackVoice(
+                        protectTryAgainAudio = protectTryAgainAudio,
                         audioEnabled = audioEnabled,
                         scope = scope,
                         audioRuntime = audioRuntime,

@@ -72,7 +72,7 @@ internal fun Chapter3Station5ReplayOverlay(
                 }
                 rawVoice.playRawBlocking(
                     Chapter1AddressAwareAudio.instructionRawRes(
-                        kind = Chapter1AddressAwareAudio.InstructionKind.PopBalloons,
+                        kind = Chapter1AddressAwareAudio.InstructionKind.PickLetter,
                         address = chapter1PlayerAddress,
                     ),
                 )

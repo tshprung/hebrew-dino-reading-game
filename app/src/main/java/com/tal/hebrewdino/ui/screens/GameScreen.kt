@@ -363,9 +363,27 @@ fun GameScreen(
                     letterPoolSpec === Season2Chapter2LetterPoolSpec ||
                     letterPoolSpec is com.tal.hebrewdino.ui.domain.Season2ChapterLetterPool
             )
+    val companionCoachEnabled =
+        com.tal.hebrewdino.ui.domain.CompanionCoachPolicy.isEnabled(
+            chapterId = chapterId,
+            companion = chapter1CompanionCharacter,
+            playerAddress = chapter1PlayerAddress,
+        )
+    val qaUxStationId =
+        com.tal.hebrewdino.ui.domain.SixStationArcQaPolicy.resolveUxStationIdForQa(
+            chapterId = chapterId,
+            stationId = stationId,
+            season2UxStationId = season2Chapter1StationId,
+        )
+    val coachUxStationId =
+        qaUxStationId
+            ?: com.tal.hebrewdino.ui.domain.CompanionCoachPolicy.uxStationId(
+                season2UxStationId = season2Chapter1StationId,
+                stationId = stationId,
+            )
     val season2GuessingDetector =
-        remember(letterPoolSpec, season2Chapter1StationId) {
-            if (isSeason2QuizChapter) {
+        remember(companionCoachEnabled) {
+            if (companionCoachEnabled) {
                 Season2GuessingDetector()
             } else {
                 null
@@ -375,7 +393,7 @@ fun GameScreen(
     var season2HadCoachIntervention by remember(stationId) { mutableStateOf(false) }
     var season2CoachJob by remember(stationId) { mutableStateOf<Job?>(null) }
     val isSeason2BalloonStation =
-        isSeason2QuizChapter && plan.mode == StationQuizMode.PopBalloons
+        companionCoachEnabled && plan.mode == StationQuizMode.PopBalloons
     var season2SkipBalloonStagingAwait by remember(stationId) { mutableStateOf(false) }
     var season2Station6ConsecutiveWrongs by remember(stationId) { mutableIntStateOf(0) }
     var lastSeason2FocusRawResId by remember(stationId) { mutableIntStateOf(0) }
@@ -612,8 +630,8 @@ fun GameScreen(
         return
     }
 
-    LaunchedEffect(stationId, session.currentIndex, isSeason2QuizChapter) {
-        if (isSeason2QuizChapter) {
+    LaunchedEffect(stationId, session.currentIndex, companionCoachEnabled) {
+        if (companionCoachEnabled) {
             season2GuessingDetector?.onNewRound()
             season2HadCoachIntervention = false
         }
@@ -674,7 +692,6 @@ fun GameScreen(
         var playedPostFocusCompanionPraise = false
         if (
             com.tal.hebrewdino.ui.domain.Season2PostFocusCorrectPolicy.shouldPlayCompanionPraiseOnCorrect(
-                isSeason2QuizChapter = isSeason2QuizChapter,
                 season2HadCoachIntervention = season2HadCoachIntervention,
             )
         ) {
@@ -699,7 +716,7 @@ fun GameScreen(
             sagaEpisode = isSagaEpisode(chapterId),
             chapterId = chapterId,
             stationId = stationId,
-            season2Chapter1UxStationId = season2Chapter1StationId,
+            season2Chapter1UxStationId = qaUxStationId,
             isSeason2QuizChapter = isSeason2QuizChapter,
             suppressAdvanceRoundNarratorPraiseAfterPostFocusCompanion = playedPostFocusCompanionPraise,
             isLast = isLast,
@@ -733,20 +750,15 @@ fun GameScreen(
         skipTryAgainAudio: Boolean = false,
     ): Job? {
         val detector = season2GuessingDetector
-        val s2StationId = season2Chapter1StationId
         val keepPopBalloonsInputUnlocked =
             isSeason2BalloonStation &&
-                Season2Ch1QaPolicy.shouldKeepPopBalloonsInputUnlockedDuringFeedback(s2StationId)
-        if (
-            detector != null &&
-                s2StationId != null &&
-                Season2Station6FeedbackPolicy.shouldSkipCoachBubble(isSeason2QuizChapter)
-        ) {
+                Season2Ch1QaPolicy.shouldKeepPopBalloonsInputUnlockedDuringFeedback(coachUxStationId)
+        if (detector != null && companionCoachEnabled) {
             season2Station6ConsecutiveWrongs++
             if (
                 Season2Station6FeedbackPolicy.shouldReplayInstructionAfterWrong(
                     consecutiveWrongInRound = season2Station6ConsecutiveWrongs,
-                    isSeason2Quiz = isSeason2QuizChapter,
+                    companionCoachEnabled = companionCoachEnabled,
                 )
             ) {
                 season2Station6ConsecutiveWrongs = 0
@@ -774,11 +786,13 @@ fun GameScreen(
                         }
                         if (chapter1PlayerAddress != null) {
                             Season2GuessingCoach.replayTargetAudio(
-                                season2StationId = s2StationId,
+                                uxStationId = coachUxStationId,
                                 session = session,
                                 playerAddress = chapter1PlayerAddress,
                                 rawVoice = rawVoice,
                                 gameplayChapterId = chapterId,
+                                chapterId = chapterId,
+                                stationUiSpec = stationUiSpec,
                             )
                         }
                         season2HadCoachIntervention = true
@@ -810,7 +824,7 @@ fun GameScreen(
                                         playerAddress = chapter1PlayerAddress,
                                         rawVoice = rawVoice,
                                         voice = voice,
-                                        context = "GameScreen.onWrongFeedback(s2QuizTryAgain)",
+                                        context = "GameScreen.onWrongFeedback(coachTryAgain)",
                                     )
                                 }
                             GameAudioActions.joinSilently(tryAgainJob)
@@ -826,7 +840,7 @@ fun GameScreen(
                 }
             }
         }
-        if (detector != null && s2StationId != null && chapter1PlayerAddress != null) {
+        if (detector != null && companionCoachEnabled && chapter1PlayerAddress != null) {
             val shouldCoach = detector.recordWrongAttempt()
             if (shouldCoach) {
                 season2CoachJob?.cancel()
@@ -840,21 +854,51 @@ fun GameScreen(
                             gameViewModel.dinoVisual = DinoVisual.TryAgain
                             optionsShake.animateTo(7f, tween(70))
                             optionsShake.animateTo(0f, tween(140))
-                            season2HintText =
-                                Season2GuessingHintCopy.coachBubbleText(
-                                    season2StationId = s2StationId,
-                                    playerAddress = chapter1PlayerAddress,
-                                )
                             season2HadCoachIntervention = true
-                            Season2GuessingCoach.replayTargetAudio(
-                                season2StationId = s2StationId,
-                                session = session,
-                                playerAddress = chapter1PlayerAddress,
-                                rawVoice = rawVoice,
-                                gameplayChapterId = chapterId,
-                            )
-                            delay(350.milliseconds)
-                            season2HintText = null
+                            if (isSeason2BalloonStation) {
+                                if (audioEnabled && rawVoice != null) {
+                                    val companion = chapter1CompanionCharacter ?: DinoCharacter.Dino
+                                    val focusRes =
+                                        com.tal.hebrewdino.ui.audio.Season2CompanionFeedbackAudio.pickFocusLine(
+                                            companion = companion,
+                                            avoidRawResId = lastSeason2FocusRawResId,
+                                        )
+                                    lastSeason2FocusRawResId = focusRes
+                                    if (backgroundMusic != null) {
+                                        backgroundMusic.withVoiceDuck {
+                                            rawVoice.playRawBlocking(focusRes)
+                                        }
+                                    } else {
+                                        rawVoice.playRawBlocking(focusRes)
+                                    }
+                                }
+                                if (rawVoice != null) {
+                                    Season2GuessingCoach.replayPopBalloonsTargetLetterOnly(
+                                        session = session,
+                                        rawVoice = rawVoice,
+                                        uxStationId = coachUxStationId,
+                                    )
+                                }
+                            } else {
+                                season2HintText =
+                                    Season2GuessingHintCopy.coachBubbleText(
+                                        uxStationId = coachUxStationId,
+                                        playerAddress = chapter1PlayerAddress,
+                                        templateId = stationUiSpec.templateId,
+                                        gameplayChapterId = chapterId,
+                                    )
+                                Season2GuessingCoach.replayTargetAudio(
+                                    uxStationId = coachUxStationId,
+                                    session = session,
+                                    playerAddress = chapter1PlayerAddress,
+                                    rawVoice = rawVoice,
+                                    gameplayChapterId = chapterId,
+                                    chapterId = chapterId,
+                                    stationUiSpec = stationUiSpec,
+                                )
+                                delay(350.milliseconds)
+                                season2HintText = null
+                            }
                             detector.onInterventionAcknowledged()
                         } finally {
                             gameViewModel.dinoVisual = DinoVisual.Idle
@@ -929,10 +973,10 @@ fun GameScreen(
         )
 
         val showSeason2CoachHint =
-            isSeason2QuizChapter &&
+            companionCoachEnabled &&
                 season2HintText != null &&
                 chapter1CompanionCharacter != null
-        val season2CompanionLayoutScale = if (isSeason2QuizChapter) 0.80f else 0.70f
+        val season2CompanionLayoutScale = if (companionCoachEnabled) 0.80f else 0.70f
 
         Column(
             modifier =
@@ -1097,7 +1141,7 @@ fun GameScreen(
                     }
 
                     fun handlePopBalloonsWrongPick() {
-                        if (isSeason2QuizChapter) {
+                        if (companionCoachEnabled) {
                             if (!gameViewModel.consumeTapCooldown()) return
                             session.wrongTap()
                             gameViewModel.shakeEpoch += 1
@@ -1354,7 +1398,7 @@ fun GameScreen(
                             gameViewModel = gameViewModel,
                             cancelFeedbackVoice = cancelFeedbackVoiceCb,
                             audioEnabled = audioEnabled,
-                            isSeason2QuizChapter = isSeason2QuizChapter,
+                            companionCoachEnabled = companionCoachEnabled,
                             season2UxStationId = season2Chapter1StationId,
                             season2AdvancedMode = plan.season2AdvancedMode,
                             consecutiveWrongsInRound = season2Station6ConsecutiveWrongs,
@@ -1485,7 +1529,7 @@ fun GameScreen(
                                 }
                             },
                             season2HadCoachIntervention = season2HadCoachIntervention,
-                            season2Chapter1UxStationId = season2Chapter1StationId,
+                            season2Chapter1UxStationId = qaUxStationId,
                         )
                     }
 
@@ -1527,7 +1571,7 @@ fun GameScreen(
                                 balloonHelpHintLetter = gameViewModel.balloonHelpHintLetter,
                                 showPopBalloonsTargetLetterChip = showPopBalloonsTargetLetterChip,
                                 chapter1PlayerAddress = chapter1PlayerAddress,
-                                season2Chapter1UxStationId = season2Chapter1StationId,
+                                season2Chapter1UxStationId = qaUxStationId,
                             ),
                         state =
                             GameQuestionHostState(
@@ -1603,7 +1647,7 @@ fun GameScreen(
             }
             if (
                 !isCompactLandscapePhone &&
-                    !isSeason2QuizChapter &&
+                    !companionCoachEnabled &&
                     useSagaSelectedCompanionDino &&
                     chapter1CompanionAssets != null &&
                     jumpFrames.isNotEmpty()
@@ -1656,7 +1700,7 @@ fun GameScreen(
                 ),
         )
 
-        if ((isCompactLandscapePhone || isSeason2QuizChapter) &&
+        if ((isCompactLandscapePhone || companionCoachEnabled) &&
             useSagaSelectedCompanionDino &&
             chapter1CompanionAssets != null &&
             jumpFrames.isNotEmpty()

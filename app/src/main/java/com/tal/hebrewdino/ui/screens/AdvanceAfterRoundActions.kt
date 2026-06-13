@@ -9,9 +9,12 @@ import com.tal.hebrewdino.ui.audio.RawVoicePlayer
 import com.tal.hebrewdino.ui.audio.VoicePlayer
 import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
 import com.tal.hebrewdino.ui.domain.LevelSession
+import com.tal.hebrewdino.ui.domain.SixStationArcQaPolicy
 import com.tal.hebrewdino.ui.domain.Season2PostFocusCorrectPolicy
 import com.tal.hebrewdino.ui.domain.Season2StationAudio
 import com.tal.hebrewdino.ui.domain.Season2StationQaPolicy
+import com.tal.hebrewdino.ui.domain.StationBehaviorRegistry
+import com.tal.hebrewdino.ui.domain.StationTemplateId
 import com.tal.hebrewdino.ui.domain.TrainingV1Config
 import com.tal.hebrewdino.ui.feedback.GameFeedback
 import kotlinx.coroutines.CoroutineScope
@@ -75,6 +78,9 @@ internal object AdvanceAfterRoundActions {
                 stationId == TrainingV1Config.STATION_MATCH_LETTER_TO_WORD
         val finaleMatchLetterStation =
             sagaEpisode && stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH
+        val dragWordToPictureStation =
+            StationBehaviorRegistry.getStationUiSpec(chapterId, stationId).templateId ==
+                StationTemplateId.DragWordToPicture
         val skipInterRoundFeedback =
             Season2StationQaPolicy.shouldSkipAdvanceRoundInterRoundFeedback(
                 gameplayChapterId = chapterId,
@@ -92,7 +98,7 @@ internal object AdvanceAfterRoundActions {
                 else -> gameFeedback.playCorrect()
             }
         }
-        if (!suppressInGameDinoProgress && !(isChapter3HighlightedLetterInWordStation && ch3SpellMidWord)) {
+        if (!suppressInGameDinoProgress && !(isChapter3HighlightedLetterInWordStation && ch3SpellMidWord) && !dragWordToPictureStation) {
             gameViewModel.dinoVisual = DinoVisual.Jump
         }
         val suppressSagaAdvancePraise =
@@ -107,7 +113,7 @@ internal object AdvanceAfterRoundActions {
                 !suppressSagaAdvancePraise &&
                 !suppressNarratorPraiseAfterPostFocus &&
                 stationId in 2..5 &&
-                stationId != Chapter1StationOrder.PICTURE_PICK_ONE &&
+                !SixStationArcQaPolicy.isSagaPictureStartsWithStation(chapterId, stationId) &&
                 !isChapter3AudioLetterRecognitionStation &&
                 !Season2StationQaPolicy.shouldOrchestrateWhichWordCorrectPraiseInStation(
                     chapterId,
@@ -140,7 +146,7 @@ internal object AdvanceAfterRoundActions {
                 !finaleMatchLetterStation &&
                 !trainingMatchLetterStation &&
                 !(sagaUsesPickLetterAudioStaging) &&
-                !(sagaEpisode && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) &&
+                !(sagaEpisode && SixStationArcQaPolicy.isSagaPictureStartsWithStation(chapterId, stationId)) &&
                 !inStationPraiseAlreadyPlayed &&
                 !episode1PraiseEligible
 
@@ -185,7 +191,7 @@ internal object AdvanceAfterRoundActions {
                 )
             }
         }
-        if (!suppressInGameDinoProgress && !(isChapter3HighlightedLetterInWordStation && ch3SpellMidWord)) {
+        if (!suppressInGameDinoProgress && !(isChapter3HighlightedLetterInWordStation && ch3SpellMidWord) && !dragWordToPictureStation) {
             dinoForward.animateTo(dinoForward.value + forwardDir * 12f, spring(dampingRatio = 0.75f, stiffness = 520f))
         }
         val strongerSuccessPulse =
@@ -193,11 +199,11 @@ internal object AdvanceAfterRoundActions {
                 !(isChapter3HighlightedLetterInWordStation && ch3SpellMidWord)
         val station456SuccessPulse =
             (sagaEpisode &&
-                (stationId == Chapter1StationOrder.PICTURE_PICK_ONE ||
-                    stationId == Chapter1StationOrder.PICTURE_PICK_ALL ||
+                (SixStationArcQaPolicy.isSagaPictureStartsWithStation(chapterId, stationId) ||
+                    SixStationArcQaPolicy.isSagaWhichWordStartsWithStation(chapterId, stationId) ||
                     stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH)) ||
                 trainingMatchLetterStation
-        if (!(isChapter3HighlightedLetterInWordStation && ch3SpellMidWord)) {
+        if (!(isChapter3HighlightedLetterInWordStation && ch3SpellMidWord) && !dragWordToPictureStation) {
             playSuccessPulse(
                 scope,
                 dinoScale,
@@ -227,21 +233,32 @@ internal object AdvanceAfterRoundActions {
             sagaEpisode &&
                 (sagaUsesPopBalloonsAudioStaging ||
                     sagaUsesFindGridAudioStaging ||
-                    stationId == Chapter1StationOrder.PICTURE_PICK_ONE) ||
+                    SixStationArcQaPolicy.isSagaPictureStartsWithStation(chapterId, stationId)) ||
                 (isSeason2QuizChapter && sagaUsesPickLetterAudioStaging)
         if (sagaUsesPopBalloonsAudioStaging) {
             GameAudioActions.awaitFeedbackVoice(audioRuntime, 8000L)
             gameViewModel.station2PinnedBalloonLetter = null
             gameViewModel.station2PinnedBalloonColor = null
         } else if (
-            sagaEpisode && (sagaUsesFindGridAudioStaging || stationId == Chapter1StationOrder.PICTURE_PICK_ONE)
+            sagaEpisode &&
+                (
+                    sagaUsesFindGridAudioStaging ||
+                        SixStationArcQaPolicy.isSagaPictureStartsWithStation(chapterId, stationId)
+                )
         ) {
             GameAudioActions.awaitFeedbackVoice(audioRuntime, 8000L)
         } else if (isSeason2QuizChapter && sagaUsesPickLetterAudioStaging) {
             GameAudioActions.awaitFeedbackVoice(audioRuntime, 8000L)
         }
-        val betweenFadeMs = if (tightBetweenRounds) 40 else BetweenQuestionFadeMs
-        contentAlpha.animateTo(0f, tween(betweenFadeMs))
+        val betweenFadeMs =
+            when {
+                dragWordToPictureStation -> 0
+                tightBetweenRounds -> 40
+                else -> BetweenQuestionFadeMs
+            }
+        if (!dragWordToPictureStation) {
+            contentAlpha.animateTo(0f, tween(betweenFadeMs))
+        }
         if (!waitPraiseBeforeFade && !tightBetweenRounds) {
             GameAudioActions.awaitFeedbackVoice(audioRuntime, 2500L)
         }
@@ -259,6 +276,8 @@ internal object AdvanceAfterRoundActions {
             }
             onComplete(stationId, session.correctCount, session.mistakeCount)
         }
-        contentAlpha.animateTo(1f, tween(betweenFadeMs))
+        if (!dragWordToPictureStation) {
+            contentAlpha.animateTo(1f, tween(betweenFadeMs))
+        }
     }
 }

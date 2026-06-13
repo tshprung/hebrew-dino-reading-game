@@ -10,11 +10,14 @@ object Season2StationQaPolicy {
         if (Season2StationAudio.isSeason2GameplayChapter(gameplayChapterId)) {
             return Season2StationUx.stationKindForGameplayChapter(gameplayChapterId, season2UxStationId)
         }
-        if (gameplayChapterId == 1 || gameplayChapterId == 3) {
+        if (gameplayChapterId in earlyArcGameplayChapterIds) {
             return earlyArcStationKind(season2UxStationId)
         }
         return null
     }
+
+    /** S1 six-station arc chapters resolve QA policies by UX station index, not physical slot. */
+    private val earlyArcGameplayChapterIds: Set<Int> = setOf(1, 2, 3, 4, 5)
 
     /** Ch2 st1–5 routes through S1 gameplay chapter ids — resolve by UX station index. */
     private fun earlyArcStationKind(season2UxStationId: Int): Season2ChapterStationPlans.StationKind? =

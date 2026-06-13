@@ -81,6 +81,10 @@ internal fun chapterResetRowIdsForTest(): List<Int> = season1ChapterResetRows.ma
 
 internal fun season2ChapterResetRowIdsForTest(): List<Int> = season2ChapterResetRows.map { it.id }
 
+internal fun chapterUnlockWaiverRowIdsForTest(): List<Int> = season1ChapterResetRows.map { it.id }
+
+internal fun season2ChapterUnlockWaiverRowIdsForTest(): List<Int> = season2ChapterResetRows.map { it.id }
+
 private const val TestTagBackgroundMusicToggle: String = "settings_bg_music_toggle"
 
 @Composable
@@ -96,6 +100,10 @@ fun SettingsScreen(
     season2Enabled: Boolean,
     onResetSeason2Chapters: (Set<Int>) -> Unit,
     onResetSeason2: () -> Unit,
+    season1ChapterUnlockWaivers: Set<Int>,
+    onSeason1ChapterUnlockWaiversChange: (Set<Int>) -> Unit,
+    season2ChapterUnlockWaivers: Set<Int>,
+    onSeason2ChapterUnlockWaiversChange: (Set<Int>) -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -183,11 +191,57 @@ fun SettingsScreen(
 
             SettingsExpandableSectionCard(
                 title = "התקדמות",
-                helperTextCollapsed = "איפוס פרקים נבחרים בלבד.",
-                helperTextExpanded = "סמנו פרקים בכפתורים, ואז יאופסו רק ההתקדמות שלהם בעונה שנבחרה.",
+                helperTextCollapsed = "פתיחת פרקים ואיפוס פרקים נבחרים.",
+                helperTextExpanded =
+                    "אפשר לסמן פרקים שלא יידרשו להשלמה כדי לפתוח את הפרק הבא, או לאפס התקדמות של פרקים נבחרים.",
                 expanded = progressExpanded,
                 onExpandedChange = { progressExpanded = it },
             ) {
+                Text(
+                    text = "פתיחת פרק הבא בלי השלמה",
+                    style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
+                    color = Color(0xFF0B2B3D).copy(alpha = 0.92f),
+                )
+                Text(
+                    text =
+                        "סמנו פרקים שהילד/ה כבר שולט/ת בהם — לא יידרש לסיים אותם מחדש כדי לפתוח את הפרק שאחריהם.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color(0xFF0B2B3D).copy(alpha = 0.72f),
+                    modifier = Modifier.padding(top = 4.dp),
+                )
+                Text(
+                    text = "עונה 1",
+                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                    color = Color(0xFF0B2B3D).copy(alpha = 0.88f),
+                    modifier = Modifier.padding(top = 10.dp),
+                )
+                ChapterSelectionToggleGrid(
+                    rows = season1ChapterResetRows,
+                    selected = season1ChapterUnlockWaivers,
+                    onSelectionChange = onSeason1ChapterUnlockWaiversChange,
+                    selectedAccentColor = Color(0xFF2E7D32),
+                )
+                if (season2Enabled) {
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Text(
+                        text = "עונה 2",
+                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                        color = Color(0xFF0B2B3D).copy(alpha = 0.88f),
+                    )
+                    ChapterSelectionToggleGrid(
+                        rows = season2ChapterResetRows,
+                        selected = season2ChapterUnlockWaivers,
+                        onSelectionChange = onSeason2ChapterUnlockWaiversChange,
+                        selectedAccentColor = Color(0xFF2E7D32),
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = "איפוס פרקים",
+                    style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
+                    color = Color(0xFF0B2B3D).copy(alpha = 0.92f),
+                )
                 Text(
                     text = "עונה 1",
                     style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
@@ -386,6 +440,7 @@ private fun ChapterSelectionToggleGrid(
     rows: List<ChapterResetRow>,
     selected: Set<Int>,
     onSelectionChange: (Set<Int>) -> Unit,
+    selectedAccentColor: Color = Color(0xFF2AA6C9),
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -401,13 +456,13 @@ private fun ChapterSelectionToggleGrid(
                     val isSelected = row.id in selected
                     val containerColor =
                         if (isSelected) {
-                            Color(0xFF2AA6C9).copy(alpha = 0.20f)
+                            selectedAccentColor.copy(alpha = 0.20f)
                         } else {
                             Color.White.copy(alpha = 0.90f)
                         }
                     val border =
                         if (isSelected) {
-                            BorderStroke(1.dp, Color(0xFF2AA6C9).copy(alpha = 0.55f))
+                            BorderStroke(1.dp, selectedAccentColor.copy(alpha = 0.55f))
                         } else {
                             BorderStroke(1.dp, Color(0xFF0B2B3D).copy(alpha = 0.14f))
                         }

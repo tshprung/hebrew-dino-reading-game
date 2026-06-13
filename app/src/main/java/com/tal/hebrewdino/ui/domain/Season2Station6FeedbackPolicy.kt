@@ -1,19 +1,17 @@
 package com.tal.hebrewdino.ui.domain
 
 /**
- * Season 2 quiz stations: companion focus line after two consecutive mistakes (Ch1 St6 model).
+ * Companion focus line after two consecutive mistakes (before full coach bubble path).
  */
 object Season2Station6FeedbackPolicy {
     const val CONSECUTIVE_WRONG_INSTRUCTION_THRESHOLD: Int = 2
 
-    fun shouldUseCompanionFocusFeedback(isSeason2Quiz: Boolean): Boolean = isSeason2Quiz
-
-    fun shouldSkipCoachBubble(isSeason2Quiz: Boolean): Boolean = shouldUseCompanionFocusFeedback(isSeason2Quiz)
+    fun shouldUseCompanionFocusFeedback(companionCoachEnabled: Boolean): Boolean = companionCoachEnabled
 
     fun shouldReplayInstructionAfterWrong(
         consecutiveWrongInRound: Int,
-        isSeason2Quiz: Boolean,
+        companionCoachEnabled: Boolean,
     ): Boolean =
-        shouldUseCompanionFocusFeedback(isSeason2Quiz) &&
+        shouldUseCompanionFocusFeedback(companionCoachEnabled) &&
             consecutiveWrongInRound >= CONSECUTIVE_WRONG_INSTRUCTION_THRESHOLD
 }

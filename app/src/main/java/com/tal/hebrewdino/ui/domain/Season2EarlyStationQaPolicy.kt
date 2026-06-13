@@ -24,10 +24,11 @@ object Season2EarlyStationQaPolicy {
     fun shouldUseSeason2PictureStartsWithWrongAudio(
         isSeason2QuizChapter: Boolean,
         sagaEpisode: Boolean,
+        chapterId: Int,
         stationId: Int,
     ): Boolean =
         isSeason2QuizChapter ||
-            (sagaEpisode && stationId == com.tal.hebrewdino.ui.domain.Chapter1StationOrder.PICTURE_PICK_ONE)
+            (sagaEpisode && SixStationArcQaPolicy.isSagaPictureStartsWithStation(chapterId, stationId))
 
     fun shouldSkipInStationCorrectPraiseAfterCoach(season2HadCoachIntervention: Boolean): Boolean =
         season2HadCoachIntervention

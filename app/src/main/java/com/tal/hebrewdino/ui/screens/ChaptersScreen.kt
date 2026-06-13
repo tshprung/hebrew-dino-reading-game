@@ -174,6 +174,8 @@ fun ChaptersScreen(
     /** Highest chapter tile (1–10) that can be opened from the map when unlocked. */
     maxSelectableChapterId: Int = 3,
     chaptersProgress: ChaptersProgress,
+    /** Effective progress for unlocking later chapters (includes parent waivers). */
+    chaptersUnlockProgress: ChaptersProgress = chaptersProgress,
     onBackToSeasons: () -> Unit,
     onOpenSettings: () -> Unit,
     onOpenChapter: (Int) -> Unit,
@@ -244,6 +246,7 @@ fun ChaptersScreen(
                 chapters = chapters,
                 unlockedChapter = unlockedChapter,
                 chaptersProgress = chaptersProgress,
+                chaptersUnlockProgress = chaptersUnlockProgress,
                 maxSelectableChapterId = maxSelectableChapterId,
                 hubCompanionIdleRes = hubCompanionIdleRes,
                 onOpenChapter = onOpenChapter,
@@ -262,13 +265,13 @@ fun ChaptersScreen(
                 TrainingComingSoonCard(
                     title = "אימון קצר",
                     subtitle =
-                        if (chaptersProgress.chapter6Completed) {
+                        if (chaptersUnlockProgress.chapter6Completed) {
                             "אותיות ומילים מכל הפרקים"
                         } else {
                             "ייפתח אחרי פרק 6"
                         },
-                    statusText = if (chaptersProgress.chapter6Completed) "התחל" else "נעול",
-                    enabled = chaptersProgress.chapter6Completed,
+                    statusText = if (chaptersUnlockProgress.chapter6Completed) "התחל" else "נעול",
+                    enabled = chaptersUnlockProgress.chapter6Completed,
                     onClick = { onOpenChapter(TrainingV1Config.CHAPTER_ID) },
                     modifier =
                         Modifier
@@ -399,6 +402,7 @@ private fun ChaptersHexHoneycomb(
     chapters: List<ChapterCard>,
     unlockedChapter: Int,
     chaptersProgress: ChaptersProgress,
+    chaptersUnlockProgress: ChaptersProgress,
     maxSelectableChapterId: Int,
     hubCompanionIdleRes: Int,
     onOpenChapter: (Int) -> Unit,
@@ -431,6 +435,7 @@ private fun ChaptersHexHoneycomb(
                                 chapterId = ch.id,
                                 unlockedChapter = unlockedChapter,
                                 progress = chaptersProgress,
+                                unlockProgress = chaptersUnlockProgress,
                             )
                         val openable = state != ChapterEggState.Locked && ch.id <= maxSelectableChapterId
                         val isCurrent = ch.id == unlockedChapter && state == ChapterEggState.Unlocked
@@ -1243,20 +1248,21 @@ private fun chapterEggState(
     chapterId: Int,
     unlockedChapter: Int,
     progress: ChaptersProgress,
+    unlockProgress: ChaptersProgress = progress,
 ): ChapterEggState {
     if (chapterId >= 7) return ChapterEggState.Locked
     if (chapterId == 6) {
-        if (!progress.chapter5Completed) return ChapterEggState.Locked
+        if (!unlockProgress.chapter5Completed) return ChapterEggState.Locked
         if (progress.chapter6Completed) return ChapterEggState.Completed
         return ChapterEggState.Unlocked
     }
     if (chapterId == 5) {
-        if (!progress.chapter4Completed) return ChapterEggState.Locked
+        if (!unlockProgress.chapter4Completed) return ChapterEggState.Locked
         if (progress.chapter5Completed) return ChapterEggState.Completed
         return ChapterEggState.Unlocked
     }
     if (chapterId == 4) {
-        if (!progress.chapter3Completed) return ChapterEggState.Locked
+        if (!unlockProgress.chapter3Completed) return ChapterEggState.Locked
         if (progress.chapter4Completed) return ChapterEggState.Completed
         return ChapterEggState.Unlocked
     }
@@ -1269,6 +1275,6 @@ private fun chapterEggState(
         }
     if (done) return ChapterEggState.Completed
     if (chapterId == unlockedChapter) return ChapterEggState.Unlocked
-    if (chapterId < unlockedChapter) return ChapterEggState.Completed
+    if (chapterId < unlockedChapter) return ChapterEggState.Unlocked
     return ChapterEggState.Locked
 }

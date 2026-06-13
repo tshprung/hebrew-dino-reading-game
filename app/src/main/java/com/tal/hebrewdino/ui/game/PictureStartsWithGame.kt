@@ -37,7 +37,6 @@ import com.tal.hebrewdino.ui.components.TargetLetterHeaderChip
 import com.tal.hebrewdino.ui.components.learning.LessonChoiceCardPictureAspect
 import com.tal.hebrewdino.ui.components.learning.captionFontSizeForWordCard
 import com.tal.hebrewdino.ui.domain.Chapter1Station4To6LessonChoiceCardSpec
-import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
 import com.tal.hebrewdino.ui.domain.HebrewLetterOrder
 import com.tal.hebrewdino.ui.domain.Season2Ch1QaPolicy
 import com.tal.hebrewdino.ui.domain.Season2StationUx
@@ -95,6 +94,8 @@ fun PictureStartsWithGame(
     temporaryStartingLetterHint: String? = null,
     /** Episode 4 station 4: after correct pick, hide other letter buttons for clarity. */
     pinnedCorrectLetter: String? = null,
+    /** Saga picture-starts-with slot (Ch1 st4 equivalent); physical station index varies by chapter. */
+    sagaPictureStartsWithStation: Boolean = false,
     onPickLetter: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -103,11 +104,7 @@ fun PictureStartsWithGame(
         chapterId != null &&
             stationId != null &&
             Season2StationUx.isWarmupPictureStartsWith(chapterId, stationId)
-    val isSagaStation4 =
-        (
-            (chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) &&
-                stationId == Chapter1StationOrder.PICTURE_PICK_ONE
-        ) || isSeason2WarmupPictureStartsWith
+    val isSagaStation4 = sagaPictureStartsWithStation || isSeason2WarmupPictureStartsWith
     val pictureCardExtraDownDp =
         if (isSagaStation4) {
             19.dp
@@ -124,12 +121,7 @@ fun PictureStartsWithGame(
     val instructionPanelPadV = if (isSagaStation4) 4.dp else 8.dp
     val useTwoColumn =
         isCompactLandscapePhone &&
-            (
-                (
-                    (chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) &&
-                        stationId == Chapter1StationOrder.PICTURE_PICK_ONE
-                ) || isSeason2WarmupPictureStartsWith
-            )
+            (sagaPictureStartsWithStation || isSeason2WarmupPictureStartsWith)
     val instructionScale = if (isCompactLandscapePhone) 1.1f else 2f
     val phoneCardTextMultiplier =
         if (useTwoColumn) {
@@ -302,9 +294,7 @@ fun PictureStartsWithGame(
             } else {
                 Box(modifier = modifier.fillMaxSize()) {
                     val instructionOffsetY =
-                        if ((chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) &&
-                            stationId == Chapter1StationOrder.PICTURE_PICK_ONE
-                        ) {
+                        if (sagaPictureStartsWithStation) {
                             (-12).dp
                         } else {
                             (-6).dp

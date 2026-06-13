@@ -50,7 +50,7 @@ object Season2Ch1QaPolicy {
     fun isWhichWordStartsWithLayoutStation(chapterId: Int?, stationId: Int?): Boolean {
         if (chapterId == null || stationId == null) return false
         if ((chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) &&
-            stationId == Chapter1StationOrder.PICTURE_PICK_ALL
+            SixStationArcQaPolicy.isSagaWhichWordStartsWithStation(chapterId, stationId)
         ) {
             return true
         }
@@ -79,7 +79,8 @@ object Season2Ch1QaPolicy {
             Season2StationUx.stationKindForGameplayChapter(gameplayChapterId, stationId) ==
                 Season2ChapterStationPlans.StationKind.PictureStartsWith
 
-    fun shouldPlayTryAgainInPopBalloonsSfx(season2QuizBalloons: Boolean): Boolean = true
+    /** Coach balloon stations skip narrator try-again; companion focus runs after two wrong taps. */
+    fun shouldPlayTryAgainInPopBalloonsSfx(season2QuizBalloons: Boolean): Boolean = !season2QuizBalloons
 
     fun shouldOrchestrateMapEntryFromChapterList(
         progressHydrated: Boolean,

@@ -75,6 +75,7 @@ internal fun PictureStartsWithQuestionRenderer(
         onPickLetter = onPickLetter,
         entryPulseScale = entryPulseScale,
         verticalNudgeDp = stationUiSpec.pictureStartsWithVerticalNudgeDp.dp,
+        sagaPictureStartsWithStation = stationUiSpec.pictureStartsWithSagaStation,
         modifier = modifier,
     )
 }

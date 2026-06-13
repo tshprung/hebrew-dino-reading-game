@@ -70,7 +70,7 @@ internal object Season2AdvancedStationActions {
         gameViewModel: GameViewModel,
         cancelFeedbackVoice: () -> Unit,
         audioEnabled: Boolean,
-        isSeason2QuizChapter: Boolean,
+        companionCoachEnabled: Boolean,
         season2UxStationId: Int?,
         season2AdvancedMode: com.tal.hebrewdino.ui.domain.Season2AdvancedStationMode?,
         consecutiveWrongsInRound: Int,
@@ -89,10 +89,10 @@ internal object Season2AdvancedStationActions {
         if (!gameViewModel.consumeTapCooldown()) return
         interruptWordPartsVoice(gameViewModel, cancelFeedbackVoice, rawVoice)
         val willPlayFocusAfterWrong =
-            isSeason2QuizChapter &&
+            companionCoachEnabled &&
                 Season2Station6FeedbackPolicy.shouldReplayInstructionAfterWrong(
                     consecutiveWrongInRound = consecutiveWrongsInRound + 1,
-                    isSeason2Quiz = isSeason2QuizChapter,
+                    companionCoachEnabled = companionCoachEnabled,
                 )
         val job =
             scope.launch {

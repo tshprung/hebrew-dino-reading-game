@@ -44,6 +44,7 @@ data class MainUiState(
     val chapter6Completed: Boolean = false,
     val unlockedLevel: Int = 1,
     val completedLevels: Set<Int> = emptySet(),
+    val season1ChapterUnlockWaivers: Set<Int> = emptySet(),
     val character: DinoCharacter? = null,
     val playerAddress: PlayerAddress? = null,
 )
@@ -315,14 +316,24 @@ class MainViewModel(context: Context) : ViewModel() {
             initialValue = Chapters2To5State(chapter2State.value, chapter3State.value, chapter4State.value, chapter5State.value),
         )
 
+    private val season1WaiversState: StateFlow<Set<Int>> =
+        progress.season1ChapterUnlockWaiversFlow.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptySet(),
+        )
+
     val uiState: StateFlow<MainUiState> =
         combine(
-            chapter1State,
-            chapters2To5State,
-            chapter6State,
-            prefs.characterFlow,
-            prefs.playerAddressFlow,
-        ) { chapter1, chapters2To5, chapter6, character, playerAddress ->
+            combine(chapter1State, chapters2To5State, chapter6State) { chapter1, chapters2To5, chapter6 ->
+                Triple(chapter1, chapters2To5, chapter6)
+            },
+            combine(season1WaiversState, prefs.characterFlow, prefs.playerAddressFlow) { season1Waivers, character, playerAddress ->
+                Triple(season1Waivers, character, playerAddress)
+            },
+        ) { progress, identity ->
+            val (chapter1, chapters2To5, chapter6) = progress
+            val (season1Waivers, character, playerAddress) = identity
             MainUiState(
                 beachOutroSeen = chapter1.beachOutroSeen,
                 chapter1MidBoostSeen = chapter1.chapter1MidBoostSeen,
@@ -354,6 +365,7 @@ class MainViewModel(context: Context) : ViewModel() {
                 chapter6UnlockedStation = chapter6.chapter6UnlockedStation,
                 chapter6CompletedStations = chapter6.chapter6CompletedStations,
                 chapter6Completed = chapter6.chapter6Completed,
+                season1ChapterUnlockWaivers = season1Waivers,
                 character = character,
                 playerAddress = playerAddress,
             )

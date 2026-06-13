@@ -409,7 +409,7 @@ internal fun GameQuestionHost(
                     if (
                         ui.episode4HelpSt15 &&
                             (
-                                ui.stationId == Chapter1StationOrder.PICTURE_PICK_ONE ||
+                                ui.stationUiSpec.pictureStartsWithSagaStation ||
                                     Season2StationUx.isWarmupPictureStartsWith(ui.chapterId, ui.stationId)
                             )
                     ) {
@@ -418,8 +418,7 @@ internal fun GameQuestionHost(
                         {
                             val requiresRawWordReplay =
                                 ((ui.chapterId == 3 || ui.chapterId == 6) && ui.stationId == 1) ||
-                                    ((ui.chapterId == 1 || ui.chapterId == 2 || ui.chapterId == 4 || ui.chapterId == 5) &&
-                                        ui.stationId == Chapter1StationOrder.PICTURE_PICK_ONE) ||
+                                    ui.stationUiSpec.pictureStartsWithSagaStation ||
                                     Season2StationUx.isWarmupPictureStartsWith(ui.chapterId, ui.stationId) ||
                                     (ui.chapterId == TrainingV1Config.CHAPTER_ID &&
                                         ui.stationId == TrainingV1Config.STATION_PICTURE_CHOOSE_WORD)
@@ -455,7 +454,7 @@ internal fun GameQuestionHost(
                     if (
                         ui.episode4HelpSt15 &&
                             (
-                                ui.stationId == Chapter1StationOrder.PICTURE_PICK_ONE ||
+                                ui.stationUiSpec.pictureStartsWithSagaStation ||
                                     Season2StationUx.isWarmupPictureStartsWith(ui.chapterId, ui.stationId)
                             )
                     ) {
@@ -464,7 +463,7 @@ internal fun GameQuestionHost(
                         null
                     },
                 pinnedCorrectLetter =
-                    if ((ui.chapterId in 1..5 && ui.stationId == Chapter1StationOrder.PICTURE_PICK_ONE) ||
+                    if (ui.stationUiSpec.pictureStartsWithSagaStation ||
                         (ui.chapterId == 3 && ui.stationId == 1) ||
                         (ui.chapterId == 6 && ui.stationId == 1)
                     ) {
@@ -850,6 +849,11 @@ internal fun GameQuestionHost(
                 instructionText = DragWordToPictureCopy.Instruction,
                 enabled = state.enabled && !deps.gameViewModel.inputLocked,
                 shakeEpoch = state.shakeEpoch,
+                instructionReadablePanel = ui.stationUiSpec.dragWordInstructionReadablePanel,
+                instructionDownDp = ui.stationUiSpec.dragWordInstructionDownDp,
+                pictureGapMultiplier = ui.stationUiSpec.dragWordPictureGapMultiplier,
+                emphasizeDropZone = ui.stationUiSpec.dragWordEmphasizeDropZone,
+                dropTargetPaddingDp = ui.stationUiSpec.dragWordDropTargetPaddingDp,
                 onPictureTapReplayWord =
                     if (ui.audioEnabled) {
                         { catalogId -> handlers.handleDragWordToPicturePictureTap(catalogId) }

@@ -21,13 +21,6 @@ class Season1DragProgressionTest {
     }
 
     @Test
-    fun season1_chapter3_hasDragWordAtStation3() {
-        val plan = StationQuizPlans.chapter3(3)
-        assertEquals(StationQuizMode.DragWordToPicture, plan.mode)
-        assertEquals(2, plan.dragWordToPicturePairCount)
-    }
-
-    @Test
     fun season1_chapter5_hasDragMissingAtStation2() {
         val plan = StationQuizPlans.chapter5(2)
         assertEquals(StationQuizMode.DragMissingLetter, plan.mode)
@@ -56,15 +49,13 @@ class Season1DragProgressionTest {
 
     @Test
     fun season1_dragStations_useConservativeSettings() {
-        val dragWordPlans =
-            listOf(
-                StationQuizPlans.chapter3(3),
-                StationQuizPlans.chapter6(3),
-            )
-        for (plan in dragWordPlans) {
-            assertEquals(StationQuizMode.DragWordToPicture, plan.mode)
-            assertEquals(2, plan.dragWordToPicturePairCount)
-        }
+        val ch6DragWord = StationQuizPlans.chapter6(3)
+        assertEquals(StationQuizMode.DragWordToPicture, ch6DragWord.mode)
+        assertEquals(2, ch6DragWord.dragWordToPicturePairCount)
+        val ch3DragWord = StationQuizPlans.chapter3(3)
+        assertEquals(StationQuizMode.DragWordToPicture, ch3DragWord.mode)
+        assertEquals(3, ch3DragWord.dragWordToPicturePairCount)
+        assertEquals(5, ch3DragWord.questionCount)
         val dragMissingPlans =
             listOf(
                 StationQuizPlans.chapter5(2),
@@ -77,23 +68,55 @@ class Season1DragProgressionTest {
     }
 
     @Test
-    fun season1_chapter1_unchangedOrder() {
-        assertEquals(StationQuizMode.PickLetter, StationQuizPlans.chapter1(1).mode)
-        assertEquals(StationQuizMode.PopBalloons, StationQuizPlans.chapter1(2).mode)
-        assertEquals(StationQuizMode.FindLetterGrid, StationQuizPlans.chapter1(3).mode)
-        assertEquals(StationQuizMode.PictureStartsWith, StationQuizPlans.chapter1(4).mode)
-        assertEquals(StationQuizMode.ImageMatch, StationQuizPlans.chapter1(5).mode)
-        assertEquals(StationQuizMode.ImageMatch, StationQuizPlans.chapter1(6).mode)
+    fun season1_chapter1And2_stationModes() {
+        val ch1 =
+            listOf(
+                StationQuizMode.PickLetter,
+                StationQuizMode.PopBalloons,
+                StationQuizMode.FindLetterGrid,
+                StationQuizMode.PictureStartsWith,
+                StationQuizMode.ImageMatch,
+                StationQuizMode.ImageMatch,
+            )
+        val ch2 =
+            listOf(
+                StationQuizMode.PickLetter,
+                StationQuizMode.FindLetterGrid,
+                StationQuizMode.PictureStartsWith,
+                StationQuizMode.ImageMatch,
+                StationQuizMode.PopBalloons,
+                StationQuizMode.ImageMatch,
+            )
+        ch1.forEachIndexed { index, mode -> assertEquals(mode, StationQuizPlans.chapter1(index + 1).mode) }
+        ch2.forEachIndexed { index, mode -> assertEquals(mode, StationQuizPlans.chapter2(index + 1).mode) }
     }
 
     @Test
-    fun season1_chapter2_reordersPopBalloonsToStation5() {
-        assertEquals(StationQuizMode.PickLetter, StationQuizPlans.chapter2(1).mode)
-        assertEquals(StationQuizMode.FindLetterGrid, StationQuizPlans.chapter2(2).mode)
-        assertEquals(StationQuizMode.PictureStartsWith, StationQuizPlans.chapter2(3).mode)
-        assertEquals(StationQuizMode.ImageMatch, StationQuizPlans.chapter2(4).mode)
-        assertEquals(StationQuizMode.PopBalloons, StationQuizPlans.chapter2(5).mode)
-        assertEquals(StationQuizMode.ImageMatch, StationQuizPlans.chapter2(6).mode)
+    fun chapter3_station3_dragWord_fiveRoundsThreePairs_withLayoutFlags() {
+        val plan = StationQuizPlans.chapter3(3)
+        assertEquals(5, plan.questionCount)
+        assertEquals(3, plan.dragWordToPicturePairCount)
+        val spec = StationBehaviorRegistry.getStationUiSpec(3, 3)
+        assertTrue(spec.dragWordInstructionReadablePanel)
+        assertEquals(3f, spec.dragWordPictureGapMultiplier, 0f)
+        assertTrue(spec.dragWordEmphasizeDropZone)
+
+        val eligible =
+            LessonWordCatalog.entries.count { entry ->
+                entry.letter in Chapter3Config.letters.toSet() &&
+                    Season2StationContentValidator.wordAssetCheck(entry.id)?.isValid == true
+            }
+        assertTrue("Need ≥15 image+audio words for Ch3 st3 (5 rounds × 3 pairs)", eligible >= 15)
+
+        val session = LevelSession(plan = plan, letterPoolSpec = Chapter3LetterPoolSpec)
+        repeat(5) {
+            val q = session.currentQuestion as Question.DragWordToPictureQuestion
+            assertEquals(3, q.pairs.size)
+            assertEquals(3, q.wordBank.size)
+            val placements = q.pairs.associate { it.catalogEntryId to it.catalogEntryId }
+            assertEquals(AnswerResult.Correct, session.submitDragWordToPicture(placements))
+            session.nextQuestion()
+        }
     }
 
     @Test

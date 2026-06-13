@@ -10,7 +10,7 @@ object StationInstructionCopy {
     const val TrainingChooseWordForPicture = "בחר את המילה שמתאימה לתמונה"
     const val TrainingFindLetterInGrid = "מצאו את האות שנשמעת:"
 
-    const val PickLetterHighlightedInWord = "מצא את האות המודגשת במילה:"
+    const val PickLetterHighlightedInWord = "מיצאו את האות המודגשת במילה:"
     const val PickLetterSagaStation1Preamble = "בחר את האות:"
 
     const val PopBalloonsPopAllLettersInWord = "פוצץ את כל הבלונים עם אותיות שמופיעות במילה:"

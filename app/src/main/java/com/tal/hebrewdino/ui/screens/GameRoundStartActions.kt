@@ -123,7 +123,9 @@ internal object GameRoundStartActions {
         delay(introDurationMs)
         gameViewModel.phase = GamePhase.Play
         gameViewModel.inputLocked = false
-        gameViewModel.entryPulseEpoch += 1
+        if (stationTemplateId != StationTemplateId.DragWordToPicture) {
+            gameViewModel.entryPulseEpoch += 1
+        }
         if (sagaUsesFindGridAudioStaging && session.currentIndex == 0) {
             gameViewModel.hintPulseEpoch += 1
         }

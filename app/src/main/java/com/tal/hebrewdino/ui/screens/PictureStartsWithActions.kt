@@ -6,6 +6,7 @@ import com.tal.hebrewdino.ui.audio.VoicePlayer
 import com.tal.hebrewdino.ui.domain.AnswerResult
 import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
 import com.tal.hebrewdino.ui.domain.LevelSession
+import com.tal.hebrewdino.ui.domain.SixStationArcQaPolicy
 import com.tal.hebrewdino.ui.domain.Season2EarlyStationQaPolicy
 import com.tal.hebrewdino.ui.game.ChildGameAudioHooks
 import kotlinx.coroutines.CoroutineScope
@@ -50,7 +51,7 @@ internal object PictureStartsWithActions {
                 if (audioEnabled) ChildGameAudioHooks.onCorrect()
                 gameViewModel.inputLocked = true
                 val useLetterStagingCorrect =
-                    (sagaEpisode && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) ||
+                    (sagaEpisode && SixStationArcQaPolicy.isSagaPictureStartsWithStation(chapterId, stationId)) ||
                         isSeason2QuizChapter
                 val shouldPinCorrectLetter =
                     useLetterStagingCorrect ||
@@ -144,6 +145,7 @@ internal object PictureStartsWithActions {
                     Season2EarlyStationQaPolicy.shouldUseSeason2PictureStartsWithWrongAudio(
                         isSeason2QuizChapter = isSeason2QuizChapter,
                         sagaEpisode = sagaEpisode,
+                        chapterId = chapterId,
                         stationId = stationId,
                     )
                 if (useLetterStagingWrong) {

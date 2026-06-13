@@ -183,7 +183,7 @@ fun Season2MemoryMatchStationScreen(
         companionTalking = true
         season2HintText =
             Season2GuessingHintCopy.coachBubbleText(
-                season2StationId = Season2Chapter1StationOrder.MEMORY_MATCH,
+                uxStationId = Season2Chapter1StationOrder.MEMORY_MATCH,
                 playerAddress = playerAddress,
             )
         playMemoryMatchInstruction()

@@ -20,16 +20,18 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.annotation.DrawableRes
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.tal.hebrewdino.R
 import com.tal.hebrewdino.ui.layout.ScreenFit
 
-/** Found egg with gentle pulsing glow — Ch.1 chapter finale. */
+/** Found egg with gentle pulsing glow — chapter finales and egg-themed rewards. */
 @Composable
 fun FoundEggCelebration(
     modifier: Modifier = Modifier,
     eggSize: Dp? = null,
+    @DrawableRes eggDrawableRes: Int = R.drawable.egg_white_up,
 ) {
     val isCompact = ScreenFit.isCompactLandscapePhone()
     val resolvedEggSize = eggSize ?: if (isCompact) 100.dp else 128.dp
@@ -83,7 +85,7 @@ fun FoundEggCelebration(
                     ),
         )
         Image(
-            painter = painterResource(id = R.drawable.egg_white_up),
+            painter = painterResource(id = eggDrawableRes),
             contentDescription = null,
             modifier = Modifier.size(resolvedEggSize),
             contentScale = ContentScale.Fit,

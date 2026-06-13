@@ -12,6 +12,7 @@ import com.tal.hebrewdino.ui.domain.Season2Ch1QaPolicy
 import com.tal.hebrewdino.ui.domain.Season2EarlyStationQaPolicy
 import com.tal.hebrewdino.ui.domain.Season2StationQaPolicy
 import com.tal.hebrewdino.ui.domain.Season2StationAudio
+import com.tal.hebrewdino.ui.domain.SixStationArcQaPolicy
 import com.tal.hebrewdino.ui.domain.TrainingV1Config
 import com.tal.hebrewdino.ui.game.ChildGameAudioHooks
 import kotlinx.coroutines.CoroutineScope
@@ -30,6 +31,33 @@ private val ImageToWordPraiseCandidates =
         AudioClips.VoGoodJob2,
         AudioClips.VoGoodJob1,
     )
+
+private suspend fun playSagaWhichWordInStationPraise(
+    season2HadCoachIntervention: Boolean,
+    rawVoice: RawVoicePlayer?,
+    voice: VoicePlayer,
+    chapterId: Int,
+    stationId: Int,
+) {
+    if (
+        Season2EarlyStationQaPolicy.shouldSkipInStationCorrectPraiseAfterCoach(
+            season2HadCoachIntervention,
+        )
+    ) {
+        return
+    }
+    val praiseRes = InStationPraiseAudio.pick(avoidRawResId = null)
+    if (rawVoice == null) {
+        voice.playRequiredBlocking(
+            assetPath = "",
+            context = "ImageMatchActions.playSagaWhichWordInStationPraise(rawVoice=null)",
+            chapterId = chapterId,
+            stationId = stationId,
+        )
+    } else {
+        rawVoice.playRawBlocking(praiseRes)
+    }
+}
 
 internal object ImageMatchActions {
     fun handleImageToWordAttempt(
@@ -310,10 +338,13 @@ internal object ImageMatchActions {
         season2Chapter1UxStationId: Int? = null,
     ): Boolean {
         if (!gameViewModel.consumeTapCooldown()) return false
+        val resolvedUxStationId =
+            season2Chapter1UxStationId
+                ?: SixStationArcQaPolicy.earlyArcUxStationId(chapterId, stationId)
         if (
             Season2StationQaPolicy.shouldOrchestrateWhichWordCorrectPraiseInStation(
                 gameplayChapterId = chapterId,
-                season2UxStationId = season2Chapter1UxStationId,
+                season2UxStationId = resolvedUxStationId,
             )
         ) {
             cancelFeedbackVoice()
@@ -334,26 +365,13 @@ internal object ImageMatchActions {
                                 voice = voice,
                                 rawVoice = rawVoice,
                             )
-                            if (
-                                !Season2EarlyStationQaPolicy.shouldSkipInStationCorrectPraiseAfterCoach(
-                                    season2HadCoachIntervention,
-                                )
-                            ) {
-                                val praiseRes =
-                                    InStationPraiseAudio.pick(
-                                        avoidRawResId = null,
-                                    )
-                                if (rawVoice == null) {
-                                    voice.playRequiredBlocking(
-                                        assetPath = "",
-                                        context = "ImageMatchActions.handleImageMatchAttempt(ch1WhichWordPraise,rawVoice=null)",
-                                        chapterId = chapterId,
-                                        stationId = stationId,
-                                    )
-                                } else {
-                                    rawVoice.playRawBlocking(praiseRes)
-                                }
-                            }
+                            playSagaWhichWordInStationPraise(
+                                season2HadCoachIntervention = season2HadCoachIntervention,
+                                rawVoice = rawVoice,
+                                voice = voice,
+                                chapterId = chapterId,
+                                stationId = stationId,
+                            )
                         }
                     scope.launch {
                         GameAudioActions.joinSilently(audioJob)
@@ -437,7 +455,11 @@ internal object ImageMatchActions {
                                     rawVoice = rawVoice,
                                 )
                             }
-                            sagaEpisode && stationId == Chapter1StationOrder.PICTURE_PICK_ALL -> {
+                            sagaEpisode &&
+                                SixStationArcQaPolicy.isSagaWhichWordStartsWithStation(
+                                    chapterId,
+                                    stationId,
+                                ) -> {
                                 if (chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) {
                                     val wordResId = AudioClips.wordRawResIdByCatalogId(choiceId)
                                     if (wordResId == null) {
@@ -471,8 +493,22 @@ internal object ImageMatchActions {
                                         return@launchFeedbackVoiceNoCancel
                                     }
                                     rawVoice.playRawBlocking(wordResId)
+                                    playSagaWhichWordInStationPraise(
+                                        season2HadCoachIntervention = season2HadCoachIntervention,
+                                        rawVoice = rawVoice,
+                                        voice = voice,
+                                        chapterId = chapterId,
+                                        stationId = stationId,
+                                    )
                                 } else if (chapterId != 3 && chapterId != 6) {
                                     voice.playBlocking(AudioClips.wordClipByCatalogId(choiceId))
+                                    playSagaWhichWordInStationPraise(
+                                        season2HadCoachIntervention = season2HadCoachIntervention,
+                                        rawVoice = rawVoice,
+                                        voice = voice,
+                                        chapterId = chapterId,
+                                        stationId = stationId,
+                                    )
                                 }
                             }
                             else -> Unit
@@ -487,7 +523,8 @@ internal object ImageMatchActions {
             }
             AnswerResult.Wrong -> {
                 val playTappedWordFirst =
-                    sagaEpisode && stationId == Chapter1StationOrder.PICTURE_PICK_ALL
+                    sagaEpisode &&
+                        SixStationArcQaPolicy.isSagaWhichWordStartsWithStation(chapterId, stationId)
                 if (playTappedWordFirst) {
                     scope.launch {
                         playImageToWordTappedOptionAudio(

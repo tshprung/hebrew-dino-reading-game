@@ -13,15 +13,14 @@ class Season2QaPolishBatchTest {
     private val ch4 = Season2ChapterIds.Chapter4Brachiosaurus
 
     @Test
-    fun station6Feedback_skipsCoachBubbleOnFirstWrong() {
+    fun station6Feedback_skipsFocusReplayOnFirstWrong() {
         assertTrue(
-            Season2Station6FeedbackPolicy.shouldSkipCoachBubble(isSeason2Quiz = true,
-            ),
+            Season2Station6FeedbackPolicy.shouldUseCompanionFocusFeedback(companionCoachEnabled = true),
         )
         assertFalse(
             Season2Station6FeedbackPolicy.shouldReplayInstructionAfterWrong(
                 consecutiveWrongInRound = 1,
-                isSeason2Quiz = true,
+                companionCoachEnabled = true,
             ),
         )
     }
@@ -31,11 +30,13 @@ class Season2QaPolishBatchTest {
         assertTrue(
             Season2Station6FeedbackPolicy.shouldReplayInstructionAfterWrong(
                 consecutiveWrongInRound = 2,
-                isSeason2Quiz = true,
+                companionCoachEnabled = true,
             ),
         )
-        assertTrue(
-            Season2Station6FeedbackPolicy.shouldSkipCoachBubble(isSeason2Quiz = true,
+        assertFalse(
+            Season2Station6FeedbackPolicy.shouldReplayInstructionAfterWrong(
+                consecutiveWrongInRound = 2,
+                companionCoachEnabled = false,
             ),
         )
     }

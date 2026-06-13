@@ -10,6 +10,7 @@ import com.tal.hebrewdino.ui.data.PlayerAddress
 import com.tal.hebrewdino.ui.domain.Season2ChapterIds
 import com.tal.hebrewdino.ui.domain.Season2StationAudio
 import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
+import com.tal.hebrewdino.ui.domain.SixStationArcQaPolicy
 import com.tal.hebrewdino.ui.domain.Question
 import com.tal.hebrewdino.ui.domain.TrainingV1Config
 import kotlinx.coroutines.delay
@@ -503,7 +504,9 @@ internal suspend fun speakPromptForQuestion(
             )
         is Question.PictureStartsWithQuestion -> {
             // Episode 1 station 4: instruction + spoken word (e.g. "ברווז").
-            if (isSagaEpisodeForPrompt(chapterId) && stationId == Chapter1StationOrder.PICTURE_PICK_ONE) {
+            if (isSagaEpisodeForPrompt(chapterId) &&
+                SixStationArcQaPolicy.isSagaPictureStartsWithStation(chapterId, stationId)
+            ) {
                 if (requiredChapters) {
                     val resId = AudioClips.wordRawResIdByCatalogId(q.catalogEntryId)
                     if (resId == null) {
@@ -629,7 +632,9 @@ internal suspend fun speakPromptForQuestion(
                 rawVoice.playRawBlocking(letterResId)
                 return
             }
-            if (isSagaEpisodeForPrompt(chapterId) && stationId == Chapter1StationOrder.PICTURE_PICK_ALL) {
+            if (isSagaEpisodeForPrompt(chapterId) &&
+                SixStationArcQaPolicy.isSagaWhichWordStartsWithStation(chapterId, stationId)
+            ) {
                 // Episode 1 station 5: "איזו מילה מתחילה באות" + letter name (SoundPool overlap when duration parses).
                 if (!requiredChapters) return
                 val letterResId = AudioClips.letterNameRawResId(q.targetLetter)

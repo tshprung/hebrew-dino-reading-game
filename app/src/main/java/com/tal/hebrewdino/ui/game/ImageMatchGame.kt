@@ -50,6 +50,7 @@ import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
 import com.tal.hebrewdino.ui.domain.Chapter1Station4To6LessonChoiceCardSpec
 import com.tal.hebrewdino.ui.domain.Season2Ch1QaPolicy
 import com.tal.hebrewdino.ui.domain.Season2StationUx
+import com.tal.hebrewdino.ui.domain.SixStationArcQaPolicy
 import com.tal.hebrewdino.ui.domain.Question
 import com.tal.hebrewdino.ui.components.learning.LessonChoiceCardPictureAspect
 import com.tal.hebrewdino.ui.components.learning.captionFontSizeForWordCard
@@ -111,8 +112,9 @@ fun ImageMatchGame(
         isCompactLandscapePhone &&
             (
                 (
-                    (chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) &&
-                        stationId == Chapter1StationOrder.PICTURE_PICK_ALL
+                    chapterId != null &&
+                        stationId != null &&
+                        SixStationArcQaPolicy.isSagaWhichWordStartsWithStation(chapterId, stationId)
                 ) || isSeason2WhichWordFinale
             )
     val useWhichWordCompactLayout =

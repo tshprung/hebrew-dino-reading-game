@@ -74,7 +74,6 @@ class Season2GlobalizeCh1ApprovedFixesTest {
     fun Ch2_post_focus_correct_plays_success_audio() {
         assertTrue(
             Season2PostFocusCorrectPolicy.shouldPlayCompanionPraiseOnCorrect(
-                isSeason2QuizChapter = true,
                 season2HadCoachIntervention = true,
             ),
         )

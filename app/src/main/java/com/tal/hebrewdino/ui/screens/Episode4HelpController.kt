@@ -218,7 +218,7 @@ internal object SideHelpActions {
             if (stationId == Chapter1StationOrder.BALLOON_POP) {
                 gameViewModel.episode4Station2BalloonHintEpoch += 1
             }
-            if (stationId == Chapter1StationOrder.REVEAL_THEN_CHOOSE) {
+            if (stationUiSpec.findGridUseEpisode4HelpHints && q is Question.FindLetterGridQuestion) {
                 gameViewModel.episode4Station3GridHintEpoch += 1
             }
             val duration = stationUiSpec.hintDurationMs ?: Episode4Help.HINT_REVEAL_FALLBACK_MS

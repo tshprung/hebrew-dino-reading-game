@@ -206,7 +206,7 @@ object StationBehaviorRegistry {
             plan.mode == StationQuizMode.FindLetterGrid &&
                 chapterId in listOf(1, 2, 4, 5)
         val findGridUseEpisode4HelpHints =
-            stationId == REVEAL_THEN_CHOOSE ||
+            findGridSagaRevealStation ||
                 (chapterId == TrainingV1Config.CHAPTER_ID &&
                     stationId == TrainingV1Config.STATION_FIND_HEARD_LETTER_IN_GRID)
         val findGridUseChapter3ContextWordHint = chapterId == 3
@@ -216,7 +216,7 @@ object StationBehaviorRegistry {
             templateId = StationTemplateId.FindLetterGrid,
             variants = variantsFor(listenOnly),
             quizMode = plan.mode,
-            showBetweenRoundIntroPulse = !(isSagaEpisode && stationId == REVEAL_THEN_CHOOSE),
+            showBetweenRoundIntroPulse = !(isSagaEpisode && findGridSagaRevealStation),
             findGridMaxTargetCount = plan.findLetterGridMaxTargetCount,
             helpControlsEnabled = listenOnly,
             replayMode = if (listenOnly) StationReplayMode.TargetLetterOnly else StationReplayMode.None,
@@ -240,15 +240,17 @@ object StationBehaviorRegistry {
         val listenOnly = plan.listenOnlyTargetPrompt
         val isSagaEpisode = chapterId in 1..5 || chapterId == Season2ChapterIds.Chapter1Tyrannosaurus
         val isSeason2WarmupPictureStartsWith = Season2StationUx.isWarmupPictureStartsWith(chapterId, stationId)
+        val pictureStartsWithSagaStation =
+            SixStationArcQaPolicy.isSagaPictureStartsWithStation(chapterId, stationId)
         val isLearningSixStationArc =
             (chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5 || chapterId == Season2ChapterIds.Chapter1Tyrannosaurus) ||
                 isSeason2WarmupPictureStartsWith
         val pictureStartsWithCompactLandscapeRtlWrapInstruction =
             isLearningSixStationArc &&
-                (stationId == PICTURE_PICK_ONE || isSeason2WarmupPictureStartsWith)
+                (pictureStartsWithSagaStation || isSeason2WarmupPictureStartsWith)
         val pictureStartsWithVerticalNudgeDp =
             if (isLearningSixStationArc &&
-                (stationId == PICTURE_PICK_ONE || isSeason2WarmupPictureStartsWith)
+                (pictureStartsWithSagaStation || isSeason2WarmupPictureStartsWith)
             ) {
                 19f
             } else {
@@ -262,7 +264,7 @@ object StationBehaviorRegistry {
             variants = variantsFor(listenOnly),
             quizMode = plan.mode,
             showBetweenRoundIntroPulse =
-                !(isSagaEpisode && stationId == PICTURE_PICK_ONE) &&
+                !(isSagaEpisode && pictureStartsWithSagaStation) &&
                     !((chapterId == 3 || chapterId == 6) && stationId == 1) &&
                     !isSeason2WarmupPictureStartsWith,
             findGridMaxTargetCount = plan.findLetterGridMaxTargetCount,
@@ -276,6 +278,7 @@ object StationBehaviorRegistry {
             pictureStartsWithInstructionPanelStyle = InstructionPanelStyle.WhiteRounded,
             hidePictureWordCaptionWhenListenOnlySaga = listenOnly,
             pictureStartsWithVerticalNudgeDp = pictureStartsWithVerticalNudgeDp,
+            pictureStartsWithSagaStation = pictureStartsWithSagaStation,
         )
     }
 
@@ -351,16 +354,7 @@ object StationBehaviorRegistry {
             StationQuizMode.PopBalloons -> popBalloonsSpec(chapterId, stationId, plan)
             StationQuizMode.FindLetterGrid -> findLetterGridSpec(chapterId, stationId, plan)
             StationQuizMode.PictureStartsWith ->
-                pictureStartsWithSpec(chapterId, stationId, plan).let { base ->
-                    if (chapterId in listOf(2, 5)) {
-                        base.copy(
-                            pictureStartsWithCompactLandscapeRtlWrapInstruction = true,
-                            pictureStartsWithVerticalNudgeDp = 19f,
-                        )
-                    } else {
-                        base
-                    }
-                }
+                pictureStartsWithSpec(chapterId, stationId, plan)
             StationQuizMode.ImageMatch ->
                 if (stationId == FINALE_PICTURE_LETTER_MATCH) {
                     matchLetterToWordSpec(
@@ -388,6 +382,8 @@ object StationBehaviorRegistry {
         plan: StationQuizPlan,
     ): StationUiSpec {
         val listenOnly = plan.listenOnlyTargetPrompt
+        val imageMatchSagaWhichWordStation =
+            SixStationArcQaPolicy.isSagaWhichWordStartsWithStation(chapterId, stationId)
         return StationUiSpec(
             chapterId = chapterId,
             stationId = stationId,
@@ -413,6 +409,7 @@ object StationBehaviorRegistry {
             imageMatchTargetLetterChipOffsetYDp = 0f,
             imageMatchVerticalNudgeDp = 19f,
             imageMatchSuppressEntryPulseEpoch = true,
+            imageMatchSagaWhichWordStation = imageMatchSagaWhichWordStation,
             riskNotes = "Image match; learning arc by mode (Ch$chapterId).",
         )
     }
@@ -429,7 +426,9 @@ object StationBehaviorRegistry {
             BALLOON_POP -> popBalloonsSpec(chapterId, stationId, plan)
             REVEAL_THEN_CHOOSE -> findLetterGridSpec(chapterId, stationId, plan)
             PICTURE_PICK_ONE -> pictureStartsWithSpec(chapterId, stationId, plan)
-            PICTURE_PICK_ALL ->
+            PICTURE_PICK_ALL -> {
+                val imageMatchSagaWhichWordStation =
+                    SixStationArcQaPolicy.isSagaWhichWordStartsWithStation(chapterId, stationId)
                 StationUiSpec(
                     chapterId = chapterId,
                     stationId = stationId,
@@ -471,8 +470,10 @@ object StationBehaviorRegistry {
                     imageMatchTargetLetterChipOffsetYDp = 0f,
                     imageMatchVerticalNudgeDp = 19f,
                     imageMatchSuppressEntryPulseEpoch = true,
+                    imageMatchSagaWhichWordStation = imageMatchSagaWhichWordStation,
                     riskNotes = "Image match three cards; Learning mode (Ch1, 2, 5).",
                 )
+            }
             FINALE_PICTURE_LETTER_MATCH ->
                 matchLetterToWordSpec(
                     chapterId = chapterId,
@@ -500,7 +501,15 @@ object StationBehaviorRegistry {
                     contentTopInsetDp = 56f,
                     riskNotes = "Ch3 st2 match letter + word; unified MatchLetterToWord template.",
                 )
-            3 -> dragWordToPictureSpec(chapterId = 3, stationId = stationId, plan = plan)
+            3 ->
+                dragWordToPictureSpec(chapterId = 3, stationId = stationId, plan = plan).copy(
+                    dragWordInstructionReadablePanel = true,
+                    dragWordInstructionDownDp = 11f,
+                    dragWordPictureGapMultiplier = 3f,
+                    dragWordEmphasizeDropZone = true,
+                    dragWordDropTargetPaddingDp = 28f,
+                    riskNotes = "Ch3 st3 drag word to picture (3×3 rounds, readable instruction, wide gaps).",
+                )
             4 ->
                 pickLetterSpec(
                     chapterId = 3,
@@ -511,8 +520,8 @@ object StationBehaviorRegistry {
                     variants = variantsFor(listenOnly = false, StationVariant.HighlightedLetterInWord, StationVariant.HelpColumn),
                     helpControlsEnabled = true,
                     replayMode = StationReplayMode.ExistingStationSpecific,
-                    hintMode = StationHintMode.None,
-                    hintDurationMs = null,
+                    hintMode = StationHintMode.TemporaryTargetLetter,
+                    hintDurationMs = 2100L,
                     pickLetterInstructionOverride = null,
                     pickLetterHighlightedInWordInstruction = StationInstructionCopy.PickLetterHighlightedInWord,
                     contentTopInsetDp = 56f,

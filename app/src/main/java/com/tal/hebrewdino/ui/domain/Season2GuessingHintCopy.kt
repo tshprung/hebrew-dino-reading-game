@@ -12,8 +12,10 @@ object Season2GuessingHintCopy {
 
     /** One short line for the companion speech bubble (phone-first). */
     fun coachBubbleText(
-        season2StationId: Int,
+        uxStationId: Int,
         playerAddress: PlayerAddress,
+        templateId: StationTemplateId? = null,
+        gameplayChapterId: Int? = null,
     ): String {
         val pace =
             when (playerAddress) {
@@ -21,17 +23,34 @@ object Season2GuessingHintCopy {
                 PlayerAddress.Girl -> "נסי לאט."
             }
         val specific =
-            when (season2StationId) {
-                Season2Chapter1StationOrder.POP_BALLOONS -> "נחפש את האות ששמענו."
-                Season2Chapter1StationOrder.PICK_LETTER -> "איזו אות שמענו?"
-                Season2Chapter1StationOrder.PICTURE_STARTS_WITH,
-                Season2Chapter1StationOrder.WHICH_WORD_STARTS_WITH,
-                -> "איזו מילה מתחילה באות?"
-                Season2Chapter1StationOrder.MATCH_LETTER_TO_WORD -> "נחפש מילה שמתחילה באות."
-                Season2Chapter1StationOrder.MEMORY_MATCH -> "ננסה לזכור איפה האותיות."
-                5 -> "נקשיב שוב למילה."
-                6 -> "נחפש את המילה המתאימה."
-                // Advanced stations (Ch3–6 st5/st6) reuse station ids; hints stay short and mode-neutral.
+            when (templateId) {
+                StationTemplateId.PopBalloons -> "נחפש את האות ששמענו."
+                StationTemplateId.PickLetter -> "איזו אות שמענו?"
+                StationTemplateId.FindLetterGrid -> "נמצא את האות בטבלה."
+                StationTemplateId.PictureStartsWith -> "איזו מילה מתחילה באות?"
+                StationTemplateId.ImageMatch -> "נבחר את התמונה הנכונה."
+                StationTemplateId.MatchLetterToWord -> "נחפש מילה שמתחילה באות."
+                StationTemplateId.ImageToWord ->
+                    if (gameplayChapterId == 3 || gameplayChapterId == 6) {
+                        "נבחר את המילה שמתאימה לתמונה."
+                    } else {
+                        "נקשיב שוב למילה."
+                    }
+                StationTemplateId.DragWordToPicture -> "נגרור את המילה לתמונה."
+                StationTemplateId.DragMissingLetter -> "נשלים את האות החסרה."
+                null ->
+                    when (uxStationId) {
+                        Season2Chapter1StationOrder.POP_BALLOONS -> "נחפש את האות ששמענו."
+                        Season2Chapter1StationOrder.PICK_LETTER -> "איזו אות שמענו?"
+                        Season2Chapter1StationOrder.PICTURE_STARTS_WITH,
+                        Season2Chapter1StationOrder.WHICH_WORD_STARTS_WITH,
+                        -> "איזו מילה מתחילה באות?"
+                        Season2Chapter1StationOrder.MATCH_LETTER_TO_WORD -> "נחפש מילה שמתחילה באות."
+                        Season2Chapter1StationOrder.MEMORY_MATCH -> "ננסה לזכור איפה האותיות."
+                        5 -> "נקשיב שוב למילה."
+                        6 -> "נחפש את המילה המתאימה."
+                        else -> pace
+                    }
                 else -> pace
             }
         return rtl("רגע, נקשיב שוב. $specific")

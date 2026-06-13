@@ -16,76 +16,147 @@ import kotlinx.coroutines.delay
 
 
 
-/** Replays the current learning target for Season 2 Chapter 1 coach interventions. */
+/** Replays the current learning target after a companion coach intervention. */
 
 object Season2GuessingCoach {
 
     suspend fun replayTargetAudio(
-
-        season2StationId: Int,
-
+        uxStationId: Int,
         session: LevelSession,
-
         playerAddress: PlayerAddress?,
-
         rawVoice: RawVoicePlayer,
-
         gameplayChapterId: Int? = null,
-
+        chapterId: Int = 0,
+        stationUiSpec: StationUiSpec? = null,
     ) {
-
         val question = session.currentQuestion ?: return
-
         val arcKind =
+            gameplayChapterId
+                ?.takeIf { Season2StationAudio.isSeason2GameplayChapter(it) }
+                ?.let { Season2StationUx.stationKindForGameplayChapter(it, uxStationId) }
 
-            if (gameplayChapterId != null) {
-
-                Season2StationUx.stationKindForGameplayChapter(gameplayChapterId, season2StationId)
-
-            } else {
-
-                null
-
-            }
-
-        if (arcKind != null) {
-
-            replayForArcStationKind(
-
-                kind = arcKind,
-
-                season2StationId = season2StationId,
-
-                question = question,
-
-                playerAddress = playerAddress,
-
-                rawVoice = rawVoice,
-
-                gameplayChapterId = gameplayChapterId ?: 0,
-
-            )
-
-        } else {
-
-            replayByLegacyStationOrder(
-
-                season2StationId = season2StationId,
-
-                question = question,
-
-                playerAddress = playerAddress,
-
-                rawVoice = rawVoice,
-
-                gameplayChapterId = gameplayChapterId,
-
-            )
-
+        when {
+            arcKind != null ->
+                replayForArcStationKind(
+                    kind = arcKind,
+                    season2StationId = uxStationId,
+                    question = question,
+                    playerAddress = playerAddress,
+                    rawVoice = rawVoice,
+                    gameplayChapterId = gameplayChapterId ?: 0,
+                )
+            CompanionCoachPolicy.isSeason1Chapter(chapterId) && stationUiSpec != null ->
+                replayForSeason1Template(
+                    uxStationId = uxStationId,
+                    stationUiSpec = stationUiSpec,
+                    question = question,
+                    playerAddress = playerAddress,
+                    rawVoice = rawVoice,
+                )
+            else ->
+                replayByLegacyStationOrder(
+                    season2StationId = uxStationId,
+                    question = question,
+                    playerAddress = playerAddress,
+                    rawVoice = rawVoice,
+                    gameplayChapterId = gameplayChapterId,
+                )
         }
 
         delay(280)
+    }
 
+    /** Pop-balloons coach: target letter only (no narrator instruction replay). */
+    suspend fun replayPopBalloonsTargetLetterOnly(
+        session: LevelSession,
+        rawVoice: RawVoicePlayer,
+        uxStationId: Int = 0,
+    ) {
+        val question = session.currentQuestion ?: return
+        playTargetLetter(question, rawVoice, uxStationId)
+        delay(280)
+    }
+
+    private suspend fun replayForSeason1Template(
+        uxStationId: Int,
+        stationUiSpec: StationUiSpec,
+        question: Question,
+        playerAddress: PlayerAddress?,
+        rawVoice: RawVoicePlayer,
+    ) {
+        when (stationUiSpec.templateId) {
+            StationTemplateId.DragWordToPicture -> {
+                val q = question as? Question.DragWordToPictureQuestion ?: return
+                val catalogId = q.pairs.firstOrNull()?.catalogEntryId ?: return
+                playWordRaw(catalogId, rawVoice, uxStationId)
+            }
+            StationTemplateId.DragMissingLetter -> {
+                val q = question as? Question.DragMissingLetterQuestion ?: return
+                playWordRaw(q.catalogEntryId, rawVoice, uxStationId)
+            }
+            StationTemplateId.ImageToWord -> {
+                val q = question as? Question.ImageMatchQuestion ?: return
+                rawVoice.playRawBlocking(com.tal.hebrewdino.R.raw.instruction_image_to_word)
+                playWordRaw(q.correctChoiceId, rawVoice, uxStationId)
+            }
+            else -> {
+                val kind =
+                    Chapter1AddressAwareAudio.instructionKindFor(
+                        stationId = uxStationId,
+                        stationTemplateId = stationUiSpec.templateId,
+                        q = question,
+                    )
+                when (kind) {
+                    Chapter1AddressAwareAudio.InstructionKind.PictureStartsWith ->
+                        playInstructionThenWord(
+                            question = question,
+                            playerAddress = playerAddress,
+                            rawVoice = rawVoice,
+                            kind = kind,
+                            postInstructionGapMs = Season2Ch1QaPolicy.CoachInstructionToWordGapMs,
+                        )
+                    Chapter1AddressAwareAudio.InstructionKind.WhichWordStartsWith,
+                    Chapter1AddressAwareAudio.InstructionKind.MatchLetterToWord,
+                    Chapter1AddressAwareAudio.InstructionKind.FindLetter,
+                    Chapter1AddressAwareAudio.InstructionKind.PickLetter,
+                    Chapter1AddressAwareAudio.InstructionKind.PopBalloons,
+                    ->
+                        playInstructionThenLetter(
+                            season2StationId = uxStationId,
+                            question = question,
+                            playerAddress = playerAddress,
+                            rawVoice = rawVoice,
+                            kind = kind,
+                        )
+                    Chapter1AddressAwareAudio.InstructionKind.FindWordStartsWith -> {
+                        playInstructionRaw(playerAddress, rawVoice, kind)
+                        val imageQ = question as? Question.ImageMatchQuestion
+                        if (imageQ != null) {
+                            playWordRaw(imageQ.correctChoiceId, rawVoice, uxStationId)
+                        } else {
+                            playTargetLetter(question, rawVoice, uxStationId)
+                        }
+                    }
+                    else -> playTargetLetter(question, rawVoice, uxStationId)
+                }
+            }
+        }
+    }
+
+    private suspend fun playWordRaw(
+        catalogId: String,
+        rawVoice: RawVoicePlayer,
+        uxStationId: Int,
+    ) {
+        val wordResId = AudioClips.wordRawResIdByCatalogId(catalogId)
+        if (wordResId == null) {
+            Log.e(
+                "MissingContent",
+                "Missing coach word audio. stationId=$uxStationId catalogId='$catalogId'",
+            )
+            return
+        }
+        rawVoice.playRawBlocking(wordResId)
     }
 
 

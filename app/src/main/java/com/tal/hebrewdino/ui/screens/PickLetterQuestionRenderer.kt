@@ -50,6 +50,14 @@ internal fun PickLetterQuestionRenderer(
                 stationId == TrainingV1Config.STATION_HEAR_LETTER_CHOOSE &&
                 chapter1PlayerAddress != null ->
                 TrainingInstructionCopy.pickLetter(chapter1PlayerAddress)
+            (chapterId == 3 || chapterId == 6) &&
+                stationId == 5 &&
+                isChapter3AudioLetterRecognitionStation &&
+                chapter1PlayerAddress != null ->
+                when (chapter1PlayerAddress) {
+                    PlayerAddress.Boy -> "\u200Fבחר את האות"
+                    PlayerAddress.Girl -> "\u200Fבחרי את האות"
+                }
             (chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) &&
                 stationId == Chapter1StationOrder.TAP_LETTER &&
                 chapter1PlayerAddress != null ->

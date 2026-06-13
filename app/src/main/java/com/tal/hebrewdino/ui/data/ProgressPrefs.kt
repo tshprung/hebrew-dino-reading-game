@@ -13,6 +13,7 @@ import com.tal.hebrewdino.ui.domain.Chapter3Config
 import com.tal.hebrewdino.ui.domain.Chapter4Config
 import com.tal.hebrewdino.ui.domain.Chapter5Config
 import com.tal.hebrewdino.ui.domain.Chapter6Config
+import com.tal.hebrewdino.ui.domain.ChapterUnlockWaiverPolicy
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -75,9 +76,23 @@ class ProgressPrefs internal constructor(private val dataStore: DataStore<Prefer
     private val onboardingPlayerAddressKey: Preferences.Key<String> = stringPreferencesKey("player_address")
 
     private val season2CompletedChaptersKey: Preferences.Key<String> = stringPreferencesKey("season2_completed_chapters")
+    private val season1ChapterUnlockWaiversKey: Preferences.Key<String> =
+        stringPreferencesKey("season1_chapter_unlock_waivers")
 
     private fun season2CompletedStationsKeyForChapter(chapterId: Int): Preferences.Key<String> =
         stringPreferencesKey("season2_ch${chapterId}_completed_stations")
+
+    val season1ChapterUnlockWaiversFlow: Flow<Set<Int>> =
+        dataStore.data.map { prefs ->
+            ChapterUnlockWaiverPolicy.parseWaivers(prefs[season1ChapterUnlockWaiversKey].orEmpty())
+        }
+
+    suspend fun setSeason1ChapterUnlockWaivers(chapterIds: Set<Int>) {
+        dataStore.edit { prefs ->
+            prefs[season1ChapterUnlockWaiversKey] =
+                ChapterUnlockWaiverPolicy.serializeWaivers(chapterIds)
+        }
+    }
 
     private fun parseCompletedStations(raw: String, stationCount: Int): Set<Int> {
         if (raw.isBlank()) return emptySet()
@@ -835,6 +850,7 @@ class ProgressPrefs internal constructor(private val dataStore: DataStore<Prefer
             prefs.remove(onboardingPlayerAddressKey)
 
             prefs.remove(season2CompletedChaptersKey)
+            prefs.remove(season1ChapterUnlockWaiversKey)
             for (ch in 1..6) {
                 prefs.remove(season2CompletedStationsKeyForChapter(ch))
                 prefs.remove(stringPreferencesKey("season2_ch${ch}_intro_dismissed"))

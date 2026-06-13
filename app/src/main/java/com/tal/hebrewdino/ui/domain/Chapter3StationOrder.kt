@@ -28,7 +28,12 @@ object Chapter3StationOrder {
                     imageMatchCaptionSizeMultiplier = 1f,
                     imageMatchPictureSizeMultiplier = 1f,
                 )
-            3 -> Season1DragStationQuizPlans.dragWordToPicture(initialGroupIndex = 0)
+            3 ->
+                Season1DragStationQuizPlans.dragWordToPicture(
+                    questionCount = 5,
+                    pairCount = 3,
+                    initialGroupIndex = 0,
+                )
             // Station 4 — find highlighted letter in word.
             4 ->
                 StationQuizPlan(

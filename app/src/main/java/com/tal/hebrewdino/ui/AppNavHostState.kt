@@ -12,6 +12,7 @@ import com.tal.hebrewdino.ui.domain.Chapter3Config
 import com.tal.hebrewdino.ui.domain.Chapter4Config
 import com.tal.hebrewdino.ui.domain.Chapter5Config
 import com.tal.hebrewdino.ui.domain.Chapter6Config
+import com.tal.hebrewdino.ui.domain.ChapterUnlockWaiverPolicy
 import com.tal.hebrewdino.ui.domain.CollectedEggs
 import com.tal.hebrewdino.ui.screens.ChaptersProgress
 import kotlinx.coroutines.CoroutineScope
@@ -64,7 +65,20 @@ internal data class AppNavHostState(
     /** True after first-run companion + player-address choices are saved. */
     val onboardingComplete: Boolean,
     val hasChosenCompanion: Boolean,
+    val season1ChapterUnlockWaivers: Set<Int>,
 ) {
+    private val season1Snapshot: ChapterUnlockWaiverPolicy.Season1Snapshot
+        get() =
+            ChapterUnlockWaiverPolicy.Season1Snapshot(
+                beachOutroSeen = beachOutroSeen,
+                chapter1AllStationsComplete = chapter1AllStationsComplete,
+                chapter2Completed = chapter2Completed,
+                chapter3Completed = chapter3Completed,
+                chapter4Completed = chapter4Completed,
+                chapter5Completed = chapter5Completed,
+                chapter6Completed = chapter6Completed,
+            )
+
     val chaptersProgress: ChaptersProgress
         get() =
             ChaptersProgress(
@@ -75,6 +89,20 @@ internal data class AppNavHostState(
                 chapter5Completed = chapter5Completed,
                 chapter6Completed = chapter6Completed,
             )
+
+    val chaptersUnlockProgress: ChaptersProgress
+        get() =
+            ChapterUnlockWaiverPolicy.effectiveChaptersProgress(
+                snapshot = season1Snapshot,
+                waivers = season1ChapterUnlockWaivers,
+            )
+
+    fun canOpenSeason1Chapter(chapterId: Int): Boolean =
+        ChapterUnlockWaiverPolicy.canOpenChapter(
+            chapterId = chapterId,
+            snapshot = season1Snapshot,
+            waivers = season1ChapterUnlockWaivers,
+        )
 
     companion object {
         internal fun deriveChapterFlags(uiState: MainUiState): AppNavChapterFlags {
@@ -98,16 +126,18 @@ internal data class AppNavHostState(
                     chapter3Completed = uiState.chapter3Completed,
                     chapter5Completed = uiState.chapter5Completed,
                 )
-            val unlockedChapter =
-                when {
-                    uiState.chapter6Completed -> 6
-                    uiState.chapter5Completed -> 6
-                    uiState.chapter4Completed -> 5
-                    uiState.chapter3Completed -> 4
-                    uiState.chapter2Completed -> 3
-                    beachOutroSeen || chapter1AllStationsComplete -> 2
-                    else -> 1
-                }
+            val snapshot =
+                ChapterUnlockWaiverPolicy.Season1Snapshot(
+                    beachOutroSeen = beachOutroSeen,
+                    chapter1AllStationsComplete = chapter1AllStationsComplete,
+                    chapter2Completed = uiState.chapter2Completed,
+                    chapter3Completed = uiState.chapter3Completed,
+                    chapter4Completed = uiState.chapter4Completed,
+                    chapter5Completed = uiState.chapter5Completed,
+                    chapter6Completed = uiState.chapter6Completed,
+                )
+            val waivers = uiState.season1ChapterUnlockWaivers
+            val unlockedChapter = ChapterUnlockWaiverPolicy.unlockedChapter(snapshot, waivers)
             return AppNavChapterFlags(
                 beachOutroSeen = beachOutroSeen,
                 chapter1AllStationsComplete = chapter1AllStationsComplete,
@@ -119,16 +149,10 @@ internal data class AppNavHostState(
                 chapter1ProgressForStrip = chapter1ProgressForStrip,
                 collectedEggStripCount = collectedEggStripCount,
                 unlockedChapter = unlockedChapter,
-                chapter4ComingSoon = !uiState.chapter3Completed,
-                chapter5ComingSoon = !uiState.chapter4Completed,
-                chapter6ComingSoon = !uiState.chapter5Completed,
-                maxSelectableChapterId =
-                    when {
-                        uiState.chapter5Completed -> 6
-                        uiState.chapter4Completed -> 5
-                        uiState.chapter3Completed -> 4
-                        else -> 3
-                    },
+                chapter4ComingSoon = !ChapterUnlockWaiverPolicy.isChapterSatisfied(3, snapshot, waivers),
+                chapter5ComingSoon = !ChapterUnlockWaiverPolicy.isChapterSatisfied(4, snapshot, waivers),
+                chapter6ComingSoon = !ChapterUnlockWaiverPolicy.isChapterSatisfied(5, snapshot, waivers),
+                maxSelectableChapterId = ChapterUnlockWaiverPolicy.maxSelectableChapterId(snapshot, waivers),
             )
         }
 
@@ -188,6 +212,7 @@ internal data class AppNavHostState(
                 playerAddress = uiState.playerAddress ?: PlayerAddress.Boy,
                 onboardingComplete = uiState.character != null && uiState.playerAddress != null,
                 hasChosenCompanion = uiState.character != null,
+                season1ChapterUnlockWaivers = uiState.season1ChapterUnlockWaivers,
             )
         }
     }

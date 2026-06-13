@@ -520,7 +520,7 @@ internal fun NavGraphBuilder.chapterOneToThreeGraph(host: AppNavHostState) {
             levelId = stationId,
             backgroundRes = R.drawable.ch3_reward_bg,
             onBackToMap = backToMap,
-            showSelectedCompanionPortrait = true,
+            showPinkEggReward = true,
             selectedCompanionCharacter = host.companionCharacter,
             rewardChapterId = 3,
             requireRawSuccessAudio = true,

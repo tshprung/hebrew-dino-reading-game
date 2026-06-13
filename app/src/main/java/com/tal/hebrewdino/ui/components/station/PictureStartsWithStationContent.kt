@@ -43,6 +43,7 @@ fun PictureStartsWithStationContent(
     entryPulseScale: Float,
     /** Non-zero for saga station 4 picture nudge (matches GameScreen SixStationArcHalfCmNudge). */
     verticalNudgeDp: Dp,
+    sagaPictureStartsWithStation: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     PictureStartsWithGame(
@@ -69,6 +70,7 @@ fun PictureStartsWithStationContent(
         correctPulseEpoch = correctPulseEpoch,
         wrongFlashLetter = wrongFlashLetter,
         wrongFlashEpoch = wrongFlashEpoch,
+        sagaPictureStartsWithStation = sagaPictureStartsWithStation,
         onPickLetter = onPickLetter,
         modifier =
             modifier

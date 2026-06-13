@@ -56,6 +56,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.tal.hebrewdino.ui.data.DinoCharacter
 import com.tal.hebrewdino.ui.data.Season2ProgressPrefs
+import com.tal.hebrewdino.ui.domain.ChapterUnlockWaiverPolicy
 import com.tal.hebrewdino.ui.domain.Season2ChapterRegistry
 import com.tal.hebrewdino.ui.domain.Season2IntroFlow
 import com.tal.hebrewdino.ui.domain.Season2Copy
@@ -96,6 +97,7 @@ fun Season2ChapterSelectScreen(
     val context = LocalContext.current
     val season2Progress = remember(context) { Season2ProgressPrefs(context.applicationContext) }
     val completedChapters by season2Progress.completedChaptersFlow.collectAsState(initial = emptySet())
+    val chapterUnlockWaivers by season2Progress.chapterUnlockWaiversFlow.collectAsState(initial = emptySet())
     val chapter1Stations by season2Progress.completedStationsFlow(1).collectAsState(initial = emptySet())
     val chapter2Stations by season2Progress.completedStationsFlow(2).collectAsState(initial = emptySet())
     var showSeasonIntro by remember { mutableStateOf(false) }
@@ -131,9 +133,9 @@ fun Season2ChapterSelectScreen(
     }
 
     val nextSuggestedChapter =
-        remember(completedChapters, chapter1Stations, chapter2Stations) {
+        remember(completedChapters, chapterUnlockWaivers, chapter1Stations, chapter2Stations) {
             Season2ChapterRegistry.playableChapterIndices().firstOrNull { index ->
-                Season2ChapterRegistry.isChapterUnlocked(index, completedChapters) &&
+                ChapterUnlockWaiverPolicy.isSeason2ChapterUnlocked(index, completedChapters, chapterUnlockWaivers) &&
                     !Season2Copy.isChapterComplete(
                         chapterIndex = index,
                         completedChapters = completedChapters,
@@ -143,10 +145,15 @@ fun Season2ChapterSelectScreen(
         }
 
     val chapters =
-        remember(completedChapters, chapter1Stations, chapter2Stations) {
+        remember(completedChapters, chapterUnlockWaivers, chapter1Stations, chapter2Stations) {
             (1..DISPLAY_CHAPTER_COUNT).map { index ->
                 val isPlayable = Season2ChapterRegistry.isPlayable(index)
-                val isUnlocked = Season2ChapterRegistry.isChapterUnlocked(index, completedChapters)
+                val isUnlocked =
+                    ChapterUnlockWaiverPolicy.isSeason2ChapterUnlocked(
+                        index,
+                        completedChapters,
+                        chapterUnlockWaivers,
+                    )
                 val completed =
                     Season2Copy.isChapterComplete(
                         chapterIndex = index,
