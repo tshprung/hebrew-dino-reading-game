@@ -108,8 +108,15 @@ internal object AdvanceAfterRoundActions {
         if (!suppressInGameDinoProgress && !(isChapter3HighlightedLetterInWordStation && ch3SpellMidWord) && !stableDragStation) {
             gameViewModel.dinoVisual = DinoVisual.Jump
         }
+        val allowS2NarratorPraise =
+            Season2StationQaPolicy.shouldAllowS2AdvanceRoundNarratorPraise(
+                gameplayChapterId = chapterId,
+                stationId = stationId,
+                isSeason2QuizChapter = isSeason2QuizChapter,
+            )
         val suppressSagaAdvancePraise =
-            Season2StationQaPolicy.shouldSuppressSagaEpisodeAdvancePraise(isSeason2QuizChapter)
+            Season2StationQaPolicy.shouldSuppressSagaEpisodeAdvancePraise(isSeason2QuizChapter) &&
+                !allowS2NarratorPraise
         val suppressNarratorPraiseAfterPostFocus =
             Season2PostFocusCorrectPolicy.shouldSuppressAdvanceRoundNarratorPraise(
                 suppressAdvanceRoundNarratorPraiseAfterPostFocusCompanion,

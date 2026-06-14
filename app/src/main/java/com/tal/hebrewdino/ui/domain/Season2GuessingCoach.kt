@@ -7,6 +7,7 @@ import android.util.Log
 import com.tal.hebrewdino.ui.audio.AudioClips
 
 import com.tal.hebrewdino.ui.audio.RawVoicePlayer
+import com.tal.hebrewdino.ui.audio.Season2WordPartsAudio
 
 import com.tal.hebrewdino.ui.companion.Chapter1AddressAwareAudio
 
@@ -667,6 +668,16 @@ object Season2GuessingCoach {
 
             return
 
+        }
+
+        if (question is Question.WordPartsQuestion) {
+            Season2WordPartsAudio.playPictureTapSequence(
+                catalogId = catalogId,
+                rawVoice = rawVoice,
+                chapterId = chapterId,
+                stationId = stationId,
+            )
+            return
         }
 
         val resId = AudioClips.wordRawResIdByCatalogId(catalogId)

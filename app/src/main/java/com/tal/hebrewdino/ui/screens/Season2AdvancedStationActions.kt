@@ -6,7 +6,9 @@ import com.tal.hebrewdino.ui.audio.BackgroundMusicPlayer
 import com.tal.hebrewdino.ui.audio.RawVoicePlayer
 import com.tal.hebrewdino.ui.audio.Season2WordPartsAudio
 import com.tal.hebrewdino.ui.audio.VoicePlayer
+import com.tal.hebrewdino.ui.companion.playAddressAwareTryAgainBlocking
 import com.tal.hebrewdino.ui.data.DinoCharacter
+import com.tal.hebrewdino.ui.data.PlayerAddress
 import com.tal.hebrewdino.ui.domain.AnswerResult
 import com.tal.hebrewdino.ui.domain.LevelSession
 import com.tal.hebrewdino.ui.domain.Question
@@ -82,9 +84,10 @@ internal object Season2AdvancedStationActions {
         scope: CoroutineScope,
         voice: VoicePlayer,
         rawVoice: RawVoicePlayer?,
+        chapter1PlayerAddress: PlayerAddress? = null,
         audioRuntime: GameAudioRuntimeState,
         advanceAfterRound: suspend (Boolean) -> Unit,
-        onWrongFeedback: () -> Job?,
+        onWrongFeedback: (skipTryAgainAudio: Boolean) -> Job?,
         season2HadCoachIntervention: Boolean = false,
         companionCharacter: DinoCharacter? = null,
         backgroundMusic: BackgroundMusicPlayer? = null,
@@ -186,7 +189,21 @@ internal object Season2AdvancedStationActions {
                         }
                         AnswerResult.Wrong -> {
                             if (audioEnabled) ChildGameAudioHooks.onWrong()
-                            val feedbackJob = onWrongFeedback()
+                            if (
+                                audioEnabled &&
+                                    !willPlayFocusAfterWrong &&
+                                    chapter1PlayerAddress != null
+                            ) {
+                                playAddressAwareTryAgainBlocking(
+                                    chapterId = chapterId,
+                                    stationId = stationId,
+                                    playerAddress = chapter1PlayerAddress,
+                                    rawVoice = rawVoice,
+                                    voice = voice,
+                                    context = "Season2AdvancedStationActions.handleWordPartsPick(tryAgain)",
+                                )
+                            }
+                            val feedbackJob = onWrongFeedback(true)
                             GameAudioActions.joinSilently(feedbackJob)
                             if (!willPlayFocusAfterWrong) {
                                 delay(350.milliseconds)

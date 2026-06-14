@@ -77,6 +77,16 @@ object Season2StationQaPolicy {
     fun shouldSuppressSagaEpisodeAdvancePraise(isSeason2QuizChapter: Boolean): Boolean =
         isSeason2QuizChapter
 
+    /** S2 drag-missing-letter parity (Ch5 st2) keeps S1 narrator praise after each correct round. */
+    fun shouldAllowS2AdvanceRoundNarratorPraise(
+        gameplayChapterId: Int,
+        stationId: Int,
+        isSeason2QuizChapter: Boolean,
+    ): Boolean {
+        if (!isSeason2QuizChapter) return true
+        return Season1StationAudio.isDragMissingLetterBehaviorStation(gameplayChapterId, stationId)
+    }
+
     fun shouldSkipAdvanceRoundInterRoundFeedback(
         gameplayChapterId: Int,
         season2UxStationId: Int?,

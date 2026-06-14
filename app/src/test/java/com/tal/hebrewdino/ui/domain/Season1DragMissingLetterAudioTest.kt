@@ -69,6 +69,32 @@ class Season1DragMissingLetterAudioTest {
     }
 
     @Test
+    fun dragMissingLetterBehavior_getsS2AdvanceRoundNarratorPraise() {
+        assertTrue(
+            Season2StationQaPolicy.shouldAllowS2AdvanceRoundNarratorPraise(
+                gameplayChapterId = Season2ChapterIds.Chapter1Tyrannosaurus,
+                stationId = Season2Chapter1StationOrder.FINALE_STATION,
+                isSeason2QuizChapter = true,
+            ),
+        )
+        assertFalse(
+            Season2StationQaPolicy.shouldAllowS2AdvanceRoundNarratorPraise(
+                gameplayChapterId = Season2ChapterIds.Chapter1Tyrannosaurus,
+                stationId = Season2Chapter1StationOrder.PICK_LETTER,
+                isSeason2QuizChapter = true,
+            ),
+        )
+        val advance =
+            listOf(
+                java.io.File("app/src/main/java/com/tal/hebrewdino/ui/screens/AdvanceAfterRoundActions.kt"),
+                java.io.File("../app/src/main/java/com/tal/hebrewdino/ui/screens/AdvanceAfterRoundActions.kt"),
+            ).first { it.exists() }
+                .readText()
+        assertTrue(advance.contains("shouldAllowS2AdvanceRoundNarratorPraise"))
+        assertTrue(advance.contains("!allowS2NarratorPraise"))
+    }
+
+    @Test
     fun dragMissingLetterRoundIntro_usesTightInstructionToWordHandoff() {
         assertEquals(30L, Season1StationAudio.DRAG_MISSING_LETTER_INSTRUCTION_TO_WORD_GAP_MS)
         val source =

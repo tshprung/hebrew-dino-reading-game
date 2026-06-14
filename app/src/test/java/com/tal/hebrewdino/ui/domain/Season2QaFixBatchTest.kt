@@ -147,6 +147,26 @@ class Season2QaFixBatchTest {
     }
 
     @Test
+    fun wordParts_wrongTryAgain_playsInlineOnRawVoice() {
+        val actions =
+            readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/screens/Season2AdvancedStationActions.kt")
+        assertTrue(actions.contains("playAddressAwareTryAgainBlocking"))
+        assertTrue(actions.contains("handleWordPartsPick(tryAgain)"))
+        assertTrue(actions.contains("onWrongFeedback(true)"))
+    }
+
+    @Test
+    fun wordParts_coachReplay_includesWordAndParts() {
+        val coach =
+            readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/domain/Season2GuessingCoach.kt")
+        assertTrue(coach.contains("playPictureTapSequence"))
+        val audio =
+            readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/audio/Season2WordPartsAudio.kt")
+        assertTrue(audio.contains("playPictureTapSequence"))
+        assertTrue(audio.contains("playPartsSequence"))
+    }
+
+    @Test
     fun season1_unchanged() {
         val plan = StationQuizPlans.chapter1(Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH)
         assertNotEquals(Season2AdvancedStationMode.PictureToWord, plan.season2AdvancedMode)
@@ -173,5 +193,18 @@ class Season2QaFixBatchTest {
             distractorLetters = emptyList(),
             wordPartsPresentationMode = mode,
         ) as Question.WordPartsQuestion
+    }
+
+    private fun readProjectSource(relativePath: String): String {
+        val candidates =
+            listOf(
+                java.io.File(relativePath),
+                java.io.File("../$relativePath"),
+                java.io.File("../../$relativePath"),
+            )
+        val file =
+            candidates.firstOrNull { it.exists() }
+                ?: error("Could not locate source file: $relativePath")
+        return file.readText()
     }
 }

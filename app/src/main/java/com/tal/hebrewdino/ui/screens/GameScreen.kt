@@ -1353,9 +1353,12 @@ fun GameScreen(
                             scope = scope,
                             voice = voice,
                             rawVoice = rawVoice,
+                            chapter1PlayerAddress = chapter1PlayerAddress,
                             audioRuntime = audioRuntime,
                             advanceAfterRound = { isLast -> advanceAfterRound(isLast) },
-                            onWrongFeedback = { onWrongFeedback() },
+                            onWrongFeedback = { _ ->
+                                onWrongFeedback(skipTryAgainAudio = true)
+                            },
                             season2HadCoachIntervention = season2HadCoachIntervention,
                             companionCharacter = chapter1CompanionCharacter,
                             backgroundMusic = backgroundMusic,
