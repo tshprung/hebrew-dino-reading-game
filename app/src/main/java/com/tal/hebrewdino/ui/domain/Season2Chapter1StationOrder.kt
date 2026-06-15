@@ -104,7 +104,7 @@ object Season2Chapter1StationOrder {
                 )
             FINALE_STATION ->
                 Season2DragStationQuizPlans.dragMissingLetter(
-                    wordCatalogIds = chapterDef.wordCatalogIds,
+                    wordCatalogIds = Season2DragMissingLetterWordPools.wordCatalogIds(1),
                     letters = chapterDef.letters,
                     theme = chapterDef.stationTheme,
                     missingIndex = 0,
@@ -151,7 +151,7 @@ object Season2Chapter1StationOrder {
                 )
             5 ->
                 Season2DragStationQuizPlans.dragMissingLetter(
-                    wordCatalogIds = chapterDef.wordCatalogIds,
+                    wordCatalogIds = Season2DragMissingLetterWordPools.wordCatalogIds(2),
                     letters = chapterDef.letters,
                     theme = chapterDef.stationTheme,
                     missingIndex = 0,
@@ -167,9 +167,13 @@ object Season2Chapter1StationOrder {
                                 .maxUniqueRounds(
                                     chapterDef.wordCatalogIds,
                                     Season2WordPartsPresentationMode.VisibleWordParts,
+                                    stationChapterIndex = 2,
+                                    stationId = FINALE_STATION,
                                 ).coerceAtMost(6),
                         theme = chapterDef.stationTheme,
                         wordPartsPresentationMode = Season2WordPartsPresentationMode.VisibleWordParts,
+                        wordPartsStationChapterIndex = 2,
+                        wordPartsStationId = FINALE_STATION,
                     ),
                 )
             else -> error("Unexpected Season2 ch2 stationId=$stationId")

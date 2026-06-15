@@ -205,7 +205,7 @@ object Season2ChapterStationPlans {
                 )
             StationKind.DragMissingLetter ->
                 Season2DragStationQuizPlans.dragMissingLetter(
-                    wordCatalogIds = wordCatalogIds,
+                    wordCatalogIds = Season2DragMissingLetterWordPools.wordCatalogIds(chapterIndex),
                     letters = letters,
                     theme = theme,
                     missingIndex = dragMissingLetterIndex(),
@@ -233,10 +233,12 @@ object Season2ChapterStationPlans {
                         else -> null
                     }
                 val wordPartsCatalogIds =
-                    if (chapterIndex == 3 && sid in listOf(5, 6)) {
-                        Season2WordPartsCatalog.wordCatalogIdsForChapter3WordParts(wordCatalogIds)
-                    } else {
-                        wordCatalogIds
+                    when {
+                        chapterIndex == 3 && sid in listOf(5, 6) ->
+                            Season2WordPartsCatalog.wordCatalogIdsForChapter3WordParts(wordCatalogIds)
+                        chapterIndex == 5 && sid == 6 ->
+                            Season2WordPartsCatalog.wordCatalogIdsForChapter5WordParts(wordCatalogIds)
+                        else -> wordCatalogIds
                     }
                 advancedPlan(
                     mode = Season2AdvancedStationMode.WordParts,
@@ -244,9 +246,17 @@ object Season2ChapterStationPlans {
                     theme = theme,
                     questionCount =
                         wordPartsMode?.let { mode ->
-                            Season2WordPartsCatalog.maxUniqueRounds(wordPartsCatalogIds, mode).coerceAtMost(6)
+                            Season2WordPartsCatalog
+                                .maxUniqueRounds(
+                                    wordPartsCatalogIds,
+                                    mode,
+                                    stationChapterIndex = chapterIndex,
+                                    stationId = sid,
+                                ).coerceAtMost(6)
                         } ?: 4,
                     wordPartsPresentationMode = wordPartsMode,
+                    wordPartsStationChapterIndex = chapterIndex,
+                    wordPartsStationId = sid,
                 )
             }
             StationKind.PictureToWord ->
@@ -262,14 +272,21 @@ object Season2ChapterStationPlans {
                     theme = theme,
                     distractorLetters = letters,
                 )
-            StationKind.Rhyming ->
+            StationKind.Rhyming -> {
+                val rhymeCatalogIds =
+                    Season2RhymePairCatalog.wordCatalogIdsForRhymingStation(chapterIndex, wordCatalogIds)
+                val pairs =
+                    Season2RhymePairCatalog.pairsForStation(chapterIndex, sid)
+                        ?: error("no rhyme pairs for chapter $chapterIndex station $sid")
                 advancedPlan(
                     mode = Season2AdvancedStationMode.Rhyming,
-                    wordCatalogIds = wordCatalogIds,
+                    wordCatalogIds = rhymeCatalogIds,
                     theme = theme,
-                    questionCount =
-                        Season2RhymePairCatalog.pairsForWordIds(wordCatalogIds).size.coerceAtMost(6),
+                    questionCount = pairs.size,
+                    rhymeStationChapterIndex = chapterIndex,
+                    rhymeStationId = sid,
                 )
+            }
             StationKind.MemoryMatch ->
                 error("Memory match has no quiz plan")
         }.let { base ->
@@ -300,6 +317,10 @@ object Season2ChapterStationPlans {
         distractorLetters: List<String> = emptyList(),
         questionCount: Int = 4,
         wordPartsPresentationMode: Season2WordPartsPresentationMode? = null,
+        wordPartsStationChapterIndex: Int? = null,
+        wordPartsStationId: Int? = null,
+        rhymeStationChapterIndex: Int? = null,
+        rhymeStationId: Int? = null,
     ): StationQuizPlan {
         val advanced =
             Season2AdvancedStationPlan(
@@ -309,6 +330,10 @@ object Season2ChapterStationPlans {
                 distractorLetters = distractorLetters,
                 theme = theme,
                 wordPartsPresentationMode = wordPartsPresentationMode,
+                wordPartsStationChapterIndex = wordPartsStationChapterIndex,
+                wordPartsStationId = wordPartsStationId,
+                rhymeStationChapterIndex = rhymeStationChapterIndex,
+                rhymeStationId = rhymeStationId,
             )
         return Season2AdvancedStationPlans.toStationQuizPlan(advanced)
     }
@@ -350,6 +375,11 @@ object Season2ChapterStationPlans {
                             questionCount = plan.questionCount,
                             distractorLetters = plan.season2AdvancedDistractorLetters,
                             theme = plan.season2StationTheme,
+                            wordPartsPresentationMode = plan.season2WordPartsPresentationMode,
+                            wordPartsStationChapterIndex = plan.season2WordPartsStationChapterIndex,
+                            wordPartsStationId = plan.season2WordPartsStationId,
+                            rhymeStationChapterIndex = plan.season2RhymeStationChapterIndex,
+                            rhymeStationId = plan.season2RhymeStationId,
                         )
                     issues.addAll(Season2StationContentValidator.validateAdvancedPlan(advanced))
                 }

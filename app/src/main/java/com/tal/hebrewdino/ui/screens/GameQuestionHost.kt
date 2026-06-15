@@ -55,11 +55,7 @@ import kotlin.random.Random
 
 /** Chapter 2 station 6, Season 2 match-letter finale, and Training — same match-letter behavior path. */
 private fun isChapter2StyleMatchLetterStation(chapterId: Int, stationId: Int): Boolean =
-    ((chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) &&
-        stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH) ||
-        Season2StationUx.isMatchLetterFinale(chapterId, stationId) ||
-        (chapterId == TrainingV1Config.CHAPTER_ID &&
-            stationId == TrainingV1Config.STATION_MATCH_LETTER_TO_WORD)
+    Season2StationUx.usesChapter1StyleMatchLetterBehavior(chapterId, stationId)
 
 private val MatchPraiseClips =
     arrayOf(
@@ -618,7 +614,13 @@ internal fun GameQuestionHost(
                             audioRuntime = deps.audioRuntime,
                             cancelFeedbackVoice = deps.cancelFeedbackVoice,
                         ) {
-                            if (ui.chapterId == 1 || ui.chapterId == 2 || ui.chapterId == 3 || ui.chapterId == 4 || ui.chapterId == 5 || ui.chapterId == 6) {
+                            if (
+                                Season2StationUx.usesChapter1StyleMatchLetterBehavior(
+                                    ui.chapterId,
+                                    ui.stationId,
+                                ) ||
+                                    ((ui.chapterId == 3 || ui.chapterId == 6) && ui.stationId == 2)
+                            ) {
                                 val resId = AudioClips.letterNameRawResId(letter)
                                 if (resId == null) {
                                     android.util.Log.e(
@@ -715,7 +717,12 @@ internal fun GameQuestionHost(
                         onWrongMatch = { pickedLetter, pickedChoiceId ->
                             if (isChapter2StyleMatchLetterStation(ui.chapterId, ui.stationId)) {
                                 val alreadySpoken =
-                                    if (ui.chapterId == 1 || ui.chapterId == 2 || ui.chapterId == 4 || ui.chapterId == 5) {
+                                    if (
+                                        Season2StationUx.usesChapter1StyleMatchLetterBehavior(
+                                            ui.chapterId,
+                                            ui.stationId,
+                                        )
+                                    ) {
                                         AudioClips.letterNameRawResId(pickedLetter) != null
                                     } else {
                                         val clip = AudioClips.letterNameClip(pickedLetter)
@@ -923,7 +930,11 @@ internal fun GameQuestionHost(
         is Question.RhymingQuestion ->
             Season2RhymingGame(
                 question = current,
-                instructionText = Season2StationThemeCopy.rhymingInstruction(ui.plan.season2StationTheme),
+                instructionText =
+                    Season2StationThemeCopy.rhymingInstruction(
+                        ui.plan.season2StationTheme,
+                        targetWord = current.targetWord,
+                    ),
                 enabled = state.enabled,
                 onTargetTapReplayWord =
                     if (ui.audioEnabled) {
@@ -932,7 +943,10 @@ internal fun GameQuestionHost(
                         null
                     },
                 onPickChoice = { choiceId -> handlers.handleRhymingPick(choiceId) },
-                modifier = Modifier.fillMaxWidth(),
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .offset { IntOffset(state.optionsShakePx.toInt(), 0) },
             )
         is Question.FinaleSlotQuestion ->
             FinaleSlotQuestionRenderer(

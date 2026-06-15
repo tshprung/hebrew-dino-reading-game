@@ -5,6 +5,7 @@ import com.tal.hebrewdino.ui.audio.RawVoicePlayer
 import com.tal.hebrewdino.ui.audio.SoundPoolPlayer
 import com.tal.hebrewdino.ui.audio.VoicePlayer
 import com.tal.hebrewdino.ui.data.PlayerAddress
+import com.tal.hebrewdino.ui.domain.Season2StationAudio
 import com.tal.hebrewdino.ui.domain.TrainingV1Config
 import kotlinx.coroutines.delay
 import kotlin.time.Duration.Companion.milliseconds
@@ -25,7 +26,8 @@ internal suspend fun playAddressAwareTryAgainBlocking(
             chapterId == 4 ||
             chapterId == 5 ||
             chapterId == 6 ||
-            chapterId == TrainingV1Config.CHAPTER_ID
+            chapterId == TrainingV1Config.CHAPTER_ID ||
+            Season2StationAudio.isSeason2GameplayChapter(chapterId)
     if (requiredChapter) {
         if (rawVoice == null) {
             android.util.Log.e(

@@ -117,6 +117,8 @@ object Season2StationContentValidator {
                         Season2WordPartsCatalog.entriesForPresentationMode(
                             plan.wordCatalogIds,
                             plan.wordPartsPresentationMode,
+                            stationChapterIndex = plan.wordPartsStationChapterIndex,
+                            stationId = plan.wordPartsStationId,
                         )
                     } else {
                         Season2WordPartsCatalog.entriesForWordIds(plan.wordCatalogIds)
@@ -127,12 +129,25 @@ object Season2StationContentValidator {
                 specs.forEach { missing.addAll(validateWordPartsEntry(it)) }
             }
             Season2AdvancedStationMode.Rhyming -> {
-                val pairs = Season2RhymePairCatalog.pairsForWordIds(plan.wordCatalogIds)
+                val pairs =
+                    if (plan.rhymeStationChapterIndex != null && plan.rhymeStationId != null) {
+                        Season2RhymePairCatalog.pairsForStation(
+                            plan.rhymeStationChapterIndex,
+                            plan.rhymeStationId,
+                        ) ?: emptyList()
+                    } else {
+                        Season2RhymePairCatalog.pairsForWordIds(plan.wordCatalogIds)
+                    }
                 if (pairs.isEmpty()) {
                     missing.add("rhyming needs at least one validated rhyme pair")
                 }
                 pairs.forEach { pair ->
                     missing.addAll(validateRhymePair(pair.targetCatalogId, pair.rhymeCatalogId))
+                    pair.distractorCatalogIds.forEach { distractorId ->
+                        if (distractorId !in plan.wordCatalogIds) {
+                            missing.add("rhyme distractor $distractorId not in plan word scope")
+                        }
+                    }
                 }
             }
         }

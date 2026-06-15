@@ -58,6 +58,12 @@ data class StationQuizPlan(
     val season2StationTheme: Season2StationTheme = Season2StationTheme.Standard,
     /** Word-parts presentation ramp (visible / guided / hidden). */
     val season2WordPartsPresentationMode: Season2WordPartsPresentationMode? = null,
+    /** When set with [season2WordPartsStationId], selects a station-specific word-parts pool. */
+    val season2WordPartsStationChapterIndex: Int? = null,
+    val season2WordPartsStationId: Int? = null,
+    /** When set with [season2RhymeStationId], selects a station-specific rhyme pair list. */
+    val season2RhymeStationChapterIndex: Int? = null,
+    val season2RhymeStationId: Int? = null,
     /** When [mode] is [StationQuizMode.DragWordToPicture], number of picture/word pairs (2 or 3). */
     val dragWordToPicturePairCount: Int? = null,
     /** When [mode] is [StationQuizMode.DragMissingLetter], 0-based grapheme index of the missing letter. */

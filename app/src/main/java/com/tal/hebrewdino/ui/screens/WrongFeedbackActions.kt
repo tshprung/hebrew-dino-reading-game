@@ -13,9 +13,12 @@ import com.tal.hebrewdino.ui.data.PlayerAddress
 import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
 import com.tal.hebrewdino.ui.domain.Season1StationAudio
 import com.tal.hebrewdino.ui.domain.Season2StationAudio
+import com.tal.hebrewdino.ui.domain.Season2StationQaPolicy
+import com.tal.hebrewdino.ui.domain.Season2StationUx
 import com.tal.hebrewdino.ui.domain.Season2WarmupStationQaPolicy
 import com.tal.hebrewdino.ui.feedback.GameFeedback
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.random.Random
@@ -135,9 +138,10 @@ internal object WrongFeedbackActions {
         wrongWordAlreadySpoken: Boolean = false,
         chapter1PlayerAddress: PlayerAddress? = null,
         rawVoice: RawVoicePlayer? = null,
-    ) {
+        skipTryAgainAudio: Boolean = false,
+    ): Job {
         val protectTryAgainAudio = shouldProtectTryAgainAudio(chapterId, stationId)
-        scope.launch {
+        return scope.launch {
             gameViewModel.inputLocked = true
             gameViewModel.dinoVisual = DinoVisual.TryAgain
             val immediateCh1Ch2Station4Voice =
@@ -284,6 +288,7 @@ internal object WrongFeedbackActions {
                                     stationId,
                                 )
                         ) &&
+                        !Season2StationQaPolicy.isWhichWordStartsWithStation(chapterId, stationId) &&
                         !(chapterId == 3 && stationId == 3) &&
                         !(chapterId == 6 && stationId == 3)
                 if (allowWrongSfx) {
@@ -291,21 +296,23 @@ internal object WrongFeedbackActions {
                     onWrongHook()
                 }
                 if (sagaUsesPickLetterAudioStaging && wrongPickedLetter != null && chapterId != 3) {
-                    GameAudioActions.launchFeedbackVoice(
-                        audioEnabled = audioEnabled,
-                        scope = scope,
-                        audioRuntime = audioRuntime,
-                        cancelFeedbackVoice = cancelFeedbackVoice,
-                    ) play@{
+                    val voiceJob =
+                        GameAudioActions.launchFeedbackVoiceNoCancel(
+                            audioEnabled = audioEnabled,
+                            scope = scope,
+                            audioRuntime = audioRuntime,
+                        ) play@{
                         if (wrongPickedLetterAlreadySpoken) {
-                            playStandaloneTryAgain(
-                                sfx = sfx,
-                                chapterId = chapterId,
-                                stationId = stationId,
-                                playerAddress = chapter1PlayerAddress,
-                                rawVoice = rawVoice,
-                                voice = voice,
-                            )
+                            if (!skipTryAgainAudio) {
+                                playStandaloneTryAgain(
+                                    sfx = sfx,
+                                    chapterId = chapterId,
+                                    stationId = stationId,
+                                    playerAddress = chapter1PlayerAddress,
+                                    rawVoice = rawVoice,
+                                    voice = voice,
+                                )
+                            }
                             return@play
                         }
                         if (Season2WarmupStationQaPolicy.usesRawLetterNameStationFeedback(chapterId)) {
@@ -460,6 +467,7 @@ internal object WrongFeedbackActions {
                             )
                         }
                     }
+                    GameAudioActions.joinSilently(voiceJob)
                     gameViewModel.dinoVisual = DinoVisual.Idle
                     gameViewModel.inputLocked = false
                     return@launch
@@ -479,13 +487,15 @@ internal object WrongFeedbackActions {
                         cancelFeedbackVoice = cancelFeedbackVoice,
                     ) play@{
                         if (wrongPickedLetterAlreadySpoken) {
-                            playTryAgainFallback(
-                                chapterId = chapterId,
-                                stationId = stationId,
-                                playerAddress = chapter1PlayerAddress,
-                                rawVoice = rawVoice,
-                                voice = voice,
-                            )
+                            if (!skipTryAgainAudio) {
+                                playTryAgainFallback(
+                                    chapterId = chapterId,
+                                    stationId = stationId,
+                                    playerAddress = chapter1PlayerAddress,
+                                    rawVoice = rawVoice,
+                                    voice = voice,
+                                )
+                            }
                             return@play
                         }
                         val requiredChapter = chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5
@@ -592,17 +602,18 @@ internal object WrongFeedbackActions {
                     return@launch
                 }
                 if (!immediateCh1Ch2Station4Voice) {
-                    launchWrongFeedbackVoice(
-                        protectTryAgainAudio = protectTryAgainAudio,
-                        audioEnabled = audioEnabled,
-                        scope = scope,
-                        audioRuntime = audioRuntime,
-                        cancelFeedbackVoice = cancelFeedbackVoice,
-                    ) play@{
+                    val voiceJob =
+                        GameAudioActions.launchFeedbackVoiceNoCancel(
+                            audioEnabled = audioEnabled,
+                            scope = scope,
+                            audioRuntime = audioRuntime,
+                        ) play@{
                         val feedbackDelayMs =
                             when {
-                                (chapterId == 1 || chapterId == 2) &&
-                                    stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH ->
+                                Season2StationUx.usesChapter1StyleMatchLetterBehavior(
+                                    chapterId,
+                                    stationId,
+                                ) ->
                                     0L
                                 chapterId == 3 && stationId == 4 -> 0L
                                 Season1StationAudio.isDragMissingLetterBehaviorStation(chapterId, stationId) -> 110L
@@ -642,7 +653,13 @@ internal object WrongFeedbackActions {
                                     rawVoice.playRawBlocking(resId)
                                 }
                             } else {
-                                if (chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) {
+                                if (
+                                    chapterId == 1 ||
+                                        chapterId == 2 ||
+                                        chapterId == 4 ||
+                                        chapterId == 5 ||
+                                        Season2StationAudio.isSeason2GameplayChapter(chapterId)
+                                ) {
                                     val resId = AudioClips.wordRawResIdByCatalogId(wrongWordCatalogId)
                                     if (resId == null) {
                                         android.util.Log.e(
@@ -671,20 +688,33 @@ internal object WrongFeedbackActions {
                                     }
                                 }
                             }
-                            playTryAgainFallback(
-                                chapterId = chapterId,
-                                stationId = stationId,
-                                playerAddress = chapter1PlayerAddress,
-                                rawVoice = rawVoice,
-                                voice = voice,
-                            )
+                            if (!skipTryAgainAudio) {
+                                playTryAgainFallback(
+                                    chapterId = chapterId,
+                                    stationId = stationId,
+                                    playerAddress = chapter1PlayerAddress,
+                                    rawVoice = rawVoice,
+                                    voice = voice,
+                                )
+                            }
                             return@play
                         }
 
                         if (wrongPickedLetter != null) {
                             if (!wrongPickedLetterAlreadySpoken) {
-                                if (chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5 ||
-                                    Season1StationAudio.isDragMissingLetterBehaviorStation(chapterId, stationId)
+                                if (
+                                    chapterId == 1 ||
+                                        chapterId == 2 ||
+                                        chapterId == 4 ||
+                                        chapterId == 5 ||
+                                        Season2StationUx.usesChapter1StyleMatchLetterBehavior(
+                                            chapterId,
+                                            stationId,
+                                        ) ||
+                                        Season1StationAudio.isDragMissingLetterBehaviorStation(
+                                            chapterId,
+                                            stationId,
+                                        )
                                 ) {
                                     val resId = AudioClips.letterNameRawResId(wrongPickedLetter)
                                     if (resId == null) {
@@ -747,6 +777,19 @@ internal object WrongFeedbackActions {
                                     }
                                 }
                             }
+                            if (!skipTryAgainAudio) {
+                                playTryAgainFallback(
+                                    chapterId = chapterId,
+                                    stationId = stationId,
+                                    playerAddress = chapter1PlayerAddress,
+                                    rawVoice = rawVoice,
+                                    voice = voice,
+                                )
+                            }
+                            return@play
+                        }
+
+                        if (!skipTryAgainAudio) {
                             playTryAgainFallback(
                                 chapterId = chapterId,
                                 stationId = stationId,
@@ -754,17 +797,9 @@ internal object WrongFeedbackActions {
                                 rawVoice = rawVoice,
                                 voice = voice,
                             )
-                            return@play
                         }
-
-                        playTryAgainFallback(
-                            chapterId = chapterId,
-                            stationId = stationId,
-                            playerAddress = chapter1PlayerAddress,
-                            rawVoice = rawVoice,
-                            voice = voice,
-                        )
                     }
+                    GameAudioActions.joinSilently(voiceJob)
                 }
             }
             gameViewModel.dinoVisual = DinoVisual.Idle

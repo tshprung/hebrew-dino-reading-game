@@ -5,7 +5,9 @@ import com.tal.hebrewdino.ui.audio.BackgroundMusicPlayer
 import com.tal.hebrewdino.ui.audio.InStationPraiseAudio
 import com.tal.hebrewdino.ui.audio.RawVoicePlayer
 import com.tal.hebrewdino.ui.audio.VoicePlayer
+import com.tal.hebrewdino.ui.companion.playAddressAwareTryAgainBlocking
 import com.tal.hebrewdino.ui.data.DinoCharacter
+import com.tal.hebrewdino.ui.data.PlayerAddress
 import com.tal.hebrewdino.ui.domain.AnswerResult
 import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
 import com.tal.hebrewdino.ui.domain.LevelSession
@@ -70,6 +72,39 @@ private suspend fun playSagaWhichWordInStationPraise(
     }
 }
 
+private suspend fun runImageToWordWrongFeedback(
+    audioEnabled: Boolean,
+    chapterId: Int,
+    stationId: Int,
+    choiceId: String,
+    chapter1PlayerAddress: PlayerAddress?,
+    willPlayCoachFocusAfterWrong: Boolean,
+    rawVoice: RawVoicePlayer?,
+    voice: VoicePlayer,
+    onWrongFeedback: (
+        wrongWordCatalogId: String?,
+        wrongWordAlreadySpoken: Boolean,
+        skipTryAgainAudio: Boolean,
+    ) -> Job?,
+): Job? {
+    if (audioEnabled) ChildGameAudioHooks.onWrong()
+    val playInlineTryAgain =
+        audioEnabled &&
+            chapter1PlayerAddress != null &&
+            !willPlayCoachFocusAfterWrong
+    if (playInlineTryAgain) {
+        playAddressAwareTryAgainBlocking(
+            chapterId = chapterId,
+            stationId = stationId,
+            playerAddress = chapter1PlayerAddress,
+            rawVoice = rawVoice,
+            voice = voice,
+            context = "ImageMatchActions.runImageToWordWrongFeedback(tryAgain)",
+        )
+    }
+    return onWrongFeedback(choiceId, true, playInlineTryAgain)
+}
+
 internal object ImageMatchActions {
     fun handleImageToWordAttempt(
         choiceId: String,
@@ -77,15 +112,22 @@ internal object ImageMatchActions {
         cancelFeedbackVoice: () -> Unit,
         audioEnabled: Boolean,
         chapterId: Int,
+        stationId: Int,
         session: LevelSession,
         scope: CoroutineScope,
         voice: VoicePlayer,
         rawVoice: RawVoicePlayer?,
         audioRuntime: GameAudioRuntimeState,
         advanceAfterRound: suspend (Boolean) -> Unit,
-        onWrongFeedback: (wrongWordCatalogId: String?, wrongWordAlreadySpoken: Boolean) -> Job?,
+        onWrongFeedback: (
+            wrongWordCatalogId: String?,
+            wrongWordAlreadySpoken: Boolean,
+            skipTryAgainAudio: Boolean,
+        ) -> Job?,
         season2HadCoachIntervention: Boolean = false,
         season2Chapter1UxStationId: Int? = null,
+        chapter1PlayerAddress: PlayerAddress? = null,
+        willPlayCoachFocusAfterWrong: Boolean = false,
         companionCharacter: DinoCharacter? = null,
         backgroundMusic: BackgroundMusicPlayer? = null,
         postFocusAvoidPraiseRawResId: Int = 0,
@@ -140,9 +182,20 @@ internal object ImageMatchActions {
                     advanceAfterRound(isLast)
                 }
                 AnswerResult.Wrong -> {
-                    if (audioEnabled) ChildGameAudioHooks.onWrong()
+                    gameViewModel.inputLocked = true
                     HintPulseActions.registerWrongTapForHintPulse(gameViewModel)
-                    val feedbackJob = onWrongFeedback(choiceId, true)
+                    val feedbackJob =
+                        runImageToWordWrongFeedback(
+                            audioEnabled = audioEnabled,
+                            chapterId = chapterId,
+                            stationId = stationId,
+                            choiceId = choiceId,
+                            chapter1PlayerAddress = chapter1PlayerAddress,
+                            willPlayCoachFocusAfterWrong = willPlayCoachFocusAfterWrong,
+                            rawVoice = rawVoice,
+                            voice = voice,
+                            onWrongFeedback = onWrongFeedback,
+                        )
                     GameAudioActions.joinSilently(feedbackJob)
                 }
                 else -> Unit
@@ -209,6 +262,46 @@ internal object ImageMatchActions {
                 voiceHasAsset = { path -> voice.hasAsset(path) },
             )
         voice.playBlocking(clip)
+    }
+
+    private suspend fun runWhichWordWrongAttempt(
+        choiceId: String,
+        gameViewModel: GameViewModel,
+        audioEnabled: Boolean,
+        chapterId: Int,
+        stationId: Int,
+        voice: VoicePlayer,
+        rawVoice: RawVoicePlayer?,
+        chapter1PlayerAddress: PlayerAddress?,
+        willPlayCoachFocusAfterWrong: Boolean,
+        onWrongFeedback: (
+            wrongWordCatalogId: String?,
+            wrongWordAlreadySpoken: Boolean,
+            skipTryAgainAudio: Boolean,
+        ) -> Job?,
+    ) {
+        gameViewModel.inputLocked = true
+        playImageToWordTappedOptionAudio(
+            choiceId = choiceId,
+            audioEnabled = audioEnabled,
+            chapterId = chapterId,
+            voice = voice,
+            rawVoice = rawVoice,
+        )
+        HintPulseActions.registerWrongTapForHintPulse(gameViewModel)
+        val feedbackJob =
+            runImageToWordWrongFeedback(
+                audioEnabled = audioEnabled,
+                chapterId = chapterId,
+                stationId = stationId,
+                choiceId = choiceId,
+                chapter1PlayerAddress = chapter1PlayerAddress,
+                willPlayCoachFocusAfterWrong = willPlayCoachFocusAfterWrong,
+                rawVoice = rawVoice,
+                voice = voice,
+                onWrongFeedback = onWrongFeedback,
+            )
+        GameAudioActions.joinSilently(feedbackJob)
     }
 
     fun handleImageToWordReplayCorrectChoice(
@@ -352,9 +445,15 @@ internal object ImageMatchActions {
         rawVoice: RawVoicePlayer?,
         audioRuntime: GameAudioRuntimeState,
         advanceAfterRound: suspend (Boolean) -> Unit,
-        onWrongFeedback: (wrongWordCatalogId: String?, wrongWordAlreadySpoken: Boolean) -> Job?,
+        onWrongFeedback: (
+            wrongWordCatalogId: String?,
+            wrongWordAlreadySpoken: Boolean,
+            skipTryAgainAudio: Boolean,
+        ) -> Job?,
         season2HadCoachIntervention: Boolean = false,
         season2Chapter1UxStationId: Int? = null,
+        chapter1PlayerAddress: PlayerAddress? = null,
+        willPlayCoachFocusAfterWrong: Boolean = false,
         companionCharacter: DinoCharacter? = null,
         backgroundMusic: BackgroundMusicPlayer? = null,
         postFocusAvoidPraiseRawResId: Int = 0,
@@ -368,11 +467,12 @@ internal object ImageMatchActions {
             Season2StationQaPolicy.shouldOrchestrateWhichWordCorrectPraiseInStation(
                 gameplayChapterId = chapterId,
                 season2UxStationId = resolvedUxStationId,
+                physicalStationId = stationId,
             )
         ) {
-            cancelFeedbackVoice()
             return when (session.submitImageMatch(choiceId)) {
                 AnswerResult.Correct -> {
+                    cancelFeedbackVoice()
                     if (audioEnabled) ChildGameAudioHooks.onCorrect()
                     gameViewModel.inputLocked = true
                     val audioJob =
@@ -409,26 +509,27 @@ internal object ImageMatchActions {
                 }
                 AnswerResult.Wrong -> {
                     scope.launch {
-                        playImageToWordTappedOptionAudio(
+                        runWhichWordWrongAttempt(
                             choiceId = choiceId,
+                            gameViewModel = gameViewModel,
                             audioEnabled = audioEnabled,
                             chapterId = chapterId,
+                            stationId = stationId,
                             voice = voice,
                             rawVoice = rawVoice,
+                            chapter1PlayerAddress = chapter1PlayerAddress,
+                            willPlayCoachFocusAfterWrong = willPlayCoachFocusAfterWrong,
+                            onWrongFeedback = onWrongFeedback,
                         )
-                        if (audioEnabled) ChildGameAudioHooks.onWrong()
-                        HintPulseActions.registerWrongTapForHintPulse(gameViewModel)
-                        val feedbackJob = onWrongFeedback(choiceId, true)
-                        GameAudioActions.joinSilently(feedbackJob)
                     }
                     false
                 }
                 AnswerResult.Finished -> false
             }
         }
-        cancelFeedbackVoice()
         return when (session.submitImageMatch(choiceId)) {
             AnswerResult.Correct -> {
+                cancelFeedbackVoice()
                 if (audioEnabled) ChildGameAudioHooks.onCorrect()
                 gameViewModel.inputLocked = true
                 val audioJob =
@@ -514,27 +615,29 @@ internal object ImageMatchActions {
             }
             AnswerResult.Wrong -> {
                 val playTappedWordFirst =
-                    SixStationArcQaPolicy.isSagaWhichWordStartsWithStation(chapterId, stationId)
+                    SixStationArcQaPolicy.isSagaWhichWordStartsWithStation(chapterId, stationId) ||
+                        Season2StationQaPolicy.isWhichWordStartsWithStation(chapterId, stationId)
                 if (playTappedWordFirst) {
                     scope.launch {
-                        playImageToWordTappedOptionAudio(
+                        runWhichWordWrongAttempt(
                             choiceId = choiceId,
+                            gameViewModel = gameViewModel,
                             audioEnabled = audioEnabled,
                             chapterId = chapterId,
+                            stationId = stationId,
                             voice = voice,
                             rawVoice = rawVoice,
+                            chapter1PlayerAddress = chapter1PlayerAddress,
+                            willPlayCoachFocusAfterWrong = willPlayCoachFocusAfterWrong,
+                            onWrongFeedback = onWrongFeedback,
                         )
-                        if (audioEnabled) ChildGameAudioHooks.onWrong()
-                        HintPulseActions.registerWrongTapForHintPulse(gameViewModel)
-                        val feedbackJob = onWrongFeedback(choiceId, true)
-                        GameAudioActions.joinSilently(feedbackJob)
                     }
                 } else {
                     if (audioEnabled) ChildGameAudioHooks.onWrong()
                     HintPulseActions.registerWrongTapForHintPulse(gameViewModel)
                     when {
                         else ->
-                            onWrongFeedback(null, false)
+                            onWrongFeedback(null, false, false)
                     }
                 }
                 false

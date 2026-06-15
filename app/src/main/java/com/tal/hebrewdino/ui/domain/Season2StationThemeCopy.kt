@@ -39,11 +39,18 @@ object Season2StationThemeCopy {
                 "\u200Fמצאו את חלקי המילה ששמעתם"
         }
 
-    fun rhymingInstruction(theme: Season2StationTheme): String =
-        when (theme) {
+    fun rhymingInstruction(
+        theme: Season2StationTheme,
+        targetWord: String? = null,
+    ): String {
+        if (!targetWord.isNullOrBlank()) {
+            return "\u200Fאיזו מילה מתחרזת עם $targetWord?"
+        }
+        return when (theme) {
             Season2StationTheme.UnderwaterBubbles,
             Season2StationTheme.FlyingSky,
             -> "\u200Fאיזו מילה מתחרזת עם?"
             else -> "\u200Fאיזו מילה מתחרזת עם?"
         }
+    }
 }

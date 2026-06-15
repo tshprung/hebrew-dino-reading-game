@@ -118,11 +118,15 @@ object Season2StabilityAudit {
             Season2WordPartsCatalog.entriesForPresentationMode(
                 scope,
                 Season2WordPartsPresentationMode.GuidedWordParts,
+                stationChapterIndex = 3,
+                stationId = 5,
             ).map { it.catalogId }.toSet()
         val hidden =
             Season2WordPartsCatalog.entriesForPresentationMode(
                 scope,
                 Season2WordPartsPresentationMode.HiddenWordPartsChallenge,
+                stationChapterIndex = 3,
+                stationId = 6,
             ).map { it.catalogId }.toSet()
         return guided to hidden
     }

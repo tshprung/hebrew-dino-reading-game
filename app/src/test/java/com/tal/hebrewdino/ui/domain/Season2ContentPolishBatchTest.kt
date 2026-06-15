@@ -26,6 +26,8 @@ class Season2ContentPolishBatchTest {
             Season2WordPartsCatalog.entriesForPresentationMode(
                 ch2.wordCatalogIds,
                 Season2WordPartsPresentationMode.VisibleWordParts,
+                stationChapterIndex = 2,
+                stationId = 6,
             )
         assertEquals(6, pool.size)
         val pil = pool.first { it.catalogId == "w_פ_2" }
@@ -40,6 +42,8 @@ class Season2ContentPolishBatchTest {
             Season2WordPartsCatalog.entriesForPresentationMode(
                 ch2.wordCatalogIds,
                 Season2WordPartsPresentationMode.VisibleWordParts,
+                stationChapterIndex = 2,
+                stationId = 6,
             )
         pool.forEach { entry ->
             val word = LessonWordCatalog.entries.first { it.id == entry.catalogId }
@@ -52,13 +56,14 @@ class Season2ContentPolishBatchTest {
     }
 
     @Test
-    fun ch6_st5_rhymePairs_useSupportedWordsOnly() {
-        val ch6Words = Season2ChapterContent.ch6Words
-        val pairs = Season2RhymePairCatalog.pairsForWordIds(ch6Words)
-        assertEquals(6, pairs.size)
+    fun ch6_st4_rhymePairs_useStationPoolOnly() {
+        val scope =
+            Season2RhymePairCatalog.wordCatalogIdsForRhymingStation(6, Season2ChapterContent.ch6Words)
+        val pairs = Season2RhymePairCatalog.pairsForStation(6, 4)!!
+        assertEquals(4, pairs.size)
         pairs.forEach { pair ->
-            assertTrue(pair.targetCatalogId in ch6Words)
-            assertTrue(pair.rhymeCatalogId in ch6Words)
+            assertTrue(pair.targetCatalogId in scope)
+            assertTrue(pair.rhymeCatalogId in scope)
             assertTrue(
                 Season2StationContentValidator.validateRhymePair(
                     pair.targetCatalogId,
@@ -69,19 +74,19 @@ class Season2ContentPolishBatchTest {
     }
 
     @Test
-    fun ch6_st4_questionCount_matchesValidPairPool() {
+    fun ch6_st4_questionCount_matchesStationPairPool() {
         val ctx = Season2ChapterStationPlans.contextFor(6)!!
         val plan = Season2ChapterStationPlans.quizPlan(ctx, 4)
         assertEquals(Season2AdvancedStationMode.Rhyming, plan.season2AdvancedMode)
-        assertTrue(plan.questionCount >= 3)
+        assertEquals(4, plan.questionCount)
     }
 
     @Test
-    fun ch6_st5_finalRhymePairs_includeShaonOnCluster() {
-        val pairs = Season2RhymePairCatalog.pairsForWordIds(Season2ChapterContent.ch6Words)
-        assertTrue(pairs.any { it.targetCatalogId == "w_ש_4" && it.rhymeCatalogId == "w_ב_2" })
-        assertTrue(pairs.any { it.targetCatalogId == "w_ש_4" && it.rhymeCatalogId == "w_ח_3" })
-        assertTrue(pairs.any { it.targetCatalogId == "w_ב_2" && it.rhymeCatalogId == "w_ח_3" })
+    fun ch6_st4_rhymePairs_includeKofTofAndRegelDegel() {
+        val pairs = Season2RhymePairCatalog.pairsForStation(6, 4)!!
+        assertTrue(pairs.any { it.targetCatalogId == "w_ק_1" && it.rhymeCatalogId == "w_ת_4" })
+        assertTrue(pairs.any { it.targetCatalogId == "w_ר_3" && it.rhymeCatalogId == "w_ד_5" })
+        assertTrue(pairs.any { it.targetCatalogId == "w_ד_1" && it.rhymeCatalogId == "w_ג_5" })
     }
 
     @Test

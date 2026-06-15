@@ -479,7 +479,8 @@ internal suspend fun speakPromptForQuestion(
             chapterId == 4 ||
             chapterId == 5 ||
             chapterId == 6 ||
-            chapterId == TrainingV1Config.CHAPTER_ID
+            chapterId == TrainingV1Config.CHAPTER_ID ||
+            Season2StationAudio.isSeason2GameplayChapter(chapterId)
     when (q) {
         is Question.PopBalloonsQuestion -> {
             // Episode 1 station 2: instruction is started from GameScreen LaunchedEffect (SoundPool).

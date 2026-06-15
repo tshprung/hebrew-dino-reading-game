@@ -78,12 +78,17 @@ class Season2RawAudioWiringTest {
         assertEquals(R.raw.wordpart_w_shin_1_p1, Season2RawAudio.wordPartRawResId("w_ש_1", 1))
         assertEquals(R.raw.wordpart_w_shin_1_p2, Season2RawAudio.wordPartRawResId("w_ש_1", 2))
         assertEquals(R.raw.wordpart_w_reish_3_p2, Season2RawAudio.wordPartRawResId("w_ר_3", 2))
-        assertNull(Season2RawAudio.wordPartRawResId("w_ז_3", 1))
+        assertEquals(R.raw.wordpart_w_zayin_3_p1, Season2RawAudio.wordPartRawResId("w_ז_3", 1))
+        assertEquals(R.raw.wordpart_w_bet_2_p2, Season2RawAudio.wordPartRawResId("w_ב_2", 2))
+        assertEquals(R.raw.wordpart_w_samech_4_p1, Season2RawAudio.wordPartRawResId("w_ס_4", 1))
+        assertEquals(R.raw.wordpart_w_nun_2_p1, Season2RawAudio.wordPartRawResId("w_נ_2", 1))
+        assertEquals(R.raw.wordpart_w_tsadi_2_p2, Season2RawAudio.wordPartRawResId("w_צ_2", 2))
     }
 
     @Test
     fun wordPartChunks_doNotUseLetterNameClips() {
-        assertNull(Season2RawAudio.wordPartRawResId("w_נ_2", 1))
+        assertNotNull(Season2RawAudio.wordPartRawResId("w_נ_2", 1))
+        assertNotNull(Season2RawAudio.wordPartRawResId("w_צ_2", 2))
         assertNotNull(AudioClips.letterNameRawResId("נ"))
     }
 }

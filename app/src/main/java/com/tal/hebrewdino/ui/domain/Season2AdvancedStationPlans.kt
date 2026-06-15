@@ -11,6 +11,10 @@ data class Season2AdvancedStationPlan(
     val distractorLetters: List<String> = emptyList(),
     val theme: Season2StationTheme = Season2StationTheme.Standard,
     val wordPartsPresentationMode: Season2WordPartsPresentationMode? = null,
+    val wordPartsStationChapterIndex: Int? = null,
+    val wordPartsStationId: Int? = null,
+    val rhymeStationChapterIndex: Int? = null,
+    val rhymeStationId: Int? = null,
 ) {
     init {
         val missing = Season2StationContentValidator.validateAdvancedPlan(this)
@@ -45,6 +49,10 @@ object Season2AdvancedStationPlans {
             season2AdvancedDistractorLetters = advanced.distractorLetters,
             season2StationTheme = advanced.theme,
             season2WordPartsPresentationMode = advanced.wordPartsPresentationMode,
+            season2WordPartsStationChapterIndex = advanced.wordPartsStationChapterIndex,
+            season2WordPartsStationId = advanced.wordPartsStationId,
+            season2RhymeStationChapterIndex = advanced.rhymeStationChapterIndex,
+            season2RhymeStationId = advanced.rhymeStationId,
         )
     }
 

@@ -8,7 +8,9 @@ import com.tal.hebrewdino.ui.domain.AnswerResult
 import com.tal.hebrewdino.ui.domain.LevelSession
 import com.tal.hebrewdino.ui.audio.BackgroundMusicPlayer
 import com.tal.hebrewdino.ui.audio.Season2PostFocusCorrectAudio
+import com.tal.hebrewdino.ui.companion.playAddressAwareTryAgainBlocking
 import com.tal.hebrewdino.ui.data.DinoCharacter
+import com.tal.hebrewdino.ui.data.PlayerAddress
 import com.tal.hebrewdino.ui.domain.Season2EarlyStationQaPolicy
 import com.tal.hebrewdino.ui.domain.Season2WarmupStationQaPolicy
 import com.tal.hebrewdino.ui.domain.TrainingV1Config
@@ -27,6 +29,32 @@ private val HighlightedWordDonePraiseCandidates =
         AudioClips.VoGoodJob1,
     )
 
+private suspend fun playPickLetterWrongTryAgainIfNeeded(
+    audioEnabled: Boolean,
+    chapterId: Int,
+    stationId: Int,
+    chapter1PlayerAddress: PlayerAddress?,
+    willPlayCoachFocusAfterWrong: Boolean,
+    rawVoice: RawVoicePlayer?,
+    voice: VoicePlayer,
+): Boolean {
+    val playInlineTryAgain =
+        audioEnabled &&
+            chapter1PlayerAddress != null &&
+            !willPlayCoachFocusAfterWrong
+    if (playInlineTryAgain) {
+        playAddressAwareTryAgainBlocking(
+            chapterId = chapterId,
+            stationId = stationId,
+            playerAddress = chapter1PlayerAddress,
+            rawVoice = rawVoice,
+            voice = voice,
+            context = "PickLetterActions.handlePick(wrong,tryAgain)",
+        )
+    }
+    return playInlineTryAgain
+}
+
 internal object PickLetterActions {
     fun handlePick(
         picked: String,
@@ -44,8 +72,14 @@ internal object PickLetterActions {
         sfx: SoundPoolPlayer,
         rawVoice: RawVoicePlayer?,
         audioRuntime: GameAudioRuntimeState,
-        onWrongFeedback: (wrongPickedLetter: String, wrongPickedLetterAlreadySpoken: Boolean) -> Job?,
+        onWrongFeedback: (
+            wrongPickedLetter: String,
+            wrongPickedLetterAlreadySpoken: Boolean,
+            skipTryAgainAudio: Boolean,
+        ) -> Job?,
         advanceAfterRound: suspend (isLast: Boolean, ch3SpellMidWord: Boolean) -> Unit,
+        chapter1PlayerAddress: PlayerAddress? = null,
+        willPlayCoachFocusAfterWrong: Boolean = false,
         season2HadCoachIntervention: Boolean = false,
         companionCharacter: DinoCharacter? = null,
         backgroundMusic: BackgroundMusicPlayer? = null,
@@ -98,7 +132,7 @@ internal object PickLetterActions {
                             gameViewModel.shakeEpoch += 1
                             HintPulseActions.registerWrongTapForHintPulse(gameViewModel)
                             if (audioEnabled) ChildGameAudioHooks.onWrong()
-                            val feedbackJob = onWrongFeedback(picked, true)
+                            val feedbackJob = onWrongFeedback(picked, true, false)
                             GameAudioActions.joinSilently(feedbackJob)
                         }
                         AnswerResult.Finished -> Unit
@@ -152,7 +186,7 @@ internal object PickLetterActions {
                             gameViewModel.shakeEpoch += 1
                             HintPulseActions.registerWrongTapForHintPulse(gameViewModel)
                             if (audioEnabled) ChildGameAudioHooks.onWrong()
-                            val feedbackJob = onWrongFeedback(picked, true)
+                            val feedbackJob = onWrongFeedback(picked, true, false)
                             GameAudioActions.joinSilently(feedbackJob)
                         }
                         AnswerResult.Finished -> Unit
@@ -443,7 +477,7 @@ internal object PickLetterActions {
                             }
                         }
                         if (shouldRunWrongHook) ChildGameAudioHooks.onWrong()
-                        onWrongFeedback(picked, false)
+                        onWrongFeedback(picked, false, false)
                         return
                     }
                     if (rawVoice == null) {
@@ -460,7 +494,7 @@ internal object PickLetterActions {
                             )
                         }
                         if (shouldRunWrongHook) ChildGameAudioHooks.onWrong()
-                        onWrongFeedback(picked, false)
+                        onWrongFeedback(picked, false, false)
                         return
                     }
                     gameViewModel.inputLocked = true
@@ -468,7 +502,18 @@ internal object PickLetterActions {
                         try {
                             rawVoice.playRawBlocking(resId)
                             if (shouldRunWrongHook) ChildGameAudioHooks.onWrong()
-                            onWrongFeedback(picked, true)
+                            val skipTryAgain =
+                                playPickLetterWrongTryAgainIfNeeded(
+                                    audioEnabled = audioEnabled,
+                                    chapterId = chapterId,
+                                    stationId = stationId,
+                                    chapter1PlayerAddress = chapter1PlayerAddress,
+                                    willPlayCoachFocusAfterWrong = willPlayCoachFocusAfterWrong,
+                                    rawVoice = rawVoice,
+                                    voice = voice,
+                                )
+                            val feedbackJob = onWrongFeedback(picked, true, skipTryAgain)
+                            GameAudioActions.joinSilently(feedbackJob)
                         } finally {
                             if (!sagaUsesPickLetterAudioStaging) {
                                 gameViewModel.inputLocked = false
@@ -477,7 +522,7 @@ internal object PickLetterActions {
                     }
                 } else {
                     if (shouldRunWrongHook) ChildGameAudioHooks.onWrong()
-                    onWrongFeedback(picked, false)
+                    onWrongFeedback(picked, false, false)
                 }
             }
             AnswerResult.Finished -> {}

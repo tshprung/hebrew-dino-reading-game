@@ -60,12 +60,28 @@ object Season2StationQaPolicy {
     fun shouldOrchestrateWhichWordCorrectPraiseInStation(
         gameplayChapterId: Int,
         season2UxStationId: Int?,
-    ): Boolean = isWhichWordStartsWithStation(gameplayChapterId, season2UxStationId)
+        physicalStationId: Int? = null,
+    ): Boolean {
+        if (
+            physicalStationId != null &&
+                com.tal.hebrewdino.ui.domain.Season2StationAudio.isSeason2GameplayChapter(
+                    gameplayChapterId,
+                )
+        ) {
+            return isWhichWordStartsWithStation(gameplayChapterId, physicalStationId)
+        }
+        return isWhichWordStartsWithStation(gameplayChapterId, season2UxStationId)
+    }
 
     fun shouldSkipAdvanceRoundPraiseBecausePlayedInStation(
         gameplayChapterId: Int,
         season2UxStationId: Int?,
     ): Boolean {
+        if (season2UxStationId != null &&
+            Season2StationUx.isMatchLetterFinale(gameplayChapterId, season2UxStationId)
+        ) {
+            return true
+        }
         val kind = stationKind(gameplayChapterId, season2UxStationId) ?: return false
         return kind in inStationOrchestratedAudioKinds
     }

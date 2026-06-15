@@ -141,6 +141,16 @@ object Season2RawAudio {
             "w_פ_2" to 2 -> R.raw.wordpart_w_peh_2_p2
             "w_ר_3" to 1 -> R.raw.wordpart_w_reish_3_p1
             "w_ר_3" to 2 -> R.raw.wordpart_w_reish_3_p2
+            "w_ס_4" to 1 -> R.raw.wordpart_w_samech_4_p1
+            "w_ס_4" to 2 -> R.raw.wordpart_w_samech_4_p2
+            "w_ז_3" to 1 -> R.raw.wordpart_w_zayin_3_p1
+            "w_ז_3" to 2 -> R.raw.wordpart_w_zayin_3_p2
+            "w_ב_2" to 1 -> R.raw.wordpart_w_bet_2_p1
+            "w_ב_2" to 2 -> R.raw.wordpart_w_bet_2_p2
+            "w_נ_2" to 1 -> R.raw.wordpart_w_nun_2_p1
+            "w_נ_2" to 2 -> R.raw.wordpart_w_nun_2_p2
+            "w_צ_2" to 1 -> R.raw.wordpart_w_tsadi_2_p1
+            "w_צ_2" to 2 -> R.raw.wordpart_w_tsadi_2_p2
             else -> null
         }
 }

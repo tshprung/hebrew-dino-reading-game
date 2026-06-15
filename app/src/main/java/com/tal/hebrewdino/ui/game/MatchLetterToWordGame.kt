@@ -58,6 +58,7 @@ import com.tal.hebrewdino.ui.domain.Chapter1StationOrder
 import com.tal.hebrewdino.ui.domain.Chapter1Station4To6LessonChoiceCardSpec
 import com.tal.hebrewdino.ui.domain.HebrewLetterOrder
 import com.tal.hebrewdino.ui.domain.LessonChoice
+import com.tal.hebrewdino.ui.domain.Season2StationUx
 import com.tal.hebrewdino.ui.domain.TrainingV1Config
 import com.tal.hebrewdino.ui.layout.ScreenFit
 import kotlin.math.roundToInt
@@ -72,12 +73,11 @@ private fun Modifier.offsetYIfNonZero(y: Dp): Modifier =
         this
     }
 
-/** Saga finale st6 and Training rounds 6/10 — same layout tuning as Chapter 2 station 6. */
+/** Saga finale st6, Season 2 match-letter finale, and Training — same layout tuning as Chapter 1 station 6. */
 private fun isFinalePictureLetterMatchLayout(chapterId: Int?, stationId: Int?): Boolean =
-    (chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) &&
-        stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH ||
-        (chapterId == TrainingV1Config.CHAPTER_ID &&
-            stationId == TrainingV1Config.STATION_MATCH_LETTER_TO_WORD)
+    chapterId != null &&
+        stationId != null &&
+        Season2StationUx.usesChapter1StyleMatchLetterBehavior(chapterId, stationId)
 
 @Composable
 fun MatchLetterToWordGame(
@@ -243,10 +243,9 @@ fun MatchLetterToWordGame(
         val isPhoneSixStationArcStation6 =
             isCompactLandscapePhone &&
                 (
-                    ((chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) &&
-                        stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH) ||
-                        ((chapterId == 3 || chapterId == 6) && stationId == 2) ||
-                        (chapterId == TrainingV1Config.CHAPTER_ID && stationId == TrainingV1Config.STATION_MATCH_LETTER_TO_WORD)
+                    (chapterId != null && stationId != null &&
+                        Season2StationUx.usesChapter1StyleMatchLetterBehavior(chapterId, stationId)) ||
+                        ((chapterId == 3 || chapterId == 6) && stationId == 2)
                 )
         val headerAndCardsExtraDownDp =
             when {

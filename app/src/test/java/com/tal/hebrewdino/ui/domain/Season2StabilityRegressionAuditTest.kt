@@ -89,13 +89,15 @@ class Season2StabilityRegressionAuditTest {
     @Test
     fun audio_wordParts_useChunkAndFullWordNotLetterNames() {
         val withChunks = Season2StabilityAudit.wordPartCatalogIdsWithRawChunks()
-        assertTrue("w_ש_1" in withChunks)
+        assertTrue("w_ס_4" in withChunks)
+        assertTrue("w_ז_3" in withChunks)
+        assertTrue("w_ב_2" in withChunks)
         withChunks.forEach { id ->
             assertNotNull(Season2RawAudio.wordPartRawResId(id, 1))
             assertNotNull(Season2RawAudio.wordPartRawResId(id, 2))
             assertNotNull(AudioClips.wordRawResIdByCatalogId(id))
         }
-        assertNull(Season2RawAudio.wordPartRawResId("w_נ_2", 1))
+        assertNotNull(Season2RawAudio.wordPartRawResId("w_נ_2", 1))
         assertNotNull(AudioClips.letterNameRawResId("נ"))
     }
 
@@ -225,8 +227,9 @@ class Season2StabilityRegressionAuditTest {
     @Test
     fun wordParts_ch3Pools_andRoundCounts() {
         val (guided, hidden) = Season2StabilityAudit.ch3WordPartsPools()
-        assertEquals(setOf("w_ג_1", "w_ג_3", "w_פ_2", "w_ח_2", "w_ח_3", "w_ר_1"), guided)
-        assertEquals(setOf("w_ש_1", "w_ר_3", "w_ח_2", "w_ח_3", "w_ר_1", "w_ג_1"), hidden)
+        assertEquals(setOf("w_ג_1", "w_ג_3", "w_נ_2", "w_צ_2", "w_פ_2", "w_ש_1"), guided)
+        assertEquals(setOf("w_ב_2", "w_ח_2", "w_ח_3", "w_ר_1", "w_ר_3", "w_ז_3"), hidden)
+        assertTrue(guided.intersect(hidden).isEmpty())
         val ctx = Season2ChapterStationPlans.contextFor(3)!!
         assertEquals(6, Season2ChapterStationPlans.quizPlan(ctx, 5).questionCount)
         assertEquals(6, Season2ChapterStationPlans.quizPlan(ctx, 6).questionCount)

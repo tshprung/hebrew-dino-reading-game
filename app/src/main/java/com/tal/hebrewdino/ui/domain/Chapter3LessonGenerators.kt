@@ -2,7 +2,7 @@ package com.tal.hebrewdino.ui.domain
 
 import kotlin.random.Random
 
-/** Episode 3: picture / image stations prefer the six episode words when possible. */
+/** Episode 3: picture / image stations prefer station-specific word subsets when possible. */
 internal object Chapter3LessonGenerators {
     private val vehicleSynonyms = setOf("אוטו", "רכב", "מכונית")
 
@@ -27,11 +27,12 @@ internal object Chapter3LessonGenerators {
         targetLetter: String,
         excludeCorrectWordIds: Set<String>,
         optionLetters: List<String>,
+        preferredCatalogIds: Set<String> = Chapter3EpisodeContent.pictureStartsWithCatalogIds,
     ): Question.PictureStartsWithQuestion {
         require(targetLetter in group)
         val candidates =
             LessonWordCatalog.entries.filter {
-                it.id in Chapter3EpisodeContent.episodeCatalogIds &&
+                it.id in preferredCatalogIds &&
                     it.letter == targetLetter &&
                     it.id !in excludeCorrectWordIds
             }
@@ -60,11 +61,12 @@ internal object Chapter3LessonGenerators {
         alwaysThreeChoices: Boolean,
         /** When set (e.g. station 6), exactly this many cards (including the correct one). */
         totalChoiceCount: Int? = null,
+        preferredCatalogIds: Set<String> = Chapter3EpisodeContent.matchLetterCatalogIds,
     ): Question.ImageMatchQuestion {
         require(targetLetter in group)
         val candidates =
             LessonWordCatalog.entries.filter {
-                it.id in Chapter3EpisodeContent.episodeCatalogIds &&
+                it.id in preferredCatalogIds &&
                     it.letter == targetLetter &&
                     it.id !in excludeCorrectWordIds
             }

@@ -815,22 +815,14 @@ fun GameScreen(
                                 audioEnabled &&
                                 chapter1PlayerAddress != null
                         ) {
-                            val tryAgainJob =
-                                GameAudioActions.launchFeedbackVoiceNoCancel(
-                                    audioEnabled = true,
-                                    scope = this,
-                                    audioRuntime = audioRuntime,
-                                ) {
-                                    playAddressAwareTryAgainBlocking(
-                                        chapterId = chapterId,
-                                        stationId = stationId,
-                                        playerAddress = chapter1PlayerAddress,
-                                        rawVoice = rawVoice,
-                                        voice = voice,
-                                        context = "GameScreen.onWrongFeedback(coachTryAgain)",
-                                    )
-                                }
-                            GameAudioActions.joinSilently(tryAgainJob)
+                            playAddressAwareTryAgainBlocking(
+                                chapterId = chapterId,
+                                stationId = stationId,
+                                playerAddress = chapter1PlayerAddress,
+                                rawVoice = rawVoice,
+                                voice = voice,
+                                context = "GameScreen.onWrongFeedback(coachTryAgain)",
+                            )
                         } else if (audioEnabled && !skipTryAgainAudio) {
                             ChildGameAudioHooks.onWrong()
                         }
@@ -843,7 +835,7 @@ fun GameScreen(
                 }
             }
         }
-        WrongFeedbackActions.trigger(
+        return WrongFeedbackActions.trigger(
             scope = scope,
             gameViewModel = gameViewModel,
             audioEnabled = audioEnabled,
@@ -868,8 +860,8 @@ fun GameScreen(
             wrongWordAlreadySpoken = wrongWordAlreadySpoken,
             chapter1PlayerAddress = chapter1PlayerAddress,
             rawVoice = rawVoice,
+            skipTryAgainAudio = skipTryAgainAudio,
         )
-        return null
     }
 
 
@@ -990,6 +982,10 @@ fun GameScreen(
                     }
 
                     fun handlePickLetterPick(picked: String) {
+                        val willPlayCoachFocusAfterWrong =
+                            companionCoachEnabled &&
+                                season2Station6ConsecutiveWrongs + 1 >=
+                                    Season2Station6FeedbackPolicy.CONSECUTIVE_WRONG_INSTRUCTION_THRESHOLD
                         PickLetterActions.handlePick(
                             picked = picked,
                             gameViewModel = gameViewModel,
@@ -1006,15 +1002,18 @@ fun GameScreen(
                             sfx = sfx,
                             rawVoice = rawVoice,
                             audioRuntime = audioRuntime,
-                            onWrongFeedback = { wrongPickedLetter, wrongPickedLetterAlreadySpoken ->
+                            onWrongFeedback = { wrongPickedLetter, wrongPickedLetterAlreadySpoken, skipTryAgainAudio ->
                                 onWrongFeedback(
                                     wrongPickedLetter = wrongPickedLetter,
                                     wrongPickedLetterAlreadySpoken = wrongPickedLetterAlreadySpoken,
+                                    skipTryAgainAudio = skipTryAgainAudio,
                                 )
                             },
                             advanceAfterRound = { isLast, ch3SpellMidWord ->
                                 advanceAfterRound(isLast, ch3SpellMidWord = ch3SpellMidWord)
                             },
+                            chapter1PlayerAddress = chapter1PlayerAddress,
+                            willPlayCoachFocusAfterWrong = willPlayCoachFocusAfterWrong,
                             season2HadCoachIntervention = season2HadCoachIntervention,
                             companionCharacter = chapter1CompanionCharacter,
                             backgroundMusic = backgroundMusic,
@@ -1187,26 +1186,34 @@ fun GameScreen(
                     }
 
                     fun handleImageToWordAttempt(choiceId: String): Boolean {
+                        val willPlayCoachFocusAfterWrong =
+                            companionCoachEnabled &&
+                                season2Station6ConsecutiveWrongs + 1 >=
+                                    Season2Station6FeedbackPolicy.CONSECUTIVE_WRONG_INSTRUCTION_THRESHOLD
                         return ImageMatchActions.handleImageToWordAttempt(
                             choiceId = choiceId,
                             gameViewModel = gameViewModel,
                             cancelFeedbackVoice = cancelFeedbackVoiceCb,
                             audioEnabled = audioEnabled,
                             chapterId = chapterId,
+                            stationId = stationId,
                             session = session,
                             scope = scope,
                             voice = voice,
                             rawVoice = rawVoice,
                             audioRuntime = audioRuntime,
                             advanceAfterRound = { isLast -> advanceAfterRound(isLast) },
-                            onWrongFeedback = { wrongWordCatalogId, wrongWordAlreadySpoken ->
+                            onWrongFeedback = { wrongWordCatalogId, wrongWordAlreadySpoken, skipTryAgainAudio ->
                                 onWrongFeedback(
                                     wrongWordCatalogId = wrongWordCatalogId,
                                     wrongWordAlreadySpoken = wrongWordAlreadySpoken,
+                                    skipTryAgainAudio = skipTryAgainAudio,
                                 )
                             },
                             season2HadCoachIntervention = season2HadCoachIntervention,
                             season2Chapter1UxStationId = season2Chapter1StationId,
+                            chapter1PlayerAddress = chapter1PlayerAddress,
+                            willPlayCoachFocusAfterWrong = willPlayCoachFocusAfterWrong,
                             companionCharacter = chapter1CompanionCharacter,
                             backgroundMusic = backgroundMusic,
                             postFocusAvoidPraiseRawResId = lastSeason2PostFocusPraiseRawResId,
@@ -1507,6 +1514,10 @@ fun GameScreen(
                     }
 
                     fun handleImageMatchAttempt(choiceId: String): Boolean {
+                        val willPlayCoachFocusAfterWrong =
+                            companionCoachEnabled &&
+                                season2Station6ConsecutiveWrongs + 1 >=
+                                    Season2Station6FeedbackPolicy.CONSECUTIVE_WRONG_INSTRUCTION_THRESHOLD
                         return ImageMatchActions.handleImageMatchAttempt(
                             choiceId = choiceId,
                             gameViewModel = gameViewModel,
@@ -1521,18 +1532,21 @@ fun GameScreen(
                             rawVoice = rawVoice,
                             audioRuntime = audioRuntime,
                             advanceAfterRound = { isLast -> advanceAfterRound(isLast) },
-                            onWrongFeedback = { wrongWordCatalogId, wrongWordAlreadySpoken ->
+                            onWrongFeedback = { wrongWordCatalogId, wrongWordAlreadySpoken, skipTryAgainAudio ->
                                 if (wrongWordCatalogId == null && !wrongWordAlreadySpoken) {
                                     onWrongFeedback()
                                 } else {
                                     onWrongFeedback(
                                         wrongWordCatalogId = wrongWordCatalogId,
                                         wrongWordAlreadySpoken = wrongWordAlreadySpoken,
+                                        skipTryAgainAudio = skipTryAgainAudio,
                                     )
                                 }
                             },
                             season2HadCoachIntervention = season2HadCoachIntervention,
                             season2Chapter1UxStationId = qaUxStationId,
+                            chapter1PlayerAddress = chapter1PlayerAddress,
+                            willPlayCoachFocusAfterWrong = willPlayCoachFocusAfterWrong,
                             companionCharacter = chapter1CompanionCharacter,
                             backgroundMusic = backgroundMusic,
                             postFocusAvoidPraiseRawResId = lastSeason2PostFocusPraiseRawResId,

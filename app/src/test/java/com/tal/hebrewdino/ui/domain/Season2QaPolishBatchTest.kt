@@ -89,6 +89,28 @@ class Season2QaPolishBatchTest {
     }
 
     @Test
+    fun ch4Station6_matchLetterParityWithCh1St6() {
+        val ch4 = Season2ChapterIds.Chapter4Brachiosaurus
+        val ch1Spec = StationBehaviorRegistry.getStationUiSpec(1, Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH)
+        val ch4Spec = StationBehaviorRegistry.getStationUiSpec(ch4, 6)
+        assertTrue(Season2StationUx.usesChapter1StyleMatchLetterBehavior(ch4, 6))
+        assertEquals(ch1Spec.templateId, ch4Spec.templateId)
+        assertEquals(ch1Spec.matchLetterInstructionText, ch4Spec.matchLetterInstructionText)
+        assertEquals(ch1Spec.matchLetterCompactWideSpread, ch4Spec.matchLetterCompactWideSpread)
+        assertEquals(ch1Spec.matchLetterInstructionReadablePanel, ch4Spec.matchLetterInstructionReadablePanel)
+        val ch1Plan = StationQuizPlans.chapter1(Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH)
+        val ch4Plan = Season2ChapterStationPlans.quizPlan(Season2ChapterStationPlans.contextFor(4)!!, 6)
+        assertEquals(ch1Plan.questionCount, ch4Plan.questionCount)
+        assertEquals(ch1Plan.imageMatchCaptionSizeMultiplier, ch4Plan.imageMatchCaptionSizeMultiplier)
+        val matchGame = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/game/MatchLetterToWordGame.kt")
+        assertTrue(matchGame.contains("Season2StationUx.usesChapter1StyleMatchLetterBehavior"))
+        val questionHost = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/screens/GameQuestionHost.kt")
+        assertTrue(questionHost.contains("usesChapter1StyleMatchLetterBehavior"))
+        val advance = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/screens/AdvanceAfterRoundActions.kt")
+        assertTrue(advance.contains("Season2StationUx.isMatchLetterFinale(chapterId, stationId)"))
+    }
+
+    @Test
     fun ch4Station6_matchLetterCompactWideSpread() {
         val spec = StationBehaviorRegistry.getStationUiSpec(ch4, 6)
         assertEquals(StationTemplateId.MatchLetterToWord, spec.templateId)
@@ -114,5 +136,15 @@ class Season2QaPolishBatchTest {
         val dino = CompanionAssets.forCharacter(DinoCharacter.Dino)
         assertEquals(R.drawable.companion_dino_idle, dino.poseIdle)
         assertEquals(R.drawable.companion_dino_talk_1, dino.talkFrameResIds.first())
+    }
+
+    private fun readProjectSource(relativePath: String): String {
+        val candidates =
+            listOf(
+                java.io.File(relativePath),
+                java.io.File("../$relativePath"),
+                java.io.File("../../$relativePath"),
+            )
+        return candidates.first { it.exists() }.readText()
     }
 }

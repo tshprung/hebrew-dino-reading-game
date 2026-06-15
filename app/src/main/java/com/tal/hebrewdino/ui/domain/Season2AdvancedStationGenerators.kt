@@ -13,6 +13,15 @@ object Season2AdvancedStationGenerators {
             tileDrawable = tileRes,
         )
 
+    private fun LessonWordEntry.toRhymingChoice(): LessonChoice =
+        LessonChoice(
+            id = id,
+            letter = letter,
+            word = Season2RhymingDisplayWords.displayWord(id, word),
+            tintArgb = tintArgb,
+            tileDrawable = tileRes,
+        )
+
     fun pictureToWord(
         rnd: Random,
         wordCatalogIds: List<String>,
@@ -123,17 +132,29 @@ object Season2AdvancedStationGenerators {
         }
         val target = Season2StationContentValidator.requireValidatedWord(pair.targetCatalogId)
         val rhyme = Season2StationContentValidator.requireValidatedWord(pair.rhymeCatalogId)
-        val distractorPool =
-            wordCatalogIds
+        val allowedIds = wordCatalogIds.toSet()
+        val rhymeSiblingIds =
+            Season2RhymePairCatalog.rhymeSiblingCatalogIds(pair.targetCatalogId, rhyme.id)
+        val curatedDistractors =
+            pair.distractorCatalogIds
+                .filter { it in allowedIds && it != rhyme.id && it != target.id && it !in rhymeSiblingIds }
                 .map { Season2StationContentValidator.requireValidatedWord(it) }
-                .filter { it.id != rhyme.id && it.id != target.id }
-        require(distractorPool.size >= 2) {
-            "rhyming needs at least 2 distractor words in catalog scope"
-        }
-        val distractors = distractorPool.shuffled(rnd).take(2)
-        val choices = (distractors + rhyme).map { it.toChoice() }.shuffled(rnd)
+        val distractors =
+            if (curatedDistractors.size >= 2) {
+                curatedDistractors.take(2)
+            } else {
+                val distractorPool =
+                    wordCatalogIds
+                        .map { Season2StationContentValidator.requireValidatedWord(it) }
+                        .filter { it.id != rhyme.id && it.id != target.id && it.id !in rhymeSiblingIds }
+                require(distractorPool.size >= 2) {
+                    "rhyming needs at least 2 distractor words in catalog scope"
+                }
+                distractorPool.shuffled(rnd).take(2)
+            }
+        val choices = (distractors + rhyme).map { it.toRhymingChoice() }.shuffled(rnd)
         return Question.RhymingQuestion(
-            targetWord = target.word,
+            targetWord = Season2RhymingDisplayWords.displayWord(target.id, target.word),
             targetCatalogEntryId = target.id,
             targetTileDrawable = target.tileRes,
             targetTintArgb = target.tintArgb,
@@ -150,6 +171,10 @@ object Season2AdvancedStationGenerators {
         excludeCorrectIds: Set<String>,
         distractorLetters: List<String>,
         wordPartsPresentationMode: Season2WordPartsPresentationMode? = null,
+        wordPartsStationChapterIndex: Int? = null,
+        wordPartsStationId: Int? = null,
+        rhymeStationChapterIndex: Int? = null,
+        rhymeStationId: Int? = null,
     ): Question {
         when (mode) {
             Season2AdvancedStationMode.PictureToWord ->
@@ -173,7 +198,12 @@ object Season2AdvancedStationGenerators {
                 val presentation =
                     wordPartsPresentationMode ?: Season2WordPartsPresentationMode.GuidedWordParts
                 val specs =
-                    Season2WordPartsCatalog.entriesForPresentationMode(wordCatalogIds, presentation)
+                    Season2WordPartsCatalog.entriesForPresentationMode(
+                        wordCatalogIds = wordCatalogIds,
+                        mode = presentation,
+                        stationChapterIndex = wordPartsStationChapterIndex,
+                        stationId = wordPartsStationId,
+                    )
                 require(specs.isNotEmpty()) { "no validated word-parts entries" }
                 val spec = specs[roundIndex % specs.size]
                 require(specs.size >= 3) {
@@ -187,7 +217,13 @@ object Season2AdvancedStationGenerators {
                 )
             }
             Season2AdvancedStationMode.Rhyming -> {
-                val pairs = Season2RhymePairCatalog.pairsForWordIds(wordCatalogIds)
+                val pairs =
+                    if (rhymeStationChapterIndex != null && rhymeStationId != null) {
+                        Season2RhymePairCatalog.pairsForStation(rhymeStationChapterIndex, rhymeStationId)
+                            ?: emptyList()
+                    } else {
+                        Season2RhymePairCatalog.pairsForWordIds(wordCatalogIds)
+                    }
                 require(pairs.isNotEmpty()) { "no validated rhyme pairs" }
                 val pair = pairs[roundIndex % pairs.size]
                 return rhyming(rnd = rnd, pair = pair, wordCatalogIds = wordCatalogIds)

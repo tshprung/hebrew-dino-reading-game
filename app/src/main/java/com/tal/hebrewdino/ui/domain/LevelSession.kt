@@ -219,6 +219,10 @@ class LevelSession(
                                     episodeOptionLetters()
                                 },
                             wordPartsPresentationMode = plan.season2WordPartsPresentationMode,
+                            wordPartsStationChapterIndex = plan.season2WordPartsStationChapterIndex,
+                            wordPartsStationId = plan.season2WordPartsStationId,
+                            rhymeStationChapterIndex = plan.season2RhymeStationChapterIndex,
+                            rhymeStationId = plan.season2RhymeStationId,
                         )
                     when (q) {
                         is Question.ImageMatchQuestion -> season2AdvancedUsedCorrectIds.add(q.correctChoiceId)
@@ -423,6 +427,12 @@ class LevelSession(
                             val banned = season2BannedCatalogIdsForLetter(correct)
                             val q =
                                 if (letterPoolSpec === Chapter3LetterPoolSpec) {
+                                    val ch3ImageBias =
+                                        if (plan.imageMatchChoiceCount == 4) {
+                                            Chapter3EpisodeContent.imageToWordCatalogIds
+                                        } else {
+                                            Chapter3EpisodeContent.matchLetterCatalogIds
+                                        }
                                     Chapter3LessonGenerators.imageMatch(
                                         rnd = rnd,
                                         group = group,
@@ -430,6 +440,7 @@ class LevelSession(
                                         excludeCorrectWordIds = used,
                                         alwaysThreeChoices = plan.imageMatchAlwaysThreeChoices,
                                         totalChoiceCount = plan.imageMatchChoiceCount,
+                                        preferredCatalogIds = ch3ImageBias,
                                     )
                                 } else if (letterPoolSpec === Chapter6LetterPoolSpec) {
                                     Chapter6LessonGenerators.imageMatch(

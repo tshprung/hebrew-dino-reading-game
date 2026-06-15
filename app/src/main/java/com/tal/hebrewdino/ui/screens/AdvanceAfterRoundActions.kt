@@ -14,6 +14,7 @@ import com.tal.hebrewdino.ui.domain.SixStationArcQaPolicy
 import com.tal.hebrewdino.ui.domain.Season2PostFocusCorrectPolicy
 import com.tal.hebrewdino.ui.domain.Season2StationAudio
 import com.tal.hebrewdino.ui.domain.Season2StationQaPolicy
+import com.tal.hebrewdino.ui.domain.Season2StationUx
 import com.tal.hebrewdino.ui.domain.StationBehaviorRegistry
 import com.tal.hebrewdino.ui.domain.StationTemplateId
 import com.tal.hebrewdino.ui.domain.TrainingV1Config
@@ -78,7 +79,9 @@ internal object AdvanceAfterRoundActions {
             chapterId == TrainingV1Config.CHAPTER_ID &&
                 stationId == TrainingV1Config.STATION_MATCH_LETTER_TO_WORD
         val finaleMatchLetterStation =
-            sagaEpisode && stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH
+            (sagaEpisode && stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH) ||
+                Season2StationUx.isMatchLetterFinale(chapterId, stationId) ||
+                trainingMatchLetterStation
         val stationUiSpec = StationBehaviorRegistry.getStationUiSpec(chapterId, stationId)
         val dragWordToPictureStation =
             stationUiSpec.templateId == StationTemplateId.DragWordToPicture
@@ -210,6 +213,7 @@ internal object AdvanceAfterRoundActions {
                 (SixStationArcQaPolicy.isSagaPictureStartsWithStation(chapterId, stationId) ||
                     SixStationArcQaPolicy.isSagaWhichWordStartsWithStation(chapterId, stationId) ||
                     stationId == Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH)) ||
+                Season2StationUx.isMatchLetterFinale(chapterId, stationId) ||
                 trainingMatchLetterStation
         if (!(isChapter3HighlightedLetterInWordStation && ch3SpellMidWord) && !stableDragStation) {
             playSuccessPulse(

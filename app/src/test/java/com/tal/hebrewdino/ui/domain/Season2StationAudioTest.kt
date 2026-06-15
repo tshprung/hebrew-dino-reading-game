@@ -82,18 +82,21 @@ class Season2StationAudioTest {
     }
 
     @Test
-    fun ch6RhymePairs_includeCurtainPairWhenWordInCatalog() {
-        val pairs = Season2RhymePairCatalog.pairsForWordIds(Season2ChapterContent.ch6Words)
-        assertEquals(6, pairs.size)
-        assertTrue(pairs.any { it.targetCatalogId == "w_ב_2" && it.rhymeCatalogId == "w_ח_3" })
+    fun ch6RhymePairs_includeKofTofPairWhenWordInCatalog() {
+        val scope =
+            Season2RhymePairCatalog.wordCatalogIdsForRhymingStation(6, Season2ChapterContent.ch6Words)
+        val pairs = Season2RhymePairCatalog.pairsForStation(6, 4)!!
+        assertTrue(pairs.any { it.targetCatalogId == "w_ק_1" && it.rhymeCatalogId == "w_ת_4" })
+        assertTrue("w_ת_4" in scope)
     }
 
     @Test
-    fun chapterStationPlans_stillValidateAfterCh6WordExpansion() {
-        for (chapterIndex in 3..6) {
+    fun chapterStationPlans_stillValidateAfterRhymeExpansion() {
+        val rhymeStations = listOf(5 to 5, 6 to 4, 7 to 4)
+        rhymeStations.forEach { (chapterIndex, stationId) ->
             val ctx = Season2ChapterStationPlans.contextFor(chapterIndex)!!
-            val issues = Season2ChapterStationPlans.validateStation(ctx, 5)
-            assertTrue("ch$chapterIndex st5: $issues", issues.isEmpty())
+            val issues = Season2ChapterStationPlans.validateStation(ctx, stationId)
+            assertTrue("ch$chapterIndex st$stationId: $issues", issues.isEmpty())
         }
     }
 }

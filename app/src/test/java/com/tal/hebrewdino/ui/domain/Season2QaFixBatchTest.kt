@@ -85,16 +85,21 @@ class Season2QaFixBatchTest {
             Season2WordPartsCatalog.entriesForPresentationMode(
                 ch3Scope,
                 Season2WordPartsPresentationMode.GuidedWordParts,
+                stationChapterIndex = 3,
+                stationId = 5,
             ).map { it.catalogId }.toSet()
         val hiddenPool =
             Season2WordPartsCatalog.entriesForPresentationMode(
                 ch3Scope,
                 Season2WordPartsPresentationMode.HiddenWordPartsChallenge,
+                stationChapterIndex = 3,
+                stationId = 6,
             ).map { it.catalogId }.toSet()
-        assertEquals(setOf("w_ג_1", "w_ג_3", "w_פ_2", "w_ח_2", "w_ח_3", "w_ר_1"), guidedPool)
-        assertEquals(setOf("w_ש_1", "w_ר_3", "w_ח_2", "w_ח_3", "w_ר_1", "w_ג_1"), hiddenPool)
-        assertTrue("w_ש_1" in hiddenPool)
-        assertFalse("w_ש_1" in guidedPool)
+        assertEquals(setOf("w_ג_1", "w_ג_3", "w_נ_2", "w_צ_2", "w_פ_2", "w_ש_1"), guidedPool)
+        assertEquals(setOf("w_ב_2", "w_ח_2", "w_ח_3", "w_ר_1", "w_ר_3", "w_ז_3"), hiddenPool)
+        assertTrue("guided and hidden pools should not overlap", guidedPool.intersect(hiddenPool).isEmpty())
+        assertFalse("w_ח_2" in guidedPool)
+        assertTrue("w_ב_2" in hiddenPool)
 
         val q =
             generateWordParts(
@@ -144,6 +149,74 @@ class Season2QaFixBatchTest {
     fun mapReturnCaptionNavKeys_exist() {
         assertEquals("s2_map_return_caption_event", Season2NavKeys.MAP_RETURN_CAPTION_EVENT)
         assertEquals("s2_map_return_caption_count", Season2NavKeys.MAP_RETURN_CAPTION_COUNT)
+    }
+
+    @Test
+    fun pictureToWord_wrongTryAgain_playsInlineOnRawVoice() {
+        val imageMatch =
+            readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/screens/ImageMatchActions.kt")
+        assertTrue(imageMatch.contains("runImageToWordWrongFeedback"))
+        assertTrue(imageMatch.contains("playAddressAwareTryAgainBlocking"))
+        assertTrue(imageMatch.contains("runImageToWordWrongFeedback(tryAgain)"))
+        assertTrue(imageMatch.contains("onWrongFeedback(choiceId, true, playInlineTryAgain)"))
+        val wrong =
+            readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/screens/WrongFeedbackActions.kt")
+        assertTrue(wrong.contains("GameAudioActions.joinSilently(voiceJob)"))
+    }
+
+    @Test
+    fun whichWord_wrongTryAgain_playsInlineWithoutPreCancel() {
+        val imageMatch =
+            readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/screens/ImageMatchActions.kt")
+        assertTrue(imageMatch.contains("runWhichWordWrongAttempt"))
+        assertTrue(imageMatch.contains("runImageToWordWrongFeedback(tryAgain)"))
+        assertTrue(imageMatch.contains("physicalStationId = stationId"))
+        val policy =
+            readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/domain/Season2StationQaPolicy.kt")
+        assertTrue(policy.contains("physicalStationId: Int? = null"))
+        val gameScreen = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/screens/GameScreen.kt")
+        assertTrue(gameScreen.contains("return WrongFeedbackActions.trigger("))
+    }
+
+    @Test
+    fun pickLetter_wrongTryAgain_playsBlockingAndJoinsFeedback() {
+        val pick =
+            readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/screens/PickLetterActions.kt")
+        assertTrue(pick.contains("playPickLetterWrongTryAgainIfNeeded"))
+        assertTrue(pick.contains("playAddressAwareTryAgainBlocking"))
+        assertTrue(pick.contains("PickLetterActions.handlePick(wrong,tryAgain)"))
+        assertTrue(pick.contains("onWrongFeedback(picked, true, skipTryAgain)"))
+        assertTrue(pick.contains("GameAudioActions.joinSilently(feedbackJob)"))
+        val gameScreen = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/screens/GameScreen.kt")
+        assertTrue(gameScreen.contains("willPlayCoachFocusAfterWrong = willPlayCoachFocusAfterWrong"))
+        assertTrue(gameScreen.contains("skipTryAgainAudio = skipTryAgainAudio"))
+        assertTrue(gameScreen.contains("GameScreen.onWrongFeedback(coachTryAgain)"))
+        assertFalse(
+            gameScreen.contains(
+                "launchFeedbackVoiceNoCancel(\n" +
+                    "                                    audioEnabled = true,\n" +
+                    "                                    scope = this,\n" +
+                    "                                    audioRuntime = audioRuntime,\n" +
+                    "                                ) {\n" +
+                    "                                    playAddressAwareTryAgainBlocking(\n" +
+                    "                                        chapterId = chapterId,\n" +
+                    "                                        stationId = stationId,\n" +
+                    "                                        playerAddress = chapter1PlayerAddress,\n" +
+                    "                                        rawVoice = rawVoice,\n" +
+                    "                                        voice = voice,\n" +
+                    "                                        context = \"GameScreen.onWrongFeedback(coachTryAgain)\",\n" +
+                    "                                    )\n" +
+                    "                                }",
+            ),
+        )
+        val wrong =
+            readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/screens/WrongFeedbackActions.kt")
+        assertTrue(wrong.contains("skipTryAgainAudio: Boolean = false"))
+        assertTrue(wrong.contains("launchFeedbackVoiceNoCancel"))
+        assertTrue(wrong.contains("GameAudioActions.joinSilently(voiceJob)"))
+        val feedback =
+            readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/companion/Chapter1FeedbackAudio.kt")
+        assertTrue(feedback.contains("Season2StationAudio.isSeason2GameplayChapter(chapterId)"))
     }
 
     @Test

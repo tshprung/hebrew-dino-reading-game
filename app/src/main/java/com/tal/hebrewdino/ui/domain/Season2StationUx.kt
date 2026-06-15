@@ -1,5 +1,7 @@
 package com.tal.hebrewdino.ui.domain
 
+import com.tal.hebrewdino.ui.domain.Chapter1StationOrder.FINALE_PICTURE_LETTER_MATCH
+
 /** Season 2 gameplay presentation helpers (gated; chapters 3–6 warmup arc). */
 object Season2StationUx {
     fun isWarmupPictureStartsWith(chapterId: Int, stationId: Int): Boolean =
@@ -53,6 +55,16 @@ object Season2StationUx {
     fun isMatchLetterFinale(gameplayChapterId: Int, stationId: Int): Boolean =
         stationKindForGameplayChapter(gameplayChapterId, stationId) ==
             Season2ChapterStationPlans.StationKind.MatchLetterToWord
+
+    /**
+     * S1 Ch1 st6, S2 Ch4/6/7 st6, and Training — same match-letter audio, layout, and wrong-feedback path.
+     */
+    fun usesChapter1StyleMatchLetterBehavior(chapterId: Int, stationId: Int): Boolean =
+        ((chapterId == 1 || chapterId == 2 || chapterId == 4 || chapterId == 5) &&
+            stationId == FINALE_PICTURE_LETTER_MATCH) ||
+            isMatchLetterFinale(chapterId, stationId) ||
+            (chapterId == TrainingV1Config.CHAPTER_ID &&
+                stationId == TrainingV1Config.STATION_MATCH_LETTER_TO_WORD)
 
     fun isWhichWordStartsWithStation(gameplayChapterId: Int, stationId: Int): Boolean =
         stationKindForGameplayChapter(gameplayChapterId, stationId) ==

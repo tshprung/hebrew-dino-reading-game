@@ -14,21 +14,41 @@ data class Season2WordPartsEntry(
 )
 
 object Season2WordPartsCatalog {
+    const val MIN_ROUNDS_PER_STATION: Int = 6
+
     /** Prefer clearer two-part examples; avoid very short second parts in guided/hidden ramps. */
     private val guidedPreferredIds: Set<String> =
-        setOf("w_ג_1", "w_ג_3", "w_פ_2", "w_ח_3", "w_ח_2", "w_ש_1", "w_ר_1", "w_ר_3")
+        setOf(
+            "w_ג_1", "w_ג_3", "w_פ_2", "w_ח_3", "w_ח_2", "w_ש_1", "w_ר_1", "w_ר_3",
+            "w_ס_4", "w_ז_3", "w_ב_2", "w_נ_2", "w_צ_2",
+        )
 
-    /** Ch3 St5 guided pool — 6 validated splits with wordpart + full-word audio. */
+    /** Ch2 St6 visible pool. */
+    private val ch2VisibleWordPartsIds: Set<String> =
+        setOf("w_פ_2", "w_ח_3", "w_ח_2", "w_ש_1", "w_ר_1", "w_ר_3")
+
+    /** Ch3 St5 guided — chapter-native words only (disjoint from st6 hidden pool). */
     private val ch3GuidedWordPartsIds: Set<String> =
-        setOf("w_ג_1", "w_ג_3", "w_פ_2", "w_ח_2", "w_ח_3", "w_ר_1")
+        setOf("w_ג_1", "w_ג_3", "w_נ_2", "w_צ_2", "w_פ_2", "w_ש_1")
 
-    /** Ch3 St6 hidden pool — emphasizes שמש; overlaps distractors only. */
+    /** Ch3 St6 hidden — earlier-chapter review words (no overlap with st5). */
     private val ch3HiddenWordPartsIds: Set<String> =
-        setOf("w_ש_1", "w_ר_3", "w_ח_2", "w_ח_3", "w_ר_1", "w_ג_1")
+        setOf("w_ב_2", "w_ח_2", "w_ח_3", "w_ר_1", "w_ר_3", "w_ז_3")
 
-    private val ch3WordPartsReviewIds: List<String> = listOf("w_ח_2", "w_ח_3", "w_ר_1", "w_ר_3")
+    /** Ch5 St6 guided — chapter-native זחל/ספר/נר/צב plus שמש/רגל. */
+    private val ch5GuidedWordPartsIds: Set<String> =
+        setOf("w_ז_3", "w_ס_4", "w_נ_2", "w_צ_2", "w_ש_1", "w_ר_3")
 
-    private val shortWordIds: Set<String> = setOf("w_נ_2", "w_צ_2", "w_ז_3")
+    /** Ch7 St5 finale hidden — spreads the new splits across the season union. */
+    private val ch7HiddenWordPartsIds: Set<String> =
+        setOf("w_ב_2", "w_ס_4", "w_ז_3", "w_ג_1", "w_פ_2", "w_ח_3")
+
+    private val ch3WordPartsReviewIds: List<String> =
+        listOf("w_ב_2", "w_ח_2", "w_ח_3", "w_ר_1", "w_ר_3", "w_ז_3")
+
+    private val ch5WordPartsReviewIds: List<String> = listOf("w_צ_2")
+
+    private val shortWordIds: Set<String> = emptySet()
 
     val curatedEntries: List<Season2WordPartsEntry> =
         listOf(
@@ -56,6 +76,10 @@ object Season2WordPartsCatalog {
     fun wordCatalogIdsForChapter3WordParts(chapterWordCatalogIds: List<String>): List<String> =
         (chapterWordCatalogIds + ch3WordPartsReviewIds).distinct()
 
+    /** Ch5 word-parts station may pull one earlier review word with validated part audio. */
+    fun wordCatalogIdsForChapter5WordParts(chapterWordCatalogIds: List<String>): List<String> =
+        (chapterWordCatalogIds + ch5WordPartsReviewIds).distinct()
+
     fun entriesForWordIds(wordCatalogIds: List<String>): List<Season2WordPartsEntry> {
         val allowed = wordCatalogIds.toSet()
         return curatedEntries.filter { spec ->
@@ -67,8 +91,24 @@ object Season2WordPartsCatalog {
     fun entriesForPresentationMode(
         wordCatalogIds: List<String>,
         mode: Season2WordPartsPresentationMode,
+        stationChapterIndex: Int? = null,
+        stationId: Int? = null,
     ): List<Season2WordPartsEntry> {
         val base = entriesForWordIds(wordCatalogIds)
+        val stationPool =
+            stationPoolIds(
+                chapterIndex = stationChapterIndex,
+                stationId = stationId,
+                mode = mode,
+            )
+        if (stationPool != null) {
+            return base
+                .filter {
+                    it.catalogId in stationPool &&
+                        it.catalogId !in shortWordIds &&
+                        hasCompleteWordPartsAudio(it.catalogId)
+                }.ifEmpty { base }
+        }
         return when (mode) {
             Season2WordPartsPresentationMode.VisibleWordParts ->
                 base.filter { it.catalogId in guidedPreferredIds && hasCompleteWordPartsAudio(it.catalogId) }
@@ -103,5 +143,29 @@ object Season2WordPartsCatalog {
     fun maxUniqueRounds(
         wordCatalogIds: List<String>,
         mode: Season2WordPartsPresentationMode,
-    ): Int = entriesForPresentationMode(wordCatalogIds, mode).size.coerceAtLeast(1)
+        stationChapterIndex: Int? = null,
+        stationId: Int? = null,
+    ): Int =
+        entriesForPresentationMode(
+            wordCatalogIds = wordCatalogIds,
+            mode = mode,
+            stationChapterIndex = stationChapterIndex,
+            stationId = stationId,
+        ).size.coerceAtLeast(1)
+
+    private fun stationPoolIds(
+        chapterIndex: Int?,
+        stationId: Int?,
+        mode: Season2WordPartsPresentationMode,
+    ): Set<String>? {
+        if (chapterIndex == null || stationId == null) return null
+        return when (Triple(chapterIndex, stationId, mode)) {
+            Triple(2, 6, Season2WordPartsPresentationMode.VisibleWordParts) -> ch2VisibleWordPartsIds
+            Triple(3, 5, Season2WordPartsPresentationMode.GuidedWordParts) -> ch3GuidedWordPartsIds
+            Triple(3, 6, Season2WordPartsPresentationMode.HiddenWordPartsChallenge) -> ch3HiddenWordPartsIds
+            Triple(5, 6, Season2WordPartsPresentationMode.GuidedWordParts) -> ch5GuidedWordPartsIds
+            Triple(7, 5, Season2WordPartsPresentationMode.HiddenWordPartsChallenge) -> ch7HiddenWordPartsIds
+            else -> null
+        }
+    }
 }

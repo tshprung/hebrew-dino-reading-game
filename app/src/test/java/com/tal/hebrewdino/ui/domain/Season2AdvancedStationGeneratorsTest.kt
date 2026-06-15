@@ -62,18 +62,68 @@ class Season2AdvancedStationGeneratorsTest {
 
     @Test
     fun rhyming_generatesPictureChoices() {
-        val pair = Season2RhymePairCatalog.validatedPairs().first { it.targetCatalogId == "w_ב_2" }
-        val ch6Words =
-            Season2ChapterRegistry.chapter(6)!!.wordCatalogIds
+        val ch6Scope =
+            Season2RhymePairCatalog.wordCatalogIdsForRhymingStation(6, Season2ChapterContent.ch6Words)
+        val pair =
+            Season2RhymePairCatalog.pairsForStation(6, 4)!!.first { it.targetCatalogId == "w_ק_1" }
         val q =
             Season2AdvancedStationGenerators.rhyming(
                 rnd = rnd,
                 pair = pair,
-                wordCatalogIds = ch6Words,
+                wordCatalogIds = ch6Scope,
             )
-        assertEquals("בלון", q.targetWord)
+        assertEquals("קוֹף", q.targetWord)
         assertEquals(3, q.choices.size)
+        assertEquals("w_ת_4", q.correctChoiceId)
+    }
+
+    @Test
+    fun ch5_shaonChalon_usesVariedDistractorsWithNikkud() {
+        val scope =
+            Season2RhymePairCatalog.wordCatalogIdsForRhymingStation(5, Season2ChapterContent.ch5Words)
+        val pair =
+            Season2RhymePairCatalog.pairsForStation(5, 5)!!
+                .first { it.targetCatalogId == "w_ש_4" && it.rhymeCatalogId == "w_ח_3" }
+        val q =
+            Season2AdvancedStationGenerators.rhyming(
+                rnd = Random(99),
+                pair = pair,
+                wordCatalogIds = scope,
+            )
+        assertEquals("שָׁעוֹן", q.targetWord)
         assertEquals("w_ח_3", q.correctChoiceId)
+        assertEquals(
+            setOf("w_ק_1", "w_פ_2", "w_ח_3"),
+            q.choices.map { it.id }.toSet(),
+        )
+    }
+
+    @Test
+    fun ch5_windowBalloonRound_excludesOtherOnRhymesFromDistractors() {
+        val scope =
+            Season2RhymePairCatalog.wordCatalogIdsForRhymingStation(5, Season2ChapterContent.ch5Words)
+        val pair =
+            Season2RhymePairCatalog.pairsForStation(5, 5)!!
+                .first { it.targetCatalogId == "w_ח_3" && it.rhymeCatalogId == "w_ב_2" }
+        val q =
+            Season2AdvancedStationGenerators.rhyming(
+                rnd = Random(3),
+                pair = pair,
+                wordCatalogIds = scope,
+            )
+        assertEquals("w_ב_2", q.correctChoiceId)
+        assertFalse(q.choices.any { it.id == "w_ש_4" })
+        assertFalse(q.choices.any { it.id == "w_ו_3" })
+    }
+
+    @Test
+    fun rhymingInstruction_includesTargetWordWhenProvided() {
+        val theme = Season2StationTheme.StegosaurusPlates
+        assertEquals(
+            "\u200Fאיזו מילה מתחרזת עם שָׁעוֹן?",
+            Season2StationThemeCopy.rhymingInstruction(theme, targetWord = "שָׁעוֹן"),
+        )
+        assertEquals("\u200Fאיזו מילה מתחרזת עם?", Season2StationThemeCopy.rhymingInstruction(theme))
     }
 
     @Test
@@ -101,6 +151,7 @@ class Season2AdvancedStationGeneratorsTest {
                 5 to 6,
                 6 to 4,
                 6 to 5,
+                7 to 4,
             )
         for ((chapterIndex, stationId) in advancedStations) {
             val ctx = Season2ChapterStationPlans.contextFor(chapterIndex)!!
@@ -144,9 +195,11 @@ class Season2AdvancedStationGeneratorsTest {
     }
 
     @Test
-    fun rhymeCatalog_documentsLimitedPairs() {
+    fun rhymeCatalog_documentsStationPairs() {
         val validated = Season2RhymePairCatalog.validatedPairs()
-        assertTrue(validated.any { it.targetCatalogId == "w_ב_2" && it.rhymeCatalogId == "w_ח_3" })
+        assertTrue(validated.any { it.targetCatalogId == "w_ש_4" && it.rhymeCatalogId == "w_ח_3" })
+        assertTrue(validated.any { it.targetCatalogId == "w_ק_1" && it.rhymeCatalogId == "w_ת_4" })
+        assertTrue(validated.any { it.targetCatalogId == "w_פ_2" && it.rhymeCatalogId == "w_מ_6" })
         // Example pairs from spec without assets are intentionally omitted.
         assertFalse(validated.any { it.rhymeCatalogId.contains("טיל") })
     }
