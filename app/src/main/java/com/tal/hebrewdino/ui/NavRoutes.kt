@@ -14,6 +14,8 @@ object NavRoutes {
     /** Season 2: chapter station gameplay (chapterId is UX index 1..6). */
     const val Season2ChapterStation = "season2_chapter/{chapterId}/station/{stationId}"
     fun season2ChapterStation(chapterId: Int, stationId: Int): String = "season2_chapter/$chapterId/station/$stationId"
+    /** Season 2 finale — celebration after completing Chapter 7 Station 6. */
+    const val Season2SeasonCompleteSummary = "season2_season_complete_summary"
     const val Chapters = "chapters"
     /** Season 1 Ch.1 only: Dino companion help intro before [StoryIntro]. */
     const val Ch1DinoCompanionIntro = "ch1_dino_companion_intro"

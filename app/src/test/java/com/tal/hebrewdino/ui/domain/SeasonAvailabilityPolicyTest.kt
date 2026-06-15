@@ -1,6 +1,5 @@
 package com.tal.hebrewdino.ui.domain
 
-import com.tal.hebrewdino.BuildConfig
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -13,9 +12,9 @@ class SeasonAvailabilityPolicyTest {
     }
 
     @Test
-    fun season2_enabled_only_in_debug_builds() {
-        assertEquals(BuildConfig.DEBUG, SeasonAvailabilityPolicy.isSeason2Enabled())
-        assertEquals(BuildConfig.DEBUG, SeasonAvailabilityPolicy.isSeasonEnabled(seasonId = 2))
+    fun season2_enabled_in_all_builds() {
+        assertTrue(SeasonAvailabilityPolicy.isSeason2Enabled())
+        assertTrue(SeasonAvailabilityPolicy.isSeasonEnabled(seasonId = 2))
     }
 
     @Test

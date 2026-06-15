@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.annotation.RawRes
 import com.tal.hebrewdino.R
 import com.tal.hebrewdino.ui.audio.AudioClips
+import com.tal.hebrewdino.ui.audio.InStationPraiseAudio
 import com.tal.hebrewdino.ui.audio.RawVoicePlayer
 import com.tal.hebrewdino.ui.audio.SoundPoolPlayer
 import kotlinx.coroutines.coroutineScope
@@ -203,6 +204,18 @@ object Season1StationAudio {
             stationId = stationId,
             context = context,
         )
+    }
+
+    suspend fun playDragWordToPictureRoundCompleteFeedback(
+        rawVoice: RawVoicePlayer?,
+        avoidPraiseRawResId: Int? = null,
+    ): Int? {
+        if (rawVoice == null) {
+            return null
+        }
+        val praiseRes = InStationPraiseAudio.pick(avoidRawResId = avoidPraiseRawResId)
+        rawVoice.playRawBlocking(praiseRes)
+        return praiseRes
     }
 
     suspend fun playDragMissingLetterCorrectFeedback(

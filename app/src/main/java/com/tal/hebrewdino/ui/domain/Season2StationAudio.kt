@@ -277,6 +277,30 @@ object Season2StationAudio {
         }
     }
 
+    suspend fun playWordByCatalogId(
+        catalogId: String,
+        rawVoice: RawVoicePlayer?,
+        chapterId: Int,
+        stationId: Int,
+        context: String,
+    ) {
+        if (rawVoice == null) {
+            Log.e(
+                MISSING_TAG,
+                "Missing required station prompt audio. chapterId=$chapterId stationId=$stationId " +
+                    "context=$context stage=rawVoice=null expectedWordRawRes catalogId='$catalogId'",
+            )
+            return
+        }
+        playWordRawOrLog(
+            catalogId = catalogId,
+            rawVoice = rawVoice,
+            chapterId = chapterId,
+            stationId = stationId,
+            context = context,
+        )
+    }
+
     private suspend fun playWordRawOrLog(
         catalogId: String,
         rawVoice: RawVoicePlayer,

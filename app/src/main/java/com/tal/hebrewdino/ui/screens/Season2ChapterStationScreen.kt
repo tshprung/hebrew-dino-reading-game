@@ -89,16 +89,6 @@ fun Season2ChapterStationScreen(
 
 
 
-    val routing =
-
-        remember(chapterId, stationId, chapterDef) {
-
-            resolveStationRouting(chapterId = chapterId, stationId = stationId, chapterDef = chapterDef)
-
-        }
-
-
-
     fun markDoneAndExit() {
 
         scope.launch {
@@ -176,6 +166,14 @@ fun Season2ChapterStationScreen(
         }
 
         else -> {
+            val routing =
+                remember(chapterId, stationId, chapterDef) {
+                    resolveStationRouting(
+                        chapterId = chapterId,
+                        stationId = stationId,
+                        chapterDef = chapterDef,
+                    )
+                }
 
             Season2ScopedLetterStationScreen(
 

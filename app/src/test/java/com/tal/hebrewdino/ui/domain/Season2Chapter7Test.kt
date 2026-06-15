@@ -1,6 +1,7 @@
 package com.tal.hebrewdino.ui.domain
 
 import com.tal.hebrewdino.R
+import com.tal.hebrewdino.ui.audio.Season2StoryAudio
 import com.tal.hebrewdino.ui.data.Season2ProgressPrefs
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -111,6 +112,25 @@ class Season2Chapter7Test {
     }
 
     @Test
+    fun chapter7_memoryMatchUsesFinaleReviewLetterPool() {
+        val ch7 = Season2ChapterRegistry.chapter(7)!!
+        assertEquals(Season2ChapterContent.ch7MemoryMatchLetters, ch7.memoryMatchLetters)
+        assertEquals(6, ch7.memoryMatchLetters.distinct().size)
+        assertTrue(
+            Season2StationContentValidator.validateLetters(ch7.memoryMatchLetters).isEmpty(),
+        )
+    }
+
+    @Test
+    fun chapter7_memoryMatchStation_doesNotRequireQuizPlan() {
+        val issues = Season2ChapterStationPlans.validateStation(
+            Season2ChapterStationPlans.contextFor(7)!!,
+            stationId = 3,
+        )
+        assertTrue(issues.toString(), issues.isEmpty())
+    }
+
+    @Test
     fun chapter7_wordPartsUsesHiddenCapstone() {
         val ctx = Season2ChapterStationPlans.contextFor(7)!!
         val plan = Season2ChapterStationPlans.quizPlan(ctx, stationId = 5)
@@ -136,6 +156,51 @@ class Season2Chapter7Test {
                 java.io.File("../../$relativePath"),
             )
         return candidates.first { it.exists() }.readText()
+    }
+
+    @Test
+    fun chapter7_storyAudioWiredForMapIntroAndCompletion() {
+        assertEquals(R.raw.season2_ch7_intro_01, Season2StoryAudio.optionalChapterIntroRawRes(7))
+        assertEquals(R.raw.season2_ch7_complete_01, Season2StoryAudio.chapterCompleteRawRes(7))
+    }
+
+    @Test
+    fun chapter7_station6_triggersSeasonCompleteSummary() {
+        assertTrue(
+            Season2ChapterFlowPolicy.shouldShowSeasonCompleteSummary(
+                chapterIndex = 7,
+                stationId = Season2Chapter1StationOrder.FINALE_STATION,
+            ),
+        )
+        assertFalse(
+            Season2ChapterFlowPolicy.shouldShowSeasonCompleteSummary(
+                chapterIndex = 7,
+                stationId = 5,
+            ),
+        )
+        assertFalse(
+            Season2ChapterFlowPolicy.shouldShowSeasonCompleteSummary(
+                chapterIndex = 6,
+                stationId = Season2Chapter1StationOrder.FINALE_STATION,
+            ),
+        )
+    }
+
+    @Test
+    fun seasonCompleteSummary_copyMatchesSpec() {
+        assertEquals("\u200Fכל הכבוד! סיימתם את עונה 2", Season2Copy.seasonCompleteSummaryTitle())
+        assertEquals(5, Season2Copy.seasonCompleteSummaryStoryLines().size)
+        assertEquals("\u200Fחזרה לעונות", Season2Copy.seasonCompleteSummaryContinueLabel())
+    }
+
+    @Test
+    fun seasonCompleteSummary_flowWiredInNavAndMap() {
+        val nav = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/AppNavSystemGraph.kt")
+        assertTrue(nav.contains("NavRoutes.Season2SeasonCompleteSummary"))
+        assertTrue(nav.contains("REQUEST_SEASON_COMPLETE_SUMMARY"))
+        val map = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/screens/Season2PuzzleMapPrototypeScreen.kt")
+        assertTrue(map.contains("onOpenSeasonCompleteSummary"))
+        assertTrue(map.contains("chapterId == 7"))
     }
 
     @Test

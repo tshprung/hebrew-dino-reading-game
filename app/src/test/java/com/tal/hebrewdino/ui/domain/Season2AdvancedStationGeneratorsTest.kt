@@ -72,13 +72,13 @@ class Season2AdvancedStationGeneratorsTest {
                 pair = pair,
                 wordCatalogIds = ch6Scope,
             )
-        assertEquals("קוֹף", q.targetWord)
+        assertEquals("קוף", q.targetWord)
         assertEquals(3, q.choices.size)
         assertEquals("w_ת_4", q.correctChoiceId)
     }
 
     @Test
-    fun ch5_shaonChalon_usesVariedDistractorsWithNikkud() {
+    fun ch5_shaonChalon_usesVariedDistractorsWithoutNikkud() {
         val scope =
             Season2RhymePairCatalog.wordCatalogIdsForRhymingStation(5, Season2ChapterContent.ch5Words)
         val pair =
@@ -90,7 +90,7 @@ class Season2AdvancedStationGeneratorsTest {
                 pair = pair,
                 wordCatalogIds = scope,
             )
-        assertEquals("שָׁעוֹן", q.targetWord)
+        assertEquals("שעון", q.targetWord)
         assertEquals("w_ח_3", q.correctChoiceId)
         assertEquals(
             setOf("w_ק_1", "w_פ_2", "w_ח_3"),
@@ -120,8 +120,8 @@ class Season2AdvancedStationGeneratorsTest {
     fun rhymingInstruction_includesTargetWordWhenProvided() {
         val theme = Season2StationTheme.StegosaurusPlates
         assertEquals(
-            "\u200Fאיזו מילה מתחרזת עם שָׁעוֹן?",
-            Season2StationThemeCopy.rhymingInstruction(theme, targetWord = "שָׁעוֹן"),
+            "\u200Fאיזו מילה מתחרזת עם שעון?",
+            Season2StationThemeCopy.rhymingInstruction(theme, targetWord = "שעון"),
         )
         assertEquals("\u200Fאיזו מילה מתחרזת עם?", Season2StationThemeCopy.rhymingInstruction(theme))
     }

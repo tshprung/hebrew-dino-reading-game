@@ -123,6 +123,9 @@ fun Season2PuzzleMapPrototypeScreen(
     onChapterIntroConsumed: () -> Unit = {},
     requestChapterCelebration: Boolean = false,
     onChapterCelebrationConsumed: () -> Unit = {},
+    requestSeasonCompleteSummary: Boolean = false,
+    onSeasonCompleteSummaryConsumed: () -> Unit = {},
+    onOpenSeasonCompleteSummary: () -> Unit = {},
     mapReturnCaptionEvent: Long = 0L,
     mapReturnCaptionCount: Int = 0,
     onMapReturnCaptionConsumed: () -> Unit = {},
@@ -227,6 +230,14 @@ fun Season2PuzzleMapPrototypeScreen(
         if (requestChapterCelebration) {
             showCompletionCelebration = true
             onChapterCelebrationConsumed()
+        }
+    }
+
+    LaunchedEffect(requestSeasonCompleteSummary, requestChapterCelebration) {
+        if (!requestSeasonCompleteSummary) return@LaunchedEffect
+        onSeasonCompleteSummaryConsumed()
+        if (!requestChapterCelebration) {
+            onOpenSeasonCompleteSummary()
         }
     }
 
@@ -431,7 +442,11 @@ fun Season2PuzzleMapPrototypeScreen(
                 companionCharacter = companionCharacter,
                 onContinue = {
                     showCompletionCelebration = false
-                    onRewardContinue()
+                    if (chapterId == 7) {
+                        onOpenSeasonCompleteSummary()
+                    } else {
+                        onRewardContinue()
+                    }
                 },
                 modifier = Modifier.zIndex(30f),
             )

@@ -287,9 +287,7 @@ object Season2GuessingCoach {
 
 
 
-            Season2ChapterStationPlans.StationKind.MemoryMatch ->
-
-                playMemoryInstruction(playerAddress, rawVoice)
+            Season2ChapterStationPlans.StationKind.MemoryMatch -> Unit
 
 
 
@@ -320,8 +318,6 @@ object Season2GuessingCoach {
 
             Season2ChapterStationPlans.StationKind.MissingFirstLetter,
 
-            Season2ChapterStationPlans.StationKind.Rhyming,
-
             ->
 
                         replayAdvancedTargetAudio(
@@ -335,6 +331,22 @@ object Season2GuessingCoach {
                             stationId = season2StationId,
 
                         )
+
+            Season2ChapterStationPlans.StationKind.Rhyming,
+
+            ->
+
+                Season2StationAudio.replayAdvancedInstructionAndWord(
+
+                    q = question,
+
+                    chapterId = gameplayChapterId,
+
+                    stationId = season2StationId,
+
+                    rawVoice = rawVoice,
+
+                )
 
             Season2ChapterStationPlans.StationKind.DragWordToPicture,
             Season2ChapterStationPlans.StationKind.DragMissingLetter,
@@ -444,11 +456,7 @@ object Season2GuessingCoach {
 
 
 
-            Season2Chapter1StationOrder.MEMORY_MATCH -> {
-
-                playMemoryInstruction(playerAddress, rawVoice)
-
-            }
+            Season2Chapter1StationOrder.MEMORY_MATCH -> Unit
 
 
 
@@ -457,8 +465,6 @@ object Season2GuessingCoach {
                 if (question is Question.MissingFirstLetterQuestion ||
 
                     question is Question.WordPartsQuestion ||
-
-                    question is Question.RhymingQuestion ||
 
                     (
 
@@ -489,6 +495,20 @@ object Season2GuessingCoach {
                         chapterId = 0,
 
                         stationId = season2StationId,
+
+                    )
+
+                } else if (question is Question.RhymingQuestion) {
+
+                    Season2StationAudio.replayAdvancedInstructionAndWord(
+
+                        q = question,
+
+                        chapterId = gameplayChapterId ?: 0,
+
+                        stationId = season2StationId,
+
+                        rawVoice = rawVoice,
 
                     )
 
@@ -589,47 +609,6 @@ object Season2GuessingCoach {
                 delay(postInstructionGapMs.milliseconds)
             }
         }
-    }
-
-
-
-
-    private suspend fun playMemoryInstruction(
-
-        playerAddress: PlayerAddress?,
-
-        rawVoice: RawVoicePlayer,
-
-    ) {
-
-        if (playerAddress == null) return
-
-        val resId =
-
-            Chapter1AddressAwareAudio.instructionRawRes(
-
-                Chapter1AddressAwareAudio.InstructionKind.MemoryMatch,
-
-                playerAddress,
-
-            )
-
-        if (resId == 0) {
-
-            Log.e(
-
-                "MissingContent",
-
-                "Missing Season2 coach memory-match instruction. expected instruction_memory_match_boy/girl.mp3",
-
-            )
-
-            return
-
-        }
-
-        rawVoice.playRawBlocking(resId)
-
     }
 
 

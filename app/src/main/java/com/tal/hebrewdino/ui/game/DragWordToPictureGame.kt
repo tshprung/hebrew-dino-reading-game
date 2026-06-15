@@ -348,6 +348,8 @@ fun DragWordToPictureGame(
                                 }
                                 WordBankChip(
                                     word = card.word,
+                                    width = pictureCardWidth,
+                                    height = wordChipHeight,
                                     compact = compact,
                                     enabled = enabled && draggingWordId == null,
                                     selected = isSelected,
@@ -407,20 +409,8 @@ fun DragWordToPictureGame(
             if (ghostWordId != null && ghostPosition != null) {
                 val ghostWord =
                     question.wordBank.firstOrNull { it.catalogEntryId == ghostWordId }?.word.orEmpty()
-                val fallbackGhostWidth = if (compact) 96.dp else 112.dp
-                val fallbackGhostHeight = if (compact) 40.dp else 48.dp
-                val ghostWidthPx =
-                    if (dragChipSize.width > 0) {
-                        dragChipSize.width.toFloat()
-                    } else {
-                        with(density) { fallbackGhostWidth.toPx() }
-                    }
-                val ghostHeightPx =
-                    if (dragChipSize.height > 0) {
-                        dragChipSize.height.toFloat()
-                    } else {
-                        with(density) { fallbackGhostHeight.toPx() }
-                    }
+                val ghostWidthPx = with(density) { pictureCardWidth.toPx() }
+                val ghostHeightPx = with(density) { wordChipHeight.toPx() }
                 CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
                     Box(
                         modifier =
@@ -430,6 +420,8 @@ fun DragWordToPictureGame(
                     ) {
                         WordBankChip(
                             word = ghostWord,
+                            width = pictureCardWidth,
+                            height = wordChipHeight,
                             compact = compact,
                             enabled = false,
                             selected = true,
@@ -443,10 +435,6 @@ fun DragWordToPictureGame(
                                             (ghostPosition.y - ghostHeightPx / 2f).roundToInt(),
                                         )
                                     }
-                                    .widthIn(
-                                        min = fallbackGhostWidth,
-                                        max = fallbackGhostWidth + 24.dp,
-                                    )
                                     .graphicsLayer { alpha = 0.92f },
                         )
                     }
@@ -490,7 +478,7 @@ private fun LockedWordChip(
     Box(
         modifier =
             Modifier
-                .widthIn(min = width * 0.85f, max = width)
+                .width(width)
                 .height(height)
                 .background(backgroundColor, RoundedCornerShape(12.dp))
                 .border(borderWidth, borderColor, RoundedCornerShape(12.dp))
@@ -517,6 +505,8 @@ private fun LockedWordChip(
 @Composable
 private fun WordBankChip(
     word: String,
+    width: androidx.compose.ui.unit.Dp,
+    height: androidx.compose.ui.unit.Dp,
     compact: Boolean,
     enabled: Boolean,
     selected: Boolean,
@@ -546,16 +536,17 @@ private fun WordBankChip(
     Box(
         modifier =
             modifier
-                .heightIn(min = if (compact) 40.dp else 48.dp)
-                .background(flashColor, RoundedCornerShape(14.dp))
-                .border(2.dp, borderColor, RoundedCornerShape(14.dp))
-                .padding(horizontal = if (compact) 10.dp else 14.dp, vertical = 6.dp),
+                .width(width)
+                .height(height)
+                .background(flashColor, RoundedCornerShape(12.dp))
+                .border(2.dp, borderColor, RoundedCornerShape(12.dp))
+                .padding(horizontal = 6.dp, vertical = 4.dp),
         contentAlignment = Alignment.Center,
     ) {
         AutoFitSingleLineText(
             text = word,
-            maxWidth = if (compact) 88.dp else 104.dp,
-            targetFontSize = if (compact) 22.sp else 26.sp,
+            maxWidth = width - 12.dp,
+            targetFontSize = if (compact) 20.sp else 24.sp,
             style =
                 androidx.compose.ui.text.TextStyle(
                     fontWeight = FontWeight.ExtraBold,

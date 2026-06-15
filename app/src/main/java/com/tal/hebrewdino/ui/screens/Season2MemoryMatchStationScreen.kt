@@ -37,9 +37,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.platform.LocalLayoutDirection
-import androidx.compose.ui.unit.LayoutDirection
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
@@ -54,7 +51,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.zIndex
 import com.tal.hebrewdino.R
 import com.tal.hebrewdino.ui.audio.InStationPraiseAudio
 import com.tal.hebrewdino.ui.audio.LocalBackgroundMusic
@@ -62,13 +58,8 @@ import com.tal.hebrewdino.ui.audio.RawVoicePlayer
 import com.tal.hebrewdino.ui.audio.AudioClips
 import com.tal.hebrewdino.ui.audio.withVoiceDuck
 import com.tal.hebrewdino.ui.companion.Chapter1AddressAwareAudio
-import com.tal.hebrewdino.ui.companion.CompanionAssets
-import com.tal.hebrewdino.ui.companion.CompanionDinoPortrait
 import com.tal.hebrewdino.ui.data.DinoCharacter
 import com.tal.hebrewdino.ui.data.PlayerAddress
-import com.tal.hebrewdino.ui.domain.Season2Chapter1StationOrder
-import com.tal.hebrewdino.ui.domain.Season2GuessingDetector
-import com.tal.hebrewdino.ui.domain.Season2GuessingHintCopy
 import com.tal.hebrewdino.ui.components.ChapterNavChipStyles
 import com.tal.hebrewdino.ui.audio.GameAudioEngine
 import com.tal.hebrewdino.ui.domain.DevTools
@@ -90,7 +81,7 @@ private val RevealGreen = Color(0xFF2E7D32)
 fun Season2MemoryMatchStationScreen(
     letters: List<String>,
     rounds: Int = 3,
-    companionCharacter: DinoCharacter,
+    @Suppress("UNUSED_PARAMETER") companionCharacter: DinoCharacter,
     playerAddress: PlayerAddress,
     onBack: () -> Unit,
     onMarkCompleted: () -> Unit,
@@ -103,11 +94,6 @@ fun Season2MemoryMatchStationScreen(
     val voice = audio.voice
     val rawVoice = remember { RawVoicePlayer(context = context) }
     val bgm = LocalBackgroundMusic.current
-    val companionAssets = remember(companionCharacter) { CompanionAssets.forCharacter(companionCharacter) }
-    val rapidTapDetector = remember { Season2GuessingDetector(memoryMatchMode = true) }
-    var season2HintText by remember { mutableStateOf<String?>(null) }
-    var companionTalking by remember { mutableStateOf(false) }
-    var coachJob by remember { mutableStateOf<Job?>(null) }
 
     androidx.compose.runtime.DisposableEffect(Unit) {
         onDispose {
@@ -147,10 +133,6 @@ fun Season2MemoryMatchStationScreen(
     val totalRounds = rounds.coerceIn(1, 3)
     var roundIndex by remember { mutableIntStateOf(0) }
 
-    LaunchedEffect(roundIndex) {
-        rapidTapDetector.onInterventionAcknowledged()
-    }
-
     fun roundLetters(index: Int): List<String> {
         val base = letters.distinct()
         if (base.size <= 4) return base.take(4)
@@ -175,39 +157,11 @@ fun Season2MemoryMatchStationScreen(
     var inputEnabled by remember { mutableStateOf(true) }
     var letterPlayJob by remember { mutableStateOf<Job?>(null) }
 
-    suspend fun runRapidTapCoach() {
-        letterPlayJob?.cancel()
-        voice.stopNow()
-        rawVoice.stopNow()
-        inputEnabled = false
-        companionTalking = true
-        season2HintText =
-            Season2GuessingHintCopy.coachBubbleText(
-                uxStationId = Season2Chapter1StationOrder.MEMORY_MATCH,
-                playerAddress = playerAddress,
-            )
-        playMemoryMatchInstruction()
-        delay(350)
-        season2HintText = null
-        rapidTapDetector.onInterventionAcknowledged()
-        companionTalking = false
-        inputEnabled = true
-    }
-
     fun revealIndex(i: Int) {
         if (!inputEnabled) return
         if (i !in deck.indices) return
         if (matched[i] || flipped[i]) return
         if (firstIndex != -1 && secondIndex != -1) return
-
-        if (rapidTapDetector.recordTap()) {
-            coachJob?.cancel()
-            coachJob =
-                scope.launch {
-                    runRapidTapCoach()
-                }
-            return
-        }
 
         flipped[i] = true
         val letter = deck[i]
@@ -394,47 +348,6 @@ fun Season2MemoryMatchStationScreen(
                             modifier = Modifier.size(cell),
                         )
                     }
-                }
-            }
-        }
-
-        CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
-            Box(
-                modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .zIndex(20f),
-            ) {
-                val companionPose =
-                    if (companionTalking || season2HintText != null) {
-                        companionAssets.poseEncourage
-                    } else {
-                        companionAssets.poseIdle
-                    }
-                CompanionDinoPortrait(
-                    poseRes = companionPose,
-                    talkFrameResIds = companionAssets.talkFrameResIds,
-                    isTalking = companionTalking || season2HintText != null,
-                    modifier =
-                        Modifier
-                            .align(Alignment.BottomEnd)
-                            .padding(end = 6.dp, bottom = 6.dp)
-                            .size(76.dp)
-                            .zIndex(21f),
-                )
-                if (season2HintText != null) {
-                    Season2CompanionSpeechHint(
-                        text = season2HintText!!,
-                        companionCharacter = companionCharacter,
-                        isTalking = companionTalking || season2HintText != null,
-                        showCompanionPortrait = false,
-                        companionSizeDp = 76.dp,
-                        modifier =
-                            Modifier
-                                .align(Alignment.BottomEnd)
-                                .padding(end = 76.dp, bottom = 10.dp)
-                                .zIndex(22f),
-                    )
                 }
             }
         }

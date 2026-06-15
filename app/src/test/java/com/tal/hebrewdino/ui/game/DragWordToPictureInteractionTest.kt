@@ -18,6 +18,15 @@ class DragWordToPictureInteractionTest {
         assertTrue(source.contains("onPictureTapReplayWord?.invoke(pair.catalogEntryId)"))
     }
 
+    @Test
+    fun game_wordChipMatchesDropSlotDimensions() {
+        val source = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/game/DragWordToPictureGame.kt")
+        assertTrue(source.contains("width = pictureCardWidth"))
+        assertTrue(source.contains("height = wordChipHeight"))
+        assertTrue(source.contains("LockedWordChip("))
+        assertTrue(source.contains("WordBankChip("))
+    }
+
     private fun readProjectSource(relativePath: String): String {
         val candidates =
             listOf(

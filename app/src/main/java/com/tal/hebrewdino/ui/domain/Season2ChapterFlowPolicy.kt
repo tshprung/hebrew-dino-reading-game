@@ -12,4 +12,11 @@ object Season2ChapterFlowPolicy {
         stationId == finalStationId &&
             !wasStationAlreadyDone &&
             !chapterWasCompleteBefore
+
+    /** Season 2 finale — summary screen after Ch.7 St6 (first time and replay). */
+    fun shouldShowSeasonCompleteSummary(
+        chapterIndex: Int,
+        stationId: Int,
+        finalStationId: Int = Season2Chapter1StationOrder.FINALE_STATION,
+    ): Boolean = chapterIndex == 7 && stationId == finalStationId
 }

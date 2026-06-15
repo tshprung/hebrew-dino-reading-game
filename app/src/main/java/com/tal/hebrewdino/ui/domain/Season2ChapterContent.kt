@@ -96,4 +96,10 @@ object Season2ChapterContent {
     val ch7Words: List<String> = season2UnionWordCatalogIds
 
     val ch7Letters: List<String> = season2UnionLetters
+
+    /**
+     * Finale memory-match pool — one anchor letter per prior chapter cluster (Ch1–Ch5)
+     * plus shared מ, so the review spans the whole season without using the full union.
+     */
+    val ch7MemoryMatchLetters: List<String> = listOf("ז", "ח", "ג", "ב", "ש", "מ")
 }

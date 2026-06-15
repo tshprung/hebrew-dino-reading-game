@@ -65,6 +65,14 @@ fun LessonChoiceCard(
     scale: Float = 1f,
     showWordCaption: Boolean = true,
     captionFontSize: TextUnit = 24.sp,
+    captionSpacerHeight: Dp = LessonChoiceCardCaptionSpacerHeight,
+    captionAreaHeight: Dp = LessonChoiceCardCaptionAreaHeight,
+    captionAreaAlignment: Alignment = Alignment.Center,
+    contentPadding: Dp = 12.dp,
+    /** When true, caption hugs the word (no fixed caption band below the text). */
+    captionWrapContent: Boolean = false,
+    /** Scales picture-word captions relative to [captionFontSize] (default shrinks ~15%). */
+    pictureCaptionScale: Float = 0.85f,
     innerPictureScale: Float = 1f,
     innerPictureScaleY: Float = innerPictureScale,
     innerPictureTransformOrigin: TransformOrigin = TransformOrigin(0.5f, 0.5f),
@@ -134,7 +142,7 @@ fun LessonChoiceCard(
                     RoundedCornerShape(22.dp),
                 )
                 .clickable(enabled = enabled, onClick = onClick)
-                .padding(12.dp),
+                .padding(contentPadding),
     ) {
         if (choice.tileDrawable == R.drawable.lesson_word_tile) {
             Box(
@@ -235,39 +243,26 @@ fun LessonChoiceCard(
             }
         }
         if (showWordCaption) {
-            Spacer(modifier = Modifier.height(LessonChoiceCardCaptionSpacerHeight))
+            if (captionSpacerHeight > 0.dp) {
+                Spacer(modifier = Modifier.height(captionSpacerHeight))
+            }
             val isPictureWord =
                 choice.tileDrawable != R.drawable.lesson_word_tile
             val targetCaptionSize =
                 if (isPictureWord) {
-                    // Global tuning: picture-word captions read large; shrink baseline by ~10%,
-                    // then AutoFit will further reduce for long words.
-                    (captionFontSize.value * 0.85f).sp
+                    (captionFontSize.value * pictureCaptionScale).sp
                 } else {
                     captionFontSize
                 }
-            // Keep *outer card height* identical across choices: reserve a fixed one-line caption area.
-            // This must NOT depend on the word-specific target font size; otherwise cards get different heights.
-            // Fixed caption band height: must be tall enough for the *largest* caption size
-            // (otherwise glyphs get clipped on some devices).
-            BoxWithConstraints(
-                modifier =
-                    Modifier
-                        .width(cardWidth + 8.dp)
-                        .height(LessonChoiceCardCaptionAreaHeight),
-                // Keep the caption slightly higher so descenders don't get clipped on small devices.
-                contentAlignment = Alignment.Center,
-            ) {
-                val captionHPad = 6.dp
-                val captionVPad = 2.dp
-                // Important: AutoFit must measure against the same inner space we actually render into.
-                // Otherwise (measure full width, then add padding) long words can still overflow.
-                val innerMaxWidth = (maxWidth - captionHPad * 2).coerceAtLeast(1.dp)
-                val innerMaxHeight = (maxHeight - captionVPad * 2).coerceAtLeast(1.dp)
+            if (captionWrapContent) {
+                val captionMaxHeight =
+                    with(density) {
+                        (captionFontSize.toPx() * 1.35f).toDp().coerceAtLeast(18.dp)
+                    }
                 AutoFitSingleLineText(
                     text = choice.word,
-                    maxWidth = innerMaxWidth,
-                    maxHeight = innerMaxHeight,
+                    maxWidth = cardWidth,
+                    maxHeight = captionMaxHeight,
                     targetFontSize = targetCaptionSize,
                     style =
                         MaterialTheme.typography.titleLarge.copy(
@@ -275,13 +270,46 @@ fun LessonChoiceCard(
                             color = Color(0xFF0B2B3D),
                             platformStyle = PlatformTextStyle(includeFontPadding = false),
                         ),
-                    // Fill the reserved area so layout is stable; AutoFit handles font shrink.
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = captionHPad, vertical = captionVPad),
+                    modifier = Modifier.width(cardWidth),
                     minFontSize = 10.sp,
                 )
+            } else {
+                // Keep *outer card height* identical across choices: reserve a fixed one-line caption area.
+                // This must NOT depend on the word-specific target font size; otherwise cards get different heights.
+                // Fixed caption band height: must be tall enough for the *largest* caption size
+                // (otherwise glyphs get clipped on some devices).
+                BoxWithConstraints(
+                    modifier =
+                        Modifier
+                            .width(cardWidth + 8.dp)
+                            .height(captionAreaHeight),
+                    contentAlignment = captionAreaAlignment,
+                ) {
+                    val captionHPad = 6.dp
+                    val captionVPad = 2.dp
+                    // Important: AutoFit must measure against the same inner space we actually render into.
+                    // Otherwise (measure full width, then add padding) long words can still overflow.
+                    val innerMaxWidth = (maxWidth - captionHPad * 2).coerceAtLeast(1.dp)
+                    val innerMaxHeight = (maxHeight - captionVPad * 2).coerceAtLeast(1.dp)
+                    AutoFitSingleLineText(
+                        text = choice.word,
+                        maxWidth = innerMaxWidth,
+                        maxHeight = innerMaxHeight,
+                        targetFontSize = targetCaptionSize,
+                        style =
+                            MaterialTheme.typography.titleLarge.copy(
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF0B2B3D),
+                                platformStyle = PlatformTextStyle(includeFontPadding = false),
+                            ),
+                        // Fill the reserved area so layout is stable; AutoFit handles font shrink.
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = captionHPad, vertical = captionVPad),
+                        minFontSize = 10.sp,
+                    )
+                }
             }
         }
     }

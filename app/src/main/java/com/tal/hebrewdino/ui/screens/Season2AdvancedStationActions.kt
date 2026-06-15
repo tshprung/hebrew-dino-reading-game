@@ -15,6 +15,7 @@ import com.tal.hebrewdino.ui.domain.Question
 import com.tal.hebrewdino.ui.domain.Season2WordPartsUxPolicy
 import com.tal.hebrewdino.ui.domain.Season2EarlyStationQaPolicy
 import com.tal.hebrewdino.ui.domain.Season2Station6FeedbackPolicy
+import com.tal.hebrewdino.ui.domain.Season2StationAudio
 import com.tal.hebrewdino.ui.domain.Season2WordPartsCatalog
 import com.tal.hebrewdino.ui.game.ChildGameAudioHooks
 import kotlinx.coroutines.CancellationException
@@ -234,25 +235,82 @@ internal object Season2AdvancedStationActions {
         audioEnabled: Boolean,
         session: LevelSession,
         scope: CoroutineScope,
+        chapterId: Int,
+        stationId: Int,
+        rawVoice: RawVoicePlayer?,
+        audioRuntime: GameAudioRuntimeState,
         advanceAfterRound: suspend (Boolean) -> Unit,
         onWrongFeedback: (wrongWordCatalogId: String?) -> Unit,
     ) {
         if (!gameViewModel.consumeTapCooldown()) return
         cancelFeedbackVoice()
-        when (session.submitRhyming(choiceId)) {
-            AnswerResult.Correct -> {
-                if (audioEnabled) ChildGameAudioHooks.onCorrect()
-                gameViewModel.inputLocked = true
-                scope.launch {
-                    val isLast = session.currentIndex >= session.totalQuestions - 1
-                    advanceAfterRound(isLast)
+        val question = session.currentQuestion as? Question.RhymingQuestion ?: return
+        gameViewModel.inputLocked = true
+        scope.launch {
+            try {
+                if (audioEnabled) {
+                    GameAudioActions.launchFeedbackVoiceNoCancel(
+                        audioEnabled = true,
+                        scope = scope,
+                        audioRuntime = audioRuntime,
+                    ) {
+                        Season2StationAudio.playWordByCatalogId(
+                            catalogId = choiceId,
+                            rawVoice = rawVoice,
+                            chapterId = chapterId,
+                            stationId = stationId,
+                            context = "Season2AdvancedStationActions.handleRhymingPick(choice)",
+                        )
+                    }
+                    GameAudioActions.awaitFeedbackVoice(audioRuntime, 8_000L)
+                }
+                when (session.submitRhyming(choiceId)) {
+                    AnswerResult.Correct -> {
+                        if (audioEnabled) {
+                            GameAudioActions.launchFeedbackVoiceNoCancel(
+                                audioEnabled = true,
+                                scope = scope,
+                                audioRuntime = audioRuntime,
+                            ) {
+                                Season2StationAudio.playWordByCatalogId(
+                                    catalogId = question.targetCatalogEntryId,
+                                    rawVoice = rawVoice,
+                                    chapterId = chapterId,
+                                    stationId = stationId,
+                                    context = "Season2AdvancedStationActions.handleRhymingPick(target)",
+                                )
+                            }
+                            GameAudioActions.awaitFeedbackVoice(audioRuntime, 8_000L)
+                            GameAudioActions.launchFeedbackVoiceNoCancel(
+                                audioEnabled = true,
+                                scope = scope,
+                                audioRuntime = audioRuntime,
+                            ) {
+                                Season2StationAudio.playWordByCatalogId(
+                                    catalogId = choiceId,
+                                    rawVoice = rawVoice,
+                                    chapterId = chapterId,
+                                    stationId = stationId,
+                                    context = "Season2AdvancedStationActions.handleRhymingPick(choice-repeat)",
+                                )
+                            }
+                            GameAudioActions.awaitFeedbackVoice(audioRuntime, 8_000L)
+                            ChildGameAudioHooks.onCorrect()
+                        }
+                        val isLast = session.currentIndex >= session.totalQuestions - 1
+                        advanceAfterRound(isLast)
+                    }
+                    AnswerResult.Wrong -> {
+                        if (audioEnabled) ChildGameAudioHooks.onWrong()
+                        onWrongFeedback(choiceId)
+                    }
+                    else -> Unit
+                }
+            } finally {
+                if (session.currentQuestion is Question.RhymingQuestion) {
+                    gameViewModel.inputLocked = false
                 }
             }
-            AnswerResult.Wrong -> {
-                if (audioEnabled) ChildGameAudioHooks.onWrong()
-                onWrongFeedback(choiceId)
-            }
-            else -> {}
         }
     }
 

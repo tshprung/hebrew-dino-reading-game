@@ -1263,15 +1263,22 @@ fun GameScreen(
                             return
                         }
                         val catalogId = Season2AdvancedStationActions.catalogIdForReplay(q) ?: return
-                        Season2AdvancedStationActions.replayWordByCatalogId(
-                            catalogId = catalogId,
-                            chapterId = chapterId,
-                            stationId = stationId,
-                            rawVoice = rawVoice,
-                            scope = scope,
-                            audioRuntime = audioRuntime,
-                            audioEnabled = audioEnabled,
-                        )
+                        cancelFeedbackVoice()
+                        scope.launch {
+                            GameAudioActions.launchFeedbackVoiceNoCancel(
+                                audioEnabled = true,
+                                scope = scope,
+                                audioRuntime = audioRuntime,
+                            ) {
+                                Season2StationAudio.playWordByCatalogId(
+                                    catalogId = catalogId,
+                                    rawVoice = rawVoice,
+                                    chapterId = chapterId,
+                                    stationId = stationId,
+                                    context = "GameScreen.handleAdvancedReplayWord",
+                                )
+                            }
+                        }
                     }
 
                     fun handleWordPartsPictureTap() {
@@ -1382,9 +1389,16 @@ fun GameScreen(
                             audioEnabled = audioEnabled,
                             session = session,
                             scope = scope,
+                            chapterId = chapterId,
+                            stationId = stationId,
+                            rawVoice = rawVoice,
+                            audioRuntime = audioRuntime,
                             advanceAfterRound = { isLast -> advanceAfterRound(isLast) },
                             onWrongFeedback = { wrongWordCatalogId ->
-                                onWrongFeedback(wrongWordCatalogId = wrongWordCatalogId)
+                                onWrongFeedback(
+                                    wrongWordCatalogId = wrongWordCatalogId,
+                                    wrongWordAlreadySpoken = true,
+                                )
                             },
                         )
                     }
@@ -1423,6 +1437,8 @@ fun GameScreen(
                             scope = scope,
                             chapterId = chapterId,
                             stationId = stationId,
+                            rawVoice = rawVoice,
+                            sfx = sfx,
                             audioRuntime = audioRuntime,
                             advanceAfterRound = { isLast -> advanceAfterRound(isLast) },
                         )

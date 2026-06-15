@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.defaultMinSize
@@ -23,9 +22,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -36,7 +32,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -62,7 +57,6 @@ import com.tal.hebrewdino.ui.domain.Season2IntroFlow
 import com.tal.hebrewdino.ui.domain.Season2Copy
 import com.tal.hebrewdino.ui.domain.Season2StandardRevealOrder
 import com.tal.hebrewdino.ui.layout.topChromeInsetsPadding
-import kotlin.math.max
 
 private val TitleBrown = Color(0xFF4A3A2E)
 private val CardIvoryTop = Color(0xFFFFFBF2)
@@ -73,6 +67,10 @@ private val NextGlow = Color(0xFF2E7D32)
 private val SoonGlow = Color(0xFF7B5BA8)
 
 private const val DISPLAY_CHAPTER_COUNT = Season2ChapterRegistry.CHAPTER_COUNT
+
+/** Top row: three chapters centered. Bottom row: four chapters (finale always visible). */
+internal val Season2ChapterSelectTopRowIndices: List<Int> = listOf(1, 2, 3)
+internal val Season2ChapterSelectBottomRowIndices: List<Int> = listOf(4, 5, 6, 7)
 
 private enum class ChapterState { Locked, Unlocked, Completed }
 
@@ -211,37 +209,74 @@ fun Season2ChapterSelectScreen(
             BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
                 val gridW = maxWidth
                 val gridH = maxHeight
-                val hGap = 10.dp
-                val vGap = 10.dp
-                val cellW = (gridW - hGap * 2) / 3f
-                val cellH = (gridH - vGap) / 2f
-                val targetCardH = max(120.dp.value, cellH.value).dp
+                val hGap = 8.dp
+                val vGap = 8.dp
+                val rowHeight = ((gridH - vGap) / 2f).coerceAtLeast(108.dp)
+                val topCellW = ((gridW - hGap * 2) / 3f).coerceAtLeast(88.dp)
+                val bottomCellW = ((gridW - hGap * 3) / 4f).coerceAtLeast(72.dp)
+                val chapterByIndex = chapters.associateBy { it.chapterIndex }
 
-                LazyVerticalGrid(
-                    columns = GridCells.Fixed(3),
+                Column(
                     modifier = Modifier.fillMaxSize(),
-                    userScrollEnabled = false,
-                    contentPadding = PaddingValues(bottom = 6.dp),
                     verticalArrangement = Arrangement.spacedBy(vGap),
-                    horizontalArrangement = Arrangement.spacedBy(hGap),
                 ) {
-                    items(chapters) { chapter ->
-                        ChapterCardView(
-                            chapter = chapter,
-                            onClick = {
-                                if (chapter.state != ChapterState.Locked) onOpenChapter(chapter.chapterIndex)
-                            },
-                            isNextSuggested =
-                                chapter.state == ChapterState.Unlocked &&
-                                    chapter.chapterIndex == nextSuggestedChapter,
-                            isComingSoonTeaser =
-                                chapter.isComingSoon &&
-                                    chapter.chapterIndex == Season2ChapterRegistry.playableChapterIndices().maxOrNull()?.plus(1),
-                            modifier =
-                                Modifier
-                                    .width(cellW)
-                                    .height(targetCardH),
-                        )
+                    Row(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .height(rowHeight),
+                        horizontalArrangement = Arrangement.spacedBy(hGap, Alignment.CenterHorizontally),
+                    ) {
+                        Season2ChapterSelectTopRowIndices.forEach { chapterIndex ->
+                            val chapter = chapterByIndex.getValue(chapterIndex)
+                            ChapterCardView(
+                                chapter = chapter,
+                                onClick = {
+                                    if (chapter.state != ChapterState.Locked) onOpenChapter(chapter.chapterIndex)
+                                },
+                                isNextSuggested =
+                                    chapter.state == ChapterState.Unlocked &&
+                                        chapter.chapterIndex == nextSuggestedChapter,
+                                isComingSoonTeaser =
+                                    chapter.isComingSoon &&
+                                        chapter.chapterIndex ==
+                                        Season2ChapterRegistry.playableChapterIndices().maxOrNull()?.plus(1),
+                                modifier =
+                                    Modifier
+                                        .width(topCellW)
+                                        .height(rowHeight),
+                            )
+                        }
+                    }
+
+                    Row(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .height(rowHeight),
+                        horizontalArrangement = Arrangement.spacedBy(hGap, Alignment.CenterHorizontally),
+                    ) {
+                        Season2ChapterSelectBottomRowIndices.forEach { chapterIndex ->
+                            val chapter = chapterByIndex.getValue(chapterIndex)
+                            ChapterCardView(
+                                chapter = chapter,
+                                onClick = {
+                                    if (chapter.state != ChapterState.Locked) onOpenChapter(chapter.chapterIndex)
+                                },
+                                isNextSuggested =
+                                    chapter.state == ChapterState.Unlocked &&
+                                        chapter.chapterIndex == nextSuggestedChapter,
+                                isComingSoonTeaser =
+                                    chapter.isComingSoon &&
+                                        chapter.chapterIndex ==
+                                        Season2ChapterRegistry.playableChapterIndices().maxOrNull()?.plus(1),
+                                isFinaleChapter = chapter.chapterIndex == DISPLAY_CHAPTER_COUNT,
+                                modifier =
+                                    Modifier
+                                        .width(bottomCellW)
+                                        .height(rowHeight),
+                            )
+                        }
                     }
                 }
             }
@@ -284,18 +319,25 @@ private fun ChapterCardView(
     onClick: () -> Unit,
     isNextSuggested: Boolean,
     isComingSoonTeaser: Boolean = false,
+    isFinaleChapter: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     val shape = RoundedCornerShape(18.dp)
     val enabled = chapter.state != ChapterState.Locked
-    val cardAlpha = if (enabled) 1f else 0.78f
+    val cardAlpha =
+        when {
+            enabled -> 1f
+            isFinaleChapter -> 0.92f
+            else -> 0.78f
+        }
     val cardBg = Brush.verticalGradient(listOf(CardIvoryTop, CardIvoryBottom))
 
     val outline =
-        when (chapter.state) {
-            ChapterState.Completed -> PremiumGold.copy(alpha = 0.65f)
-            ChapterState.Unlocked -> CardOutline
-            ChapterState.Locked -> CardOutline.copy(alpha = 0.22f)
+        when {
+            isFinaleChapter -> PremiumGold.copy(alpha = if (enabled) 0.82f else 0.58f)
+            chapter.state == ChapterState.Completed -> PremiumGold.copy(alpha = 0.65f)
+            chapter.state == ChapterState.Unlocked -> CardOutline
+            else -> CardOutline.copy(alpha = 0.22f)
         }
 
     val pulse = rememberInfiniteTransition(label = "nextPulse")
@@ -327,7 +369,7 @@ private fun ChapterCardView(
                 .shadow(elevation = if (enabled) 8.dp else 4.dp, shape = shape, clip = false)
                 .clip(shape)
                 .background(cardBg)
-                .border(1.5.dp, outline, shape)
+                .border(if (isFinaleChapter) 2.5.dp else 1.5.dp, outline, shape)
                 .then(
                     when {
                         enabled && isNextSuggested ->
@@ -337,6 +379,19 @@ private fun ChapterCardView(
                                 val inset = stroke / 2f
                                 drawRoundRect(
                                     color = NextGlow.copy(alpha = glowAlpha),
+                                    topLeft = Offset(inset, inset),
+                                    size = Size(size.width - stroke, size.height - stroke),
+                                    cornerRadius = CornerRadius(18.dp.toPx() - inset),
+                                    style = androidx.compose.ui.graphics.drawscope.Stroke(width = stroke),
+                                )
+                            }
+                        isFinaleChapter && chapter.isPrerequisiteLocked ->
+                            Modifier.drawWithContent {
+                                drawContent()
+                                val stroke = (glowWidth * 0.75f).dp.toPx()
+                                val inset = stroke / 2f
+                                drawRoundRect(
+                                    color = PremiumGold.copy(alpha = glowAlpha * 0.55f),
                                     topLeft = Offset(inset, inset),
                                     size = Size(size.width - stroke, size.height - stroke),
                                     cornerRadius = CornerRadius(18.dp.toPx() - inset),

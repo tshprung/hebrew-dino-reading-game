@@ -13,6 +13,8 @@ object Season2StoryAudio {
 
     @RawRes val FirstReveal: Int = R.raw.season2_first_reveal_01
 
+    @RawRes val SeasonCompleteSummary: Int = R.raw.season2_complete_summary_01
+
     private val ChapterCompleteByIndex: IntArray =
         intArrayOf(
             R.raw.season2_ch1_complete_01,
@@ -21,6 +23,7 @@ object Season2StoryAudio {
             R.raw.season2_ch4_complete_01,
             R.raw.season2_ch5_complete_01,
             R.raw.season2_ch6_complete_01,
+            R.raw.season2_ch7_complete_01,
         )
 
     /** Optional chapter clue intros — wired only when the raw file is present in the build. */
@@ -32,6 +35,7 @@ object Season2StoryAudio {
             R.raw.season2_ch4_intro_01,
             R.raw.season2_ch5_intro_01,
             R.raw.season2_ch6_intro_01,
+            R.raw.season2_ch7_intro_01,
         )
 
     val requiredStoryRawResIds: List<Int> =

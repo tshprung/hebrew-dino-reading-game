@@ -29,6 +29,7 @@ import com.tal.hebrewdino.ui.data.ParentInfoPrefs
 import com.tal.hebrewdino.ui.data.Season2ProgressPrefs
 import com.tal.hebrewdino.ui.domain.SeasonAvailabilityPolicy
 import com.tal.hebrewdino.ui.domain.ParentInfoPolicy
+import com.tal.hebrewdino.ui.domain.Season2ChapterFlowPolicy
 import com.tal.hebrewdino.ui.domain.Season2Chapter1StationOrder
 import com.tal.hebrewdino.ui.domain.Season2ChapterRegistry
 import com.tal.hebrewdino.ui.domain.Season2NavKeys
@@ -40,6 +41,7 @@ import com.tal.hebrewdino.ui.screens.ParentInfoDialog
 import com.tal.hebrewdino.ui.screens.Season2ChapterSelectScreen
 import com.tal.hebrewdino.ui.screens.Season2ChapterStationScreen
 import com.tal.hebrewdino.ui.screens.Season2PuzzleMapPrototypeScreen
+import com.tal.hebrewdino.ui.screens.Season2SeasonCompleteSummaryScreen
 import com.tal.hebrewdino.ui.screens.SeasonsScreen
 import com.tal.hebrewdino.ui.screens.SettingsScreen
 import com.tal.hebrewdino.ui.screens.TrainingV1CompleteScreen
@@ -226,6 +228,10 @@ internal fun NavGraphBuilder.systemAndTrainingGraph(host: AppNavHostState) {
             backStackEntry.savedStateHandle
                 .getStateFlow(Season2NavKeys.MAP_RETURN_CAPTION_COUNT, 0)
                 .collectAsState()
+        val requestSeasonCompleteSummary by
+            backStackEntry.savedStateHandle
+                .getStateFlow(Season2NavKeys.REQUEST_SEASON_COMPLETE_SUMMARY, false)
+                .collectAsState()
         Season2PuzzleMapPrototypeScreen(
             chapterId = chapterId,
             companionCharacter = host.companionCharacter,
@@ -243,6 +249,15 @@ internal fun NavGraphBuilder.systemAndTrainingGraph(host: AppNavHostState) {
             requestChapterCelebration = celebrateRequest,
             onChapterCelebrationConsumed = {
                 backStackEntry.savedStateHandle[Season2NavKeys.REQUEST_CHAPTER_CELEBRATION] = false
+            },
+            requestSeasonCompleteSummary = requestSeasonCompleteSummary,
+            onSeasonCompleteSummaryConsumed = {
+                backStackEntry.savedStateHandle[Season2NavKeys.REQUEST_SEASON_COMPLETE_SUMMARY] = false
+            },
+            onOpenSeasonCompleteSummary = {
+                host.navController.navigate(NavRoutes.Season2SeasonCompleteSummary) {
+                    launchSingleTop = true
+                }
             },
             mapReturnCaptionEvent = mapReturnCaptionEvent,
             mapReturnCaptionCount = mapReturnCaptionCount,
@@ -288,12 +303,31 @@ internal fun NavGraphBuilder.systemAndTrainingGraph(host: AppNavHostState) {
                     if (requestChapterCelebration) {
                         mapHandle[Season2NavKeys.REQUEST_CHAPTER_CELEBRATION] = true
                     }
+                    if (Season2ChapterFlowPolicy.shouldShowSeasonCompleteSummary(chapterId, stationId)) {
+                        mapHandle[Season2NavKeys.REQUEST_SEASON_COMPLETE_SUMMARY] = true
+                    }
                     mapReturnCaptionCompletedCount?.let { count ->
                         mapHandle[Season2NavKeys.MAP_RETURN_CAPTION_COUNT] = count
                         mapHandle[Season2NavKeys.MAP_RETURN_CAPTION_EVENT] = System.nanoTime()
                     }
                 }
                 host.navController.popBackStack()
+            },
+        )
+    }
+
+    composable(NavRoutes.Season2SeasonCompleteSummary) {
+        if (!SeasonAvailabilityPolicy.isSeason2Enabled()) {
+            host.navController.popBackStack()
+            return@composable
+        }
+        Season2SeasonCompleteSummaryScreen(
+            companionCharacter = host.companionCharacter,
+            onBackToSeasons = {
+                host.navController.navigate(NavRoutes.Seasons) {
+                    popUpTo(NavRoutes.Seasons) { inclusive = false }
+                    launchSingleTop = true
+                }
             },
         )
     }

@@ -44,6 +44,19 @@ object Season2Copy {
 
     fun completionContinueLabel(): String = rtl("המשך")
 
+    fun seasonCompleteSummaryTitle(): String = rtl("כל הכבוד! סיימתם את עונה 2")
+
+    fun seasonCompleteSummaryStoryLines(): List<String> =
+        listOf(
+            rtl("גיליתם דינוזאורים ויצורים קדמוניים חדשים,"),
+            rtl("ולמדתם לקרוא עוד ועוד מילים."),
+            rtl("עכשיו אתם כבר ממש מתחילים לקרוא לבד!"),
+            rtl("ובעונה הבאה מחכה לכם מסע חדש,"),
+            rtl("עם עוד הפתעות, עוד גילויים, ועוד כיף של קריאה!"),
+        )
+
+    fun seasonCompleteSummaryContinueLabel(): String = rtl("חזרה לעונות")
+
     /** Season-level intro before chapter select (short adventure story). */
     fun seasonIntroStoryLines(): List<String> =
         listOf(

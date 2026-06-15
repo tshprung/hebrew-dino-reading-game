@@ -42,7 +42,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.tal.hebrewdino.R
-import com.tal.hebrewdino.BuildConfig
 import com.tal.hebrewdino.ui.companion.CompanionAssets
 import com.tal.hebrewdino.ui.domain.SeasonAvailabilityPolicy
 import com.tal.hebrewdino.ui.companion.CompanionDinoPortrait
@@ -99,26 +98,24 @@ fun SeasonsScreen(
                     heroKind = SeasonHeroKind.Season2Overview,
                 ),
             )
-            if (BuildConfig.DEBUG) {
-                add(
-                    SeasonCardConfig(
-                        seasonId = 3,
-                        title = "עונה 3: קוראים יותר",
-                        subtitle = "תרגול מתקדם יותר עם מילים מוכרות",
-                        status = "בפיתוח",
-                        enabled = false,
-                    ),
-                )
-                add(
-                    SeasonCardConfig(
-                        seasonId = 4,
-                        title = "עונה 4: הרפתקה חדשה",
-                        subtitle = "עוד מסע עם דינו והאותיות",
-                        status = "בפיתוח",
-                        enabled = false,
-                    ),
-                )
-            }
+            add(
+                SeasonCardConfig(
+                    seasonId = 3,
+                    title = "עונה 3: קוראים יותר",
+                    subtitle = "תרגול מתקדם יותר עם מילים מוכרות",
+                    status = "בפיתוח",
+                    enabled = false,
+                ),
+            )
+            add(
+                SeasonCardConfig(
+                    seasonId = 4,
+                    title = "עונה 4: הרפתקה חדשה",
+                    subtitle = "עוד מסע עם דינו והאותיות",
+                    status = "בפיתוח",
+                    enabled = false,
+                ),
+            )
         }
 
     Box(modifier = modifier.fillMaxSize()) {

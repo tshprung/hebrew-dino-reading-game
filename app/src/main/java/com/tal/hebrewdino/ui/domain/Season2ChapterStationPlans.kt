@@ -71,7 +71,7 @@ object Season2ChapterStationPlans {
                     chapterIndex = 7,
                     wordCatalogIds = Season2ChapterContent.ch7Words,
                     letters = Season2ChapterContent.ch7Letters,
-                    memoryMatchLetters = Season2ChapterContent.ch7Letters.take(6),
+                    memoryMatchLetters = Season2ChapterContent.ch7MemoryMatchLetters,
                     theme = Season2StationTheme.FlyingSky,
                 )
             else -> null

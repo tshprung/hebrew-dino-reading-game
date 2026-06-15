@@ -66,11 +66,19 @@ class Season2PropagateCh3To6FlowTest {
     }
 
     @Test
-    fun memory_match_uses_separate_screen_without_game_screen_coach() {
+    fun memory_match_uses_separate_screen_without_dino_coach() {
         val memory =
             readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/screens/Season2MemoryMatchStationScreen.kt")
         assertTrue(memory.contains("Season2MemoryMatchStationScreen"))
         assertFalse(memory.contains("GameScreen"))
+        assertFalse(memory.contains("CompanionDinoPortrait"))
+        assertFalse(memory.contains("Season2CompanionSpeechHint"))
+        assertFalse(memory.contains("Season2GuessingDetector"))
+        assertFalse(memory.contains("Season2GuessingHintCopy"))
+        val coach =
+            readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/domain/Season2GuessingCoach.kt")
+        assertTrue(coach.contains("StationKind.MemoryMatch -> Unit"))
+        assertTrue(coach.contains("MEMORY_MATCH -> Unit"))
     }
 
     @Test

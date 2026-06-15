@@ -24,23 +24,29 @@ class Season2StoryAudioTest {
     }
 
     @Test
-    fun chapterCompleteRawRes_mapsCh1ThroughCh6() {
+    fun seasonCompleteSummaryAudio_isWired() {
+        assertEquals(R.raw.season2_complete_summary_01, Season2StoryAudio.SeasonCompleteSummary)
+    }
+
+    @Test
+    fun chapterCompleteRawRes_mapsCh1ThroughCh7() {
         assertEquals(R.raw.season2_ch1_complete_01, Season2StoryAudio.chapterCompleteRawRes(1))
         assertEquals(R.raw.season2_ch2_complete_01, Season2StoryAudio.chapterCompleteRawRes(2))
         assertEquals(R.raw.season2_ch3_complete_01, Season2StoryAudio.chapterCompleteRawRes(3))
         assertEquals(R.raw.season2_ch4_complete_01, Season2StoryAudio.chapterCompleteRawRes(4))
         assertEquals(R.raw.season2_ch5_complete_01, Season2StoryAudio.chapterCompleteRawRes(5))
         assertEquals(R.raw.season2_ch6_complete_01, Season2StoryAudio.chapterCompleteRawRes(6))
+        assertEquals(R.raw.season2_ch7_complete_01, Season2StoryAudio.chapterCompleteRawRes(7))
     }
 
     @Test
     fun optionalChapterIntroRawRes_wiredWhenPresent() {
-        for (chapterId in 1..6) {
+        for (chapterId in 1..7) {
             val rawResId = Season2StoryAudio.optionalChapterIntroRawRes(chapterId)
             assertNotNull("optional ch$chapterId intro should be wired when file exists", rawResId)
             assertNotEquals(0, rawResId!!)
         }
-        assertEquals(6, Season2StoryAudio.optionalChapterIntroRawResIds.size)
+        assertEquals(7, Season2StoryAudio.optionalChapterIntroRawResIds.size)
     }
 
     @Test

@@ -5,6 +5,8 @@ object Season2NavKeys {
     const val SHOW_SEASON_INTRO = "s2_show_season_intro"
     const val SHOW_CHAPTER_INTRO = "s2_show_chapter_intro"
     const val REQUEST_CHAPTER_CELEBRATION = "s2_request_chapter_celebration"
+    /** After Season 2 Ch.7 St6 — navigate to the season-complete summary (every finish, including replay). */
+    const val REQUEST_SEASON_COMPLETE_SUMMARY = "s2_request_season_complete_summary"
     /** Monotonic event id — map consumes once to play return caption voice. */
     const val MAP_RETURN_CAPTION_EVENT = "s2_map_return_caption_event"
     /** Completed station count after a fresh station finish (1–5). */

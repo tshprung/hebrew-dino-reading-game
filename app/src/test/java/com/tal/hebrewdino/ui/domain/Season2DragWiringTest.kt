@@ -47,6 +47,25 @@ class Season2DragWiringTest {
     }
 
     @Test
+    fun memoryMatch_chapter2And7_validateWithoutQuizPlan() {
+        for ((chapter, station) in listOf(2 to 4, 7 to 3)) {
+            val issues =
+                if (chapter <= 2) {
+                    val ch2 = Season2ChapterRegistry.chapter(2)!!
+                    Season2StationContentValidator.validateLetters(ch2.memoryMatchLetters)
+                } else {
+                    Season2ChapterStationPlans.validateStation(
+                        Season2ChapterStationPlans.contextFor(chapter)!!,
+                        station,
+                    )
+                }
+            assertTrue("Ch$chapter st$station: $issues", issues.isEmpty())
+        }
+        val ch2 = Season2ChapterRegistry.chapter(2)!!
+        assertEquals(listOf("ח", "ר", "ק", "ש", "מ"), ch2.memoryMatchLetters)
+    }
+
+    @Test
     fun dragWordToPicture_inAllSeason2Chapters() {
         for (chapter in 1..Season2ChapterRegistry.CHAPTER_COUNT) {
             val stations =

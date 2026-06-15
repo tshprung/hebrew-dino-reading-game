@@ -67,11 +67,12 @@ class Season1DragWordToPictureAudioTest {
             ).first { it.exists() }
                 .readText()
         assertTrue(source.contains("fun playDragWordToPictureWord"))
+        assertTrue(source.contains("fun playDragWordToPictureRoundCompleteFeedback"))
         assertTrue(source.contains("fun isDragWordToPictureBehaviorStation"))
     }
 
     @Test
-    fun dragWordToPicture_replaysWordOnlyOnCorrectMatchAndLockedPictureTap() {
+    fun dragWordToPicture_replaysWordOnCorrectMatchAndLockedPictureTap() {
         val gameSource =
             listOf(
                 java.io.File("app/src/main/java/com/tal/hebrewdino/ui/game/DragWordToPictureGame.kt"),
@@ -88,8 +89,11 @@ class Season1DragWordToPictureAudioTest {
                 java.io.File("../app/src/main/java/com/tal/hebrewdino/ui/screens/DragWordToPictureActions.kt"),
             ).first { it.exists() }
                 .readText()
+        assertTrue(actionsSource.contains("playDragWordToPictureWord"))
+        assertTrue(actionsSource.contains("DragWordToPictureActions.handleDropAttempt"))
         assertTrue(actionsSource.contains("isDragWordToPictureBehaviorStation"))
-        assertTrue(actionsSource.contains("handleDropAttempt(correct)"))
+        assertTrue(actionsSource.contains("playDragWordToPictureRoundCompleteFeedback"))
+        assertTrue(actionsSource.contains("handleRoundComplete"))
         assertTrue(actionsSource.contains("launchFeedbackVoiceNoCancel"))
         assertTrue(actionsSource.contains("awaitFeedbackVoice"))
     }
