@@ -12,14 +12,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -33,8 +31,6 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.tal.hebrewdino.R
@@ -95,170 +91,6 @@ internal const val Chapter3Or6Station1SuccessHoldMs = 480L
 private val SixStationArcChapterRange = 1..5
 
 internal fun isSagaEpisode(chapterId: Int): Boolean = chapterId in SixStationArcChapterRange
-
-internal class GameAudioRuntimeState {
-    var feedbackVoiceJob: Job? = null
-    var promptVoiceJob: Job? = null
-    var lastPraiseAssetPath: String? = null
-}
-
-private object GameAudioPreloader {
-    suspend fun preloadStation1(
-        audioEnabled: Boolean,
-        sagaUsesPickLetterAudioStaging: Boolean,
-        chapterId: Int,
-        letterPoolSpec: LetterPoolSpec,
-        voice: VoicePlayer,
-        sfx: SoundPoolPlayer,
-    ) {
-        if (!(audioEnabled && sagaUsesPickLetterAudioStaging)) return
-        val usesRawLetterNames =
-            chapterId == 1 ||
-                chapterId == 2 ||
-                chapterId == 3 ||
-                chapterId == 4 ||
-                chapterId == 5 ||
-                chapterId == 6 ||
-                chapterId == TrainingV1Config.CHAPTER_ID
-        val poolLetters = letterPoolSpec.groups.flatten().distinct()
-        if (chapterId == 4) {
-            voice.warmUp(AudioClips.VoBachorEtHaot)
-        }
-        val perLetterPaths =
-            poolLetters.flatMap { letter ->
-                listOfNotNull(
-                    AudioClips.station1WrongCombined(letter),
-                    if (usesRawLetterNames) null else AudioClips.letterNameClip(letter),
-                )
-            }
-        val station1IntroExtras =
-            if (chapterId == 4) {
-                arrayOf(AudioClips.VoBachorEtHaot)
-            } else {
-                emptyArray()
-            }
-        sfx.preload(
-            *station1IntroExtras,
-            *perLetterPaths.toTypedArray(),
-        )
-    }
-
-    suspend fun preloadPopBalloons(
-        audioEnabled: Boolean,
-        usesPopBalloonsSoundPoolPrompt: Boolean,
-        chapterId: Int,
-        letterPoolSpec: LetterPoolSpec,
-        sfx: SoundPoolPlayer,
-    ) {
-        if (!(audioEnabled && usesPopBalloonsSoundPoolPrompt)) return
-        val usesRawLetterNames =
-            chapterId == 1 ||
-                chapterId == 2 ||
-                chapterId == 3 ||
-                chapterId == 4 ||
-                chapterId == 5 ||
-                chapterId == 6 ||
-                chapterId == TrainingV1Config.CHAPTER_ID
-        val letters = letterPoolSpec.groups.flatten().distinct()
-        val paths = ArrayList<String>()
-        paths.add(AudioClips.PopAllBalloonsWithLetter)
-        paths.add(AudioClips.SfxBalloonPopSoft)
-        paths.add(AudioClips.SfxBalloonPopWrongFunny)
-        paths.add(AudioClips.SfxBalloonPop)
-        paths.add(AudioClips.SfxStation2PopSoft1)
-        paths.add(AudioClips.SfxStation2PopSoft2)
-        paths.add(AudioClips.SfxStation2PopPlop)
-        paths.add(AudioClips.SfxStation2PopFinale)
-        for (letter in letters) {
-            if (!usesRawLetterNames) {
-                AudioClips.letterNameClip(letter)?.let(paths::add)
-            }
-            AudioClips.wrongSentenceClip(letter)?.let(paths::add)
-            AudioClips.station1WrongCombined(letter)?.let(paths::add)
-        }
-        sfx.preload(*paths.distinct().toTypedArray())
-    }
-
-    suspend fun preloadFindGrid(
-        audioEnabled: Boolean,
-        sagaUsesFindGridAudioStaging: Boolean,
-        sfx: SoundPoolPlayer,
-    ) {
-        if (!(audioEnabled && sagaUsesFindGridAudioStaging)) return
-        val paths = ArrayList<String>()
-        paths.add(AudioClips.SfxWrong)
-        paths.add(AudioClips.SfxCorrect)
-        sfx.preload(*paths.distinct().toTypedArray())
-    }
-}
-
-@Composable
-private fun GameAudioLifecycleEffects(
-    lifecycleOwner: LifecycleOwner,
-    stationId: Int,
-    cancelFeedbackVoice: () -> Unit,
-    releaseAudio: () -> Unit,
-) {
-    val cancelFeedbackVoiceLatest by rememberUpdatedState(cancelFeedbackVoice)
-    val releaseAudioLatest by rememberUpdatedState(releaseAudio)
-
-    DisposableEffect(lifecycleOwner, stationId) {
-        val observer =
-            LifecycleEventObserver { _, event ->
-                if (event == Lifecycle.Event.ON_PAUSE || event == Lifecycle.Event.ON_STOP) {
-                    cancelFeedbackVoiceLatest()
-                }
-            }
-        lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose {
-            lifecycleOwner.lifecycle.removeObserver(observer)
-            cancelFeedbackVoiceLatest()
-            releaseAudioLatest()
-        }
-    }
-}
-
-@Composable
-private fun GameAudioPreloadEffects(
-    stationId: Int,
-    chapterId: Int,
-    letterPoolSpec: LetterPoolSpec,
-    audioEnabled: Boolean,
-    sagaUsesPickLetterAudioStaging: Boolean,
-    usesPopBalloonsSoundPoolPrompt: Boolean,
-    sagaUsesFindGridAudioStaging: Boolean,
-    voice: VoicePlayer,
-    sfx: SoundPoolPlayer,
-) {
-    LaunchedEffect(stationId, chapterId, letterPoolSpec) {
-        GameAudioPreloader.preloadStation1(
-            audioEnabled = audioEnabled,
-            sagaUsesPickLetterAudioStaging = sagaUsesPickLetterAudioStaging,
-            chapterId = chapterId,
-            letterPoolSpec = letterPoolSpec,
-            voice = voice,
-            sfx = sfx,
-        )
-    }
-
-    LaunchedEffect(stationId, chapterId, letterPoolSpec) {
-        GameAudioPreloader.preloadPopBalloons(
-            audioEnabled = audioEnabled,
-            usesPopBalloonsSoundPoolPrompt = usesPopBalloonsSoundPoolPrompt,
-            chapterId = chapterId,
-            letterPoolSpec = letterPoolSpec,
-            sfx = sfx,
-        )
-    }
-
-    LaunchedEffect(stationId, chapterId, letterPoolSpec) {
-        GameAudioPreloader.preloadFindGrid(
-            audioEnabled = audioEnabled,
-            sagaUsesFindGridAudioStaging = sagaUsesFindGridAudioStaging,
-            sfx = sfx,
-        )
-    }
-}
 
 /**
  * Episode 1 stations 2–3: start the letter name this far into the intro clip on SoundPool (overlap).

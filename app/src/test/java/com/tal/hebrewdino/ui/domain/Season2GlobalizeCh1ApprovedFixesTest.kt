@@ -1,5 +1,7 @@
 package com.tal.hebrewdino.ui.domain
 
+import com.tal.hebrewdino.test.ProjectSource
+
 import com.tal.hebrewdino.ui.data.PlayerAddress
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -60,13 +62,13 @@ class Season2GlobalizeCh1ApprovedFixesTest {
         )
         assertTrue(Season2StationQaPolicy.shouldSuppressSagaEpisodeAdvancePraise(isSeason2QuizChapter = true))
         assertFalse(Season2StationQaPolicy.shouldSuppressSagaEpisodeAdvancePraise(isSeason2QuizChapter = false))
-        val pick = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/screens/PickLetterActions.kt")
+        val pick = ProjectSource.read("app/src/main/java/com/tal/hebrewdino/ui/screens/PickLetterActions.kt")
         assertTrue(pick.contains("launchFeedbackVoiceNoCancel"))
         assertTrue(pick.contains("joinSilently(job)"))
-        val advance = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/screens/AdvanceAfterRoundActions.kt")
+        val advance = ProjectSource.read("app/src/main/java/com/tal/hebrewdino/ui/screens/AdvanceAfterRoundActions.kt")
         assertTrue(advance.contains("shouldSuppressSagaEpisodeAdvancePraise"))
         assertTrue(advance.contains("isSeason2QuizChapter && sagaUsesPickLetterAudioStaging"))
-        val gameScreen = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/screens/GameScreen.kt")
+        val gameScreen = ProjectSource.read("app/src/main/java/com/tal/hebrewdino/ui/screens/GameScreen.kt")
         assertTrue(gameScreen.contains("isSeason2QuizChapter = isSeason2QuizChapter"))
     }
 
@@ -77,7 +79,7 @@ class Season2GlobalizeCh1ApprovedFixesTest {
                 season2HadCoachIntervention = true,
             ),
         )
-        val gameScreen = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/screens/GameScreen.kt")
+        val gameScreen = ProjectSource.read("app/src/main/java/com/tal/hebrewdino/ui/screens/GameScreen.kt")
         assertTrue(gameScreen.contains("Season2PostFocusCorrectAudio.playBlocking"))
         assertFalse(gameScreen.contains("processPraise(chapter1PlayerAddress)"))
     }
@@ -109,7 +111,7 @@ class Season2GlobalizeCh1ApprovedFixesTest {
                 "app/src/main/java/com/tal/hebrewdino/ui/screens/PopBalloonsActions.kt",
             )
         sources.forEach { path ->
-            val source = readProjectSource(path)
+            val source = ProjectSource.read(path)
             assertTrue(
                 "$path handles post-focus companion or narrator praise",
                 source.contains("PostCoachCorrectPraiseActions") ||
@@ -128,7 +130,7 @@ class Season2GlobalizeCh1ApprovedFixesTest {
             ),
         )
         assertTrue(Season2StationQaPolicy.shouldSuppressSagaEpisodeAdvancePraise(isSeason2QuizChapter = true))
-        val advance = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/screens/AdvanceAfterRoundActions.kt")
+        val advance = ProjectSource.read("app/src/main/java/com/tal/hebrewdino/ui/screens/AdvanceAfterRoundActions.kt")
         assertTrue(advance.contains("!suppressSagaAdvancePraise"))
     }
 
@@ -166,18 +168,5 @@ class Season2GlobalizeCh1ApprovedFixesTest {
         assertEquals(6, Season2StandardRevealOrder.STATION_COUNT)
         assertNotNull(Season2ChapterStationPlans.contextFor(3))
         assertNotNull(Season2ChapterStationPlans.contextFor(6))
-    }
-
-    private fun readProjectSource(relativePath: String): String {
-        val candidates =
-            listOf(
-                java.io.File(relativePath),
-                java.io.File("../$relativePath"),
-                java.io.File("../../$relativePath"),
-            )
-        val file =
-            candidates.firstOrNull { it.exists() }
-                ?: error("Could not locate source file: $relativePath")
-        return file.readText()
     }
 }

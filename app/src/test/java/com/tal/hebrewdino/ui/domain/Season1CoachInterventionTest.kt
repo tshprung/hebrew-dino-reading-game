@@ -1,5 +1,7 @@
 package com.tal.hebrewdino.ui.domain
 
+import com.tal.hebrewdino.test.ProjectSource
+
 import com.tal.hebrewdino.ui.data.DinoCharacter
 import com.tal.hebrewdino.ui.data.PlayerAddress
 import org.junit.Assert.assertEquals
@@ -81,7 +83,7 @@ class Season1CoachInterventionTest {
 
     @Test
     fun gameScreen_wiresCompanionCoachForSeason1() {
-        val gameScreen = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/screens/GameScreen.kt")
+        val gameScreen = ProjectSource.read("app/src/main/java/com/tal/hebrewdino/ui/screens/GameScreen.kt")
         assertTrue(gameScreen.contains("CompanionCoachPolicy.isEnabled"))
         assertTrue(gameScreen.contains("coachUxStationId"))
         assertTrue(gameScreen.contains("companionCoachEnabled"))
@@ -101,18 +103,5 @@ class Season1CoachInterventionTest {
                 )
             }
         }
-    }
-
-    private fun readProjectSource(relativePath: String): String {
-        val candidates =
-            listOf(
-                java.io.File(relativePath),
-                java.io.File("../$relativePath"),
-                java.io.File("../../$relativePath"),
-            )
-        val file =
-            candidates.firstOrNull { it.exists() }
-                ?: error("Could not locate source file: $relativePath")
-        return file.readText()
     }
 }

@@ -1,5 +1,7 @@
 package com.tal.hebrewdino.ui.domain
 
+import com.tal.hebrewdino.test.ProjectSource
+
 import com.tal.hebrewdino.R
 import com.tal.hebrewdino.ui.audio.AudioClips
 import com.tal.hebrewdino.ui.audio.Season2RawAudio
@@ -154,40 +156,40 @@ class Season2QaFixBatchTest {
     @Test
     fun pictureToWord_wrongTryAgain_playsInlineOnRawVoice() {
         val imageMatch =
-            readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/screens/ImageMatchActions.kt")
+            ProjectSource.read("app/src/main/java/com/tal/hebrewdino/ui/screens/ImageMatchActions.kt")
         assertTrue(imageMatch.contains("runImageToWordWrongFeedback"))
         assertTrue(imageMatch.contains("playAddressAwareTryAgainBlocking"))
         assertTrue(imageMatch.contains("runImageToWordWrongFeedback(tryAgain)"))
         assertTrue(imageMatch.contains("onWrongFeedback(choiceId, true, playInlineTryAgain)"))
         val wrong =
-            readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/screens/WrongFeedbackActions.kt")
+            ProjectSource.read("app/src/main/java/com/tal/hebrewdino/ui/screens/WrongFeedbackActions.kt")
         assertTrue(wrong.contains("GameAudioActions.joinSilently(voiceJob)"))
     }
 
     @Test
     fun whichWord_wrongTryAgain_playsInlineWithoutPreCancel() {
         val imageMatch =
-            readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/screens/ImageMatchActions.kt")
+            ProjectSource.read("app/src/main/java/com/tal/hebrewdino/ui/screens/ImageMatchActions.kt")
         assertTrue(imageMatch.contains("runWhichWordWrongAttempt"))
         assertTrue(imageMatch.contains("runImageToWordWrongFeedback(tryAgain)"))
         assertTrue(imageMatch.contains("physicalStationId = stationId"))
         val policy =
-            readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/domain/Season2StationQaPolicy.kt")
+            ProjectSource.read("app/src/main/java/com/tal/hebrewdino/ui/domain/Season2StationQaPolicy.kt")
         assertTrue(policy.contains("physicalStationId: Int? = null"))
-        val gameScreen = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/screens/GameScreen.kt")
+        val gameScreen = ProjectSource.read("app/src/main/java/com/tal/hebrewdino/ui/screens/GameScreen.kt")
         assertTrue(gameScreen.contains("return WrongFeedbackActions.trigger("))
     }
 
     @Test
     fun pickLetter_wrongTryAgain_playsBlockingAndJoinsFeedback() {
         val pick =
-            readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/screens/PickLetterActions.kt")
+            ProjectSource.read("app/src/main/java/com/tal/hebrewdino/ui/screens/PickLetterActions.kt")
         assertTrue(pick.contains("playPickLetterWrongTryAgainIfNeeded"))
         assertTrue(pick.contains("playAddressAwareTryAgainBlocking"))
         assertTrue(pick.contains("PickLetterActions.handlePick(wrong,tryAgain)"))
         assertTrue(pick.contains("onWrongFeedback(picked, true, skipTryAgain)"))
         assertTrue(pick.contains("GameAudioActions.joinSilently(feedbackJob)"))
-        val gameScreen = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/screens/GameScreen.kt")
+        val gameScreen = ProjectSource.read("app/src/main/java/com/tal/hebrewdino/ui/screens/GameScreen.kt")
         assertTrue(gameScreen.contains("willPlayCoachFocusAfterWrong = willPlayCoachFocusAfterWrong"))
         assertTrue(gameScreen.contains("skipTryAgainAudio = skipTryAgainAudio"))
         assertTrue(gameScreen.contains("GameScreen.onWrongFeedback(coachTryAgain)"))
@@ -210,19 +212,19 @@ class Season2QaFixBatchTest {
             ),
         )
         val wrong =
-            readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/screens/WrongFeedbackActions.kt")
+            ProjectSource.read("app/src/main/java/com/tal/hebrewdino/ui/screens/WrongFeedbackActions.kt")
         assertTrue(wrong.contains("skipTryAgainAudio: Boolean = false"))
         assertTrue(wrong.contains("launchFeedbackVoiceNoCancel"))
         assertTrue(wrong.contains("GameAudioActions.joinSilently(voiceJob)"))
         val feedback =
-            readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/companion/Chapter1FeedbackAudio.kt")
+            ProjectSource.read("app/src/main/java/com/tal/hebrewdino/ui/companion/Chapter1FeedbackAudio.kt")
         assertTrue(feedback.contains("Season2StationAudio.isSeason2GameplayChapter(chapterId)"))
     }
 
     @Test
     fun wordParts_wrongTryAgain_playsInlineOnRawVoice() {
         val actions =
-            readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/screens/Season2AdvancedStationActions.kt")
+            ProjectSource.read("app/src/main/java/com/tal/hebrewdino/ui/screens/Season2AdvancedStationActions.kt")
         assertTrue(actions.contains("playAddressAwareTryAgainBlocking"))
         assertTrue(actions.contains("handleWordPartsPick(tryAgain)"))
         assertTrue(actions.contains("onWrongFeedback(true)"))
@@ -231,10 +233,10 @@ class Season2QaFixBatchTest {
     @Test
     fun wordParts_coachReplay_includesWordAndParts() {
         val coach =
-            readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/domain/Season2GuessingCoach.kt")
+            ProjectSource.read("app/src/main/java/com/tal/hebrewdino/ui/domain/Season2GuessingCoach.kt")
         assertTrue(coach.contains("playPictureTapSequence"))
         val audio =
-            readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/audio/Season2WordPartsAudio.kt")
+            ProjectSource.read("app/src/main/java/com/tal/hebrewdino/ui/audio/Season2WordPartsAudio.kt")
         assertTrue(audio.contains("playPictureTapSequence"))
         assertTrue(audio.contains("playPartsSequence"))
     }
@@ -266,18 +268,5 @@ class Season2QaFixBatchTest {
             distractorLetters = emptyList(),
             wordPartsPresentationMode = mode,
         ) as Question.WordPartsQuestion
-    }
-
-    private fun readProjectSource(relativePath: String): String {
-        val candidates =
-            listOf(
-                java.io.File(relativePath),
-                java.io.File("../$relativePath"),
-                java.io.File("../../$relativePath"),
-            )
-        val file =
-            candidates.firstOrNull { it.exists() }
-                ?: error("Could not locate source file: $relativePath")
-        return file.readText()
     }
 }

@@ -1,5 +1,7 @@
 package com.tal.hebrewdino.ui.game
 
+import com.tal.hebrewdino.test.ProjectSource
+
 import com.tal.hebrewdino.ui.domain.AnswerResult
 import com.tal.hebrewdino.ui.domain.Chapter1LetterPoolSpec
 import com.tal.hebrewdino.ui.domain.LevelSession
@@ -124,7 +126,7 @@ class DragMissingLetterInteractionTest {
 
     @Test
     fun game_keepsDragGestureEnabledWhileDragging() {
-        val source = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/game/DragMissingLetterGame.kt")
+        val source = ProjectSource.read("app/src/main/java/com/tal/hebrewdino/ui/game/DragMissingLetterGame.kt")
         assertTrue(source.contains("enabled = interactionEnabled"))
         assertFalse(source.contains("enabled = chipEnabled"))
         assertFalse(source.contains(".hebrewDraggable(\n                                        enabled = tapEnabled"))
@@ -132,7 +134,7 @@ class DragMissingLetterInteractionTest {
 
     @Test
     fun game_wiresTapFallbackOnSlotAndOptions() {
-        val source = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/game/DragMissingLetterGame.kt")
+        val source = ProjectSource.read("app/src/main/java/com/tal/hebrewdino/ui/game/DragMissingLetterGame.kt")
         assertTrue(source.contains("selectedLetter?.let { onTryPlaceLetter(it) }"))
         assertTrue(source.contains(".clickable(enabled = tapEnabled)"))
         assertTrue(source.contains(".registerDropTarget("))
@@ -141,29 +143,16 @@ class DragMissingLetterInteractionTest {
 
     @Test
     fun game_usesFullSlotBoundsForDropTarget() {
-        val source = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/game/DragMissingLetterGame.kt")
+        val source = ProjectSource.read("app/src/main/java/com/tal/hebrewdino/ui/game/DragMissingLetterGame.kt")
         assertTrue(source.contains(".size(slotSize)"))
         assertTrue(source.contains("DragMissingLetterDropPolicy.DROP_HIT_PADDING_DP"))
     }
 
     @Test
     fun game_doesNotReplayLetterOnTapOrDragStart() {
-        val source = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/game/DragMissingLetterGame.kt")
-        val hostSource = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/screens/GameQuestionHost.kt")
+        val source = ProjectSource.read("app/src/main/java/com/tal/hebrewdino/ui/game/DragMissingLetterGame.kt")
+        val hostSource = ProjectSource.read("app/src/main/java/com/tal/hebrewdino/ui/screens/GameQuestionHost.kt")
         assertTrue(source.contains("onLetterSelected?.invoke(letter)"))
         assertTrue(hostSource.contains("onLetterSelected = null"))
-    }
-
-    private fun readProjectSource(relativePath: String): String {
-        val candidates =
-            listOf(
-                java.io.File(relativePath),
-                java.io.File("../$relativePath"),
-                java.io.File("../../$relativePath"),
-            )
-        val file =
-            candidates.firstOrNull { it.exists() }
-                ?: error("Could not locate source file: $relativePath")
-        return file.readText()
     }
 }

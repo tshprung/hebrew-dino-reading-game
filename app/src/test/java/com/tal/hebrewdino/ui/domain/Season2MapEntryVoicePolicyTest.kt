@@ -1,5 +1,7 @@
 package com.tal.hebrewdino.ui.domain
 
+import com.tal.hebrewdino.test.ProjectSource
+
 import com.tal.hebrewdino.R
 import com.tal.hebrewdino.ui.audio.Season2RawAudio
 import org.junit.Assert.assertEquals
@@ -154,7 +156,7 @@ class Season2MapEntryVoicePolicyTest {
 
     @Test
     fun screen_usesMapEntryClips_notReplayTileInstruction() {
-        val source = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/screens/Season2PuzzleMapPrototypeScreen.kt")
+        val source = ProjectSource.read("app/src/main/java/com/tal/hebrewdino/ui/screens/Season2PuzzleMapPrototypeScreen.kt")
         assertTrue(source.contains("Season2MapEntryVoicePolicy.mapEntryInstructionRawRes"))
         assertTrue(source.contains("Season2MapEntryVoicePolicy.shouldOrchestrateMapEntryVoice"))
         assertFalse(source.contains("replayTileInstructionVoiceRawRes()"))
@@ -165,7 +167,7 @@ class Season2MapEntryVoicePolicyTest {
 
     @Test
     fun screen_sequence_chapterIntroThenPuzzleExplainThenMapEntry() {
-        val source = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/screens/Season2PuzzleMapPrototypeScreen.kt")
+        val source = ProjectSource.read("app/src/main/java/com/tal/hebrewdino/ui/screens/Season2PuzzleMapPrototypeScreen.kt")
         assertTrue(source.contains("puzzleMapExplainHeardFlow(chapterId).first()"))
         assertTrue(source.contains("LaunchedEffect(chapterId, progressHydrated, showIntro, mapReturnCaptionEvent)"))
         assertTrue(
@@ -177,7 +179,7 @@ class Season2MapEntryVoicePolicyTest {
 
     @Test
     fun screen_stationReturn_playsMapPraiseOnly() {
-        val source = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/screens/Season2PuzzleMapPrototypeScreen.kt")
+        val source = ProjectSource.read("app/src/main/java/com/tal/hebrewdino/ui/screens/Season2PuzzleMapPrototypeScreen.kt")
         assertTrue(source.contains("playMapReturnVoiceForCompletedCount"))
         assertTrue(source.contains("shouldSuppressBecauseStationReturn"))
         assertFalse(source.contains("replayTileInstructionVoiceRawRes()"))
@@ -198,18 +200,5 @@ class Season2MapEntryVoicePolicyTest {
                 java.io.File("../../app/src/main/res/raw"),
             )
         return candidates.first { it.isDirectory }
-    }
-
-    private fun readProjectSource(relativePath: String): String {
-        val candidates =
-            listOf(
-                java.io.File(relativePath),
-                java.io.File("../$relativePath"),
-                java.io.File("../../$relativePath"),
-            )
-        val file =
-            candidates.firstOrNull { it.exists() }
-                ?: error("Could not locate source file: $relativePath")
-        return file.readText()
     }
 }

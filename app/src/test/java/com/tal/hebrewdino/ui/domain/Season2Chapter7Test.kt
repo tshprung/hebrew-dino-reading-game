@@ -1,5 +1,7 @@
 package com.tal.hebrewdino.ui.domain
 
+import com.tal.hebrewdino.test.ProjectSource
+
 import com.tal.hebrewdino.R
 import com.tal.hebrewdino.ui.audio.Season2StoryAudio
 import com.tal.hebrewdino.ui.data.Season2ProgressPrefs
@@ -143,19 +145,9 @@ class Season2Chapter7Test {
 
     @Test
     fun progressPrefs_supportsChapter7Range() {
-        val source = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/data/Season2ProgressPrefs.kt")
+        val source = ProjectSource.read("app/src/main/java/com/tal/hebrewdino/ui/data/Season2ProgressPrefs.kt")
         assertTrue(source.contains("Season2ChapterRegistry.CHAPTER_COUNT"))
         assertTrue(source.contains("chapterRange"))
-    }
-
-    private fun readProjectSource(relativePath: String): String {
-        val candidates =
-            listOf(
-                java.io.File(relativePath),
-                java.io.File("../$relativePath"),
-                java.io.File("../../$relativePath"),
-            )
-        return candidates.first { it.exists() }.readText()
     }
 
     @Test
@@ -195,10 +187,10 @@ class Season2Chapter7Test {
 
     @Test
     fun seasonCompleteSummary_flowWiredInNavAndMap() {
-        val nav = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/AppNavSystemGraph.kt")
+        val nav = ProjectSource.read("app/src/main/java/com/tal/hebrewdino/ui/AppNavSystemGraph.kt")
         assertTrue(nav.contains("NavRoutes.Season2SeasonCompleteSummary"))
         assertTrue(nav.contains("REQUEST_SEASON_COMPLETE_SUMMARY"))
-        val map = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/screens/Season2PuzzleMapPrototypeScreen.kt")
+        val map = ProjectSource.read("app/src/main/java/com/tal/hebrewdino/ui/screens/Season2PuzzleMapPrototypeScreen.kt")
         assertTrue(map.contains("onOpenSeasonCompleteSummary"))
         assertTrue(map.contains("chapterId == 7"))
     }

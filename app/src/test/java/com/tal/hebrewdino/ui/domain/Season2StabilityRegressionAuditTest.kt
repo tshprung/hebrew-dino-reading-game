@@ -1,5 +1,6 @@
 package com.tal.hebrewdino.ui.domain
 
+import com.tal.hebrewdino.test.ProjectSource
 import com.tal.hebrewdino.R
 import com.tal.hebrewdino.ui.NavRoutes
 import com.tal.hebrewdino.ui.audio.AudioClips
@@ -15,8 +16,8 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import kotlin.random.Random
 import java.io.File
+import kotlin.random.Random
 
 class Season2StabilityRegressionAuditTest {
     // --- 1. Station routing ---
@@ -247,7 +248,7 @@ class Season2StabilityRegressionAuditTest {
 
     @Test
     fun wordParts_splitCardIsOnlyTapTarget_notPartChips() {
-        val src = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/game/Season2WordPartsGame.kt")
+        val src = ProjectSource.read("app/src/main/java/com/tal/hebrewdino/ui/game/Season2WordPartsGame.kt")
         assertTrue(src.contains("WordPartsSplitOptionRow"))
         assertFalse(src.contains("SplitPartLabel(text = option.firstPart"))
         assertFalse(src.contains("onPickSplit(option.firstPart"))
@@ -288,7 +289,7 @@ class Season2StabilityRegressionAuditTest {
     // --- 8. Memory Match praise (source audit) ---
     @Test
     fun memoryMatch_praiseUsesInStationPraiseShort_withVoiceDuck() {
-        val src = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/screens/Season2MemoryMatchStationScreen.kt")
+        val src = ProjectSource.read("app/src/main/java/com/tal/hebrewdino/ui/screens/Season2MemoryMatchStationScreen.kt")
         assertTrue(src.contains("InStationPraiseAudio.pick()"))
         assertTrue(src.contains("withVoiceDuck"))
         assertTrue(src.contains("playPraiseClip()"))
@@ -304,7 +305,7 @@ class Season2StabilityRegressionAuditTest {
     fun mapReward_navKeys_andRewardDestination() {
         assertEquals("s2_map_return_caption_event", Season2NavKeys.MAP_RETURN_CAPTION_EVENT)
         assertEquals("s2_map_return_caption_count", Season2NavKeys.MAP_RETURN_CAPTION_COUNT)
-        val nav = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/AppNavSystemGraph.kt")
+        val nav = ProjectSource.read("app/src/main/java/com/tal/hebrewdino/ui/AppNavSystemGraph.kt")
         assertTrue(nav.contains("onRewardContinue"))
         assertTrue(nav.contains("NavRoutes.Season2ChapterSelect"))
     }
@@ -312,8 +313,8 @@ class Season2StabilityRegressionAuditTest {
     @Test
     fun mapReward_legacyMapClipsUnusedByActiveMapReturn() {
         assertEquals(2, Season2StabilityAudit.legacyUnusedMapRawResIds().size)
-        val mapScreen = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/screens/Season2PuzzleMapPrototypeScreen.kt")
-        val storyAudio = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/audio/Season2StoryAudio.kt")
+        val mapScreen = ProjectSource.read("app/src/main/java/com/tal/hebrewdino/ui/screens/Season2PuzzleMapPrototypeScreen.kt")
+        val storyAudio = ProjectSource.read("app/src/main/java/com/tal/hebrewdino/ui/audio/Season2StoryAudio.kt")
         assertTrue(mapScreen.contains("Season2StoryAudio.mapReturnVoice"))
         assertTrue(storyAudio.contains("pickMapReturnPraise"))
         assertFalse(mapScreen.contains("returnCaptionVoiceRawRes"))
@@ -381,17 +382,5 @@ class Season2StabilityRegressionAuditTest {
     fun noLegacyDinoCompanionAssets() {
         val dino = CompanionAssets.forCharacter(DinoCharacter.Dino)
         assertEquals(R.drawable.companion_dino_idle, dino.poseIdle)
-    }
-
-    private fun readProjectSource(relativePath: String): String {
-        val candidates =
-            listOf(
-                File(relativePath),
-                File("../$relativePath"),
-                File("../../$relativePath"),
-            )
-        val file = candidates.firstOrNull { it.exists() }
-            ?: error("Could not locate source file: $relativePath")
-        return file.readText()
     }
 }

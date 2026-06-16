@@ -1,5 +1,7 @@
 package com.tal.hebrewdino.ui.domain
 
+import com.tal.hebrewdino.test.ProjectSource
+
 import com.tal.hebrewdino.R
 import com.tal.hebrewdino.ui.companion.CompanionAssets
 import com.tal.hebrewdino.ui.data.DinoCharacter
@@ -102,11 +104,11 @@ class Season2QaPolishBatchTest {
         val ch4Plan = Season2ChapterStationPlans.quizPlan(Season2ChapterStationPlans.contextFor(4)!!, 6)
         assertEquals(ch1Plan.questionCount, ch4Plan.questionCount)
         assertEquals(ch1Plan.imageMatchCaptionSizeMultiplier, ch4Plan.imageMatchCaptionSizeMultiplier)
-        val matchGame = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/game/MatchLetterToWordGame.kt")
+        val matchGame = ProjectSource.read("app/src/main/java/com/tal/hebrewdino/ui/game/MatchLetterToWordGame.kt")
         assertTrue(matchGame.contains("Season2StationUx.usesChapter1StyleMatchLetterBehavior"))
-        val questionHost = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/screens/GameQuestionHost.kt")
+        val questionHost = ProjectSource.read("app/src/main/java/com/tal/hebrewdino/ui/screens/GameQuestionHost.kt")
         assertTrue(questionHost.contains("usesChapter1StyleMatchLetterBehavior"))
-        val advance = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/screens/AdvanceAfterRoundActions.kt")
+        val advance = ProjectSource.read("app/src/main/java/com/tal/hebrewdino/ui/screens/AdvanceAfterRoundActions.kt")
         assertTrue(advance.contains("Season2StationUx.isMatchLetterFinale(chapterId, stationId)"))
     }
 
@@ -136,15 +138,5 @@ class Season2QaPolishBatchTest {
         val dino = CompanionAssets.forCharacter(DinoCharacter.Dino)
         assertEquals(R.drawable.companion_dino_idle, dino.poseIdle)
         assertEquals(R.drawable.companion_dino_talk_1, dino.talkFrameResIds.first())
-    }
-
-    private fun readProjectSource(relativePath: String): String {
-        val candidates =
-            listOf(
-                java.io.File(relativePath),
-                java.io.File("../$relativePath"),
-                java.io.File("../../$relativePath"),
-            )
-        return candidates.first { it.exists() }.readText()
     }
 }

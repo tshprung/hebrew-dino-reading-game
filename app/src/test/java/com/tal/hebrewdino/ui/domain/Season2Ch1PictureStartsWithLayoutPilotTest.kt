@@ -1,5 +1,7 @@
 package com.tal.hebrewdino.ui.domain
 
+import com.tal.hebrewdino.test.ProjectSource
+
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -55,24 +57,11 @@ class Season2Ch1PictureStartsWithLayoutPilotTest {
     @Test
     fun readable_panel_not_suppressed_in_renderer() {
         val renderer =
-            readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/screens/PictureStartsWithQuestionRenderer.kt")
+            ProjectSource.read("app/src/main/java/com/tal/hebrewdino/ui/screens/PictureStartsWithQuestionRenderer.kt")
         assertTrue(renderer.contains("instructionReadablePanel && !layoutPilot"))
         assertFalse(
             Season2Ch1QaPolicy.isPictureStartsWithLayoutPilot(
             ),
         )
-    }
-
-    private fun readProjectSource(relativePath: String): String {
-        val candidates =
-            listOf(
-                java.io.File(relativePath),
-                java.io.File("../$relativePath"),
-                java.io.File("../../$relativePath"),
-            )
-        val file =
-            candidates.firstOrNull { it.exists() }
-                ?: error("Could not locate source file: $relativePath")
-        return file.readText()
     }
 }

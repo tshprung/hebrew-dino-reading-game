@@ -1,5 +1,7 @@
 package com.tal.hebrewdino.ui.domain
 
+import com.tal.hebrewdino.test.ProjectSource
+
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -59,29 +61,19 @@ class Season2WarmupStationQaTest {
 
     @Test
     fun wiring_sources() {
-        val pick = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/screens/PickLetterActions.kt")
+        val pick = ProjectSource.read("app/src/main/java/com/tal/hebrewdino/ui/screens/PickLetterActions.kt")
         assertTrue(pick.contains("Season2WarmupStationQaPolicy.usesRawLetterNameStationFeedback"))
         assertTrue(pick.contains("Season2PostFocusCorrectAudio.playBlocking"))
-        val pop = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/screens/PopBalloonsActions.kt")
+        val pop = ProjectSource.read("app/src/main/java/com/tal/hebrewdino/ui/screens/PopBalloonsActions.kt")
         assertTrue(pop.contains("shouldPlayBalloonCompanionPraiseAfterCoach"))
-        val wrong = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/screens/WrongFeedbackActions.kt")
+        val wrong = ProjectSource.read("app/src/main/java/com/tal/hebrewdino/ui/screens/WrongFeedbackActions.kt")
         assertTrue(wrong.contains("isSeason2GameplayChapter(chapterId)"))
         val memory =
-            readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/screens/Season2MemoryMatchStationScreen.kt")
+            ProjectSource.read("app/src/main/java/com/tal/hebrewdino/ui/screens/Season2MemoryMatchStationScreen.kt")
         assertTrue(memory.contains("TextAlign.Center"))
-        val wordParts = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/game/Season2WordPartsGame.kt")
+        val wordParts = ProjectSource.read("app/src/main/java/com/tal/hebrewdino/ui/game/Season2WordPartsGame.kt")
         assertFalse(wordParts.contains("HintOptionsExtraPhysicalLeftDp"))
-        val picture = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/game/PictureStartsWithGame.kt")
+        val picture = ProjectSource.read("app/src/main/java/com/tal/hebrewdino/ui/game/PictureStartsWithGame.kt")
         assertTrue(picture.contains("HalfCmPhysicalLeftDp"))
-    }
-
-    private fun readProjectSource(relativePath: String): String {
-        val candidates =
-            listOf(
-                java.io.File(relativePath),
-                java.io.File("../$relativePath"),
-                java.io.File("../../$relativePath"),
-            )
-        return candidates.first { it.exists() }.readText()
     }
 }

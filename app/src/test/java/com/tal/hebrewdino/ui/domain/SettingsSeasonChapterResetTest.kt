@@ -1,5 +1,7 @@
 package com.tal.hebrewdino.ui.domain
 
+import com.tal.hebrewdino.test.ProjectSource
+
 import com.tal.hebrewdino.ui.screens.chapterResetRowIdsForTest
 import com.tal.hebrewdino.ui.screens.chapterUnlockWaiverRowIdsForTest
 import com.tal.hebrewdino.ui.screens.season2ChapterResetRowIdsForTest
@@ -27,7 +29,7 @@ class SettingsSeasonChapterResetTest {
 
     @Test
     fun settings_screen_uses_toggle_buttons_and_season2_gate() {
-        val source = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/screens/SettingsScreen.kt")
+        val source = ProjectSource.read("app/src/main/java/com/tal/hebrewdino/ui/screens/SettingsScreen.kt")
         assertTrue(source.contains("ChapterSelectionToggleGrid"))
         assertTrue(source.contains("season2Enabled"))
         assertTrue(source.contains("onResetSeason2Chapters"))
@@ -37,17 +39,7 @@ class SettingsSeasonChapterResetTest {
 
     @Test
     fun season2_progress_supports_partial_chapter_reset() {
-        val source = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/data/Season2ProgressPrefs.kt")
+        val source = ProjectSource.read("app/src/main/java/com/tal/hebrewdino/ui/data/Season2ProgressPrefs.kt")
         assertTrue(source.contains("suspend fun resetChapters(chapterIds: Set<Int>)"))
-    }
-
-    private fun readProjectSource(relativePath: String): String {
-        val candidates =
-            listOf(
-                java.io.File(relativePath),
-                java.io.File("../$relativePath"),
-                java.io.File("../../$relativePath"),
-            )
-        return candidates.first { it.exists() }.readText()
     }
 }

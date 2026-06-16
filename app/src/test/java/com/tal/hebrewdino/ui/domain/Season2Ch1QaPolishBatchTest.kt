@@ -1,5 +1,7 @@
 package com.tal.hebrewdino.ui.domain
 
+import com.tal.hebrewdino.test.ProjectSource
+
 import com.tal.hebrewdino.R
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -11,7 +13,7 @@ class Season2Ch1QaPolishBatchTest {
     fun ch1_st1_wrong_single_tryagain() {
         assertTrue(Season2Ch1QaPolicy.shouldPlayTryAgainInPopBalloonsSfx())
         assertTrue(Season2Ch1QaPolicy.shouldPlayTryAgainInPopBalloonsSfx())
-        val source = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/screens/PopBalloonsActions.kt")
+        val source = ProjectSource.read("app/src/main/java/com/tal/hebrewdino/ui/screens/PopBalloonsActions.kt")
         assertTrue(source.contains("shouldPlayTryAgainInPopBalloonsSfx"))
     }
 
@@ -77,28 +79,28 @@ class Season2Ch1QaPolishBatchTest {
                 Season2Chapter1StationOrder.PICTURE_STARTS_WITH,
             ),
         )
-        val advance = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/screens/AdvanceAfterRoundActions.kt")
+        val advance = ProjectSource.read("app/src/main/java/com/tal/hebrewdino/ui/screens/AdvanceAfterRoundActions.kt")
         assertTrue(advance.contains("shouldSkipAdvanceRoundPraiseBecausePlayedInStation"))
     }
 
     @Test
     fun ch1_st3_replay_sequence_instruction_then_word_short_gap_policy() {
         assertEquals(60L, Season2Ch1QaPolicy.CoachInstructionToWordGapMs)
-        val coach = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/domain/Season2GuessingCoach.kt")
+        val coach = ProjectSource.read("app/src/main/java/com/tal/hebrewdino/ui/domain/Season2GuessingCoach.kt")
         assertTrue(coach.contains("CoachInstructionToWordGapMs"))
         assertTrue(coach.contains("postInstructionGapMs = Season2Ch1QaPolicy.CoachInstructionToWordGapMs"))
     }
 
     @Test
     fun ch1_st4_background_present_readability() {
-        val source = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/screens/Season2MemoryMatchStationScreen.kt")
+        val source = ProjectSource.read("app/src/main/java/com/tal/hebrewdino/ui/screens/Season2MemoryMatchStationScreen.kt")
         assertTrue(source.contains("season2_memory_match_bg"))
         assertTrue(source.contains("ContentScale.Crop"))
     }
 
     @Test
     fun ch1_st5_every_tap_reads_tapped_word() {
-        val host = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/screens/GameQuestionHost.kt")
+        val host = ProjectSource.read("app/src/main/java/com/tal/hebrewdino/ui/screens/GameQuestionHost.kt")
         assertTrue(host.contains("Season2StationQaPolicy.isWhichWordStartsWithStation"))
         assertTrue(host.contains("handleImageToWordWordPressed"))
     }
@@ -117,7 +119,7 @@ class Season2Ch1QaPolishBatchTest {
 
     @Test
     fun ch1_st6_dragMissingLetter_pictureTapReplayWired() {
-        val gameScreen = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/screens/GameScreen.kt")
+        val gameScreen = ProjectSource.read("app/src/main/java/com/tal/hebrewdino/ui/screens/GameScreen.kt")
         assertTrue(gameScreen.contains("handleDragMissingLetterPictureTap"))
         assertFalse(
             Season2StationQaPolicy.isPictureToWordStation(
@@ -129,14 +131,14 @@ class Season2Ch1QaPolishBatchTest {
 
     @Test
     fun ch1_st6_dragMissingLetter_usesGenericFeedback() {
-        val actions = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/screens/DragMissingLetterActions.kt")
+        val actions = ProjectSource.read("app/src/main/java/com/tal/hebrewdino/ui/screens/DragMissingLetterActions.kt")
         assertTrue(actions.contains("AudioClips.SfxCorrect"))
         assertTrue(actions.contains("AudioClips.SfxWrong"))
     }
 
     @Test
     fun ch1_st6_single_correct_praise_guard() {
-        val session = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/domain/LevelSession.kt")
+        val session = ProjectSource.read("app/src/main/java/com/tal/hebrewdino/ui/domain/LevelSession.kt")
         assertTrue(session.contains("dragMissingLetterRoundScored"))
     }
 
@@ -149,18 +151,5 @@ class Season2Ch1QaPolishBatchTest {
     @Test
     fun season1_unchanged() {
         assertEquals(StationQuizMode.PickLetter, StationQuizPlans.chapter1(Chapter1StationOrder.TAP_LETTER).mode)
-    }
-
-    private fun readProjectSource(relativePath: String): String {
-        val candidates =
-            listOf(
-                java.io.File(relativePath),
-                java.io.File("../$relativePath"),
-                java.io.File("../../$relativePath"),
-            )
-        val file =
-            candidates.firstOrNull { it.exists() }
-                ?: error("Could not locate source file: $relativePath")
-        return file.readText()
     }
 }

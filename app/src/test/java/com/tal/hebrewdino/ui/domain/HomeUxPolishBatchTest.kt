@@ -1,5 +1,6 @@
 package com.tal.hebrewdino.ui.domain
 
+import com.tal.hebrewdino.test.ProjectSource
 import com.tal.hebrewdino.R
 import com.tal.hebrewdino.ui.data.ParentInfoPrefs
 import java.io.File
@@ -55,7 +56,7 @@ class HomeUxPolishBatchTest {
 
     @Test
     fun openingScreen_hasManualParentInfoButton() {
-        val source = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/screens/OpeningScreen.kt")
+        val source = ProjectSource.read("app/src/main/java/com/tal/hebrewdino/ui/screens/OpeningScreen.kt")
         assertTrue(source.contains("onOpenParentInfo"))
         assertTrue(source.contains("opening_parent_info"))
         assertTrue(source.contains("ParentInfoCopy.InfoButtonLabel"))
@@ -63,7 +64,7 @@ class HomeUxPolishBatchTest {
 
     @Test
     fun seasonsScreen_season2CardUsesOverviewHero() {
-        val source = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/screens/SeasonsScreen.kt")
+        val source = ProjectSource.read("app/src/main/java/com/tal/hebrewdino/ui/screens/SeasonsScreen.kt")
         assertTrue(source.contains("SeasonHeroKind.Season2Overview"))
         assertTrue(source.contains("R.drawable.season2_overview_hero"))
         assertFalse(source.contains("Season2FrostedPosterPreview"))
@@ -71,7 +72,7 @@ class HomeUxPolishBatchTest {
 
     @Test
     fun seasonsScreen_showsAllSeasons_withOnlySeason1And2Enterable() {
-        val seasons = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/screens/SeasonsScreen.kt")
+        val seasons = ProjectSource.read("app/src/main/java/com/tal/hebrewdino/ui/screens/SeasonsScreen.kt")
         assertTrue(seasons.contains("seasonId = 1"))
         assertTrue(seasons.contains("seasonId = 2"))
         assertTrue(seasons.contains("seasonId = 3"))
@@ -79,9 +80,9 @@ class HomeUxPolishBatchTest {
         assertTrue(seasons.contains("SeasonAvailabilityPolicy.isSeason2Enabled()"))
         assertTrue(seasons.contains("status = \"בפיתוח\""))
         assertFalse(seasons.contains("if (BuildConfig.DEBUG)"))
-        val policy = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/domain/SeasonAvailabilityPolicy.kt")
+        val policy = ProjectSource.read("app/src/main/java/com/tal/hebrewdino/ui/domain/SeasonAvailabilityPolicy.kt")
         assertTrue(policy.contains("1, 2 -> true"))
-        val nav = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/AppNavSystemGraph.kt")
+        val nav = ProjectSource.read("app/src/main/java/com/tal/hebrewdino/ui/AppNavSystemGraph.kt")
         assertTrue(nav.contains("onOpenSeason2 = {"))
         assertTrue(nav.contains("NavRoutes.Season2ChapterSelect"))
         assertTrue(nav.contains("if (!SeasonAvailabilityPolicy.isSeason2Enabled())"))
@@ -120,21 +121,8 @@ class HomeUxPolishBatchTest {
 
     @Test
     fun noSeason1GameplayChangesInBatch() {
-        val gameScreen = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/screens/GameScreen.kt")
+        val gameScreen = ProjectSource.read("app/src/main/java/com/tal/hebrewdino/ui/screens/GameScreen.kt")
         assertFalse(gameScreen.contains("ParentInfo"))
         assertFalse(gameScreen.contains("season2_overview_hero"))
-    }
-
-    private fun readProjectSource(relativePath: String): String {
-        val candidates =
-            listOf(
-                File(relativePath),
-                File("../$relativePath"),
-                File("../../$relativePath"),
-            )
-        val file =
-            candidates.firstOrNull { it.exists() }
-                ?: error("Could not locate source file: $relativePath")
-        return file.readText()
     }
 }

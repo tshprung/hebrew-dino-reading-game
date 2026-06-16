@@ -1,5 +1,7 @@
 package com.tal.hebrewdino.ui.domain
 
+import com.tal.hebrewdino.test.ProjectSource
+
 import com.tal.hebrewdino.R
 import com.tal.hebrewdino.ui.audio.Season2CompanionFeedbackAudio
 import com.tal.hebrewdino.ui.audio.Season2RawAudio
@@ -60,10 +62,10 @@ class Season2PostFocusCorrectBatchTest {
 
   @Test
   fun gameScreen_usesCompanionPostFocusAudio_notTextBubbleOrNarrator() {
-    val gameScreen = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/screens/GameScreen.kt")
+    val gameScreen = ProjectSource.read("app/src/main/java/com/tal/hebrewdino/ui/screens/GameScreen.kt")
     assertTrue(gameScreen.contains("Season2PostFocusCorrectAudio.playBlocking"))
     assertFalse(gameScreen.contains("processPraise(chapter1PlayerAddress)"))
-    val pop = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/screens/PopBalloonsActions.kt")
+    val pop = ProjectSource.read("app/src/main/java/com/tal/hebrewdino/ui/screens/PopBalloonsActions.kt")
     assertTrue(pop.contains("Season2PostFocusCorrectAudio.playBlocking"))
     assertTrue(pop.contains("afterCoachIntervention"))
   }
@@ -80,11 +82,11 @@ class Season2PostFocusCorrectBatchTest {
             playedPostFocusCompanionPraise = true,
         ),
     )
-    val pickLetter = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/screens/PickLetterActions.kt")
-    val picture = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/screens/PictureStartsWithActions.kt")
-    val image = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/screens/ImageMatchActions.kt")
-    val wordParts = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/screens/Season2AdvancedStationActions.kt")
-    val postCoachHelper = readProjectSource("app/src/main/java/com/tal/hebrewdino/ui/screens/PostCoachCorrectPraiseActions.kt")
+    val pickLetter = ProjectSource.read("app/src/main/java/com/tal/hebrewdino/ui/screens/PickLetterActions.kt")
+    val picture = ProjectSource.read("app/src/main/java/com/tal/hebrewdino/ui/screens/PictureStartsWithActions.kt")
+    val image = ProjectSource.read("app/src/main/java/com/tal/hebrewdino/ui/screens/ImageMatchActions.kt")
+    val wordParts = ProjectSource.read("app/src/main/java/com/tal/hebrewdino/ui/screens/Season2AdvancedStationActions.kt")
+    val postCoachHelper = ProjectSource.read("app/src/main/java/com/tal/hebrewdino/ui/screens/PostCoachCorrectPraiseActions.kt")
     assertTrue(postCoachHelper.contains("playInStationIfCoachHelped"))
     assertTrue(pickLetter.contains("Season2PostFocusCorrectAudio") || pickLetter.contains("PostCoachCorrectPraiseActions"))
     assertTrue(picture.contains("PostCoachCorrectPraiseActions"))
@@ -123,18 +125,5 @@ class Season2PostFocusCorrectBatchTest {
             java.io.File("../../app/src/main/res/raw"),
         )
     return candidates.first { it.isDirectory }
-  }
-
-  private fun readProjectSource(relativePath: String): String {
-    val candidates =
-        listOf(
-            java.io.File(relativePath),
-            java.io.File("../$relativePath"),
-            java.io.File("../../$relativePath"),
-        )
-    val file =
-        candidates.firstOrNull { it.exists() }
-            ?: error("Could not locate source file: $relativePath")
-    return file.readText()
   }
 }
