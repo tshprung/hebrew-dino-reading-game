@@ -22,3 +22,7 @@ Memory-match stations (Ch2 st4, Ch7 st3) are excluded from `LevelSession` tests 
 
 Manual QA on a device or emulator is used for UI and gameplay flows.
 
+### Edge-to-edge (Android 15+)
+
+`MainActivity` calls `enableImmersiveFullscreen()`, which uses `enableEdgeToEdge()` plus immersive system-bar hiding. Top/back controls use `topChromeInsetsPadding()`; settings uses `safeContentInsetsPadding()`. See `EdgeToEdgeSetupTest`.
+

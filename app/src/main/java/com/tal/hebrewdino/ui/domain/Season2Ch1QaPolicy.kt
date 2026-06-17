@@ -41,7 +41,7 @@ object Season2Ch1QaPolicy {
     fun shouldKeepPopBalloonsInputUnlockedDuringFeedback(season2UxStationId: Int?): Boolean =
         Season2StationQaPolicy.shouldKeepPopBalloonsInputUnlockedDuringFeedback(season2UxStationId)
 
-    fun shouldCancelPreviousFeedbackOnPopBalloonsTap(): Boolean = false
+    fun shouldCancelPreviousFeedbackOnPopBalloonsTap(): Boolean = true
 
     fun shouldAllowTapDuringPopBalloonsWrongRecover(season2UxStationId: Int?): Boolean =
         Season2StationQaPolicy.shouldAllowTapDuringPopBalloonsWrongRecover(season2UxStationId)

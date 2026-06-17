@@ -64,6 +64,7 @@ internal object PopBalloonsActions {
                 !season2QuizBalloons
         ) {
             cancelFeedbackVoice()
+            sfx.stopAllStreams()
         }
         if (sagaUsesPopBalloonsAudioStaging) {
             GameAudioActions.launchFeedbackVoiceNoCancel(

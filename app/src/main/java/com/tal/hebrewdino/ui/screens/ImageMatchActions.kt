@@ -274,6 +274,7 @@ internal object ImageMatchActions {
         rawVoice: RawVoicePlayer?,
         chapter1PlayerAddress: PlayerAddress?,
         willPlayCoachFocusAfterWrong: Boolean,
+        wordAlreadySpokenOnTap: Boolean,
         onWrongFeedback: (
             wrongWordCatalogId: String?,
             wrongWordAlreadySpoken: Boolean,
@@ -281,13 +282,15 @@ internal object ImageMatchActions {
         ) -> Job?,
     ) {
         gameViewModel.inputLocked = true
-        playImageToWordTappedOptionAudio(
-            choiceId = choiceId,
-            audioEnabled = audioEnabled,
-            chapterId = chapterId,
-            voice = voice,
-            rawVoice = rawVoice,
-        )
+        if (!wordAlreadySpokenOnTap) {
+            playImageToWordTappedOptionAudio(
+                choiceId = choiceId,
+                audioEnabled = audioEnabled,
+                chapterId = chapterId,
+                voice = voice,
+                rawVoice = rawVoice,
+            )
+        }
         HintPulseActions.registerWrongTapForHintPulse(gameViewModel)
         val feedbackJob =
             runImageToWordWrongFeedback(
@@ -519,6 +522,11 @@ internal object ImageMatchActions {
                             rawVoice = rawVoice,
                             chapter1PlayerAddress = chapter1PlayerAddress,
                             willPlayCoachFocusAfterWrong = willPlayCoachFocusAfterWrong,
+                            wordAlreadySpokenOnTap =
+                                Season2StationQaPolicy.isWhichWordStartsWithStation(
+                                    gameplayChapterId = chapterId,
+                                    season2UxStationId = season2Chapter1UxStationId,
+                                ),
                             onWrongFeedback = onWrongFeedback,
                         )
                     }
@@ -629,6 +637,11 @@ internal object ImageMatchActions {
                             rawVoice = rawVoice,
                             chapter1PlayerAddress = chapter1PlayerAddress,
                             willPlayCoachFocusAfterWrong = willPlayCoachFocusAfterWrong,
+                            wordAlreadySpokenOnTap =
+                                Season2StationQaPolicy.isWhichWordStartsWithStation(
+                                    gameplayChapterId = chapterId,
+                                    season2UxStationId = season2Chapter1UxStationId,
+                                ),
                             onWrongFeedback = onWrongFeedback,
                         )
                     }

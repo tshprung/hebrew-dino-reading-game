@@ -40,6 +40,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.tal.hebrewdino.R
 import com.tal.hebrewdino.ui.domain.ParentInfoCopy
+import com.tal.hebrewdino.ui.layout.bottomChromeInsetsPadding
 import com.tal.hebrewdino.ui.layout.topChromeInsetsPadding
 
 @Composable
@@ -115,6 +116,7 @@ fun OpeningScreen(
                 modifier =
                     Modifier
                         .align(Alignment.BottomStart)
+                        .bottomChromeInsetsPadding()
                         .padding(start = 22.dp, bottom = 18.dp)
                         .testTag("opening_play"),
             )
